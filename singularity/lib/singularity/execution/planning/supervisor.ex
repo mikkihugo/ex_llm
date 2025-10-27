@@ -26,15 +26,15 @@ defmodule Singularity.Execution.Planning.Supervisor do
   - TaskGraph.WorkerPool - For worker spawning (Orchestrator delegates to WorkerPool)
   - Agents.Supervisor - For AgentSupervisor (TaskGraph.Orchestrator spawns role-based agents)
   - LLM.Supervisor - For task decomposition via LLM.Service
-  - pgmq.Supervisor - For task_graph.execute.* pgmq subjects
+  - Singularity.Jobs.PgmqClient.Supervisor - For task_graph.execute.* pgmq subjects
   - Repo - For todos and task_graph_executions tables
   """
 
   use Supervisor
   require Logger
 
-  def start_link(opts \\ []) do
-    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    Supervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true

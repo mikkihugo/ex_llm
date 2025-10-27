@@ -113,9 +113,9 @@ defmodule Singularity.Database.AgentGeospatialClustering do
   - `:radius` - `:same` (same cell only) or `:neighbors` (neighbors included, default)
   - `:limit` - Max results (default: 50)
   """
-  def find_nearby_agents(agent_id, opts \\ []) when is_integer(agent_id) do
-    radius = Keyword.get(opts, :radius, :neighbors)
-    limit = Keyword.get(opts, :limit, 50)
+  def find_nearby_agents(agent_id, _opts \\ []) when is_integer(agent_id) do
+    radius = Keyword.get(_opts, :radius, :neighbors)
+    limit = Keyword.get(_opts, :limit, 50)
 
     case Repo.query(
            "SELECT h3_cell FROM agents WHERE id = $1",

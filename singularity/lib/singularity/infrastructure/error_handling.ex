@@ -81,8 +81,8 @@ defmodule Singularity.Infrastructure.ErrorHandling do
 
       # Returns: {:ok, result} | {:error, %ErrorHandling.Error{}}
   """
-  def safe_operation(fun, opts \\ []) when is_function(fun, 0) do
-    context = Keyword.get(opts, :context, %{})
+  def safe_operation(fun, _opts \\ []) when is_function(fun, 0) do
+    context = Keyword.get(_opts, :context, %{})
     correlation_id = Map.get(context, :correlation_id, generate_correlation_id())
 
     full_context = Map.merge(context, %{correlation_id: correlation_id})
@@ -160,15 +160,15 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         Finch.request(request, Singularity.HttpClient)
       end, max_attempts: 5, base_delay_ms: 200)
   """
-  def with_retry(fun, opts \\ []) when is_function(fun, 0) do
-    max_attempts = Keyword.get(opts, :max_attempts, 3)
-    base_delay_ms = Keyword.get(opts, :base_delay_ms, 100)
-    max_delay_ms = Keyword.get(opts, :max_delay_ms, 10_000)
-    exponential_base = Keyword.get(opts, :exponential_base, 2)
-    jitter = Keyword.get(opts, :jitter, true)
+  def with_retry(fun, _opts \\ []) when is_function(fun, 0) do
+    max_attempts = Keyword.get(_opts, :max_attempts, 3)
+    base_delay_ms = Keyword.get(_opts, :base_delay_ms, 100)
+    max_delay_ms = Keyword.get(_opts, :max_delay_ms, 10_000)
+    exponential_base = Keyword.get(_opts, :exponential_base, 2)
+    jitter = Keyword.get(_opts, :jitter, true)
 
     retryable_errors =
-      Keyword.get(opts, :retryable_errors, [
+      Keyword.get(_opts, :retryable_errors, [
         :timeout,
         :connection_error,
         :postgrex_connection_error
@@ -288,8 +288,8 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         ExternalAPI.call()
       end, failure_threshold: 3, timeout_ms: 3000)
   """
-  def with_circuit_breaker(circuit_name, fun, opts \\ []) when is_function(fun, 0) do
-    case Singularity.Infrastructure.CircuitBreaker.call(circuit_name, fun, opts) do
+  def with_circuit_breaker(circuit_name, fun, _opts \\ []) when is_function(fun, 0) do
+    case Singularity.Infrastructure.CircuitBreaker.call(circuit_name, fun, _opts) do
       {:ok, result} -> {:ok, result}
       {:error, :circuit_open} -> {:error, :service_unavailable}
       {:error, reason} -> {:error, reason}
@@ -307,8 +307,8 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         expensive_computation()
       end, timeout_ms: 5000)
   """
-  def with_timeout(fun, opts \\ []) when is_function(fun, 0) do
-    timeout_ms = Keyword.get(opts, :timeout_ms, 30_000)
+  def with_timeout(fun, _opts \\ []) when is_function(fun, 0) do
+    timeout_ms = Keyword.get(_opts, :timeout_ms, 30_000)
 
     task = Task.async(fun)
 
@@ -379,10 +379,10 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         fetch_from_cache()
       end, default: [])
   """
-  def with_fallback(fun, opts \\ []) when is_function(fun, 0) do
-    default = Keyword.get(opts, :default)
+  def with_fallback(fun, _opts \\ []) when is_function(fun, 0) do
+    default = Keyword.get(_opts, :default)
 
-    case safe_operation(fun, context: Keyword.get(opts, :context, %{})) do
+    case safe_operation(fun, context: Keyword.get(_opts, :context, %{})) do
       {:ok, result} -> result
       {:error, _error} -> default
     end

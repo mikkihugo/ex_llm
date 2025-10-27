@@ -65,7 +65,7 @@ defmodule Singularity.System.Bootstrap do
   Phase 3: Auto-fix all issues
   Phase 4: Hand over to SafeWorkPlanner/SPARC for features
   """
-  def bootstrap(opts \\ []) do
+  def bootstrap(_opts \\ []) do
     Logger.info("Starting TaskGraph bootstrap with simple learning...")
 
     run_id = "bootstrap-#{System.unique_integer([:positive])}"
@@ -79,7 +79,7 @@ defmodule Singularity.System.Bootstrap do
     {:ok, mapping} = FullRepoScanner.map_all_systems()
 
     # Phase 3: Auto-fix everything
-    if Keyword.get(opts, :auto_fix, false) do
+    if Keyword.get(_opts, :auto_fix, false) do
       Logger.info("Phase 3: Auto-fixing all issues...")
       {:ok, fixes} = FullRepoScanner.auto_fix_all()
 
@@ -114,11 +114,11 @@ defmodule Singularity.System.Bootstrap do
   4. Hand over to SafeWorkPlanner for features
   5. Self-improving makes everything work (errors, performance, etc.)
   """
-  def fix_singularity_server(opts \\ []) do
+  def fix_singularity_server(_opts \\ []) do
     Logger.info("Auto-repairing Singularity server...")
 
     # Use the simple auto-fix approach
-    case FullRepoScanner.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
+    case FullRepoScanner.auto_fix_all(Keyword.put(_opts, :max_iterations, 20)) do
       {:ok, result} ->
         Logger.info("Auto-repair complete",
           iterations: result.iterations,

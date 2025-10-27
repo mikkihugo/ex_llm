@@ -23,7 +23,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
 
   ```mermaid
   graph TD
-      Execute["execute(task, opts)"]
+      Execute["execute(task, _opts)"]
       LoadConfig["Load enabled adapters by priority"]
       Try1["Try Adapter 1 (priority 10)"]
       Try2["Try Adapter 2 (priority 15)"]
@@ -54,7 +54,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
   TaskAdapterOrchestrator.execute(%{
     type: :pattern_analysis,
     args: %{codebase_id: "my-project"},
-    opts: [async: true]
+    _opts: [async: true]
   })
   # => {:ok, "oban:12345"}
 
@@ -89,8 +89,8 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
 
   ## Parameters
 
-  - `task`: Map with `:type`, `:args`, `:opts`
-  - `opts`: Optional keyword list:
+  - `task`: Map with `:type`, `:args`, `:_opts`
+  - `_opts`: Optional keyword list:
     - `:adapters` - Specific adapters to try (default: all enabled)
     - `:execution_type` - Async or sync (default: async)
 
@@ -100,16 +100,16 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
   - `{:error, :no_adapter_found}` - No adapter could execute task
   - `{:error, reason}` - Hard error from adapter
   """
-  def execute(task, opts \\ []) when is_map(task) and is_list(opts) do
+  def execute(task, _opts \\ []) when is_map(task) and is_list(_opts) do
     try do
-      adapters = load_adapters_for_attempt(opts)
+      adapters = load_adapters_for_attempt(_opts)
 
       Logger.info("TaskAdapterOrchestrator: Executing task",
         task_type: task[:type],
         adapter_count: length(adapters)
       )
 
-      case try_adapters(adapters, task, opts) do
+      case try_adapters(adapters, task, _opts) do
         {:ok, task_id} ->
           Logger.info("Task queued successfully",
             task_type: task[:type],
@@ -180,8 +180,8 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
 
   # Private helpers
 
-  defp load_adapters_for_attempt(opts) do
-    case Keyword.get(opts, :adapters) do
+  defp load_adapters_for_attempt(_opts) do
+    case Keyword.get(_opts, :adapters) do
       nil ->
         # Use all enabled adapters
         TaskAdapter.load_enabled_adapters()
@@ -201,7 +201,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
     {:error, :no_adapter_found}
   end
 
-  defp try_adapters([{adapter_type, _priority, config} | rest], task, opts) do
+  defp try_adapters([{adapter_type, _priority, config} | rest], task, _opts) do
     try do
       module = config[:module]
 
@@ -209,7 +209,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
         Logger.debug("Trying #{adapter_type} adapter", task_type: task[:type])
 
         # Execute adapter
-        case module.execute(task, opts) do
+        case module.execute(task, _opts) do
           {:ok, task_id} ->
             Logger.info("Task execution succeeded with #{adapter_type}",
               task_type: task[:type],
@@ -221,7 +221,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
           {:error, :not_suitable} ->
             # This adapter can't handle this task, try next
             Logger.debug("#{adapter_type} adapter not suitable for task", task_type: task[:type])
-            try_adapters(rest, task, opts)
+            try_adapters(rest, task, _opts)
 
           {:error, reason} ->
             # Hard error, stop trying
@@ -234,7 +234,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
         end
       else
         Logger.warning("Adapter module not found for #{adapter_type}")
-        try_adapters(rest, task, opts)
+        try_adapters(rest, task, _opts)
       end
     rescue
       e ->
@@ -245,7 +245,7 @@ defmodule Singularity.Execution.TaskAdapterOrchestrator do
         )
 
         # Try next adapter on execution error
-        try_adapters(rest, task, opts)
+        try_adapters(rest, task, _opts)
     end
   end
 end

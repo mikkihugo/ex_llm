@@ -43,13 +43,13 @@ defmodule Singularity.Search.HybridCodeSearch do
   ```yaml
   calls:
     - Singularity.Repo (database queries)
-    - Singularity.Search.UnifiedEmbeddingService (embeddings)
+    - Singularity.Search.EmbeddingService (embeddings)
     - PostgreSQL FTS functions (ts_rank, plainto_tsquery)
     - pgvector operators (<=> distance)
 
   called_by:
     - Singularity.Tools.CodeSearch (MCP interface)
-    - Singularity.pgmq.CodeSearchSubscriber (pgmq interface)
+    - Singularity.Jobs.PgmqClient.CodeSearchSubscriber (pgmq interface)
     - User-facing search APIs
   ```
 
@@ -102,7 +102,7 @@ defmodule Singularity.Search.HybridCodeSearch do
   import Ecto.Query
   require Logger
   alias Singularity.Repo
-  alias Singularity.Search.UnifiedEmbeddingService
+  alias Singularity.Search.EmbeddingService
 
   @type search_mode :: :keyword | :semantic | :hybrid
   @type search_result :: %{
@@ -112,7 +112,7 @@ defmodule Singularity.Search.HybridCodeSearch do
           score: float(),
           match_type: atom()
         }
-  @type opts :: [
+  @type _opts :: [
           mode: search_mode(),
           limit: pos_integer(),
           weights: map(),
@@ -165,14 +165,14 @@ defmodule Singularity.Search.HybridCodeSearch do
         language: "elixir"
       )
   """
-  @spec search(String.t(), opts()) :: {:ok, [search_result()]} | {:error, term()}
-  def search(query, opts \\ []) do
-    mode = Keyword.get(opts, :mode, :hybrid)
+  @spec search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
+  def search(query, _opts \\ []) do
+    mode = Keyword.get(_opts, :mode, :hybrid)
 
     case mode do
-      :keyword -> keyword_search(query, opts)
-      :semantic -> semantic_search(query, opts)
-      :hybrid -> hybrid_search(query, opts)
+      :keyword -> keyword_search(query, _opts)
+      :semantic -> semantic_search(query, _opts)
+      :hybrid -> hybrid_search(query, _opts)
       _ -> {:error, "Unknown search mode: #{mode}"}
     end
   end
@@ -201,11 +201,11 @@ defmodule Singularity.Search.HybridCodeSearch do
         threshold: 0.7
       )
   """
-  @spec fuzzy_search(String.t(), opts()) :: {:ok, [search_result()]} | {:error, term()}
-  def fuzzy_search(query, opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 0.3)
-    limit = Keyword.get(opts, :limit, @default_limit)
-    language = Keyword.get(opts, :language)
+  @spec fuzzy_search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
+  def fuzzy_search(query, _opts \\ []) do
+    threshold = Keyword.get(_opts, :threshold, 0.3)
+    limit = Keyword.get(_opts, :limit, @default_limit)
+    language = Keyword.get(_opts, :language)
 
     base_query =
       from c in "code_files",
@@ -239,9 +239,9 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Keyword Search (PostgreSQL FTS)
 
-  defp keyword_search(query, opts) do
-    limit = Keyword.get(opts, :limit, @default_limit)
-    language = Keyword.get(opts, :language)
+  defp keyword_search(query, _opts) do
+    limit = Keyword.get(_opts, :limit, @default_limit)
+    language = Keyword.get(_opts, :language)
 
     base_query =
       from c in "code_files",
@@ -289,13 +289,13 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Semantic Search (pgvector)
 
-  defp semantic_search(query, opts) do
-    limit = Keyword.get(opts, :limit, @default_limit)
-    threshold = Keyword.get(opts, :threshold, @default_threshold)
-    language = Keyword.get(opts, :language)
+  defp semantic_search(query, _opts) do
+    limit = Keyword.get(_opts, :limit, @default_limit)
+    threshold = Keyword.get(_opts, :threshold, @default_threshold)
+    language = Keyword.get(_opts, :language)
 
     # Generate embedding for query
-    with {:ok, embedding} <- UnifiedEmbeddingService.embed(query) do
+    with {:ok, embedding} <- EmbeddingService.embed(query) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =
@@ -335,16 +335,16 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Hybrid Search (FTS + pgvector)
 
-  defp hybrid_search(query, opts) do
-    limit = Keyword.get(opts, :limit, @default_limit)
-    weights = Keyword.get(opts, :weights, @default_weights)
-    language = Keyword.get(opts, :language)
+  defp hybrid_search(query, _opts) do
+    limit = Keyword.get(_opts, :limit, @default_limit)
+    weights = Keyword.get(_opts, :weights, @default_weights)
+    language = Keyword.get(_opts, :language)
 
     keyword_weight = Map.get(weights, :keyword, 0.4)
     semantic_weight = Map.get(weights, :semantic, 0.6)
 
     # Generate embedding for query
-    with {:ok, embedding} <- UnifiedEmbeddingService.embed(query) do
+    with {:ok, embedding} <- EmbeddingService.embed(query) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =
@@ -406,12 +406,12 @@ defmodule Singularity.Search.HybridCodeSearch do
     else
       {:error, reason} ->
         Logger.error("Hybrid search failed: #{inspect(reason)}, falling back to keyword")
-        keyword_search(query, opts)
+        keyword_search(query, _opts)
     end
   rescue
     error ->
       Logger.error("Hybrid search error: #{inspect(error)}, falling back to keyword")
-      keyword_search(query, opts)
+      keyword_search(query, _opts)
   end
 
   ## Private - Helpers

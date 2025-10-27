@@ -12,7 +12,7 @@ defmodule Singularity.LLM.Supervisor do
   ## Important Notes
 
   `Singularity.LLM.Service` is NOT supervised here because it's a stateless module
-  that delegates to pgmq. All state is managed by:
+  that delegates to Singularity.Jobs.PgmqClient. All state is managed by:
   - RateLimiter (for rate limiting)
   - NatsClient (for communication)
   - AI Server (TypeScript service via pgmq)
@@ -20,15 +20,15 @@ defmodule Singularity.LLM.Supervisor do
   ## Dependencies
 
   Depends on:
-  - pgmq.Supervisor - For pgmq communication
+  - Singularity.Jobs.PgmqClient.Supervisor - For pgmq communication
   - Repo - For storing rate limit state (if persisted)
   """
 
   use Supervisor
   require Logger
 
-  def start_link(opts \\ []) do
-    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    Supervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true

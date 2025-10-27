@@ -97,14 +97,14 @@ defmodule Singularity.Schemas.ApprovalQueue do
   end
 
   @doc "Create a new pending approval request"
-  def new_request(file_path, diff, opts \\ []) do
+  def new_request(file_path, diff, _opts \\ []) do
     %__MODULE__{}
     |> changeset(%{
       file_path: file_path,
       diff: diff,
-      description: Keyword.get(opts, :description),
-      agent_id: Keyword.get(opts, :agent_id),
-      requested_by: Keyword.get(opts, :requested_by),
+      description: Keyword.get(_opts, :description),
+      agent_id: Keyword.get(_opts, :agent_id),
+      requested_by: Keyword.get(_opts, :requested_by),
       status: "pending"
     })
   end

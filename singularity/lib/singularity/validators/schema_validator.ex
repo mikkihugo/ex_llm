@@ -35,12 +35,12 @@ defmodule Singularity.Validators.SchemaValidator do
   end
 
   @impl Singularity.Validation.Validator
-  def validate(data, opts \\ []) when is_map(data) or is_list(data) do
+  def validate(data, _opts \\ []) when is_map(data) or is_list(data) do
     Logger.debug("Schema validator: Starting validation")
 
     violations = []
-    violations = check_required_fields(data, violations, opts)
-    violations = check_field_types(data, violations, opts)
+    violations = check_required_fields(data, violations, _opts)
+    violations = check_field_types(data, violations, _opts)
 
     if Enum.empty?(violations) do
       Logger.debug("Schema validator: No violations found")
@@ -51,8 +51,8 @@ defmodule Singularity.Validators.SchemaValidator do
     end
   end
 
-  defp check_required_fields(data, violations, opts) when is_map(data) do
-    required = Keyword.get(opts, :required_fields, [])
+  defp check_required_fields(data, violations, _opts) when is_map(data) do
+    required = Keyword.get(_opts, :required_fields, [])
 
     missing =
       required
@@ -67,8 +67,8 @@ defmodule Singularity.Validators.SchemaValidator do
 
   defp check_required_fields(_data, violations, _opts), do: violations
 
-  defp check_field_types(data, violations, opts) when is_map(data) do
-    type_specs = Keyword.get(opts, :field_types, %{})
+  defp check_field_types(data, violations, _opts) when is_map(data) do
+    type_specs = Keyword.get(_opts, :field_types, %{})
 
     violations
     |> Enum.into([])

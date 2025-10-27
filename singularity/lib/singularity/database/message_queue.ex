@@ -58,7 +58,7 @@ defmodule Singularity.Database.MessageQueue do
   Idempotent - safe to call multiple times.
   """
   def create_queue(queue_name) when is_binary(queue_name) do
-    case Repo.query("SELECT pgmq.create($1)", [queue_name]) do
+    case Repo.query("SELECT Singularity.Jobs.PgmqClient.create($1)", [queue_name]) do
       {:ok, _} ->
         Logger.info("Queue created: #{queue_name}")
         {:ok, queue_name}
@@ -78,7 +78,7 @@ defmodule Singularity.Database.MessageQueue do
   def send(queue_name, message) when is_binary(queue_name) do
     json_msg = Jason.encode!(message)
 
-    case Repo.query("SELECT pgmq.send($1, $2)", [queue_name, json_msg]) do
+    case Repo.query("SELECT Singularity.Jobs.PgmqClient.send($1, $2)", [queue_name, json_msg]) do
       {:ok, %{rows: [[msg_id]]}} ->
         {:ok, msg_id}
 
@@ -96,7 +96,7 @@ defmodule Singularity.Database.MessageQueue do
   """
   def receive_message(queue_name) when is_binary(queue_name) do
     case Repo.query(
-           "SELECT msg_id, body FROM pgmq.read($1, vt := 30, limit := 1)",
+           "SELECT msg_id, body FROM Singularity.Jobs.PgmqClient.read($1, vt := 30, limit := 1)",
            [queue_name]
          ) do
       {:ok, %{rows: [[msg_id, body_json]]}} ->
@@ -120,7 +120,7 @@ defmodule Singularity.Database.MessageQueue do
   Call after successfully processing a message.
   """
   def acknowledge(queue_name, message_id) when is_binary(queue_name) and is_integer(message_id) do
-    case Repo.query("SELECT pgmq.delete($1, $2)", [queue_name, message_id]) do
+    case Repo.query("SELECT Singularity.Jobs.PgmqClient.delete($1, $2)", [queue_name, message_id]) do
       {:ok, %{rows: [[1]]}} ->
         {:ok, :deleted}
 
@@ -139,7 +139,7 @@ defmodule Singularity.Database.MessageQueue do
   Useful for cleanup, testing, or emergency resets.
   """
   def purge(queue_name) when is_binary(queue_name) do
-    case Repo.query("SELECT pgmq.purge_queue($1)", [queue_name]) do
+    case Repo.query("SELECT Singularity.Jobs.PgmqClient.purge_queue($1)", [queue_name]) do
       {:ok, %{rows: [[count]]}} ->
         {:ok, count}
 
@@ -156,7 +156,7 @@ defmodule Singularity.Database.MessageQueue do
   """
   def stats(queue_name) when is_binary(queue_name) do
     case Repo.query(
-           "SELECT queue_name, messages, messages_in_flight FROM pgmq.queue_stats() WHERE queue_name = $1",
+           "SELECT queue_name, messages, messages_in_flight FROM Singularity.Jobs.PgmqClient.queue_stats() WHERE queue_name = $1",
            [queue_name]
          ) do
       {:ok, %{rows: [[_name, total, in_flight]]}} ->
@@ -209,7 +209,7 @@ defmodule Singularity.Database.MessageQueue do
   Use with caution!
   """
   def drop_queue(queue_name) when is_binary(queue_name) do
-    case Repo.query("SELECT pgmq.drop_queue($1)", [queue_name]) do
+    case Repo.query("SELECT Singularity.Jobs.PgmqClient.drop_queue($1)", [queue_name]) do
       {:ok, _} ->
         Logger.warning("Queue dropped: #{queue_name}")
         {:ok, :dropped}

@@ -122,7 +122,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
       purpose: CLI command execution
       frequency: medium
 
-    - module: Singularity.pgmq.ExecutionRouter
+    - module: Singularity.Jobs.PgmqClient.ExecutionRouter
       purpose: pgmq-based execution requests
       frequency: high
 
@@ -142,10 +142,10 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
   **Use instead:**
   ```elixir
   # ❌ WRONG
-  ExecutionStrategyOrchestrator.execute(goal, opts)
+  ExecutionStrategyOrchestrator.execute(goal, _opts)
 
   # ✅ CORRECT
-  ExecutionOrchestrator.execute(goal, opts)
+  ExecutionOrchestrator.execute(goal, _opts)
   ```
 
   #### ❌ DO NOT create new executor modules (TaskGraphExecutor, SparcExecutor)
@@ -207,8 +207,8 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
       ExecutionOrchestrator.execute(goal, strategy: :sparc)
       # => {:ok, results}
   """
-  def execute(goal, opts \\ []) when is_map(goal) or is_binary(goal) do
-    timeout = Keyword.get(opts, :timeout, 60000)
+  def execute(goal, _opts \\ []) when is_map(goal) or is_binary(goal) do
+    timeout = Keyword.get(_opts, :timeout, 60000)
 
     Logger.info("ExecutionOrchestrator: Routing goal to execution strategy",
       goal: inspect(goal),
@@ -216,7 +216,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
     )
 
     # Delegate to ExecutionStrategyOrchestrator for config-driven routing
-    ExecutionStrategyOrchestrator.execute(goal, Keyword.put(opts, :timeout, timeout))
+    ExecutionStrategyOrchestrator.execute(goal, Keyword.put(_opts, :timeout, timeout))
   end
 
   @doc """

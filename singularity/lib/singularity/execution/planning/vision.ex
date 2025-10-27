@@ -28,8 +28,8 @@ defmodule Singularity.Execution.Planning.Vision do
   @doc """
   Set the system vision.
   """
-  def set_vision(vision_text, opts \\ []) do
-    approved_by = Keyword.get(opts, :approved_by, "system")
+  def set_vision(vision_text, _opts \\ []) do
+    approved_by = Keyword.get(_opts, :approved_by, "system")
 
     case GenServer.call(__MODULE__, {:set_vision, vision_text, approved_by}) do
       :ok ->
@@ -56,8 +56,8 @@ defmodule Singularity.Execution.Planning.Vision do
   @doc """
   Start the vision manager.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, %{}, opts)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, _opts)
   end
 
   @impl true

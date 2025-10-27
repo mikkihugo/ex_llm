@@ -34,10 +34,10 @@ defmodule Singularity.Storage.FailurePatternStore do
   incremented and enriched with additional metadata.
   """
   @spec insert(map(), Keyword.t()) :: {:ok, FailurePattern.t()} | {:error, Ecto.Changeset.t()}
-  def insert(attrs, opts \\ []) when is_map(attrs) or is_list(attrs) do
+  def insert(attrs, _opts \\ []) when is_map(attrs) or is_list(attrs) do
     attrs
     |> normalize_attrs()
-    |> upsert(opts)
+    |> upsert(_opts)
   end
 
   @doc """
@@ -45,7 +45,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   """
   @spec record_failure(map(), Keyword.t()) ::
           {:ok, FailurePattern.t()} | {:error, Ecto.Changeset.t()}
-  def record_failure(attrs, opts \\ []), do: insert(attrs, opts)
+  def record_failure(attrs, _opts \\ []), do: insert(attrs, _opts)
 
   @doc """
   Returns stored failure patterns that match the provided filters.
@@ -65,8 +65,8 @@ defmodule Singularity.Storage.FailurePatternStore do
   Returns aggregated failure modes ordered by total frequency.
   """
   @spec find_patterns(Keyword.t()) :: [map()]
-  def find_patterns(opts \\ []) do
-    filters = Map.new(opts)
+  def find_patterns(_opts \\ []) do
+    filters = Map.new(_opts)
     limit = Map.get(filters, :limit, 20)
 
     FailurePattern
@@ -91,10 +91,10 @@ defmodule Singularity.Storage.FailurePatternStore do
   sorted by descending similarity.
   """
   @spec find_similar(map(), Keyword.t()) :: [map()]
-  def find_similar(criteria, opts \\ []) do
+  def find_similar(criteria, _opts \\ []) do
     signature = extract_signature(criteria)
-    threshold = Keyword.get(opts, :threshold, 0.80)
-    limit = Keyword.get(opts, :limit, 10)
+    threshold = Keyword.get(_opts, :threshold, 0.80)
+    limit = Keyword.get(_opts, :limit, 10)
 
     if is_binary(signature) and signature != "" do
       filters =
@@ -151,8 +151,8 @@ defmodule Singularity.Storage.FailurePatternStore do
     end
   end
 
-  defp upsert(attrs, opts) do
-    replace_existing? = Keyword.get(opts, :replace_existing, false)
+  defp upsert(attrs, _opts) do
+    replace_existing? = Keyword.get(_opts, :replace_existing, false)
 
     case find_existing(attrs) do
       nil ->

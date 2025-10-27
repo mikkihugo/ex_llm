@@ -80,9 +80,9 @@ defmodule Singularity.Search.PostgresVectorSearch do
       iex> PostgresVectorSearch.find_similar_code("database query", threshold: 0.9, limit: 5)
       {:ok, [...]}
   """
-  def find_similar_code(query, opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 0.8)
-    limit = Keyword.get(opts, :limit, 10)
+  def find_similar_code(query, _opts \\ []) do
+    threshold = Keyword.get(_opts, :threshold, 0.8)
+    limit = Keyword.get(_opts, :limit, 10)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -123,9 +123,9 @@ defmodule Singularity.Search.PostgresVectorSearch do
         %{todo_id: "...", title: "Setup JWT tokens", similarity: 0.88}
       ]}
   """
-  def find_similar_todos(query, opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 0.8)
-    limit = Keyword.get(opts, :limit, 10)
+  def find_similar_todos(query, _opts \\ []) do
+    threshold = Keyword.get(_opts, :threshold, 0.8)
+    limit = Keyword.get(_opts, :limit, 10)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -170,10 +170,10 @@ defmodule Singularity.Search.PostgresVectorSearch do
       iex> PostgresVectorSearch.find_similar_knowledge("testing", artifact_type: "quality_template")
       {:ok, [...]}
   """
-  def find_similar_knowledge(query, opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 0.8)
-    limit = Keyword.get(opts, :limit, 10)
-    artifact_type = Keyword.get(opts, :artifact_type)
+  def find_similar_knowledge(query, _opts \\ []) do
+    threshold = Keyword.get(_opts, :threshold, 0.8)
+    limit = Keyword.get(_opts, :limit, 10)
+    artifact_type = Keyword.get(_opts, :artifact_type)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -215,11 +215,11 @@ defmodule Singularity.Search.PostgresVectorSearch do
         %{code_id: "...", content: "...", combined_score: 0.87, vector_score: 0.85, text_score: 0.89}
       ]}
   """
-  def hybrid_search(query, opts \\ []) do
-    vector_weight = Keyword.get(opts, :vector_weight, 0.7)
-    text_weight = Keyword.get(opts, :text_weight, 0.3)
-    threshold = Keyword.get(opts, :threshold, 0.6)
-    limit = Keyword.get(opts, :limit, 20)
+  def hybrid_search(query, _opts \\ []) do
+    vector_weight = Keyword.get(_opts, :vector_weight, 0.7)
+    text_weight = Keyword.get(_opts, :text_weight, 0.3)
+    threshold = Keyword.get(_opts, :threshold, 0.6)
+    limit = Keyword.get(_opts, :limit, 20)
 
     with {:ok, embedding} <- generate_embedding(query) do
       query_sql = """
@@ -263,9 +263,9 @@ defmodule Singularity.Search.PostgresVectorSearch do
         %{cluster_id: 2, code_id: "...", content: "...", distance_to_centroid: 0.31}
       ]}
   """
-  def cluster_code_vectors(opts \\ []) do
-    cluster_count = Keyword.get(opts, :cluster_count, 10)
-    min_cluster_size = Keyword.get(opts, :min_cluster_size, 5)
+  def cluster_code_vectors(_opts \\ []) do
+    cluster_count = Keyword.get(_opts, :cluster_count, 10)
+    min_cluster_size = Keyword.get(_opts, :min_cluster_size, 5)
 
     query_sql = """
     SELECT * FROM cluster_code_vectors($1, $2)

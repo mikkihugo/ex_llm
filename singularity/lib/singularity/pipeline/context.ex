@@ -26,7 +26,7 @@ defmodule Singularity.Pipeline.Context do
   ## Single API
 
   ```
-  {:ok, context} = Singularity.Pipeline.Context.gather(story, opts)
+  {:ok, context} = Singularity.Pipeline.Context.gather(story, _opts)
   ```
 
   Returns a unified context map with:
@@ -72,7 +72,7 @@ defmodule Singularity.Pipeline.Context do
 
   ## Parameters
   - `story` - Story description or goal
-  - `opts` - Options for context gathering:
+  - `_opts` - Options for context gathering:
     - `:codebase_path` - Path to codebase (default: current)
     - `:include_patterns` - Include pattern detection (default: true)
     - `:include_duplicates` - Include duplicate analysis (default: true)
@@ -98,9 +98,9 @@ defmodule Singularity.Pipeline.Context do
   ```
   """
   @spec gather(story, gather_opts) :: {:ok, context} | {:error, term()}
-  def gather(story, opts \\ []) do
-    codebase_path = Keyword.get(opts, :codebase_path, ".")
-    timeout_ms = Keyword.get(opts, :timeout, 30000)
+  def gather(story, _opts \\ []) do
+    codebase_path = Keyword.get(_opts, :codebase_path, ".")
+    timeout_ms = Keyword.get(_opts, :timeout, 30000)
 
     Logger.info("Pipeline.Context: Gathering context",
       story_length: story_length(story),
@@ -117,9 +117,9 @@ defmodule Singularity.Pipeline.Context do
         }
         |> gather_frameworks(codebase_path)
         |> gather_technologies(codebase_path)
-        |> gather_patterns(codebase_path, opts)
-        |> gather_duplicates(story, codebase_path, opts)
-        |> gather_quality_issues(codebase_path, opts)
+        |> gather_patterns(codebase_path, _opts)
+        |> gather_duplicates(story, codebase_path, _opts)
+        |> gather_quality_issues(codebase_path, _opts)
         |> gather_dependencies(codebase_path)
         |> estimate_complexity(story)
 
@@ -177,8 +177,8 @@ defmodule Singularity.Pipeline.Context do
     _ -> Map.put(context, :technologies, [])
   end
 
-  defp gather_patterns(context, codebase_path, opts) do
-    include_patterns = Keyword.get(opts, :include_patterns, true)
+  defp gather_patterns(context, codebase_path, _opts) do
+    include_patterns = Keyword.get(_opts, :include_patterns, true)
 
     if include_patterns do
       case PatternDetector.detect(codebase_path) do
@@ -195,8 +195,8 @@ defmodule Singularity.Pipeline.Context do
     _ -> Map.put(context, :patterns, [])
   end
 
-  defp gather_duplicates(context, story, codebase_path, opts) do
-    include_duplicates = Keyword.get(opts, :include_duplicates, true)
+  defp gather_duplicates(context, story, codebase_path, _opts) do
+    include_duplicates = Keyword.get(_opts, :include_duplicates, true)
 
     if include_duplicates do
       case DeduplicationEngine.find_similar(story_to_string(story), codebase_path) do
@@ -213,8 +213,8 @@ defmodule Singularity.Pipeline.Context do
     _ -> Map.put(context, :duplicates, [])
   end
 
-  defp gather_quality_issues(context, codebase_path, opts) do
-    include_quality = Keyword.get(opts, :include_quality, true)
+  defp gather_quality_issues(context, codebase_path, _opts) do
+    include_quality = Keyword.get(_opts, :include_quality, true)
 
     if include_quality do
       case QualityAnalyzer.analyze(codebase_path) do

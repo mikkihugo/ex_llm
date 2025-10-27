@@ -115,7 +115,7 @@ defmodule Singularity.Search.SearchType do
 
   Returns list of search results: `[%{path: string, similarity: float, ...}]`
   """
-  @callback search(query :: String.t(), opts :: Keyword.t()) :: {:ok, [map()]} | {:error, term()}
+  @callback search(query :: String.t(), _opts :: Keyword.t()) :: {:ok, [map()]} | {:error, term()}
 
   @doc """
   Learn from search results to improve future searches.

@@ -255,7 +255,7 @@ defmodule Singularity.Database.AutonomousWorker do
   def queue_status do
     case Repo.query("""
          SELECT queue_name, messages, messages_in_flight
-         FROM pgmq.queue_stats()
+         FROM Singularity.Jobs.PgmqClient.queue_stats()
          WHERE queue_name LIKE 'centralcloud-%' OR queue_name LIKE 'agent-%'
          ORDER BY queue_name;
          """) do
@@ -285,7 +285,7 @@ defmodule Singularity.Database.AutonomousWorker do
   """
   def learning_queue_backed_up?(threshold \\ 100) do
     case Repo.query("""
-         SELECT messages FROM pgmq.queue_stats()
+         SELECT messages FROM Singularity.Jobs.PgmqClient.queue_stats()
          WHERE queue_name = 'centralcloud-new-patterns';
          """) do
       {:ok, %{rows: [[count]]}} ->

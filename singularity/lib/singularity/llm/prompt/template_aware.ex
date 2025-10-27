@@ -25,18 +25,18 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   The TaskGraph tells us which template performed best for similar tasks!
   Now enhanced with Rust prompt engine for context-aware generation.
   """
-  def generate_prompt(task, opts \\ []) do
-    language = Keyword.get(opts, :language, "elixir")
-    use_prompt_engine = Keyword.get(opts, :use_prompt_engine, true)
+  def generate_prompt(task, _opts \\ []) do
+    language = Keyword.get(_opts, :language, "elixir")
+    use_prompt_engine = Keyword.get(_opts, :use_prompt_engine, true)
 
     if use_prompt_engine do
-      generate_prompt_with_engine(task, language, opts)
+      generate_prompt_with_engine(task, language, _opts)
     else
-      generate_prompt_legacy(task, language, opts)
+      generate_prompt_legacy(task, language, _opts)
     end
   end
 
-  defp generate_prompt_with_engine(task, language, opts) do
+  defp generate_prompt_with_engine(task, language, _opts) do
     # 1. Use centralized template service for template selection
     case detect_context_type(task) do
       {:framework, framework, category} ->
@@ -66,7 +66,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
           {:error, reason} ->
             Logger.warning("Template service failed, falling back to legacy", reason: reason)
-            generate_prompt_legacy(task, language, opts)
+            generate_prompt_legacy(task, language, _opts)
         end
 
       {:language, lang, category} ->
@@ -96,7 +96,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
           {:error, reason} ->
             Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
-            generate_prompt_legacy(task, language, opts)
+            generate_prompt_legacy(task, language, _opts)
         end
 
       {:pattern, pattern, category} ->
@@ -124,16 +124,16 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
           {:error, reason} ->
             Logger.warning("Prompt engine failed, falling back to legacy", reason: reason)
-            generate_prompt_legacy(task, language, opts)
+            generate_prompt_legacy(task, language, _opts)
         end
 
       :unknown ->
         # Fall back to legacy template system
-        generate_prompt_legacy(task, language, opts)
+        generate_prompt_legacy(task, language, _opts)
     end
   end
 
-  defp generate_prompt_legacy(task, language, opts) do
+  defp generate_prompt_legacy(task, language, _opts) do
     # 1. Ask TaskGraph for best template based on history
     {:ok, template_id} =
       Singularity.Quality.TemplateTracker.get_best_template(task.type, language)
@@ -145,7 +145,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     {:ok, examples} = get_template_specific_examples(template, task, language)
 
     # 4. Build prompt with template structure
-    prompt = build_template_aware_prompt(template, task, examples, opts)
+    prompt = build_template_aware_prompt(template, task, examples, _opts)
 
     # 5. Return prompt with metadata for tracking
     %{
@@ -165,11 +165,11 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   @doc """
   Generate and execute with performance tracking
   """
-  def generate_with_tracking(task, opts \\ []) do
+  def generate_with_tracking(task, _opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
     # Get template-aware prompt
-    prompt_data = generate_prompt(task, opts)
+    prompt_data = generate_prompt(task, _opts)
 
     # Check memory cache first (faster than semantic cache)
     cache_key = :erlang.phash2({task.type, task.description, prompt_data.template_id})
@@ -181,7 +181,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
       :miss ->
         # Optimize prompt using prompt engine if available
-        optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, opts)
+        optimized_prompt = optimize_prompt_if_available(prompt_data.prompt, task, _opts)
 
         # Execute LLM call via pgmq (determine complexity from task)
         complexity = determine_complexity(task, prompt_data.template)
@@ -234,7 +234,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     end
   end
 
-  defp build_template_aware_prompt(template, task, examples, opts) do
+  defp build_template_aware_prompt(template, task, examples, _opts) do
     """
     ## Task
     #{task.description}
@@ -251,8 +251,8 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     #{format_examples(examples)}
 
     ## Requirements
-    - Language: #{opts[:language] || "auto-detect"}
-    - Quality Level: #{opts[:quality] || "production"}
+    - Language: #{_opts[:language] || "auto-detect"}
+    - Quality Level: #{_opts[:quality] || "production"}
     - Follow the template structure exactly
     - Use patterns from the examples
     - Generate production-ready code
@@ -517,13 +517,13 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     end
   end
 
-  defp optimize_prompt_if_available(prompt, task, opts) do
-    use_optimization = Keyword.get(opts, :optimize_prompt, true)
+  defp optimize_prompt_if_available(prompt, task, _opts) do
+    use_optimization = Keyword.get(_opts, :optimize_prompt, true)
 
     if use_optimization do
       case PromptEngine.optimize_prompt(prompt,
              context: task.description,
-             language: Keyword.get(opts, :language, "elixir")
+             language: Keyword.get(_opts, :language, "elixir")
            ) do
         {:ok, %{optimized_prompt: optimized}} ->
           Logger.info("Prompt optimized using prompt engine",

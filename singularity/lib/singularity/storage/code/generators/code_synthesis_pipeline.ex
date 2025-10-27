@@ -113,15 +113,15 @@ defmodule Singularity.CodeSynthesisPipeline do
       generate("Add handler", path: "rust/api_server/src/handler.rs")
       # → Detects: Rust, Axum, suggests async fn
   """
-  def generate(task, opts \\ []) do
+  def generate(task, _opts \\ []) do
     start = System.monotonic_time(:millisecond)
-    path = Keyword.get(opts, :path)
-    fast_mode = Keyword.get(opts, :fast_mode, true)
-    use_cache = Keyword.get(opts, :use_cache, true)
-    parallel = Keyword.get(opts, :parallel, true)
+    path = Keyword.get(_opts, :path)
+    fast_mode = Keyword.get(_opts, :fast_mode, true)
+    use_cache = Keyword.get(_opts, :use_cache, true)
+    parallel = Keyword.get(_opts, :parallel, true)
 
     # Auto-detect context from path
-    context = detect_context(path, opts)
+    context = detect_context(path, _opts)
 
     Logger.debug(
       "Fast generate: #{task} in #{context.repo}/#{context.language} (fast_mode: #{fast_mode})"
@@ -156,11 +156,11 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   ## Private Functions - Context Detection
 
-  defp detect_context(nil, opts) do
+  defp detect_context(nil, _opts) do
     # No path provided, use opts
     %{
-      repo: Keyword.get(opts, :repo, "unknown"),
-      language: Keyword.get(opts, :language, "elixir"),
+      repo: Keyword.get(_opts, :repo, "unknown"),
+      language: Keyword.get(_opts, :language, "elixir"),
       tech_stack: [],
       directory: ".",
       project_type: :unknown
@@ -230,7 +230,7 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   defp query_tech_stack_from_facts(repo) do
     # Query SPARC facts via pgmq
-    # pgmq.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
+    # Singularity.Jobs.PgmqClient.request("knowledge.facts.query", %{repo: repo, type: :tech_stack})
     # For now, return empty (integrate when pgmq is ready)
     {:error, :not_implemented}
   end
@@ -866,13 +866,13 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   Much faster than sequential generation.
   """
-  def batch_generate(tasks, opts \\ []) do
-    _language = Keyword.get(opts, :language, "elixir")
+  def batch_generate(tasks, _opts \\ []) do
+    _language = Keyword.get(_opts, :language, "elixir")
 
     # Generate all in parallel
     tasks
     |> Task.async_stream(
-      fn task -> generate(task, opts) end,
+      fn task -> generate(task, _opts) end,
       # Batch size
       max_concurrency: 4,
       timeout: 5000

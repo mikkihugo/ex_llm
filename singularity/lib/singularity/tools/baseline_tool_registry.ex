@@ -1,4 +1,4 @@
-defmodule Singularity.Tools.Default do
+defmodule Singularity.Tools.BaselineToolRegistry do
   @moduledoc """
   Registers baseline unsafe tooling (shell + file read) using the shared Tool registry.
   """

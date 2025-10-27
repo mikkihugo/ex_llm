@@ -89,9 +89,9 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
   - `:module_filter` - Filter by module name pattern (optional)
   - `:severity_threshold` - Min violation severity (optional)
   """
-  def get_quality_analysis(codebase_path \\ ".", opts \\ []) do
+  def get_quality_analysis(codebase_path \\ ".", _opts \\ []) do
     try do
-      days = Keyword.get(opts, :days, 30)
+      days = Keyword.get(_opts, :days, 30)
 
       # Get trend over period
       trend = safe_trend_analysis(codebase_path, days: days)
@@ -196,8 +196,8 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
     end
   end
 
-  defp safe_trend_analysis(codebase_path, opts) do
-    case CodebaseHealthTracker.analyze_health_trend(codebase_path, opts) do
+  defp safe_trend_analysis(codebase_path, _opts) do
+    case CodebaseHealthTracker.analyze_health_trend(codebase_path, _opts) do
       {:ok, trend} -> trend
       {:error, reason} ->
         Logger.warning("CodebaseHealthTracker.analyze_health_trend failed: #{inspect(reason)}")

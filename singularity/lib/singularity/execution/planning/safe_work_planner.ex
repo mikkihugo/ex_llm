@@ -22,7 +22,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
 
   ## Public API
 
-  - `add_chunk(text, opts)` - Add vision chunk with auto-classification
+  - `add_chunk(text, _opts)` - Add vision chunk with auto-classification
   - `get_next_work/0` - Get highest WSJF priority work item
   - `get_hierarchy/0` - Get full SAFe hierarchy tree
   - `get_progress/0` - Get completion statistics
@@ -143,7 +143,7 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       purpose: CLI commands for vision management
       frequency: medium
 
-    - module: Singularity.pgmq.PlanningRouter
+    - module: Singularity.Jobs.PgmqClient.PlanningRouter
       purpose: pgmq-based vision chunk submission
       frequency: low
 
@@ -306,8 +306,8 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
       # Update existing epic
       add_chunk("Add OpenTelemetry support to distributed tracing", updates: "epic-dt-123")
   """
-  def add_chunk(text, opts \\ []) do
-    GenServer.call(__MODULE__, {:add_chunk, text, opts}, :infinity)
+  def add_chunk(text, _opts \\ []) do
+    GenServer.call(__MODULE__, {:add_chunk, text, _opts}, :infinity)
   end
 
   @doc "Get next work item based on WSJF prioritization"
@@ -349,10 +349,10 @@ defmodule Singularity.Execution.Planning.SafeWorkPlanner do
   end
 
   @impl true
-  def handle_call({:add_chunk, text, opts}, _from, state) do
-    approved_by = Keyword.get(opts, :approved_by, "system")
-    updates_id = Keyword.get(opts, :updates)
-    relates_to = Keyword.get(opts, :relates_to)
+  def handle_call({:add_chunk, text, _opts}, _from, state) do
+    approved_by = Keyword.get(_opts, :approved_by, "system")
+    updates_id = Keyword.get(_opts, :updates)
+    relates_to = Keyword.get(_opts, :relates_to)
 
     # Analyze chunk using LLM
     analysis = analyze_chunk(state, text, relates_to, updates_id)

@@ -19,17 +19,17 @@ defmodule Singularity.SharedQueuePublisher do
   ## Queue Architecture
 
   ```
-  pgmq.llm_requests         ← Publish LLM requests to external router
-  pgmq.llm_results          ← Read LLM responses from external router
+  Singularity.Jobs.PgmqClient.llm_requests         ← Publish LLM requests to external router
+  Singularity.Jobs.PgmqClient.llm_results          ← Read LLM responses from external router
 
-  pgmq.approval_requests    ← Publish code approval requests
-  pgmq.approval_responses   ← Read human approval decisions
+  Singularity.Jobs.PgmqClient.approval_requests    ← Publish code approval requests
+  Singularity.Jobs.PgmqClient.approval_responses   ← Read human approval decisions
 
-  pgmq.question_requests    ← Publish questions to humans
-  pgmq.question_responses   ← Read human responses
+  Singularity.Jobs.PgmqClient.question_requests    ← Publish questions to humans
+  Singularity.Jobs.PgmqClient.question_responses   ← Read human responses
 
-  pgmq.job_requests         ← Publish code execution requests to Genesis
-  pgmq.job_results          ← Read code execution results from Genesis
+  Singularity.Jobs.PgmqClient.job_requests         ← Publish code execution requests to Genesis
+  Singularity.Jobs.PgmqClient.job_results          ← Read code execution results from Genesis
   ```
 
   ## Configuration
@@ -83,10 +83,10 @@ defmodule Singularity.SharedQueuePublisher do
   ## Message Flow
 
   1. Agent publishes LLM request to shared_queue
-  2. External LLM router consumes from `pgmq.llm_requests`
+  2. External LLM router consumes from `Singularity.Jobs.PgmqClient.llm_requests`
   3. External LLM router calls LLM provider (Claude, Gemini, etc.)
-  4. External LLM router publishes result to `pgmq.llm_results`
-  5. Singularity consumer reads from `pgmq.llm_results`
+  4. External LLM router publishes result to `Singularity.Jobs.PgmqClient.llm_results`
+  5. Singularity consumer reads from `Singularity.Jobs.PgmqClient.llm_results`
   6. Agent processes result and continues execution
 
   All communication is async and durable (persisted in PostgreSQL).
@@ -267,8 +267,8 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_llm_results(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+  def read_llm_results(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
 
     case read_from_queue(@queue_llm_results, limit) do
       {:ok, results} when is_list(results) ->
@@ -294,8 +294,8 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_approval_responses(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+  def read_approval_responses(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
 
     case read_from_queue(@queue_approval_responses, limit) do
       {:ok, responses} when is_list(responses) ->
@@ -321,8 +321,8 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_question_responses(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+  def read_question_responses(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
 
     case read_from_queue(@queue_question_responses, limit) do
       {:ok, responses} when is_list(responses) ->
@@ -348,8 +348,8 @@ defmodule Singularity.SharedQueuePublisher do
 
   - `:limit` - Number of messages to read (default: 10)
   """
-  def read_job_results(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+  def read_job_results(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
 
     case read_from_queue(@queue_job_results, limit) do
       {:ok, results} when is_list(results) ->
@@ -417,10 +417,10 @@ defmodule Singularity.SharedQueuePublisher do
         db_url = database_url()
         {:ok, pid} = Postgrex.start_link(parse_connection_string(db_url))
 
-        # Call pgmq.send(queue_name, json_msg)
+        # Call Singularity.Jobs.PgmqClient.send(queue_name, json_msg)
         case Postgrex.query(
                pid,
-               "SELECT pgmq.send($1, $2::jsonb)",
+               "SELECT Singularity.Jobs.PgmqClient.send($1, $2::jsonb)",
                [queue_name, json_msg]
              ) do
           {:ok, result} ->
@@ -465,10 +465,10 @@ defmodule Singularity.SharedQueuePublisher do
         db_url = database_url()
         {:ok, pid} = Postgrex.start_link(parse_connection_string(db_url))
 
-        # Call pgmq.read(queue_name, limit)
+        # Call Singularity.Jobs.PgmqClient.read(queue_name, limit)
         case Postgrex.query(
                pid,
-               "SELECT msg_id, read_ct, enqueued_at, vt, msg FROM pgmq.read($1, $2)",
+               "SELECT msg_id, read_ct, enqueued_at, vt, msg FROM Singularity.Jobs.PgmqClient.read($1, $2)",
                [queue_name, limit]
              ) do
           {:ok, result} when result.num_rows > 0 ->

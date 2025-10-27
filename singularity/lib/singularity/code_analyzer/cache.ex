@@ -90,8 +90,8 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
   - `:max_size` - Maximum number of cached entries (default: #{@default_max_size})
   - `:ttl` - Time-to-live in seconds (default: #{@default_ttl})
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
@@ -204,9 +204,9 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
   # ================
 
   @impl true
-  def init(opts) do
-    max_size = Keyword.get(opts, :max_size, @default_max_size)
-    ttl = Keyword.get(opts, :ttl, @default_ttl)
+  def init(_opts) do
+    max_size = Keyword.get(_opts, :max_size, @default_max_size)
+    ttl = Keyword.get(_opts, :ttl, @default_ttl)
 
     # Create ETS table
     :ets.new(@table_name, [:named_table, :set, :public, read_concurrency: true])

@@ -27,8 +27,8 @@ defmodule Singularity.AgentSupervisor do
 
   alias Singularity.Agents.Agent
 
-  def start_link(opts) do
-    DynamicSupervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts) do
+    DynamicSupervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true

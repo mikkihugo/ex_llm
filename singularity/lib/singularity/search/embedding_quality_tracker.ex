@@ -120,8 +120,8 @@ defmodule Singularity.EmbeddingQualityTracker do
 
   # GenServer API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
@@ -177,7 +177,7 @@ defmodule Singularity.EmbeddingQualityTracker do
 
   ## Parameters
 
-  - `opts` - Options for extraction
+  - `_opts` - Options for extraction
     - `:limit` - Maximum pairs to extract (default: all)
     - `:min_confidence` - Minimum confidence threshold (default: 0.7)
 
@@ -192,8 +192,8 @@ defmodule Singularity.EmbeddingQualityTracker do
       {:ok, [%{anchor: "use GenServer", positive: "defmodule Cache", ...}]}
   """
   @spec extract_training_pairs(keyword()) :: {:ok, [training_pair()]} | {:error, term()}
-  def extract_training_pairs(opts \\ []) do
-    GenServer.call(__MODULE__, {:extract_pairs, opts}, 30_000)
+  def extract_training_pairs(_opts \\ []) do
+    GenServer.call(__MODULE__, {:extract_pairs, _opts}, 30_000)
   end
 
   @doc """
@@ -265,8 +265,8 @@ defmodule Singularity.EmbeddingQualityTracker do
   end
 
   @impl true
-  def handle_call({:extract_pairs, opts}, _from, state) do
-    result = do_extract_training_pairs(opts)
+  def handle_call({:extract_pairs, _opts}, _from, state) do
+    result = do_extract_training_pairs(_opts)
     {:reply, result, state}
   end
 
@@ -390,9 +390,9 @@ defmodule Singularity.EmbeddingQualityTracker do
     end
   end
 
-  defp do_extract_training_pairs(opts) do
-    limit = Keyword.get(opts, :limit, :all)
-    min_confidence = Keyword.get(opts, :min_confidence, 0.7)
+  defp do_extract_training_pairs(_opts) do
+    limit = Keyword.get(_opts, :limit, :all)
+    min_confidence = Keyword.get(_opts, :min_confidence, 0.7)
 
     query = """
     SELECT

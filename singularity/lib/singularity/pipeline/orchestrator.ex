@@ -8,7 +8,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ```
   Phase 1: Context Gathering
-  └─> Pipeline.Context.gather(story, opts)
+  └─> Pipeline.Context.gather(story, _opts)
       ├─> Framework Detection
       ├─> Technology Detection
       ├─> Pattern Detection
@@ -37,7 +37,7 @@ defmodule Singularity.Pipeline.Orchestrator do
       └─> Returns: refined plan
 
   Phase 5: Post-Execution Learning
-  └─> Pipeline.Learning.process(execution_result, opts)
+  └─> Pipeline.Learning.process(execution_result, _opts)
       ├─> Store failure patterns
       ├─> Track validation effectiveness
       ├─> Aggregate metrics
@@ -51,7 +51,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ```elixir
   {:ok, plan, validation, execution_result} =
-    Singularity.Pipeline.Orchestrator.execute_full_cycle(story, opts)
+    Singularity.Pipeline.Orchestrator.execute_full_cycle(story, _opts)
   ```
 
   ## Step-by-Step Interface
@@ -111,7 +111,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   alias Singularity.Evolution.AdaptiveConfidenceGating
 
   @type story :: String.t() | map()
-  @type opts :: keyword()
+  @type _opts :: keyword()
   @type phase_result :: {:ok, term()} | {:error, term()}
 
   @doc """
@@ -121,7 +121,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `story` - Story/goal description
-  - `opts` - Options passed to all phases:
+  - `_opts` - Options passed to all phases:
     - `:codebase_path` - Path to codebase
     - `:timeout` - Overall timeout
     - `:learning_enabled` - Enable Phase 5 (default: true)
@@ -130,15 +130,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   - `{:ok, plan, validation, execution_result}` - All phase outputs
   - `{:error, reason}` - Error in any phase
   """
-  @spec execute_full_cycle(story, opts) ::
+  @spec execute_full_cycle(story, _opts) ::
           {:ok, map(), map(), map()} | {:error, term()}
-  def execute_full_cycle(story, opts \\ []) do
+  def execute_full_cycle(story, _opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Starting full cycle execution")
 
-    with {:ok, context} <- phase_1_gather_context(story, opts),
-         {:ok, plan} <- phase_2_generate_plan(story, context, opts),
-         {:ok, validation} <- phase_3_validate_plan(plan, context, opts),
-         {:ok, refined_plan} <- phase_4_refine_plan(plan, validation, context, opts) do
+    with {:ok, context} <- phase_1_gather_context(story, _opts),
+         {:ok, plan} <- phase_2_generate_plan(story, context, _opts),
+         {:ok, validation} <- phase_3_validate_plan(plan, context, _opts),
+         {:ok, refined_plan} <- phase_4_refine_plan(plan, validation, context, _opts) do
       # Execute and learn (simplified for this example)
       Logger.info("Pipeline.Orchestrator: Plan ready for execution",
         steps: length(refined_plan[:steps] || [])
@@ -159,10 +159,10 @@ defmodule Singularity.Pipeline.Orchestrator do
   end
 
   # Phase 1: Context Gathering
-  defp phase_1_gather_context(story, opts) do
+  defp phase_1_gather_context(story, _opts) do
     Logger.info("Pipeline.Orchestrator: Phase 1 - Gathering context")
 
-    case Context.gather(story, opts) do
+    case Context.gather(story, _opts) do
       {:ok, context} ->
         Logger.info("Pipeline.Orchestrator: Phase 1 complete",
           frameworks: length(context[:frameworks] || []),
@@ -244,16 +244,16 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `execution_result` - Result from plan execution
-  - `opts` - Learning options
+  - `_opts` - Learning options
 
   ## Returns
   - `:ok` - Learning processed successfully
   """
-  @spec process_execution_for_learning(map(), opts) :: :ok | {:error, term()}
-  def process_execution_for_learning(execution_result, opts \\ []) do
+  @spec process_execution_for_learning(map(), _opts) :: :ok | {:error, term()}
+  def process_execution_for_learning(execution_result, _opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Phase 5 - Processing execution for learning")
 
-    case Learning.process(execution_result, opts) do
+    case Learning.process(execution_result, _opts) do
       :ok ->
         Logger.info("Pipeline.Orchestrator: Phase 5 complete - Learnings stored")
         :ok
@@ -416,15 +416,15 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `criteria` - Analysis criteria (task_type, complexity, time_range)
-  - `opts` - Options (min_confidence, limit)
+  - `_opts` - Options (min_confidence, limit)
 
   ## Returns
   - `{:ok, rules}` - List of proposed rules with confidence scores
   """
   @spec analyze_and_propose_rules(map(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def analyze_and_propose_rules(criteria \\ %{}, opts \\ []) do
+  def analyze_and_propose_rules(criteria \\ %{}, _opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Analyzing patterns for rule evolution")
-    RuleEvolutionSystem.analyze_and_propose_rules(criteria, opts)
+    RuleEvolutionSystem.analyze_and_propose_rules(criteria, _opts)
   end
 
   @doc """
@@ -436,9 +436,9 @@ defmodule Singularity.Pipeline.Orchestrator do
   - List of candidate rules sorted by confidence
   """
   @spec get_candidate_rules(keyword()) :: [map()]
-  def get_candidate_rules(opts \\ []) do
+  def get_candidate_rules(_opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Getting candidate rules")
-    RuleEvolutionSystem.get_candidate_rules(opts)
+    RuleEvolutionSystem.get_candidate_rules(_opts)
   end
 
   @doc """
@@ -447,15 +447,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Makes high-confidence rules available to other Singularity instances.
 
   ## Parameters
-  - `opts` - Publishing options (min_confidence, limit)
+  - `_opts` - Publishing options (min_confidence, limit)
 
   ## Returns
   - `{:ok, publication_results}` - List of published rules with Genesis IDs
   """
   @spec publish_evolved_rules(keyword()) :: {:ok, [map()]} | {:error, term()}
-  def publish_evolved_rules(opts \\ []) do
+  def publish_evolved_rules(_opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Publishing evolved rules to Genesis")
-    GenesisPublisher.publish_rules(opts)
+    GenesisPublisher.publish_rules(_opts)
   end
 
   @doc """
@@ -464,15 +464,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Subscribes to high-confidence rules published by other instances.
 
   ## Parameters
-  - `opts` - Import options (min_confidence, limit)
+  - `_opts` - Import options (min_confidence, limit)
 
   ## Returns
   - `{:ok, imported_rules}` - Rules from other instances
   """
   @spec import_rules_from_genesis(keyword()) :: {:ok, [map()]} | {:error, term()}
-  def import_rules_from_genesis(opts \\ []) do
+  def import_rules_from_genesis(_opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Importing rules from Genesis")
-    GenesisPublisher.import_rules_from_genesis(opts)
+    GenesisPublisher.import_rules_from_genesis(_opts)
   end
 
   @doc """
@@ -525,15 +525,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Returns log of all rules published to Genesis with effectiveness feedback.
 
   ## Parameters
-  - `opts` - Options (limit, status filter)
+  - `_opts` - Options (limit, status filter)
 
   ## Returns
   - List of publication records
   """
   @spec get_publication_history(keyword()) :: [map()]
-  def get_publication_history(opts \\ []) do
+  def get_publication_history(_opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Retrieving rule publication history")
-    GenesisPublisher.get_publication_history(opts)
+    GenesisPublisher.get_publication_history(_opts)
   end
 
   @doc """
@@ -542,15 +542,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Tracks correlation between rule application and execution success.
 
   ## Parameters
-  - `opts` - Options (time_range)
+  - `_opts` - Options (time_range)
 
   ## Returns
   - Map with effectiveness metrics
   """
   @spec get_rule_impact_metrics(keyword()) :: map()
-  def get_rule_impact_metrics(opts \\ []) do
+  def get_rule_impact_metrics(_opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Analyzing rule impact on execution quality")
-    RuleEvolutionSystem.get_rule_impact_metrics(opts)
+    RuleEvolutionSystem.get_rule_impact_metrics(_opts)
   end
 
   @doc """
@@ -590,19 +590,19 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `rule_id` - ID of published rule
-  - `opts` - Options (success: boolean, effectiveness: 0.0-1.0)
+  - `_opts` - Options (success: boolean, effectiveness: 0.0-1.0)
 
   ## Returns
   - `:ok` - Feedback recorded
   """
   @spec record_published_rule_feedback(String.t(), keyword()) :: :ok | {:error, term()}
-  def record_published_rule_feedback(rule_id, opts \\ []) do
+  def record_published_rule_feedback(rule_id, _opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Recording published rule feedback",
       rule_id: rule_id,
-      opts: opts
+      _opts: opts
     )
 
-    RuleEvolutionSystem.record_rule_feedback(rule_id, opts)
+    RuleEvolutionSystem.record_rule_feedback(rule_id, _opts)
   end
 
   # Private Helpers

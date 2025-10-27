@@ -212,9 +212,9 @@ defmodule Singularity.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Singularity.Supervisor]
+    _opts = [strategy: :one_for_one, name: Singularity.Supervisor]
 
-    case Supervisor.start_link(children, opts) do
+    case Supervisor.start_link(children, _opts) do
       {:ok, pid} ->
         # Run documentation bootstrap AFTER supervision tree starts
         # (not supervised - runs once and exits)

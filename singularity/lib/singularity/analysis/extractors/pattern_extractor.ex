@@ -21,9 +21,9 @@ defmodule Singularity.Analysis.Extractors.PatternExtractor do
   end
 
   @impl true
-  def extract(input, opts \\ []) when is_binary(input) do
+  def extract(input, _opts \\ []) when is_binary(input) do
     try do
-      case CodePatternExtractor.extract(input, opts) do
+      case CodePatternExtractor.extract(input, _opts) do
         {:ok, patterns} -> {:ok, %{patterns: patterns}}
         {:error, reason} -> {:error, reason}
       end

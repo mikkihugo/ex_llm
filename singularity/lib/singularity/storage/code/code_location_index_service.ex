@@ -24,8 +24,8 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
       iex> CodeLocationIndexService.index_codebase(".")
       {:ok, %{indexed: 1523, skipped: 42, errors: 0}}
   """
-  def index_codebase(path, opts \\ []) do
-    concurrency = Keyword.get(opts, :concurrency, 10)
+  def index_codebase(path, _opts \\ []) do
+    concurrency = Keyword.get(_opts, :concurrency, 10)
 
     files =
       Path.wildcard("#{path}/**/*.{ex,exs,gleam,rs,ts,js}")
@@ -434,7 +434,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
   end
 
   defp extract_pgmq_subjects(code) do
-    # Extract pgmq subject patterns: pgmq.sub(conn, self(), "subject")
+    # Extract pgmq subject patterns: Singularity.Jobs.PgmqClient.sub(conn, self(), "subject")
     Regex.scan(~r/pgmq\.sub\([^,]+,[^,]+,\s*"([^"]+)"/, code)
     |> Enum.map(fn [_, subject] -> subject end)
   end

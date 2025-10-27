@@ -167,7 +167,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   Enum.each(tasks, &LLM.Service.call/1)
 
   # ✅ CORRECT - Let TaskGraphExecutor handle LLM integration
-  TaskGraphExecutor.execute(executor, dag, opts)
+  TaskGraphExecutor.execute(executor, dag, _opts)
   ```
 
   #### ❌ DO NOT inline parallel execution logic
@@ -231,9 +231,9 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   @doc """
   Start TaskGraph executor.
   """
-  def start_link(opts) do
-    run_id = Keyword.fetch!(opts, :run_id)
-    GenServer.start_link(__MODULE__, opts, name: via_tuple(run_id))
+  def start_link(_opts) do
+    run_id = Keyword.fetch!(_opts, :run_id)
+    GenServer.start_link(__MODULE__, _opts, name: via_tuple(run_id))
   end
 
   @doc """
@@ -241,8 +241,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   Returns when all tasks are completed or failed.
   """
-  def execute(executor, dag, opts \\ []) do
-    GenServer.call(executor, {:execute, dag, opts}, :infinity)
+  def execute(executor, dag, _opts \\ []) do
+    GenServer.call(executor, {:execute, dag, _opts}, :infinity)
   end
 
   @doc """
@@ -262,8 +262,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
-    run_id = Keyword.fetch!(opts, :run_id)
+  def init(_opts) do
+    run_id = Keyword.fetch!(_opts, :run_id)
 
     state = %{
       run_id: run_id,
@@ -278,7 +278,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   end
 
   @impl true
-  def handle_call({:execute, dag, opts}, _from, state) do
+  def handle_call({:execute, dag, _opts}, _from, state) do
     Logger.info("Starting DAG execution",
       run_id: state.run_id,
       total_tasks: TaskGraphCore.count_tasks(dag)
@@ -287,7 +287,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     state = %{state | dag: dag}
 
     # Execute tasks until completion
-    case execute_dag_loop(state, opts) do
+    case execute_dag_loop(state, _opts) do
       {:ok, final_state} ->
         result = %{
           completed: TaskGraphCore.count_completed(final_state.dag),
@@ -321,7 +321,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   ## Private Functions
 
-  defp execute_dag_loop(state, opts) do
+  defp execute_dag_loop(state, _opts) do
     # Select next task
     case TaskGraphCore.select_next_task(state.dag) do
       nil ->
@@ -330,7 +330,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
       task ->
         # Execute task
-        case execute_task(task, state, opts) do
+        case execute_task(task, state, _opts) do
           {:ok, result} ->
             # Update DAG with success
             dag = TaskGraphCore.mark_completed(state.dag, task.id)
@@ -339,7 +339,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
             new_state = %{state | dag: dag, results: results}
 
             # Continue execution
-            execute_dag_loop(new_state, opts)
+            execute_dag_loop(new_state, _opts)
 
           {:error, reason} ->
             # Update DAG with failure
@@ -348,16 +348,16 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
             new_state = %{state | dag: dag}
 
             # Continue execution if fail_fast is false
-            if Keyword.get(opts, :fail_fast, true) do
+            if Keyword.get(_opts, :fail_fast, true) do
               {:error, {:task_failed, task.id, reason}}
             else
-              execute_dag_loop(new_state, opts)
+              execute_dag_loop(new_state, _opts)
             end
         end
     end
   end
 
-  defp execute_task(task, state, opts) do
+  defp execute_task(task, state, _opts) do
     Logger.info("Executing task via Lua strategy",
       run_id: state.run_id,
       task_id: task.id,
@@ -369,9 +369,9 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       {:ok, strategy} ->
         # Check if task should be decomposed
         if should_decompose?(task) do
-          decompose_and_recurse(task, strategy, state, opts)
+          decompose_and_recurse(task, strategy, state, _opts)
         else
-          execute_atomic_task(task, strategy, state, opts)
+          execute_atomic_task(task, strategy, state, _opts)
         end
 
       {:error, :no_strategy_found} ->
@@ -381,7 +381,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
         )
 
         # Fallback to legacy execution
-        execute_with_default_strategy(task, state, opts)
+        execute_with_default_strategy(task, state, _opts)
     end
   end
 
@@ -395,7 +395,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       task.task_type != :implementation
   end
 
-  defp decompose_and_recurse(task, strategy, state, opts) do
+  defp decompose_and_recurse(task, strategy, state, _opts) do
     Logger.info("Decomposing task via Lua",
       task_id: task.id,
       strategy: strategy.name
@@ -405,7 +405,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     case LuaStrategyExecutor.decompose_task(strategy, task, state) do
       {:ok, []} ->
         # No decomposition needed, execute atomically
-        execute_atomic_task(task, strategy, state, opts)
+        execute_atomic_task(task, strategy, state, _opts)
 
       {:ok, subtasks} ->
         Logger.info("Decomposed into #{length(subtasks)} subtasks",
@@ -436,7 +436,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     end
   end
 
-  defp execute_atomic_task(task, strategy, state, opts) do
+  defp execute_atomic_task(task, strategy, state, _opts) do
     Logger.info("Executing atomic task via Lua agent spawning",
       task_id: task.id,
       strategy: strategy.name
@@ -539,13 +539,13 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     phase_results
   end
 
-  defp execute_with_default_strategy(task, state, opts) do
+  defp execute_with_default_strategy(task, state, _opts) do
     Logger.info("Using default execution strategy (legacy)",
       task_id: task.id
     )
 
     # Legacy fallback: use hardcoded model selection and prompt building
-    op_params = build_legacy_operation_params(task, opts)
+    op_params = build_legacy_operation_params(task, _opts)
 
     # Build execution context
     ctx = %{
@@ -602,7 +602,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   # LEGACY EXECUTION (Fallback when no Lua strategy found)
   # ============================================================================
 
-  defp build_legacy_operation_params(task, opts) do
+  defp build_legacy_operation_params(task, _opts) do
     # Determine model based on task complexity (LEGACY)
     model_id =
       case task.estimated_complexity do
@@ -628,10 +628,10 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     %{
       model_id: model_id,
       prompt_template: prompt_template,
-      temperature: Keyword.get(opts, :temperature, 0.7),
-      max_tokens: Keyword.get(opts, :max_tokens, 4000),
-      stream: Keyword.get(opts, :stream, false),
-      timeout_ms: Keyword.get(opts, :timeout_ms, 30_000)
+      temperature: Keyword.get(_opts, :temperature, 0.7),
+      max_tokens: Keyword.get(_opts, :max_tokens, 4000),
+      stream: Keyword.get(_opts, :stream, false),
+      timeout_ms: Keyword.get(_opts, :timeout_ms, 30_000)
     }
   end
 

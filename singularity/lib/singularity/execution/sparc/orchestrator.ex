@@ -19,7 +19,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   ## Public API
 
-  - `execute(goal, opts)` - Execute goal with template selection and TaskGraph
+  - `execute(goal, _opts)` - Execute goal with template selection and TaskGraph
   - `get_stats/0` - Get execution statistics and performance history
 
   ## Key Features
@@ -179,15 +179,15 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
   Execute a task with optimal template selection and TaskGraph decomposition
   """
-  def execute(goal, opts \\ []) do
-    GenServer.call(__MODULE__, {:execute, goal, opts}, :infinity)
+  def execute(goal, _opts \\ []) do
+    GenServer.call(__MODULE__, {:execute, goal, _opts}, :infinity)
   end
 
   @doc """
@@ -216,12 +216,12 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   end
 
   @impl true
-  def handle_call({:execute, goal, opts}, _from, state) do
+  def handle_call({:execute, goal, _opts}, _from, state) do
     Logger.info("Starting orchestrated execution for: #{inspect(goal)}")
 
     # 1. Get best template from Template Performance DAG
     task_type = extract_task_type(goal)
-    language = Keyword.get(opts, :language, "elixir")
+    language = Keyword.get(_opts, :language, "elixir")
 
     {:ok, template_id} =
       Singularity.Quality.TemplateTracker.get_best_template(task_type, language)
@@ -234,7 +234,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     # 3. Execute tasks with selected template
     execution_start = DateTime.utc_now()
 
-    result = execute_with_template(sparc_dag, template_id, opts)
+    result = execute_with_template(sparc_dag, template_id, _opts)
 
     execution_time = DateTime.diff(DateTime.utc_now(), execution_start, :millisecond)
 
@@ -292,13 +292,13 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   # Private Functions
 
-  defp execute_with_template(sparc_dag, template_id, opts) do
+  defp execute_with_template(sparc_dag, template_id, _opts) do
     # Get tasks from TaskGraph
     tasks = get_all_tasks(sparc_dag)
 
     # Execute each task with the selected template
     Enum.reduce_while(tasks, {:ok, []}, fn task, {:ok, results} ->
-      case execute_task_with_template(task, template_id, opts) do
+      case execute_task_with_template(task, template_id, _opts) do
         {:ok, result} ->
           # Mark task completed in TaskGraph
           TaskGraph.mark_completed(sparc_dag, task.id)
@@ -316,12 +316,12 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
     end
   end
 
-  defp execute_task_with_template(task, template_id, opts) do
+  defp execute_task_with_template(task, template_id, _opts) do
     # Use SPARC Coordinator with specific template
     MethodologyExecutor.execute_phase_only(
       task.phase || :completion,
       task.description,
-      Keyword.put(opts, :template, template_id)
+      Keyword.put(_opts, :template, template_id)
     )
   end
 

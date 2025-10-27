@@ -177,7 +177,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `tool` - The Tool to execute
   - `arguments` - Tool arguments as map
   - `context` - Execution context (includes agent info, etc.)
-  - `opts` - Validation options (optional)
+  - `_opts` - Validation options (optional)
 
   ## Returns
 
@@ -185,8 +185,8 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `{:error, type, details}` - Validation error with details
   - `{:error, reason}` - Tool execution error
   """
-  def execute(%Tool{} = tool, arguments, context, opts \\ []) do
-    validation_opts = merge_options(tool.options || %{}, opts)
+  def execute(%Tool{} = tool, arguments, context, _opts \\ []) do
+    validation_opts = merge_options(tool.options || %{}, _opts)
 
     Logger.debug("ValidationMiddleware.execute(#{tool.name})", validation_opts)
 
@@ -214,14 +214,14 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `:ok` - Parameters are valid
   - `{:error, :validation_failed, details}` - Parameters invalid
   """
-  def validate_parameters(%Tool{name: tool_name}, arguments, opts \\ [])
+  def validate_parameters(%Tool{name: tool_name}, arguments, _opts \\ [])
       when is_map(arguments) do
     Logger.debug("ValidationMiddleware.validate_parameters(#{tool_name})", arguments)
 
     case InstructorAdapter.validate_parameters(
            tool_name,
            arguments,
-           Keyword.take(opts, [:max_retries, :model])
+           Keyword.take(_opts, [:max_retries, :model])
          ) do
       {:ok, _validated} ->
         :ok
@@ -242,21 +242,21 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `{:ok, validated_output}` - Output is valid
   - `{:error, :schema_mismatch, details}` - Output invalid
   """
-  def validate_output(tool_result, schema, opts \\ []) when is_atom(schema) do
+  def validate_output(tool_result, schema, _opts \\ []) when is_atom(schema) do
     Logger.debug("ValidationMiddleware.validate_output", schema: schema)
 
     case schema do
       :generated_code ->
-        validate_generated_code(tool_result, opts)
+        validate_generated_code(tool_result, _opts)
 
       :code_quality ->
-        validate_code_quality(tool_result, opts)
+        validate_code_quality(tool_result, _opts)
 
       :tool_parameters ->
-        validate_tool_parameters(tool_result, opts)
+        validate_tool_parameters(tool_result, _opts)
 
       :refinement_feedback ->
-        validate_refinement_feedback(tool_result, opts)
+        validate_refinement_feedback(tool_result, _opts)
 
       _ ->
         Logger.warning("Unknown validation schema: #{inspect(schema)}")
@@ -275,21 +275,21 @@ defmodule Singularity.Tools.ValidationMiddleware do
 
   defp validate_output_if_enabled(_tool, result, %{validate_output: false}), do: {:ok, result}
 
-  defp validate_output_if_enabled(tool, result, opts) do
-    schema = Map.get(opts, :output_schema, :generated_code)
-    validate_output(result, schema, opts)
+  defp validate_output_if_enabled(tool, result, _opts) do
+    schema = Map.get(_opts, :output_schema, :generated_code)
+    validate_output(result, schema, _opts)
   end
 
-  defp handle_validation_error(tool, arguments, context, error_type, details, opts) do
-    if Map.get(opts, :allow_refinement, false) and error_type == :schema_mismatch do
-      attempt_refinement(tool, arguments, context, details, opts)
+  defp handle_validation_error(tool, arguments, context, error_type, details, _opts) do
+    if Map.get(_opts, :allow_refinement, false) and error_type == :schema_mismatch do
+      attempt_refinement(tool, arguments, context, details, _opts)
     else
       {:error, error_type, details}
     end
   end
 
-  defp attempt_refinement(_tool, _arguments, _context, details, opts) do
-    max_iterations = Map.get(opts, :max_refinement_iterations, 2)
+  defp attempt_refinement(_tool, _arguments, _context, details, _opts) do
+    max_iterations = Map.get(_opts, :max_refinement_iterations, 2)
 
     case do_refinement(details, 1, max_iterations) do
       {:ok, refined} ->

@@ -185,20 +185,20 @@ defmodule Singularity.Cache do
   Put value into cache with optional TTL.
   """
   @spec put(cache_type(), cache_key(), cache_value(), keyword()) :: :ok
-  def put(cache_type, key, value, opts \\ [])
+  def put(cache_type, key, value, _opts \\ [])
 
-  def put(:llm, key, value, opts) do
+  def put(:llm, key, value, _opts) do
     changeset = %{
       cache_key: key,
-      prompt: opts[:prompt] || "",
-      prompt_embedding: opts[:embedding],
+      prompt: _opts[:prompt] || "",
+      prompt_embedding: _opts[:embedding],
       response: value.response || value,
-      model: opts[:model],
-      provider: opts[:provider],
-      tokens_used: opts[:tokens_used],
-      cost_cents: opts[:cost_cents],
-      ttl_seconds: opts[:ttl] || 3600,
-      metadata: opts[:metadata] || %{}
+      model: _opts[:model],
+      provider: _opts[:provider],
+      tokens_used: _opts[:tokens_used],
+      cost_cents: _opts[:cost_cents],
+      ttl_seconds: _opts[:ttl] || 3600,
+      metadata: _opts[:metadata] || %{}
     }
 
     Repo.insert_all("cache_llm_responses", [changeset],
@@ -209,8 +209,8 @@ defmodule Singularity.Cache do
     :ok
   end
 
-  def put(:memory, key, value, opts) do
-    ttl = Keyword.get(opts, :ttl, 3600)
+  def put(:memory, key, value, _opts) do
+    ttl = Keyword.get(_opts, :ttl, 3600)
     expires_at = DateTime.add(DateTime.utc_now(), ttl, :second)
 
     changeset = %{
@@ -228,19 +228,19 @@ defmodule Singularity.Cache do
     :ok
   end
 
-  def put(:embeddings, key, value, opts) do
+  def put(:embeddings, key, value, _opts) do
     # Use proper Ecto schema instead of raw SQL
     attrs = %{
       code_hash: key,
-      language: opts[:language] || "unknown",
-      embedding: opts[:embedding] || value,
+      language: _opts[:language] || "unknown",
+      embedding: _opts[:embedding] || value,
       metadata: %{
-        "content" => opts[:content] || "",
-        "model_type" => opts[:model_type] || "candle-transformer",
-        "file_path" => opts[:file_path]
+        "content" => _opts[:content] || "",
+        "model_type" => _opts[:model_type] || "candle-transformer",
+        "file_path" => _opts[:file_path]
       },
       # 24 hours default
-      expires_at: opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)
+      expires_at: _opts[:expires_at] || DateTime.add(DateTime.utc_now(), 86400)
     }
 
     %CodeEmbeddingCache{}
@@ -259,12 +259,12 @@ defmodule Singularity.Cache do
     end
   end
 
-  def put(:semantic, key, value, opts) do
+  def put(:semantic, key, value, _opts) do
     changeset = %{
       query_hash: key,
-      target_hash: opts[:target_hash] || "",
+      target_hash: _opts[:target_hash] || "",
       similarity_score: value,
-      query_type: opts[:query_type] || "code_search"
+      query_type: _opts[:query_type] || "code_search"
     }
 
     Repo.insert_all("cache_semantic_similarity", [changeset],
@@ -279,12 +279,12 @@ defmodule Singularity.Cache do
   Find similar items using semantic similarity.
   """
   @spec find_similar(cache_type(), String.t(), keyword()) :: {:ok, list()} | :miss
-  def find_similar(cache_type, query, opts \\ [])
+  def find_similar(cache_type, query, _opts \\ [])
 
-  def find_similar(:llm, query, opts) do
-    threshold = Keyword.get(opts, :threshold, 0.92)
-    provider = Keyword.get(opts, :provider)
-    model = Keyword.get(opts, :model)
+  def find_similar(:llm, query, _opts) do
+    threshold = Keyword.get(_opts, :threshold, 0.92)
+    provider = Keyword.get(_opts, :provider)
+    model = Keyword.get(_opts, :model)
 
     Singularity.LLM.Prompt.Cache.find_similar(query,
       threshold: threshold,
@@ -293,10 +293,10 @@ defmodule Singularity.Cache do
     )
   end
 
-  def find_similar(:semantic, query, opts) do
+  def find_similar(:semantic, query, _opts) do
     # Implement semantic similarity search using embedding service
-    threshold = Keyword.get(opts, :threshold, 0.8)
-    limit = Keyword.get(opts, :limit, 10)
+    threshold = Keyword.get(_opts, :threshold, 0.8)
+    limit = Keyword.get(_opts, :limit, 10)
 
     case Singularity.EmbeddingService.generate_embedding(query) do
       {:ok, query_embedding} ->

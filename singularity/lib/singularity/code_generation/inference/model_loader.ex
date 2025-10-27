@@ -118,11 +118,11 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
 
   defp download_file(url, file_path) do
     case HTTPoison.get(url) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+      {:ok, %{status_code: 200, body: body}} ->
         File.write!(file_path, body)
         {:ok, :downloaded}
       
-      {:ok, %HTTPoison.Response{status_code: status}} ->
+      {:ok, %{status_code: status}} ->
         {:error, "HTTP #{status}"}
       
       {:error, reason} ->

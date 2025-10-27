@@ -54,10 +54,10 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
   - `policy` - Required for URL whitelisting validation
   """
   @spec exec(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def exec(args, opts \\ []) do
+  def exec(args, _opts \\ []) do
     with :ok <- validate_args(args),
-         {:ok, request} <- build_request(args, opts) do
-      execute_request(request, opts)
+         {:ok, request} <- build_request(args, _opts) do
+      execute_request(request, _opts)
     end
   end
 
@@ -74,12 +74,12 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
 
   ## Request Building
 
-  defp build_request(args, opts) do
+  defp build_request(args, _opts) do
     method = args.method
     url = args.url
     body = Map.get(args, :body, "")
     headers = Map.get(args, :headers, %{})
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
+    timeout = Keyword.get(_opts, :timeout, @default_timeout)
 
     # Convert headers map to list
     headers_list =
@@ -107,7 +107,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
     )
 
     # Use Req for HTTP requests
-    opts = [
+    _opts = [
       method: request.method,
       url: request.url,
       body: request.body,
@@ -118,7 +118,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
       transport_opts: [verify: :verify_peer]
     ]
 
-    case Req.request(opts) do
+    case Req.request(_opts) do
       {:ok, response} ->
         body = truncate_body(response.body)
 

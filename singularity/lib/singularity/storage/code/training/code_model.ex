@@ -64,12 +64,12 @@ defmodule Singularity.CodeModel do
   - `:stop_sequences` - Stop at these tokens (default: code-only stops)
   """
   @spec complete(String.t(), generation_opts()) :: {:ok, String.t()} | {:error, term()}
-  def complete(prompt, opts \\ []) do
-    temperature = Keyword.get(opts, :temperature, 0.1)
-    max_tokens = Keyword.get(opts, :max_tokens, 256)
+  def complete(prompt, _opts \\ []) do
+    temperature = Keyword.get(_opts, :temperature, 0.1)
+    max_tokens = Keyword.get(_opts, :max_tokens, 256)
 
     stop_sequences =
-      Keyword.get(opts, :stop_sequences, [
+      Keyword.get(_opts, :stop_sequences, [
         "\n\n\n",
         "# Explanation:",
         "# Note:",
@@ -107,12 +107,12 @@ defmodule Singularity.CodeModel do
       )
   """
   @spec fill_in_middle(keyword()) :: {:ok, String.t()} | {:error, term()}
-  def fill_in_middle(opts) do
-    prefix = Keyword.fetch!(opts, :prefix)
-    suffix = Keyword.get(opts, :suffix, "")
+  def fill_in_middle(_opts) do
+    prefix = Keyword.fetch!(_opts, :prefix)
+    suffix = Keyword.get(_opts, :suffix, "")
     # Extra low for FIM
-    temperature = Keyword.get(opts, :temperature, 0.05)
-    max_tokens = Keyword.get(opts, :max_tokens, 256)
+    temperature = Keyword.get(_opts, :temperature, 0.05)
+    max_tokens = Keyword.get(_opts, :max_tokens, 256)
 
     model = get_model_name()
 

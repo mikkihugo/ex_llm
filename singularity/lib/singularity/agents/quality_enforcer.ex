@@ -144,8 +144,8 @@ defmodule Singularity.Agents.QualityEnforcer do
   @doc """
   Start the Quality Enforcer agent.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
@@ -186,8 +186,8 @@ defmodule Singularity.Agents.QualityEnforcer do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
-    quality_gates_enabled = Keyword.get(opts, :quality_gates_enabled, true)
+  def init(_opts) do
+    quality_gates_enabled = Keyword.get(_opts, :quality_gates_enabled, true)
 
     state = %{
       quality_gates_enabled: quality_gates_enabled,

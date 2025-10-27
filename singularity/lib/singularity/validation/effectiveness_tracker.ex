@@ -246,9 +246,9 @@ defmodule Singularity.Validation.EffectivenessTracker do
       ]
   """
   @spec get_improvement_opportunities(keyword()) :: [map()]
-  def get_improvement_opportunities(opts \\ []) do
-    time_range = Keyword.get(opts, :time_range, :last_week)
-    threshold = Keyword.get(opts, :threshold, 0.70)
+  def get_improvement_opportunities(_opts \\ []) do
+    time_range = Keyword.get(_opts, :time_range, :last_week)
+    threshold = Keyword.get(_opts, :threshold, 0.70)
 
     Logger.info("EffectivenessTracker: Finding improvement opportunities",
       time_range: time_range,

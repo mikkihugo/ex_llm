@@ -1,6 +1,6 @@
 defmodule Singularity.Schemas.TemplateCache do
   @moduledoc """
-  Local cache of templates downloaded from central via pgmq.
+  Local cache of templates downloaded from central via Singularity.Jobs.PgmqClient.
 
   Stores templates locally for:
   - Fast access (no pgmq round-trip)

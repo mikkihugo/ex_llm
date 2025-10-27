@@ -45,11 +45,11 @@ defmodule Singularity.CodeSearch do
   @doc """
   Register a new codebase
   """
-  def register_codebase(_db_conn, codebase_id, codebase_path, codebase_name, opts \\ []) do
-    description = Keyword.get(opts, :description, "")
-    language = Keyword.get(opts, :language, "unknown")
-    framework = Keyword.get(opts, :framework, "unknown")
-    metadata = Keyword.get(opts, :metadata, %{})
+  def register_codebase(_db_conn, codebase_id, codebase_path, codebase_name, _opts \\ []) do
+    description = Keyword.get(_opts, :description, "")
+    language = Keyword.get(_opts, :language, "unknown")
+    framework = Keyword.get(_opts, :framework, "unknown")
+    metadata = Keyword.get(_opts, :metadata, %{})
 
     attrs = %{
       codebase_id: codebase_id,
@@ -113,8 +113,8 @@ defmodule Singularity.CodeSearch do
   @doc """
   Update codebase analysis status
   """
-  def update_codebase_status(_db_conn, codebase_id, status, opts \\ []) do
-    last_analyzed = Keyword.get(opts, :last_analyzed, DateTime.utc_now())
+  def update_codebase_status(_db_conn, codebase_id, status, _opts \\ []) do
+    last_analyzed = Keyword.get(_opts, :last_analyzed, DateTime.utc_now())
     Singularity.CodeSearch.Ecto.update_codebase_status(codebase_id, status, last_analyzed)
   end
 

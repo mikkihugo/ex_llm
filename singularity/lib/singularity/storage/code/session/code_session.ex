@@ -80,10 +80,10 @@ defmodule Singularity.CodeSession do
   - RAG examples from project
   - Shared patterns for feature
   """
-  def start(opts) do
-    project = Keyword.fetch!(opts, :project)
-    feature = Keyword.get(opts, :feature, "development")
-    files = Keyword.get(opts, :files, [])
+  def start(_opts) do
+    project = Keyword.fetch!(_opts, :project)
+    feature = Keyword.get(_opts, :feature, "development")
+    files = Keyword.get(_opts, :files, [])
 
     GenServer.start(__MODULE__, {project, feature, files}, [])
   end
@@ -98,8 +98,8 @@ defmodule Singularity.CodeSession do
   @doc """
   Generate single file (uses session cache)
   """
-  def generate_one(session, task, opts \\ []) do
-    GenServer.call(session, {:generate_one, task, opts}, 10_000)
+  def generate_one(session, task, _opts \\ []) do
+    GenServer.call(session, {:generate_one, task, _opts}, 10_000)
   end
 
   @doc """
@@ -176,8 +176,8 @@ defmodule Singularity.CodeSession do
 
     # Generate all files using shared context
     results =
-      Enum.map(tasks, fn {task_desc, opts} ->
-        generate_with_session_cache(task_desc, opts, state)
+      Enum.map(tasks, fn {task_desc, _opts} ->
+        generate_with_session_cache(task_desc, _opts, state)
       end)
 
     elapsed = System.monotonic_time(:millisecond) - start
@@ -198,10 +198,10 @@ defmodule Singularity.CodeSession do
   end
 
   @impl true
-  def handle_call({:generate_one, task, opts}, _from, state) do
+  def handle_call({:generate_one, task, _opts}, _from, state) do
     start = System.monotonic_time(:millisecond)
 
-    result = generate_with_session_cache(task, opts, state)
+    result = generate_with_session_cache(task, _opts, state)
 
     elapsed = System.monotonic_time(:millisecond) - start
 
@@ -293,8 +293,8 @@ defmodule Singularity.CodeSession do
     end
   end
 
-  defp generate_with_session_cache(task, opts, state) do
-    path = Keyword.get(opts, :path)
+  defp generate_with_session_cache(task, _opts, state) do
+    path = Keyword.get(_opts, :path)
 
     Logger.debug("Generating: #{task} (#{path})")
 
@@ -831,10 +831,10 @@ defmodule Singularity.CodeSession do
         ]
       )
   """
-  def generate_feature(opts) do
-    project = Keyword.fetch!(opts, :project)
-    feature = Keyword.fetch!(opts, :feature)
-    files = Keyword.fetch!(opts, :files)
+  def generate_feature(_opts) do
+    project = Keyword.fetch!(_opts, :project)
+    feature = Keyword.fetch!(_opts, :feature)
+    files = Keyword.fetch!(_opts, :files)
 
     file_paths = Enum.map(files, fn {_task, path} -> path end)
 

@@ -10,7 +10,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   This module integrates with:
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Work planning (SafeWorkPlanner.add_chunk/2, get_hierarchy/0)
-  - `pgmq` - pgmq messaging (pgmq.sub/3, pub/3 for message handling)
+  - `pgmq` - pgmq messaging (Singularity.Jobs.PgmqClient.sub/3, pub/3 for message handling)
   - `Jason` - JSON processing (Jason.encode!/1, decode/1 for message parsing)
   - PostgreSQL table: `work_plan_api_logs` (stores API request/response history)
 
@@ -40,7 +40,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   ## Usage
 
       # Create a feature via pgmq
-      pgmq.request(conn, "planning.feature.create", Jason.encode!(%{
+      Singularity.Jobs.PgmqClient.request(conn, "planning.feature.create", Jason.encode!(%{
         "name": "User Authentication",
         "description": "OAuth2-based user authentication",
         "capability_id": "cap-auth-123"
@@ -48,7 +48,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       # => {:ok, %{"status" => "ok", "id" => "feat-xyz789"}}
 
       # Get next work item
-      pgmq.request(conn, "planning.next_work.get", "{}")
+      Singularity.Jobs.PgmqClient.request(conn, "planning.next_work.get", "{}")
       # => {:ok, %{"status" => "ok", "next_work" => %{...}}}
 
   ## AI Navigation Metadata
@@ -110,7 +110,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     PriorityResp -->|calc priority| Priority["calculate_task_graph_priority/1<br/>WSJF scoring"]
     Priority -->|return prioritized| FinalResp["Final Response<br/>{status: ok, priority_score}"]
 
-    FinalResp -->|reply_to| NatsOut["pgmq Reply<br/>via pgmq.pub"]
+    FinalResp -->|reply_to| NatsOut["pgmq Reply<br/>via Singularity.Jobs.PgmqClient.pub"]
     ErrorResp -->|reply_to| NatsOut
 
     SyncAgents["Self-Improvement Agents<br/>send updates"]
@@ -160,7 +160,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       frequency: on_startup
 
     - module: External pgmq clients
-      function: pgmq.request on planning.* subjects
+      function: Singularity.Jobs.PgmqClient.request on planning.* subjects
       purpose: Submit work items, query hierarchy, get next work
       frequency: on_demand
 
@@ -269,7 +269,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       trigger: reply_to present in original message
       actions:
         - Encode response to JSON
-        - Publish via pgmq.pub(gnat, reply_to, json)
+        - Publish via Singularity.Jobs.PgmqClient.pub(gnat, reply_to, json)
         - Return {:noreply, state}
 
   depends_on:
@@ -403,12 +403,12 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   **Symptoms**
   - pgmq client waits forever for reply
   - WorkPlanAPI receives message but no response sent
-  - reply_to present but pgmq.pub never called
+  - reply_to present but Singularity.Jobs.PgmqClient.pub never called
 
   **Root Causes**
   1. Exception in route_message/2 (unhandled error)
   2. SafeWorkPlanner.add_chunk crashes or hangs
-  3. pgmq.pub fails to send reply
+  3. Singularity.Jobs.PgmqClient.pub fails to send reply
   4. pgmq connection lost
 
   **Solutions**
@@ -433,7 +433,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   # ✅ CORRECT - Use WorkPlanAPI via pgmq
-  pgmq.request(conn, "planning.feature.create", Jason.encode!(%{
+  Singularity.Jobs.PgmqClient.request(conn, "planning.feature.create", Jason.encode!(%{
     "name" => name,
     "description" => description
   }))
@@ -527,11 +527,11 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   @impl true
   def init(:ok) do
     # Start our own pgmq connection
-    {:ok, gnat} = pgmq.start_link(%{host: "localhost", port: 4222})
+    {:ok, gnat} = Singularity.Jobs.PgmqClient.start_link(%{host: "localhost", port: 4222})
 
     # Subscribe to all planning subjects
     Enum.each(@subjects, fn {_key, subject} ->
-      {:ok, _sid} = pgmq.sub(gnat, self(), subject)
+      {:ok, _sid} = Singularity.Jobs.PgmqClient.sub(gnat, self(), subject)
       Logger.info("WorkPlanAPI subscribed to pgmq subject: #{subject}")
     end)
 
@@ -550,7 +550,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
     # Send reply if reply_to is present
     if reply_to do
-      pgmq.pub(state.gnat, reply_to, Jason.encode!(response))
+      Singularity.Jobs.PgmqClient.pub(state.gnat, reply_to, Jason.encode!(response))
     end
 
     {:noreply, state}
@@ -959,8 +959,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} ->
+      Enum.reduce(_opts, msg, fn {key, value}, acc ->
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)

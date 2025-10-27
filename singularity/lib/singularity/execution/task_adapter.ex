@@ -91,9 +91,9 @@ defmodule Singularity.Execution.TaskAdapter do
   Task should be a map with:
   - `:type` - Task type (atom)
   - `:args` - Task arguments (any)
-  - `:opts` - Task options (keyword list)
+  - `:_opts` - Task options (keyword list)
   """
-  @callback execute(task :: map(), opts :: Keyword.t()) ::
+  @callback execute(task :: map(), _opts :: Keyword.t()) ::
               {:ok, String.t()} | {:error, term()}
 
   # Config loading helpers

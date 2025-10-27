@@ -11,7 +11,7 @@ defmodule Singularity.Analysis.ExtractorType do
   @callback extractor_type() :: atom()
   @callback description() :: String.t()
   @callback capabilities() :: [String.t()]
-  @callback extract(input :: term(), opts :: Keyword.t()) :: {:ok, map()} | {:error, term()}
+  @callback extract(input :: term(), _opts :: Keyword.t()) :: {:ok, map()} | {:error, term()}
   @callback learn_from_extraction(result :: map()) :: :ok | {:error, term()}
 
   require Logger

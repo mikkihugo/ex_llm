@@ -1,11 +1,11 @@
-defmodule Singularity.Search.UnifiedEmbeddingService do
+defmodule Singularity.Search.EmbeddingService do
   @moduledoc """
   Unified Embedding Service - Single interface for all embedding strategies.
 
   ## Module Identity (JSON)
   ```json
   {
-    "module": "Singularity.Search.UnifiedEmbeddingService",
+    "module": "Singularity.Search.EmbeddingService",
     "purpose": "Unified interface for Rust NIF and Bumblebee embeddings",
     "layer": "service",
     "status": "production"
@@ -91,17 +91,17 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ## Usage
 
       # Auto-select best available strategy
-      {:ok, embedding} = UnifiedEmbeddingService.embed("async worker")
+      {:ok, embedding} = EmbeddingService.embed("async worker")
 
       # Explicit strategy
-      {:ok, embedding} = UnifiedEmbeddingService.embed(
+      {:ok, embedding} = EmbeddingService.embed(
         "some code",
         strategy: :rust,
         model: :qodo_embed
       )
 
       # Batch processing (uses Rust NIF if available)
-      {:ok, embeddings} = UnifiedEmbeddingService.embed_batch([
+      {:ok, embeddings} = EmbeddingService.embed_batch([
         "text 1",
         "text 2"
       ])
@@ -131,17 +131,17 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
   ## Examples
 
       # Auto-select (tries Rust → Bumblebee)
-      {:ok, embedding} = UnifiedEmbeddingService.embed("text")
+      {:ok, embedding} = EmbeddingService.embed("text")
 
       # Force Rust NIF with code model
-      {:ok, embedding} = UnifiedEmbeddingService.embed(
+      {:ok, embedding} = EmbeddingService.embed(
         "function definition",
         strategy: :rust,
         model: :qodo_embed
       )
 
       # Force Bumblebee (no fallback)
-      {:ok, embedding} = UnifiedEmbeddingService.embed(
+      {:ok, embedding} = EmbeddingService.embed(
         "text",
         strategy: :bumblebee,
         fallback: false
@@ -175,7 +175,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   ## Examples
 
-      {:ok, embeddings} = UnifiedEmbeddingService.embed_batch([
+      {:ok, embeddings} = EmbeddingService.embed_batch([
         "first text",
         "second text",
         "third text"
@@ -207,7 +207,7 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   ## Examples
 
-      UnifiedEmbeddingService.available_strategies()
+      EmbeddingService.available_strategies()
       # => [:rust, :google] (if Bumblebee not loaded)
   """
   @spec available_strategies() :: [strategy()]
@@ -229,10 +229,10 @@ defmodule Singularity.Search.UnifiedEmbeddingService do
 
   ## Examples
 
-      UnifiedEmbeddingService.recommended_strategy(:code)
+      EmbeddingService.recommended_strategy(:code)
       # => {:rust, :qodo_embed} (if GPU available)
 
-      UnifiedEmbeddingService.recommended_strategy(:text)
+      EmbeddingService.recommended_strategy(:text)
       # => {:rust, :jina_v3} (if GPU available)
   """
   @spec recommended_strategy(atom()) :: {strategy(), atom()}

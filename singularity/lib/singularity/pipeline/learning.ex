@@ -23,7 +23,7 @@ defmodule Singularity.Pipeline.Learning do
   ## Single API
 
   ```
-  :ok = Singularity.Pipeline.Learning.process(execution_result, opts)
+  :ok = Singularity.Pipeline.Learning.process(execution_result, _opts)
   ```
 
   Processes execution results and automatically:
@@ -97,7 +97,7 @@ defmodule Singularity.Pipeline.Learning do
     - `:validation` - validation results
     - `:metrics` - execution metrics (cost, tokens, latency)
 
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:publish_central_cloud` - Publish learnings (default: true)
     - `:store_patterns` - Store failure patterns (default: true)
     - `:track_metrics` - Track effectiveness metrics (default: true)
@@ -113,15 +113,15 @@ defmodule Singularity.Pipeline.Learning do
   - Publishes patterns to CentralCloud (if configured)
   """
   @spec process(execution_result, process_opts) :: :ok | {:error, term()}
-  def process(result, opts \\ []) do
+  def process(result, _opts \\ []) do
     Logger.info("Pipeline.Learning: Processing execution result",
       success: result[:success],
       has_metrics: not is_nil(result[:metrics])
     )
 
-    store_patterns = Keyword.get(opts, :store_patterns, true)
-    track_metrics = Keyword.get(opts, :track_metrics, true)
-    publish_central = Keyword.get(opts, :publish_central_cloud, true)
+    store_patterns = Keyword.get(_opts, :store_patterns, true)
+    track_metrics = Keyword.get(_opts, :track_metrics, true)
+    publish_central = Keyword.get(_opts, :publish_central_cloud, true)
 
     try do
       # Store failure patterns if execution failed
@@ -187,7 +187,7 @@ defmodule Singularity.Pipeline.Learning do
     - `:story_signature` - Story signature to match
     - `:plan` - Plan characteristics
 
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:threshold` - Similarity threshold (default: 0.80)
     - `:limit` - Max results (default: 10)
 
@@ -195,8 +195,8 @@ defmodule Singularity.Pipeline.Learning do
   - List of similar patterns with similarity scores
   """
   @spec find_similar_failures(map(), keyword()) :: [map()]
-  def find_similar_failures(criteria, opts \\ []) do
-    FailurePatternStore.find_similar(criteria, opts)
+  def find_similar_failures(criteria, _opts \\ []) do
+    FailurePatternStore.find_similar(criteria, _opts)
   rescue
     _ -> []
   end

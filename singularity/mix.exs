@@ -122,7 +122,7 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Workflow Orchestration (ExPgflow)
-      {:ex_pgflow, path: "../ex_pgflow"},
+      {:ex_pgflow, path: "../packages/ex_pgflow"},
 
       # MoonShine-style Rule Engine
       # Fast caching for rule results

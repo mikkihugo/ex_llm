@@ -24,10 +24,10 @@ defmodule Singularity.LLM.Prompt.Cache do
 
   Returns cached response if similarity > threshold.
   """
-  def find_similar(prompt, opts \\ []) do
-    threshold = opts[:threshold] || @similarity_threshold
-    provider = opts[:provider]
-    model = opts[:model]
+  def find_similar(prompt, _opts \\ []) do
+    threshold = _opts[:threshold] || @similarity_threshold
+    provider = _opts[:provider]
+    model = _opts[:model]
 
     # Generate embedding for prompt
     embedding = generate_embedding(prompt)

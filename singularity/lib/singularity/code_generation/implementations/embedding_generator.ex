@@ -239,8 +239,8 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
       {:ok, embedding} = EmbeddingGenerator.embed("fn main() {}", model: :qodo_embed)
   """
   @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
-  def embed(text, opts \\ []) do
-    model = opts[:model] || select_best_model()
+  def embed(text, _opts \\ []) do
+    model = _opts[:model] || select_best_model()
 
     case EmbeddingEngine.embed(text, model: model) do
       {:ok, embedding} ->

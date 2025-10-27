@@ -25,7 +25,7 @@ defmodule Singularity.Jobs.PgmqClient do
     try do
       result =
         Repo.query!(
-          "SELECT pgmq.send($1, $2)",
+          "SELECT Singularity.Jobs.PgmqClient.send($1, $2)",
           [queue_name, Jason.encode!(message)]
         )
 
@@ -55,7 +55,7 @@ defmodule Singularity.Jobs.PgmqClient do
     try do
       result =
         Repo.query!(
-          "SELECT msg_id, msg_body FROM pgmq.read($1, limit => $2)",
+          "SELECT msg_id, msg_body FROM Singularity.Jobs.PgmqClient.read($1, limit => $2)",
           [queue_name, limit]
         )
 
@@ -82,7 +82,7 @@ defmodule Singularity.Jobs.PgmqClient do
   def ack_message(queue_name, message_id) do
     try do
       Repo.query!(
-        "SELECT pgmq.delete($1, $2)",
+        "SELECT Singularity.Jobs.PgmqClient.delete($1, $2)",
         [queue_name, message_id]
       )
 
@@ -108,7 +108,7 @@ defmodule Singularity.Jobs.PgmqClient do
   def ensure_queue(queue_name) do
     try do
       Repo.query!(
-        "SELECT pgmq.create($1)",
+        "SELECT Singularity.Jobs.PgmqClient.create($1)",
         [queue_name]
       )
 

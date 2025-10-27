@@ -48,11 +48,11 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Lua do
   - `timeout` - Timeout in milliseconds (default: 5s, max: 30s)
   """
   @spec exec(map(), keyword()) :: {:ok, term()} | {:error, term()}
-  def exec(args, opts \\ [])
+  def exec(args, _opts \\ [])
 
-  def exec(%{src: src} = args, opts) when is_binary(src) do
+  def exec(%{src: src} = args, _opts) when is_binary(src) do
     argv = Map.get(args, :argv, [])
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
+    timeout = Keyword.get(_opts, :timeout, @default_timeout)
 
     timeout =
       if timeout > @max_timeout do

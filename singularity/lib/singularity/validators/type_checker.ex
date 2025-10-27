@@ -35,12 +35,12 @@ defmodule Singularity.Validators.TypeChecker do
   end
 
   @impl Singularity.Validation.Validator
-  def validate(code, opts \\ []) when is_binary(code) do
+  def validate(code, _opts \\ []) when is_binary(code) do
     Logger.debug("Type checker: Starting validation")
 
     violations = []
-    violations = check_has_specs(code, violations, opts)
-    violations = check_type_annotations(code, violations, opts)
+    violations = check_has_specs(code, violations, _opts)
+    violations = check_type_annotations(code, violations, _opts)
 
     if Enum.empty?(violations) do
       Logger.debug("Type checker: No violations found")

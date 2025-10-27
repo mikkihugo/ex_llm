@@ -67,7 +67,7 @@ defmodule Singularity.Tools.CodeGeneration do
   **DO NOT call individual generators directly:**
   - ❌ `CodeGenerator.generate(task)` - Use GenerationOrchestrator via this tool
   - ❌ `QualityCodeGenerator.enforce_quality(code)` - Use code_validate tool
-  - ❌ `RAGCodeGenerator.generate(opts)` - Use code_generate_quick tool or orchestrator
+  - ❌ `RAGCodeGenerator.generate(_opts)` - Use code_generate_quick tool or orchestrator
   - ❌ Bypass tools to call orchestrator - Always use these tools for agent-driven generation
 
   **Use this module when:**

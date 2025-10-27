@@ -87,7 +87,7 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
 
   ## Parameters
   - `codebase_path` - Root directory of codebase
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:auto_commit` - Automatically commit fixes (default: false)
     - `:run_tests` - Run tests before committing (default: true)
     - `:max_fixes` - Maximum number of issues to fix (default: 50)
@@ -115,13 +115,13 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_quality_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_quality_improvement_workflow(codebase_path, opts \\ []) do
+  def execute_quality_improvement_workflow(codebase_path, _opts \\ []) do
     Logger.info("Starting autonomous quality improvement workflow: #{codebase_path}")
 
-    auto_commit = Keyword.get(opts, :auto_commit, false)
-    run_tests = Keyword.get(opts, :run_tests, true)
-    max_fixes = Keyword.get(opts, :max_fixes, 50)
-    dry_run = Keyword.get(opts, :dry_run, false)
+    auto_commit = Keyword.get(_opts, :auto_commit, false)
+    run_tests = Keyword.get(_opts, :run_tests, true)
+    max_fixes = Keyword.get(_opts, :max_fixes, 50)
+    dry_run = Keyword.get(_opts, :dry_run, false)
 
     workflow_state = %{
       codebase_path: codebase_path,
@@ -159,9 +159,9 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_security_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_security_improvement_workflow(codebase_path, opts \\ []) do
-    opts = Keyword.merge(opts, categories: [:security], min_severity: :medium)
-    execute_quality_improvement_workflow(codebase_path, opts)
+  def execute_security_improvement_workflow(codebase_path, _opts \\ []) do
+    _opts = Keyword.merge(_opts, categories: [:security], min_severity: :medium)
+    execute_quality_improvement_workflow(codebase_path, _opts)
   end
 
   @doc """
@@ -171,11 +171,11 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   """
   @spec execute_refactoring_improvement_workflow(String.t(), keyword()) ::
           {:ok, map()} | {:error, String.t()}
-  def execute_refactoring_improvement_workflow(codebase_path, opts \\ []) do
-    opts =
-      Keyword.merge(opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
+  def execute_refactoring_improvement_workflow(codebase_path, _opts \\ []) do
+    _opts =
+      Keyword.merge(_opts, categories: [:long_functions, :duplicate_code, :nested_conditionals])
 
-    execute_quality_improvement_workflow(codebase_path, opts)
+    execute_quality_improvement_workflow(codebase_path, _opts)
   end
 
   # ============================================================================

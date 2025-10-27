@@ -137,8 +137,8 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
   ## Client API
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: via_tuple(opts[:id]))
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, _opts, name: via_tuple(_opts[:id]))
   end
 
   @doc """
@@ -180,11 +180,11 @@ defmodule Singularity.Agents.CostOptimizedAgent do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %__MODULE__{
-      id: opts[:id],
-      specialization: opts[:specialization],
-      workspace: opts[:workspace],
+      id: _opts[:id],
+      specialization: _opts[:specialization],
+      workspace: _opts[:workspace],
       current_branch: nil,
       status: :idle,
       lifetime_cost: 0.0,
@@ -289,13 +289,13 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     # Call LLM with automatic model selection
     messages = [%{role: "user", content: prompt}]
 
-    opts = [
+    _opts = [
       system_prompt: system_prompt_for_specialization(state.specialization),
       max_tokens: 4000,
       temperature: 0.7
     ]
 
-    case Singularity.LLM.Service.call(:complex, messages, opts) do
+    case Singularity.LLM.Service.call(:complex, messages, _opts) do
       {:ok, response} ->
         # Write code to workspace
         code_result = write_llm_code_to_workspace(response.content, task, state.workspace)

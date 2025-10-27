@@ -153,19 +153,19 @@ defmodule Singularity.SelfImprovingAgent do
 
   ## Public API
 
-  def child_spec(opts) do
+  def child_spec(_opts) do
     %{
-      id: Keyword.get(opts, :id, make_id()),
-      start: {__MODULE__, :start_link, [opts]},
+      id: Keyword.get(_opts, :id, make_id()),
+      start: {__MODULE__, :start_link, [_opts]},
       restart: :transient,
       shutdown: 10_000
     }
   end
 
-  def start_link(opts) do
-    id = opts |> Keyword.get(:id, make_id()) |> to_string()
+  def start_link(_opts) do
+    id = _opts |> Keyword.get(:id, make_id()) |> to_string()
     name = via_tuple(id)
-    GenServer.start_link(__MODULE__, Keyword.put(opts, :id, id), name: name)
+    GenServer.start_link(__MODULE__, Keyword.put(_opts, :id, id), name: name)
   end
 
   def via_tuple(id), do: {:via, Registry, {ProcessRegistry, {:agent, id}}}
@@ -269,8 +269,8 @@ defmodule Singularity.SelfImprovingAgent do
   documentation upgrades across all source files.
   """
   @spec upgrade_documentation(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def upgrade_documentation(file_path, opts \\ []) do
-    DocUpgrader.upgrade_documentation(file_path, opts)
+  def upgrade_documentation(file_path, _opts \\ []) do
+    DocUpgrader.upgrade_documentation(file_path, _opts)
   end
 
   @doc """
@@ -287,14 +287,14 @@ defmodule Singularity.SelfImprovingAgent do
   ## GenServer callbacks
 
   @impl true
-  def init(opts) do
-    id = Keyword.fetch!(opts, :id)
+  def init(_opts) do
+    id = Keyword.fetch!(_opts, :id)
     queue = id |> CodeStore.load_queue() |> queue_from_list()
 
     state = %{
       id: id,
       version: 1,
-      context: Map.new(opts),
+      context: Map.new(_opts),
       metrics: %{},
       status: :idle,
       cycles: 0,

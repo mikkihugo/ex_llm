@@ -67,7 +67,7 @@ defmodule Singularity.Code.FullRepoScanner do
 
   Scans source files, extracts documentation, builds knowledge graph.
   """
-  def learn_codebase(opts \\ []) do
+  def learn_codebase(_opts \\ []) do
     Logger.info("Starting simple codebase learning...")
 
     # Step 1: Scan all Elixir source files
@@ -113,8 +113,8 @@ defmodule Singularity.Code.FullRepoScanner do
 
   Continues until everything works or max iterations reached.
   """
-  def auto_fix_all(opts \\ []) do
-    max_iterations = Keyword.get(opts, :max_iterations, 10)
+  def auto_fix_all(_opts \\ []) do
+    max_iterations = Keyword.get(_opts, :max_iterations, 10)
 
     Logger.info("Starting auto-fix with max #{max_iterations} iterations...")
 
@@ -176,19 +176,19 @@ defmodule Singularity.Code.FullRepoScanner do
 
   This gives the most complete picture of system health.
   """
-  def learn_with_tracing(opts \\ []) do
+  def learn_with_tracing(_opts \\ []) do
     Logger.info("Learning codebase with static + runtime analysis...")
 
     # Step 1: Static learning (scan files)
     Logger.info("Phase 1: Static analysis...")
-    {:ok, static_knowledge} = learn_codebase(opts)
+    {:ok, static_knowledge} = learn_codebase(_opts)
 
     # Step 2: Runtime tracing (see what actually runs)
     Logger.info("Phase 2: Runtime tracing...")
 
     {:ok, trace_analysis} =
       ExecutionTracer.full_analysis(
-        trace_duration_ms: Keyword.get(opts, :trace_duration_ms, 10_000)
+        trace_duration_ms: Keyword.get(_opts, :trace_duration_ms, 10_000)
       )
 
     # Step 3: Merge insights

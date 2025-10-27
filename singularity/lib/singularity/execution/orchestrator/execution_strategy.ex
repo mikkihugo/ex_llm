@@ -83,7 +83,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategy do
   - `{:ok, result}` on success
   - `{:error, reason}` on failure
   """
-  @callback execute(goal :: term(), opts :: Keyword.t()) ::
+  @callback execute(goal :: term(), _opts :: Keyword.t()) ::
               {:ok, term()} | {:error, term()}
 
   # Config loading helpers

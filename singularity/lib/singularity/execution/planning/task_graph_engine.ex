@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.TaskGraphCore do
+defmodule Singularity.Execution.Planning.TaskGraphEngine do
   @moduledoc """
   Pure Elixir Hierarchical Task Directed Acyclic Graph (TaskGraph) for autonomous task decomposition.
 
@@ -49,7 +49,7 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
 
   ```json
   {
-    "module": "Singularity.Execution.Planning.TaskGraphCore",
+    "module": "Singularity.Execution.Planning.TaskGraphEngine",
     "purpose": "Pure hierarchical DAG (Directed Acyclic Graph) for task decomposition with dependency resolution",
     "role": "data_structure",
     "layer": "execution_planning",

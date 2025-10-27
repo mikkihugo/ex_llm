@@ -169,12 +169,12 @@ defmodule Singularity.Search.SearchAnalytics do
     - `:fallback_used` - If fallback strategy was invoked
     - `:user_id` - Optional user identifier
   """
-  def record_search(query, opts \\ []) do
-    elapsed_ms = Keyword.get(opts, :elapsed_ms, 0)
-    results_count = Keyword.get(opts, :results_count, 0)
-    embedding_model = Keyword.get(opts, :embedding_model, "unknown")
-    cache_hit = Keyword.get(opts, :cache_hit, false)
-    fallback_used = Keyword.get(opts, :fallback_used, false)
+  def record_search(query, _opts \\ []) do
+    elapsed_ms = Keyword.get(_opts, :elapsed_ms, 0)
+    results_count = Keyword.get(_opts, :results_count, 0)
+    embedding_model = Keyword.get(_opts, :embedding_model, "unknown")
+    cache_hit = Keyword.get(_opts, :cache_hit, false)
+    fallback_used = Keyword.get(_opts, :fallback_used, false)
 
     metric = %{
       query: query,
@@ -439,8 +439,8 @@ defmodule Singularity.Search.SearchAnalytics do
   ## Options
     - `:days` - Number of days to analyze (default: 7)
   """
-  def analyze_search_trends(opts \\ []) do
-    days = Keyword.get(opts, :days, 7)
+  def analyze_search_trends(_opts \\ []) do
+    days = Keyword.get(_opts, :days, 7)
 
     with {:ok, recent_searches} <- fetch_recent_searches(days) do
       query_frequencies =

@@ -754,7 +754,7 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
 
     # Request external LLM via pgmq
     case Singularity.Messaging.Client.request(
-           Singularity.pgmq.RegistryClient.subject(:llm_request),
+           RegistryClient.subject(:llm_request),
            Jason.encode!(%{
              prompt: external_prompt,
              language: language,
@@ -855,14 +855,14 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
           quality: quality
         }
 
-        opts = [
+        _opts = [
           language: language,
           use_prompt_engine: true,
           examples: examples,
           quality: quality
         ]
 
-        case Singularity.LLM.Prompt.TemplateAware.generate_prompt(task_struct, opts) do
+        case Singularity.LLM.Prompt.TemplateAware.generate_prompt(task_struct, _opts) do
           %{prompt: prompt} ->
             enhanced_prompt = enhance_prompt_with_examples(prompt, examples, language, quality)
             {:ok, enhanced_prompt}

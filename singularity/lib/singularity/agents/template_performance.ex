@@ -21,7 +21,7 @@ defmodule Singularity.Agents.TemplatePerformance do
     "purpose": "template_performance_analysis",
     "domain": "agents",
     "capabilities": ["template_analysis", "failure_detection", "template_improvement", "llm_generation"],
-    "dependencies": ["LLM.Service", "pgmq.Client", "Repo"]
+    "dependencies": ["LLM.Service", "Singularity.Jobs.PgmqClient.Client", "Repo"]
   }
   ```
 
@@ -46,7 +46,7 @@ defmodule Singularity.Agents.TemplatePerformance do
     analyze_template_performance/0: [query_local_template_stats/0, identify_failing_templates/1, improve_failing_templates/1]
     improve_failing_template/2: [query_centralcloud_for_failures/1, load_current_template/1, generate_template_improvement/3, test_improved_template/2, deploy_improved_template/2]
     generate_template_improvement/3: [LLM.Service.call_with_prompt/3]
-    query_centralcloud_for_failures/1: [pgmq.Client.request/3]
+    query_centralcloud_for_failures/1: [Singularity.Jobs.PgmqClient.Client.request/3]
   ```
 
   ## Anti-Patterns

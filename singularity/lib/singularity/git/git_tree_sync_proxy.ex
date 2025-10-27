@@ -16,10 +16,10 @@ defmodule Singularity.Git.GitTreeSyncProxy do
   def enabled?, do: Supervisor.enabled?()
 
   @spec assign_task(agent_id, task, keyword()) :: any()
-  def assign_task(agent_id, task, opts \\ []) do
+  def assign_task(agent_id, task, _opts \\ []) do
     with true <- enabled?() do
-      opts = Keyword.put_new(opts, :use_llm, true)
-      GitTreeSyncCoordinator.assign_task(agent_id, task, opts)
+      _opts = Keyword.put_new(_opts, :use_llm, true)
+      GitTreeSyncCoordinator.assign_task(agent_id, task, _opts)
     else
       _ -> {:error, :disabled}
     end

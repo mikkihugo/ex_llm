@@ -2,7 +2,7 @@ defmodule Singularity.Learning.ExperimentResult do
   @moduledoc """
   ExperimentResult - Records and learns from Genesis experiment outcomes.
 
-  Integration Point: Genesis publishes experiment results to pgmq.
+  Integration Point: Genesis publishes experiment results to Singularity.Jobs.PgmqClient.
   Singularity records these results and learns from outcomes to improve future experiments.
 
   ## AI Navigation Metadata
@@ -116,7 +116,7 @@ defmodule Singularity.Learning.ExperimentResult do
   @doc """
   Record a Genesis experiment result.
 
-  Called when Genesis publishes results to pgmq.
+  Called when Genesis publishes results to Singularity.Jobs.PgmqClient.
   Stores result for learning and provides recommendation to caller.
   """
   def record(experiment_id, genesis_result)

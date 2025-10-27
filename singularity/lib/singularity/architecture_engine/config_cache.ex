@@ -3,7 +3,7 @@ defmodule Singularity.ArchitectureEngine.ConfigCache do
   ETS Manager for ArchitectureEngine configuration
 
   Manages ETS tables for workspace detection, build tool detection, and other configs.
-  In production, this data comes from central pgmq. For testing, we use local ETS files.
+  In production, this data comes from central Singularity.Jobs.PgmqClient. For testing, we use local ETS files.
   """
 
   require Logger

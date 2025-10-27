@@ -53,15 +53,15 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   # Client API
   # ===========================
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
   Manually trigger swarm spawning.
   """
-  def spawn_swarm(opts \\ []) do
-    GenServer.cast(__MODULE__, {:spawn_swarm, opts})
+  def spawn_swarm(_opts \\ []) do
+    GenServer.cast(__MODULE__, {:spawn_swarm, _opts})
   end
 
   @doc """
@@ -97,9 +97,9 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   # ===========================
 
   @impl true
-  def init(opts) do
-    poll_interval = Keyword.get(opts, :poll_interval_ms, @poll_interval_ms)
-    max_workers = Keyword.get(opts, :max_concurrent_workers, @max_concurrent_workers)
+  def init(_opts) do
+    poll_interval = Keyword.get(_opts, :poll_interval_ms, @poll_interval_ms)
+    max_workers = Keyword.get(_opts, :max_concurrent_workers, @max_concurrent_workers)
 
     state = %__MODULE__{
       poll_interval_ms: poll_interval,
@@ -144,8 +144,8 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
   end
 
   @impl true
-  def handle_cast({:spawn_swarm, opts}, state) do
-    {:noreply, spawn_workers(state, opts)}
+  def handle_cast({:spawn_swarm, _opts}, state) do
+    {:noreply, spawn_workers(state, _opts)}
   end
 
   @impl true
@@ -250,12 +250,12 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
     end
   end
 
-  defp spawn_workers(state, opts) do
+  defp spawn_workers(state, _opts) do
     available_slots = state.max_concurrent_workers - map_size(state.active_workers)
 
     if available_slots > 0 do
-      swarm_size = min(Keyword.get(opts, :swarm_size, @default_swarm_size), available_slots)
-      complexity = Keyword.get(opts, :complexity)
+      swarm_size = min(Keyword.get(_opts, :swarm_size, @default_swarm_size), available_slots)
+      complexity = Keyword.get(_opts, :complexity)
 
       {:ok, ready_todos} = TodoStore.get_ready_todos(limit: swarm_size)
 

@@ -89,7 +89,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   and publishes them to Genesis for other instances to use.
 
   ## Parameters
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:min_confidence` - Only publish rules >= confidence (default: 0.85)
     - `:limit` - Max rules to publish (default: 10)
     - `:namespace` - Custom Genesis namespace (default: standard)
@@ -108,14 +108,14 @@ defmodule Singularity.Evolution.GenesisPublisher do
   """
   @spec publish_rules(keyword()) ::
           {:ok, [publication_result()]} | {:error, term()}
-  def publish_rules(opts \\ []) do
+  def publish_rules(_opts \\ []) do
     Logger.info("GenesisPublisher: Publishing rules to Genesis via pgmq")
 
     try do
       # Ensure genesis queue exists
       PgmqClient.ensure_queue("genesis_rule_updates")
 
-      case RuleEvolutionSystem.publish_confident_rules(opts) do
+      case RuleEvolutionSystem.publish_confident_rules(_opts) do
         {:ok, count} ->
           Logger.info("GenesisPublisher: Successfully published #{count} rules to Genesis")
 
@@ -189,7 +189,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   other Singularity instances that pass our confidence threshold.
 
   ## Parameters
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:min_confidence` - Only import rules >= confidence (default: 0.85)
     - `:limit` - Max rules to import (default: 20)
     - `:namespace` - Genesis namespace (default: standard)
@@ -213,9 +213,9 @@ defmodule Singularity.Evolution.GenesisPublisher do
   """
   @spec import_rules_from_genesis(keyword()) ::
           {:ok, [map()]} | {:error, term()}
-  def import_rules_from_genesis(opts \\ []) do
-    min_confidence = Keyword.get(opts, :min_confidence, 0.85)
-    limit = Keyword.get(opts, :limit, 20)
+  def import_rules_from_genesis(_opts \\ []) do
+    min_confidence = Keyword.get(_opts, :min_confidence, 0.85)
+    limit = Keyword.get(_opts, :limit, 20)
 
     Logger.info("GenesisPublisher: Importing rules from Genesis via pgmq",
       min_confidence: min_confidence,
@@ -271,7 +271,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   and effectiveness feedback.
 
   ## Parameters
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:limit` - Max records (default: 50)
     - `:status` - Filter by status (default: :published)
 
@@ -279,8 +279,8 @@ defmodule Singularity.Evolution.GenesisPublisher do
   - List of publication records
   """
   @spec get_publication_history(keyword()) :: [map()]
-  def get_publication_history(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 50)
+  def get_publication_history(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 50)
 
     Logger.debug("GenesisPublisher: Retrieving publication history",
       limit: limit

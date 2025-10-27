@@ -35,13 +35,13 @@ defmodule Singularity.Adapters.ObanAdapter do
   end
 
   @impl Singularity.Execution.TaskAdapter
-  def execute(task, opts \\ []) do
+  def execute(task, _opts \\ []) do
     Logger.debug("Oban adapter: Queuing task", task_type: task[:type])
 
     # Extract task details
     task_type = task[:type]
     args = task[:args] || %{}
-    task_opts = task[:opts] || []
+    task_opts = task[:_opts] || []
 
     # Map task type to Oban job module
     job_module = get_job_module(task_type)

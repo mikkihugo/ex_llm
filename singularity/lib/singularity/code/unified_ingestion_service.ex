@@ -58,7 +58,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
   ## Parameters
 
   - `file_path` - Absolute path to file
-  - `opts` - Options
+  - `_opts` - Options
     - `:codebase_id` - Codebase identifier (default: auto-detect from Git)
     - `:skip_validation` - Skip metadata validation (default: false)
 
@@ -80,10 +80,10 @@ defmodule Singularity.Code.UnifiedIngestionService do
       {:ok, %{code_files: %CodeFile{}, codebase_metadata: %{id: 123}}}
 
   """
-  def ingest_file(file_path, opts \\ []) do
+  def ingest_file(file_path, _opts \\ []) do
     # Auto-detect from Git (e.g., "mikkihugo/singularity-incubation")
-    codebase_id = Keyword.get(opts, :codebase_id) || CodebaseDetector.detect(format: :full)
-    skip_validation = Keyword.get(opts, :skip_validation, false)
+    codebase_id = Keyword.get(_opts, :codebase_id) || CodebaseDetector.detect(format: :full)
+    skip_validation = Keyword.get(_opts, :skip_validation, false)
 
     start_time = System.monotonic_time(:millisecond)
 
@@ -129,9 +129,9 @@ defmodule Singularity.Code.UnifiedIngestionService do
       {:ok, %{success: 150, failed: 2}}
 
   """
-  def ingest_tree(root_path, opts \\ []) do
-    codebase_id = Keyword.get(opts, :codebase_id, "singularity")
-    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
+  def ingest_tree(root_path, _opts \\ []) do
+    codebase_id = Keyword.get(_opts, :codebase_id, "singularity")
+    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
 
     Logger.info("[UnifiedIngestion] Ingesting tree: #{root_path}")
 

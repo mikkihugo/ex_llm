@@ -53,11 +53,11 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
   - `timeout` - Timeout in milliseconds
   """
   @spec exec(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def exec(args, opts \\ []) do
+  def exec(args, _opts \\ []) do
     with :ok <- validate_args(args),
-         :ok <- validate_resource_limits(opts),
-         {:ok, docker_args} <- build_docker_args(args, opts) do
-      run_docker(docker_args, opts)
+         :ok <- validate_resource_limits(_opts),
+         {:ok, docker_args} <- build_docker_args(args, _opts) do
+      run_docker(docker_args, _opts)
     end
   end
 
@@ -75,9 +75,9 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
     {:error, {:invalid_docker_args, "image and cmd required", args}}
   end
 
-  defp validate_resource_limits(opts) do
-    cpu = Keyword.get(opts, :cpu)
-    mem = Keyword.get(opts, :mem)
+  defp validate_resource_limits(_opts) do
+    cpu = Keyword.get(_opts, :cpu)
+    mem = Keyword.get(_opts, :mem)
 
     cond do
       is_nil(cpu) or is_nil(mem) ->
@@ -100,17 +100,17 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
 
   ## Docker Command Building
 
-  defp build_docker_args(args, opts) do
+  defp build_docker_args(args, _opts) do
     docker_args = [
       "run",
       "--rm",
       # Auto-remove container
       "--cpus",
-      to_string(opts[:cpu]),
+      to_string(_opts[:cpu]),
       "-m",
-      opts[:mem],
+      _opts[:mem],
       "--network",
-      network_flag(opts[:net]),
+      network_flag(_opts[:net]),
       "-w",
       args[:working_dir] || "/work",
       # Security: No privileged mode
@@ -154,8 +154,8 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
 
   ## Docker Execution
 
-  defp run_docker(docker_args, opts) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
+  defp run_docker(docker_args, _opts) do
+    timeout = Keyword.get(_opts, :timeout, @default_timeout)
 
     timeout =
       if timeout > @max_timeout do
@@ -172,8 +172,8 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
     Logger.info("Executing Docker container",
       image: Enum.at(docker_args, -2),
       cmd: Enum.drop(docker_args, -1) |> List.last(),
-      cpu: opts[:cpu],
-      mem: opts[:mem],
+      cpu: _opts[:cpu],
+      mem: _opts[:mem],
       timeout: timeout
     )
 

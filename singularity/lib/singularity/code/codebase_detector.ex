@@ -61,7 +61,7 @@ defmodule Singularity.Code.CodebaseDetector do
 
   ## Parameters
 
-  - `opts` - Options
+  - `_opts` - Options
     - `:fallback` - Fallback codebase_id if Git detection fails (default: "singularity")
     - `:format` - Format for codebase_id (default: `:repo_only`)
       - `:repo_only` - Just repo name: "singularity-incubation"
@@ -90,18 +90,18 @@ defmodule Singularity.Code.CodebaseDetector do
       codebase_id = CodebaseDetector.detect(format: :full, extend_cache: true)
       # => Cache valid for 30 minutes instead of 5
   """
-  def detect(opts \\ []) do
-    fallback = Keyword.get(opts, :fallback, "singularity")
-    format = Keyword.get(opts, :format, :repo_only)
-    use_cache = Keyword.get(opts, :cache, true)
-    extend_cache = Keyword.get(opts, :extend_cache, false)
+  def detect(_opts \\ []) do
+    fallback = Keyword.get(_opts, :fallback, "singularity")
+    format = Keyword.get(_opts, :format, :repo_only)
+    use_cache = Keyword.get(_opts, :cache, true)
+    extend_cache = Keyword.get(_opts, :extend_cache, false)
 
     # Determine TTL based on extend_cache flag
     cache_ttl =
       if extend_cache do
         @extended_cache_ttl
       else
-        Keyword.get(opts, :cache_ttl, @default_cache_ttl)
+        Keyword.get(_opts, :cache_ttl, @default_cache_ttl)
       end
 
     # Try cache first
@@ -187,7 +187,7 @@ defmodule Singularity.Code.CodebaseDetector do
 
   ## Parameters
 
-  - `opts` - Options
+  - `_opts` - Options
     - `:format` - Format for codebase_id (default: `:repo_only`)
       - `:repo_only` - Just repo name: "singularity-incubation"
       - `:full` - Include owner: "mikkihugo/singularity-incubation"
@@ -205,8 +205,8 @@ defmodule Singularity.Code.CodebaseDetector do
       iex> CodebaseDetector.detect_from_git(format: :full)
       {:ok, "mikkihugo/singularity-incubation"}
   """
-  def detect_from_git(opts \\ []) do
-    format = Keyword.get(opts, :format, :repo_only)
+  def detect_from_git(_opts \\ []) do
+    format = Keyword.get(_opts, :format, :repo_only)
 
     case System.cmd("git", ["remote", "get-url", "origin"], stderr_to_stdout: true) do
       {output, 0} ->
@@ -408,9 +408,9 @@ defmodule Singularity.Code.CodebaseDetector do
       iex> CodebaseDetector.reload()
       {:ok, "mikkihugo/singularity-incubation"}
   """
-  def reload(opts \\ []) do
+  def reload(_opts \\ []) do
     clear_cache()
-    codebase_id = detect(Keyword.put(opts, :cache, false))
+    codebase_id = detect(Keyword.put(_opts, :cache, false))
     {:ok, codebase_id}
   end
 end

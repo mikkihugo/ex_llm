@@ -75,9 +75,9 @@ defmodule Singularity.Execution.Planning.ExecutionTracer do
 
   Returns map of function calls with counts and timing.
   """
-  def trace_runtime(opts \\ []) do
-    duration_ms = Keyword.get(opts, :duration_ms, 5_000)
-    patterns = Keyword.get(opts, :patterns, [{:_, :_, :_}])
+  def trace_runtime(_opts \\ []) do
+    duration_ms = Keyword.get(_opts, :duration_ms, 5_000)
+    patterns = Keyword.get(_opts, :patterns, [{:_, :_, :_}])
 
     Logger.info("Starting runtime trace for #{duration_ms}ms...")
 
@@ -176,7 +176,7 @@ defmodule Singularity.Execution.Planning.ExecutionTracer do
   @doc """
   Full system analysis combining all detection methods.
   """
-  def full_analysis(opts \\ []) do
+  def full_analysis(_opts \\ []) do
     Logger.info("=" <> String.duplicate("=", 70))
     Logger.info("TaskGraph TRACER: Full System Analysis Starting")
     Logger.info("=" <> String.duplicate("=", 70))
@@ -185,7 +185,7 @@ defmodule Singularity.Execution.Planning.ExecutionTracer do
     Logger.info("Phase 1: Runtime tracing...")
 
     {:ok, trace_results} =
-      trace_runtime(duration_ms: Keyword.get(opts, :trace_duration_ms, 15_000))
+      trace_runtime(duration_ms: Keyword.get(_opts, :trace_duration_ms, 15_000))
 
     # 2. Build call graph
     Logger.info("Phase 2: Building call graph...")

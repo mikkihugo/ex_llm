@@ -14,7 +14,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GeneratorType do
   @callback generator_type() :: atom()
   @callback description() :: String.t()
   @callback capabilities() :: [String.t()]
-  @callback generate(spec :: map(), opts :: Keyword.t()) :: {:ok, String.t()} | {:error, term()}
+  @callback generate(spec :: map(), _opts :: Keyword.t()) :: {:ok, String.t()} | {:error, term()}
   @callback learn_from_generation(result :: map()) :: :ok | {:error, term()}
 
   require Logger

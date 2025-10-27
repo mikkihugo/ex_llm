@@ -35,12 +35,12 @@ defmodule Singularity.Validators.SecurityValidator do
   end
 
   @impl Singularity.Validation.Validator
-  def validate(code, opts \\ []) when is_binary(code) do
+  def validate(code, _opts \\ []) when is_binary(code) do
     Logger.debug("Security validator: Starting validation")
 
     violations = []
-    violations = check_for_secrets(code, violations, opts)
-    violations = check_dangerous_patterns(code, violations, opts)
+    violations = check_for_secrets(code, violations, _opts)
+    violations = check_dangerous_patterns(code, violations, _opts)
 
     if Enum.empty?(violations) do
       Logger.debug("Security validator: No violations found")

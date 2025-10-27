@@ -125,12 +125,12 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   ## Returns
   {:ok, [detection_result()]} or {:error, reason}
   """
-  def detect(codebase_path, opts \\ []) when is_binary(codebase_path) do
+  def detect(codebase_path, _opts \\ []) when is_binary(codebase_path) do
     start_time = System.monotonic_time(:millisecond)
 
     try do
-      detector_types = Keyword.get(opts, :types, nil)
-      use_cache = Keyword.get(opts, :cache, true)
+      detector_types = Keyword.get(_opts, :types, nil)
+      use_cache = Keyword.get(_opts, :cache, true)
 
       Logger.debug("DetectionOrchestrator: detecting in #{codebase_path}",
         types: detector_types,
@@ -190,9 +190,9 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
       {:ok, %{template: "...", pattern: "...", score: 8.5},
             [%{name: "pgmq", type: :technology, ...}, ...]}
   """
-  def detect_with_intent(codebase_path, user_request, opts \\ [])
+  def detect_with_intent(codebase_path, user_request, _opts \\ [])
       when is_binary(codebase_path) and is_binary(user_request) do
-    with {:ok, detections} <- detect(codebase_path, opts),
+    with {:ok, detections} <- detect(codebase_path, _opts),
          {:ok, matched_template} <- TemplateMatcher.find_template(user_request) do
       {:ok, matched_template, detections}
     else
@@ -212,10 +212,10 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   - `:cache` - Use cached results (default: true)
   - `:metadata` - Additional metadata to store
   """
-  def detect_and_cache(codebase_path, opts \\ []) when is_binary(codebase_path) do
-    snapshot_id = Keyword.get(opts, :snapshot_id, generate_snapshot_id())
-    metadata = Keyword.get(opts, :metadata, %{})
-    use_cache = Keyword.get(opts, :cache, true)
+  def detect_and_cache(codebase_path, _opts \\ []) when is_binary(codebase_path) do
+    snapshot_id = Keyword.get(_opts, :snapshot_id, generate_snapshot_id())
+    metadata = Keyword.get(_opts, :metadata, %{})
+    use_cache = Keyword.get(_opts, :cache, true)
 
     # Try cache first
     cached_result =
@@ -268,8 +268,8 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
 
   Equivalent to TechnologyAgent.analyze_dependencies/2
   """
-  def analyze_dependencies(codebase_path, opts \\ []) when is_binary(codebase_path) do
-    with {:ok, detections} <- detect(codebase_path, opts) do
+  def analyze_dependencies(codebase_path, _opts \\ []) when is_binary(codebase_path) do
+    with {:ok, detections} <- detect(codebase_path, _opts) do
       dependencies =
         detections
         |> Enum.filter(&(&1.type in [:framework, :technology]))

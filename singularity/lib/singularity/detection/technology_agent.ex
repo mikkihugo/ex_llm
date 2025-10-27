@@ -137,11 +137,11 @@ defmodule Singularity.TechnologyAgent do
     - location: string (file/pattern where detected)
     - ecosystem: string (elixir, javascript, python, etc.)
   """
-  def detect_technologies(codebase_path, opts \\ []) do
+  def detect_technologies(codebase_path, _opts \\ []) do
     # Delegate to unified orchestrator
     alias Singularity.Analysis.DetectionOrchestrator
 
-    with {:ok, detections} <- DetectionOrchestrator.detect(codebase_path, opts) do
+    with {:ok, detections} <- DetectionOrchestrator.detect(codebase_path, _opts) do
       # Maintain backwards compatibility with old API format
       {:ok, detections}
     else
@@ -167,9 +167,9 @@ defmodule Singularity.TechnologyAgent do
       outdated_versions: [...]
     }}
   """
-  def analyze_dependencies(codebase_path, opts \\ []) do
+  def analyze_dependencies(codebase_path, _opts \\ []) do
     with :ok <- validate_codebase_path(codebase_path),
-         {:ok, technologies} <- detect_technologies(codebase_path, opts) do
+         {:ok, technologies} <- detect_technologies(codebase_path, _opts) do
       dependencies =
         technologies
         |> Enum.filter(&(&1.type in [:framework, :tool, :database]))
@@ -201,8 +201,8 @@ defmodule Singularity.TechnologyAgent do
       unsupported_frameworks: [...]
     }}
   """
-  def classify_frameworks(codebase_path, opts \\ []) do
-    with {:ok, technologies} <- detect_technologies(codebase_path, opts) do
+  def classify_frameworks(codebase_path, _opts \\ []) do
+    with {:ok, technologies} <- detect_technologies(codebase_path, _opts) do
       frameworks =
         technologies
         |> Enum.filter(&(&1.type == :framework))
@@ -239,10 +239,10 @@ defmodule Singularity.TechnologyAgent do
       compatibility_matrix: {...}
     }}
   """
-  def get_technology_report(codebase_path, opts \\ []) do
-    with {:ok, technologies} <- detect_technologies(codebase_path, opts),
-         {:ok, dependencies} <- analyze_dependencies(codebase_path, opts),
-         {:ok, frameworks} <- classify_frameworks(codebase_path, opts) do
+  def get_technology_report(codebase_path, _opts \\ []) do
+    with {:ok, technologies} <- detect_technologies(codebase_path, _opts),
+         {:ok, dependencies} <- analyze_dependencies(codebase_path, _opts),
+         {:ok, frameworks} <- classify_frameworks(codebase_path, _opts) do
       languages = Enum.filter(technologies, &(&1.type == :language))
       tools = Enum.filter(technologies, &(&1.type == :tool))
       databases = Enum.filter(technologies, &(&1.type == :database))
@@ -271,8 +271,8 @@ defmodule Singularity.TechnologyAgent do
   @doc """
   Detect technologies from Elixir-specific patterns (for backward compatibility).
   """
-  def detect_technologies_elixir(codebase_path, opts \\ []) do
-    with {:ok, technologies} <- detect_technologies(codebase_path, opts) do
+  def detect_technologies_elixir(codebase_path, _opts \\ []) do
+    with {:ok, technologies} <- detect_technologies(codebase_path, _opts) do
       elixir_techs = Enum.filter(technologies, &(&1.ecosystem == "elixir"))
       {:ok, elixir_techs}
     end
@@ -281,8 +281,8 @@ defmodule Singularity.TechnologyAgent do
   @doc """
   Detect specific technology category.
   """
-  def detect_technology_category(codebase_path, category, opts \\ []) when is_atom(category) do
-    with {:ok, technologies} <- detect_technologies(codebase_path, opts) do
+  def detect_technology_category(codebase_path, category, _opts \\ []) when is_atom(category) do
+    with {:ok, technologies} <- detect_technologies(codebase_path, _opts) do
       filtered = Enum.filter(technologies, &(&1.type == category))
       {:ok, filtered}
     end
@@ -291,7 +291,7 @@ defmodule Singularity.TechnologyAgent do
   @doc """
   Analyze code patterns to extract technology signals.
   """
-  def analyze_code_patterns(codebase_path, opts \\ []) do
+  def analyze_code_patterns(codebase_path, _opts \\ []) do
     with :ok <- validate_codebase_path(codebase_path),
          {:ok, patterns} <- extract_patterns(codebase_path) do
       analysis = %{
@@ -348,9 +348,9 @@ defmodule Singularity.TechnologyAgent do
     String.downcase(Path.extname(path)) in extensions
   end
 
-  defp detect_technologies_from_patterns(patterns, opts) do
-    min_confidence = Keyword.get(opts, :min_confidence, 0.7)
-    categories = Keyword.get(opts, :categories, nil)
+  defp detect_technologies_from_patterns(patterns, _opts) do
+    min_confidence = Keyword.get(_opts, :min_confidence, 0.7)
+    categories = Keyword.get(_opts, :categories, nil)
 
     technologies =
       patterns
@@ -486,9 +486,9 @@ defmodule Singularity.TechnologyAgent do
     end
   end
 
-  defp merge_detections(frameworks, technologies, opts) do
+  defp merge_detections(frameworks, technologies, _opts) do
     # Merge framework detections with technology patterns
-    max_results = Keyword.get(opts, :max_results, 50)
+    max_results = Keyword.get(_opts, :max_results, 50)
 
     (frameworks ++ technologies)
     |> Enum.uniq_by(& &1.name)

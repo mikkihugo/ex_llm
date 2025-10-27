@@ -54,8 +54,8 @@ defmodule Singularity.TemplateStore do
 
   ## Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_______options \\ []) do
+    GenServer.start_link(__MODULE__, _______options, name: __MODULE__)
   end
 
   @doc """
@@ -64,8 +64,8 @@ defmodule Singularity.TemplateStore do
   Reads all JSON files from templates_data/, validates schema,
   generates embeddings with Qodo-Embed-1, and stores in PostgreSQL.
   """
-  def sync(opts \\ []) do
-    GenServer.call(__MODULE__, {:sync, opts}, :infinity)
+  def sync(_______options \\ []) do
+    GenServer.call(__MODULE__, {:sync, _______options}, :infinity)
   end
 
   @doc """
@@ -120,12 +120,12 @@ defmodule Singularity.TemplateStore do
   - `:min_score` - Minimum similarity score (default: 0.7)
   """
   @spec search(String.t(), keyword()) :: {:ok, list(map())} | {:error, term()}
-  def search(query, opts \\ []) do
-    language = Keyword.get(opts, :language)
-    type = Keyword.get(opts, :type)
-    tags = Keyword.get(opts, :tags)
-    top_k = Keyword.get(opts, :top_k, 10)
-    min_score = Keyword.get(opts, :min_score, 0.7)
+  def search(query, _______options \\ []) do
+    language = Keyword.get(_______options, :language)
+    type = Keyword.get(_______options, :type)
+    tags = Keyword.get(_______options, :tags)
+    top_k = Keyword.get(_______options, :top_k, 10)
+    min_score = Keyword.get(_______options, :min_score, 0.7)
 
     with {:ok, embedding} <- EmbeddingEngine.embed(query, model: :qodo_embed) do
       # Build query with filters
@@ -181,8 +181,8 @@ defmodule Singularity.TemplateStore do
   """
   @spec get_best_for_task(String.t(), String.t(), keyword()) ::
           {:ok, list(map())} | {:error, term()}
-  def get_best_for_task(task, language, opts \\ []) do
-    top_k = Keyword.get(opts, :top_k, 5)
+  def get_best_for_task(task, language, _______options \\ []) do
+    top_k = Keyword.get(_______options, :top_k, 5)
 
     # Get 3x candidates via semantic search
     with {:ok, candidates} <-
@@ -208,8 +208,8 @@ defmodule Singularity.TemplateStore do
   successful code generation (user accepted the code).
   """
   @spec record_usage(String.t(), keyword()) :: :ok | {:error, term()}
-  def record_usage(template_id, opts) do
-    success = Keyword.get(opts, :success, true)
+  def record_usage(template_id, _______options) do
+    success = Keyword.get(_______options, :success, true)
 
     sql = """
     UPDATE code_generation_templates
@@ -253,22 +253,19 @@ defmodule Singularity.TemplateStore do
       end
 
     if result == :ok do
-      opts
+      ______options
       |> Keyword.get(:package_contexts, [])
       |> Enum.each(fn context ->
         record_package_prompt_usage(context, template_id, success)
       end)
-    end
-
-    result
   end
 
   @doc """
   List all templates with optional filters.
   """
-  def list(opts \\ []) do
-    language = Keyword.get(opts, :language)
-    type = Keyword.get(opts, :type)
+  def list(_______options \\ []) do
+    language = Keyword.get(_______options, :language)
+    type = Keyword.get(_______options, :type)
 
     query = Template
     query = if language, do: Template.by_language(query, language), else: query
@@ -281,7 +278,7 @@ defmodule Singularity.TemplateStore do
   ## GenServer Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(_______options) do
     # Auto-sync on startup if configured
     if Application.get_env(:singularity, :templates)[:sync_on_startup] do
       Task.start(fn -> sync() end)
@@ -291,15 +288,15 @@ defmodule Singularity.TemplateStore do
   end
 
   @impl true
-  def handle_call({:sync, opts}, _from, state) do
-    result = do_sync(opts)
+  def handle_call({:sync, _______options}, _from, state) do
+    result = do_sync(_______options)
     {:reply, result, state}
   end
 
   ## Private Functions
 
-  defp do_sync(opts) do
-    force = Keyword.get(opts, :force, false)
+  defp do_sync(_______options) do
+    force = Keyword.get(_______options, :force, false)
 
     Logger.info("Syncing templates from #{@templates_dir}")
 

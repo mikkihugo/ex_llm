@@ -51,7 +51,7 @@ defmodule Singularity.CodeSearch.Ecto do
   Uses upsert (ON CONFLICT) to update existing codebases.
   """
   @spec register_codebase(map(), keyword()) :: {:ok, CodebaseRegistry.t()} | {:error, term()}
-  def register_codebase(attrs, opts \\ []) do
+  def register_codebase(attrs, _opts \\ []) do
     attrs_with_defaults =
       Map.merge(
         %{

@@ -152,7 +152,7 @@ defmodule Singularity.Validation.HistoricalValidator do
 
   ## Parameters
   - `context` - Execution context (story_signature, task_type, complexity, etc.)
-  - `opts` - Options:
+  - `_opts` - Options:
     - `:threshold` - Similarity threshold 0.0-1.0 (default: 0.80)
     - `:limit` - Max results to return (default: 10)
 
@@ -175,9 +175,9 @@ defmodule Singularity.Validation.HistoricalValidator do
       ]
   """
   @spec find_similar_failures(failure_context, keyword()) :: [map()]
-  def find_similar_failures(context, opts \\ []) do
-    threshold = Keyword.get(opts, :threshold, 0.80)
-    limit = Keyword.get(opts, :limit, 10)
+  def find_similar_failures(context, _opts \\ []) do
+    threshold = Keyword.get(_opts, :threshold, 0.80)
+    limit = Keyword.get(_opts, :limit, 10)
 
     Logger.debug("HistoricalValidator: Finding similar failures",
       threshold: threshold,
@@ -324,9 +324,9 @@ defmodule Singularity.Validation.HistoricalValidator do
       ]
   """
   @spec get_top_performing_checks(keyword()) :: [{String.t(), float()}]
-  def get_top_performing_checks(opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
-    time_range = Keyword.get(opts, :time_range, :last_week)
+  def get_top_performing_checks(_opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
+    time_range = Keyword.get(_opts, :time_range, :last_week)
 
     Logger.debug("HistoricalValidator: Getting top performing checks",
       limit: limit,

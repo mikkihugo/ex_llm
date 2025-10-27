@@ -106,7 +106,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
   - `role` - Agent role (`:coder`, `:tester`, `:critic`, `:researcher`, `:admin`)
   - `tool` - Tool name (`:git`, `:fs`, `:shell`, `:docker`, `:lua`, `:http`)
   - `args` - Tool-specific arguments
-  - `opts` - Options (timeout, resource limits, etc.)
+  - `_opts` - Options (timeout, resource limits, etc.)
 
   ## Returns
 
@@ -121,13 +121,13 @@ defmodule Singularity.Execution.TaskGraph.Policy do
       iex> Policy.enforce(:coder, :shell, %{cmd: ["rm", "-rf", "/"]}, [])
       {:error, {:forbidden_command, ["rm", "-rf", "/"]}}
   """
-  def enforce(role, tool, args, opts \\ []) do
+  def enforce(role, tool, args, _opts \\ []) do
     policy = Map.get(@policies, role)
 
     if policy do
       with :ok <- check_tool_allowed(policy, tool),
-           :ok <- check_timeout(policy, opts[:timeout]),
-           :ok <- check_tool_specific_policy(role, policy, tool, args, opts) do
+           :ok <- check_timeout(policy, _opts[:timeout]),
+           :ok <- check_tool_specific_policy(role, policy, tool, args, _opts) do
         :ok
       end
     else
@@ -247,9 +247,9 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, policy, :docker, _args, opts) do
+  defp check_tool_specific_policy(_role, policy, :docker, _args, _opts) do
     if policy[:docker_resource_limits_required] do
-      if opts[:cpu] && opts[:mem] do
+      if _opts[:cpu] && _opts[:mem] do
         :ok
       else
         {:error, :docker_resource_limits_required}

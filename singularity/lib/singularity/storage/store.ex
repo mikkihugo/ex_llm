@@ -353,16 +353,16 @@ defmodule Singularity.Store do
   """
   @spec store_knowledge(String.t(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def store_knowledge(artifact_type, name, content, opts \\ []) do
+  def store_knowledge(artifact_type, name, content, _opts \\ []) do
     changeset = %{
       artifact_type: artifact_type,
       artifact_id: name,
-      version: opts[:version] || "1.0.0",
+      version: _opts[:version] || "1.0.0",
       content_raw: Jason.encode!(content),
       content: content,
-      embedding: opts[:embedding],
-      language: opts[:language],
-      tags: opts[:tags] || [],
+      embedding: _opts[:embedding],
+      language: _opts[:language],
+      tags: _opts[:tags] || [],
       usage_count: 0,
       success_rate: 0.0
     }
@@ -408,10 +408,10 @@ defmodule Singularity.Store do
   Search knowledge artifacts semantically.
   """
   @spec search_knowledge(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_knowledge(query, opts \\ []) do
-    use_semantic = Keyword.get(opts, :semantic, true)
-    limit = Keyword.get(opts, :limit, 10)
-    threshold = Keyword.get(opts, :threshold, 0.7)
+  def search_knowledge(query, _opts \\ []) do
+    use_semantic = Keyword.get(_opts, :semantic, true)
+    limit = Keyword.get(_opts, :limit, 10)
+    threshold = Keyword.get(_opts, :threshold, 0.7)
 
     if use_semantic do
       semantic_search_knowledge(query, limit, threshold)

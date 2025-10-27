@@ -28,14 +28,14 @@ defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
     * `:metadata` - map merged into the payload metadata before dispatch
   """
   @spec dispatch(map(), keyword()) :: :ok | {:error, term()}
-  def dispatch(payload, opts \\ []) when is_map(payload) do
+  def dispatch(payload, _opts \\ []) when is_map(payload) do
     agent_id =
       opts
       |> Keyword.get(:agent_id, @default_agent_id)
       |> to_string()
 
-    agent_opts = Keyword.get(opts, :agent_opts, [])
-    metadata = Keyword.get(opts, :metadata, %{})
+    agent_opts = Keyword.get(_opts, :agent_opts, [])
+    metadata = Keyword.get(_opts, :metadata, %{})
 
     with :ok <- ensure_agent_started(agent_id, agent_opts),
          enriched <- merge_metadata(payload, metadata),

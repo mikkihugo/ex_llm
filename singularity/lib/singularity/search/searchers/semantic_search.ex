@@ -22,10 +22,10 @@ defmodule Singularity.Search.Searchers.SemanticSearch do
   end
 
   @impl true
-  def search(query, opts \\ []) when is_binary(query) do
+  def search(query, _opts \\ []) when is_binary(query) do
     try do
       # Call existing CodeSearch implementation
-      case CodeSearch.search(query, opts) do
+      case CodeSearch.search(query, _opts) do
         {:ok, results} -> {:ok, results}
         {:error, reason} -> {:error, reason}
         results when is_list(results) -> {:ok, results}

@@ -81,11 +81,11 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   - `:top_p` - Nucleus sampling threshold (default: 0.9)
   - `:top_k` - Top-K sampling (default: 50)
   """
-  def generate(prompt, model_state, model, opts \\ []) when is_binary(prompt) do
-    max_tokens = Keyword.get(opts, :max_tokens, 256)
-    temperature = Keyword.get(opts, :temperature, 0.7)
-    top_p = Keyword.get(opts, :top_p, 0.9)
-    top_k = Keyword.get(opts, :top_k, 50)
+  def generate(prompt, model_state, model, _opts \\ []) when is_binary(prompt) do
+    max_tokens = Keyword.get(_opts, :max_tokens, 256)
+    temperature = Keyword.get(_opts, :temperature, 0.7)
+    top_p = Keyword.get(_opts, :top_p, 0.9)
+    top_k = Keyword.get(_opts, :top_k, 50)
 
     Logger.info("Generating with #{inspect(model)}")
     Logger.info("  Max tokens: #{max_tokens}, Temp: #{temperature}, Top-P: #{top_p}")
@@ -112,7 +112,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   @doc """
   Generate multiple code samples (for comparison/diversity)
   """
-  def generate_samples(prompt, model_state, model, num_samples \\ 3, opts \\ []) do
+  def generate_samples(prompt, model_state, model, num_samples \\ 3, _opts \\ []) do
     Logger.info("Generating #{num_samples} samples with #{inspect(model)}")
 
     samples =
@@ -120,7 +120,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
       |> Enum.map(fn i ->
         Logger.info("  Sample #{i}/#{num_samples}")
 
-        case generate(prompt, model_state, model, opts) do
+        case generate(prompt, model_state, model, _opts) do
           {:ok, code} -> code
           {:error, _} -> "# Generation failed"
         end
@@ -132,13 +132,13 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   @doc """
   Stream tokens as they are generated (for real-time UI)
   """
-  def stream(prompt, model_state, model, opts \\ []) do
+  def stream(prompt, model_state, model, _opts \\ []) do
     # TODO: Implement streaming token generation
     # Should yield tokens one at a time for real-time display
     Logger.info("Streaming code generation with #{inspect(model)}")
 
     # For now, just generate and return as stream
-    with {:ok, code} <- generate(prompt, model_state, model, opts) do
+    with {:ok, code} <- generate(prompt, model_state, model, _opts) do
       tokens = String.split(code, " ")
       {:ok, tokens}
     else
@@ -149,7 +149,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   @doc """
   Apply constraints to generation (only certain functions, patterns, etc)
   """
-  def constrained_generate(prompt, constraints, model_state, model, opts \\ []) do
+  def constrained_generate(prompt, constraints, model_state, model, _opts \\ []) do
     Logger.info("Generating with constraints: #{inspect(constraints)}")
 
     # TODO: Implement constrained decoding
@@ -159,7 +159,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     # 3. Only sample from allowed tokens
     # 4. Post-process to ensure constraint satisfaction
 
-    with {:ok, code} <- generate(prompt, model_state, model, opts) do
+    with {:ok, code} <- generate(prompt, model_state, model, _opts) do
       # Check if code matches constraints
       if code_matches_constraints?(code, constraints) do
         {:ok, code}

@@ -44,7 +44,7 @@ defmodule Singularity.Architecture.PatternType do
     @behaviour Singularity.Architecture.PatternType
 
     @impl PatternType
-    def detect(path, opts) do
+    def detect(path, _opts) do
       # Scan path for framework markers
       # Return list of detected patterns
       [
@@ -110,7 +110,7 @@ defmodule Singularity.Architecture.PatternType do
   - `:limit` - integer, max patterns to return (default: unlimited)
   - `:min_confidence` - float, minimum confidence threshold (default: 0.5)
   """
-  @callback detect(path :: String.t(), opts :: keyword()) :: [map()]
+  @callback detect(path :: String.t(), _opts :: keyword()) :: [map()]
 
   @doc """
   Learn from a detection result.
@@ -162,7 +162,7 @@ defmodule Singularity.Architecture.PatternType do
     config = Application.get_env(:singularity, :pattern_types, %{})
 
     config
-    |> Enum.filter(fn {_type, opts} -> opts[:enabled] != false end)
+    |> Enum.filter(fn {_type, _opts} -> _opts[:enabled] != false end)
     |> Enum.into(%{})
   end
 
@@ -171,8 +171,8 @@ defmodule Singularity.Architecture.PatternType do
   """
   def enabled?(pattern_type) do
     config = Application.get_env(:singularity, :pattern_types, %{})
-    opts = config[pattern_type] || %{}
-    opts[:enabled] != false
+    _opts = config[pattern_type] || %{}
+    _opts[:enabled] != false
   end
 
   @doc """

@@ -83,12 +83,12 @@ defmodule Singularity.PseudocodeGenerator do
 
   Target: <500ms total
   """
-  def generate(task, opts \\ []) do
+  def generate(task, _opts \\ []) do
     start = System.monotonic_time(:millisecond)
-    path = Keyword.get(opts, :path)
+    path = Keyword.get(_opts, :path)
 
     # Detect context (same as CodeSynthesisPipeline)
-    context = detect_context(path, opts)
+    context = detect_context(path, _opts)
 
     Logger.debug("Pseudocode gen: #{task} in #{context.repo}/#{context.language}")
 
@@ -176,10 +176,10 @@ defmodule Singularity.PseudocodeGenerator do
 
   ## Private Functions
 
-  defp detect_context(nil, opts) do
+  defp detect_context(nil, _opts) do
     %{
-      repo: Keyword.get(opts, :repo, "unknown"),
-      language: Keyword.get(opts, :language, "elixir"),
+      repo: Keyword.get(_opts, :repo, "unknown"),
+      language: Keyword.get(_opts, :language, "elixir"),
       tech_stack: [],
       path: nil
     }
@@ -432,10 +432,10 @@ defmodule Singularity.PseudocodeGenerator do
   @doc """
   Batch generate pseudocode for multiple tasks (parallel)
   """
-  def batch_generate(tasks, opts \\ []) do
+  def batch_generate(tasks, _opts \\ []) do
     tasks
     |> Task.async_stream(
-      fn task -> generate(task, opts) end,
+      fn task -> generate(task, _opts) end,
       # Very lightweight, can parallelize heavily
       max_concurrency: 10,
       timeout: 1000

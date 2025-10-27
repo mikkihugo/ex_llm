@@ -22,7 +22,7 @@ defmodule Singularity.Quality.TemplateTracker do
 
   use GenServer
   require Logger
-  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphCore}
+  alias Singularity.Execution.Planning.{TaskGraph, TaskGraphEngine}
   alias Singularity.CodeStore
 
   defstruct [
@@ -47,8 +47,8 @@ defmodule Singularity.Quality.TemplateTracker do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
@@ -75,15 +75,15 @@ defmodule Singularity.Quality.TemplateTracker do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     # Initialize TaskGraph for template tracking
-    dag = TaskGraphCore.new("template-performance")
+    dag = TaskGraphEngine.new("template-performance")
 
     state = %__MODULE__{
       dag: dag,
       performance_data: %{},
       template_rankings: %{},
-      learning_enabled: Keyword.get(opts, :learning, true),
+      learning_enabled: Keyword.get(_opts, :learning, true),
       metrics_cache: %{}
     }
 

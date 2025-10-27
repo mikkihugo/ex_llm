@@ -24,7 +24,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
   alias Singularity.Jobs.PgmqClient
 
   @doc """
-  Enqueue knowledge update to send to CentralCloud via pgmq.
+  Enqueue knowledge update to send to CentralCloud via Singularity.Jobs.PgmqClient.
   
   Args:
     - patterns: List of discovered patterns

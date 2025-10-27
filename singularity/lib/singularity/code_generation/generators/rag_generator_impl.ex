@@ -47,7 +47,7 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
   end
 
   @impl true
-  def generate(spec, opts \\ []) when is_map(spec) do
+  def generate(spec, _opts \\ []) when is_map(spec) do
     try do
       # Unpack spec fields for RAGCodeGenerator.generate/2
       task = spec[:spec] || spec[:task] || ""
@@ -55,15 +55,15 @@ defmodule Singularity.CodeGeneration.Generators.RAGGeneratorImpl do
       # Extract RAG-specific options
       rag_opts =
         [
-          language: spec[:language] || opts[:language],
-          top_k: opts[:top_k] || 5,
-          repos: opts[:repos],
-          quality_level: opts[:quality],
-          complexity: opts[:complexity]
+          language: spec[:language] || _opts[:language],
+          top_k: _opts[:top_k] || 5,
+          repos: _opts[:repos],
+          quality_level: _opts[:quality],
+          complexity: _opts[:complexity]
         ]
         |> Enum.filter(fn {_k, v} -> v != nil end)
 
-      Logger.debug("RAGGeneratorImpl: generating with RAG", task: task, opts: rag_opts)
+      Logger.debug("RAGGeneratorImpl: generating with RAG", task: task, _opts: rag_opts)
       RAGCodeGenerator.generate(task, rag_opts)
     rescue
       e ->

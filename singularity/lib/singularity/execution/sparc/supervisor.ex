@@ -23,14 +23,14 @@ defmodule Singularity.Execution.SPARC.Supervisor do
   Depends on:
   - LLM.Supervisor - For LLM-driven SPARC phases
   - Knowledge.Supervisor - For template access
-  - pgmq.Supervisor - For SPARC workflow coordination
+  - Singularity.Jobs.PgmqClient.Supervisor - For SPARC workflow coordination
   """
 
   use Supervisor
   require Logger
 
-  def start_link(opts \\ []) do
-    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    Supervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true

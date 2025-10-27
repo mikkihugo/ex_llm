@@ -55,16 +55,16 @@ defmodule Singularity.Templates.Renderer do
       {:ok, validated_code}
   """
   @spec render(String.t(), variables(), render_opts()) :: {:ok, String.t()} | {:error, term()}
-  def render(template_id, variables \\ %{}, opts \\ []) do
-    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
+  def render(template_id, variables \\ %{}, _opts \\ []) do
+    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
 
     # Auto-detect format: Check for .hbs file first, fallback to JSON
     case determine_render_mode(template_id) do
       :solid ->
-        render_with_solid(template_id, variables, opts)
+        render_with_solid(template_id, variables, _opts)
 
       :legacy ->
-        render_legacy(template_id, variables, opts)
+        render_legacy(template_id, variables, _opts)
     end
   end
 
@@ -73,15 +73,15 @@ defmodule Singularity.Templates.Renderer do
 
   Supports full Handlebars syntax: conditionals, loops, partials, custom helpers.
   """
-  def render_with_solid(template_id, variables \\ %{}, opts \\ []) do
-    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
+  def render_with_solid(template_id, variables \\ %{}, _opts \\ []) do
+    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
 
     with {:ok, hbs_content} <- load_handlebars_template(template_id),
          {:ok, metadata} <- load_template_metadata(template_id),
-         {:ok, validated_vars} <- validate_variables_from_metadata(metadata, variables, opts),
+         {:ok, validated_vars} <- validate_variables_from_metadata(metadata, variables, _opts),
          {:ok, solid_template} <- parse_solid_template(hbs_content, template_id),
          {:ok, rendered} <- render_solid(solid_template, validated_vars),
-         {:ok, checked} <- maybe_quality_check(rendered, metadata, opts) do
+         {:ok, checked} <- maybe_quality_check(rendered, metadata, _opts) do
       {:ok, checked}
     else
       {:error, reason} = error ->
@@ -93,14 +93,14 @@ defmodule Singularity.Templates.Renderer do
   @doc """
   Legacy render using JSON templates (backward compatible).
   """
-  def render_legacy(template_id, variables \\ %{}, opts \\ []) do
-    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
+  def render_legacy(template_id, variables \\ %{}, _opts \\ []) do
+    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
 
-    with {:ok, template} <- load_template(template_id, opts),
-         {:ok, validated_vars} <- validate_variables(template, variables, opts),
+    with {:ok, template} <- load_template(template_id, _opts),
+         {:ok, validated_vars} <- validate_variables(template, variables, _opts),
          {:ok, composed} <- compose_template(template, validated_vars),
          {:ok, rendered} <- render_template(composed, validated_vars),
-         {:ok, checked} <- maybe_quality_check(rendered, template, opts) do
+         {:ok, checked} <- maybe_quality_check(rendered, template, _opts) do
       {:ok, checked}
     else
       {:error, reason} = error ->
@@ -125,8 +125,8 @@ defmodule Singularity.Templates.Renderer do
   """
   @spec render_snippets(String.t(), variables(), render_opts()) ::
           {:ok, %{String.t() => String.t()}} | {:error, term()}
-  def render_snippets(template_id, variables \\ %{}, opts \\ []) do
-    with {:ok, template} <- load_template(template_id, opts),
+  def render_snippets(template_id, variables \\ %{}, _opts \\ []) do
+    with {:ok, template} <- load_template(template_id, _opts),
          {:ok, snippets} <- extract_snippets(template),
          {:ok, rendered} <- render_all_snippets(snippets, variables, template) do
       {:ok, rendered}
@@ -241,8 +241,8 @@ defmodule Singularity.Templates.Renderer do
     end
   end
 
-  defp validate_variables_from_metadata(metadata, variables, opts) do
-    if Keyword.get(opts, :validate, true) do
+  defp validate_variables_from_metadata(metadata, variables, _opts) do
+    if Keyword.get(_opts, :validate, true) do
       var_defs = metadata["variables"] || %{}
       normalized = normalize_variables(variables)
 
@@ -301,7 +301,7 @@ defmodule Singularity.Templates.Renderer do
 
   ## Template Loading & Composition
 
-  defp load_template(template_id, opts) do
+  defp load_template(template_id, _opts) do
     case TemplateService.get_template("template", template_id) do
       {:ok, template} ->
         {:ok, template}
@@ -367,8 +367,8 @@ defmodule Singularity.Templates.Renderer do
 
   ## Variable Handling
 
-  defp validate_variables(template, variables, opts) do
-    if Keyword.get(opts, :validate, true) do
+  defp validate_variables(template, variables, _opts) do
+    if Keyword.get(_opts, :validate, true) do
       case check_required_variables(template, variables) do
         {:ok, normalized} -> {:ok, normalized}
         error -> error
@@ -521,8 +521,8 @@ defmodule Singularity.Templates.Renderer do
 
   ## Quality Checking
 
-  defp maybe_quality_check(code, template, opts) do
-    if Keyword.get(opts, :quality_check, false) do
+  defp maybe_quality_check(code, template, _opts) do
+    if Keyword.get(_opts, :quality_check, false) do
       quality_check(code, template)
     else
       {:ok, code}

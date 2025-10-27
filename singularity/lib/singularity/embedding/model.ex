@@ -23,23 +23,23 @@ defmodule Singularity.Embedding.Model do
   @doc """
   Build embedding model for a specific architecture.
   """
-  def build(model_name, opts \\ []) do
+  def build(model_name, _opts \\ []) do
     case model_name do
       :qodo ->
-        build_qodo(opts)
+        build_qodo(_opts)
 
       :jina_v3 ->
-        build_jina_v3(opts)
+        build_jina_v3(_opts)
 
       _ ->
         {:error, "Unknown model: #{model_name}"}
     end
   end
 
-  defp build_qodo(opts) do
-    vocab_size = Keyword.get(opts, :vocab_size, 50257)
-    hidden_dim = Keyword.get(opts, :hidden_dim, 768)
-    output_dim = Keyword.get(opts, :output_dim, 1536)
+  defp build_qodo(_opts) do
+    vocab_size = Keyword.get(_opts, :vocab_size, 50257)
+    hidden_dim = Keyword.get(_opts, :hidden_dim, 768)
+    output_dim = Keyword.get(_opts, :output_dim, 1536)
 
     Logger.info(
       "Building Qodo model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}"
@@ -73,10 +73,10 @@ defmodule Singularity.Embedding.Model do
       {:error, e}
   end
 
-  defp build_jina_v3(opts) do
-    vocab_size = Keyword.get(opts, :vocab_size, 32000)
-    hidden_dim = Keyword.get(opts, :hidden_dim, 512)
-    output_dim = Keyword.get(opts, :output_dim, 1024)
+  defp build_jina_v3(_opts) do
+    vocab_size = Keyword.get(_opts, :vocab_size, 32000)
+    hidden_dim = Keyword.get(_opts, :hidden_dim, 512)
+    output_dim = Keyword.get(_opts, :output_dim, 1024)
 
     Logger.info(
       "Building Jina v3 model: vocab=#{vocab_size}, hidden=#{hidden_dim}, output=#{output_dim}"

@@ -102,10 +102,10 @@ defmodule Singularity.Database.MetricsAggregation do
   - `:limit` - Max results (default: 1000)
   - `:agent_id` - Filter by agent (optional)
   """
-  def get_metrics(metric_name, opts \\ []) when is_atom(metric_name) do
-    last_seconds = Keyword.get(opts, :last, 3600)
-    limit = Keyword.get(opts, :limit, 1000)
-    agent_id = Keyword.get(opts, :agent_id)
+  def get_metrics(metric_name, _opts \\ []) when is_atom(metric_name) do
+    last_seconds = Keyword.get(_opts, :last, 3600)
+    limit = Keyword.get(_opts, :limit, 1000)
+    agent_id = Keyword.get(_opts, :agent_id)
 
     result =
       if agent_id do
@@ -161,10 +161,10 @@ defmodule Singularity.Database.MetricsAggregation do
   - `:window` - Bucket size in seconds (default: 300 = 5min)
   - `:last` - Look back period in seconds (default: 86400 = 1 day)
   """
-  def get_time_buckets(metric_name, opts \\ []) when is_atom(metric_name) do
-    window = Keyword.get(opts, :window, 300)
-    last_seconds = Keyword.get(opts, :last, 86400)
-    agent_id = Keyword.get(opts, :agent_id)
+  def get_time_buckets(metric_name, _opts \\ []) when is_atom(metric_name) do
+    window = Keyword.get(_opts, :window, 300)
+    last_seconds = Keyword.get(_opts, :last, 86400)
+    agent_id = Keyword.get(_opts, :agent_id)
 
     result =
       if agent_id do
@@ -227,9 +227,9 @@ defmodule Singularity.Database.MetricsAggregation do
 
   Returns p50, p75, p95, p99 percentiles (useful for SLO/performance analysis).
   """
-  def get_percentile(metric_name, percentile, opts \\ [])
+  def get_percentile(metric_name, percentile, _opts \\ [])
       when is_atom(metric_name) and is_integer(percentile) do
-    last_seconds = Keyword.get(opts, :last, 86400)
+    last_seconds = Keyword.get(_opts, :last, 86400)
 
     case Repo.query(
            """
@@ -255,8 +255,8 @@ defmodule Singularity.Database.MetricsAggregation do
 
   Returns events/second over the specified window.
   """
-  def get_rate(metric_name, opts \\ []) when is_atom(metric_name) do
-    window = Keyword.get(opts, :window, 3600)
+  def get_rate(metric_name, _opts \\ []) when is_atom(metric_name) do
+    window = Keyword.get(_opts, :window, 3600)
 
     case Repo.query(
            """

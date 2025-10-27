@@ -100,6 +100,7 @@ defmodule Singularity.CodeEngineNif do
   """
 
 
+  # use Rustler, otp_app: :singularity, crate: "code_quality_engine", path: "../packages/code_quality_engine"
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)
   # ===========================

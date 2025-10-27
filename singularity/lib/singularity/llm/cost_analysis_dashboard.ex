@@ -82,12 +82,12 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
   - `:model` - Filter by model (optional)
   - `:task_type` - Filter by task type (optional)
   """
-  def get_cost_analysis(opts \\ []) do
+  def get_cost_analysis(_opts \\ []) do
     try do
-      days = Keyword.get(opts, :days, 30)
-      provider = Keyword.get(opts, :provider)
-      model = Keyword.get(opts, :model)
-      task_type = Keyword.get(opts, :task_type)
+      days = Keyword.get(_opts, :days, 30)
+      provider = Keyword.get(_opts, :provider)
+      model = Keyword.get(_opts, :model)
+      task_type = Keyword.get(_opts, :task_type)
 
       from_date = DateTime.utc_now() |> DateTime.add(-days * 86400)
 

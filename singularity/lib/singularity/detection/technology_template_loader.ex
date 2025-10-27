@@ -15,7 +15,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   alias Singularity.TemplateStore
 
   @doc "Return decoded template map (or nil if missing)"
-  def template(identifier, opts \\ []) do
+  def template(identifier, _opts \\ []) do
     # Use dynamic template discovery - tries multiple patterns and semantic search
     case Singularity.Knowledge.TemplateService.find_technology_template(identifier) do
       {:ok, template} ->
@@ -28,23 +28,23 @@ defmodule Singularity.TechnologyTemplateLoader do
   end
 
   @doc "Return compiled regex patterns for identifier"
-  def patterns(identifier, opts \\ []) do
-    field = opts[:field]
+  def patterns(identifier, _opts \\ []) do
+    field = _opts[:field]
 
     identifier
-    |> template(opts)
+    |> template(_opts)
     |> extract_patterns(field)
     |> compile_patterns()
   end
 
   @doc "Append template-based patterns to defaults"
-  def compiled_patterns(identifier, defaults, opts \\ []) when is_list(defaults) do
-    defaults ++ patterns(identifier, opts)
+  def compiled_patterns(identifier, defaults, _opts \\ []) when is_list(defaults) do
+    defaults ++ patterns(identifier, _opts)
   end
 
   @doc "Fetch detector signatures map for identifier"
-  def detector_signatures(identifier, opts \\ []) do
-    case template(identifier, opts) do
+  def detector_signatures(identifier, _opts \\ []) do
+    case template(identifier, _opts) do
       %{"detector_signatures" => signatures} when is_map(signatures) -> signatures
       _ -> %{}
     end
@@ -54,7 +54,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   Resolve directories searched for template JSON files. Accepts optional
   `:dirs` override for tests or custom locations.
   """
-  def directories(opts \\ []) do
+  def directories(_opts \\ []) do
     base =
       [
         Application.get_env(:singularity, :technology_pattern_dir),
@@ -63,7 +63,7 @@ defmodule Singularity.TechnologyTemplateLoader do
       ]
       |> Enum.filter(&(&1 && File.dir?(&1)))
 
-    Enum.uniq(opts[:dirs] || base)
+    Enum.uniq(_opts[:dirs] || base)
   end
 
   defp to_relative_path(identifier) when is_atom(identifier),
@@ -169,8 +169,8 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp compile_pattern(%Regex{} = regex), do: {:ok, regex}
   defp compile_pattern(_), do: {:error, :invalid_pattern}
 
-  defp persist_template(identifier, %{} = template, source, opts) do
-    if Keyword.get(opts, :persist, true) do
+  defp persist_template(identifier, %{} = template, source, _opts) do
+    if Keyword.get(_opts, :persist, true) do
       try do
         case TechnologyTemplateStore.upsert(identifier, template,
                source: to_string(source),
@@ -198,11 +198,11 @@ defmodule Singularity.TechnologyTemplateLoader do
     template
   end
 
-  defp persist_template(identifier, template, source, opts) do
+  defp persist_template(identifier, template, source, _opts) do
     # Extract options
-    quality_level = Keyword.get(opts, :quality_level, :production)
-    force_update = Keyword.get(opts, :force_update, false)
-    validate_schema = Keyword.get(opts, :validate_schema, true)
+    quality_level = Keyword.get(_opts, :quality_level, :production)
+    force_update = Keyword.get(_opts, :force_update, false)
+    validate_schema = Keyword.get(_opts, :validate_schema, true)
 
     # Validate template schema if requested
     if validate_schema do

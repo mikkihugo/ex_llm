@@ -15,13 +15,13 @@ defmodule Singularity.Git.Supervisor do
 
   alias Singularity.Git.GitTreeSyncCoordinator
 
-  def start_link(opts \\ []) do
-    Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    Supervisor.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true
-  def init(opts) do
-    config = load_config(opts)
+  def init(_opts) do
+    config = load_config(_opts)
 
     if enabled?(config) do
       repo_path = repo_path(config)
@@ -62,9 +62,9 @@ defmodule Singularity.Git.Supervisor do
     end
   end
 
-  defp load_config(opts) do
+  defp load_config(_opts) do
     app_config = Application.get_env(:singularity, :git_coordinator, [])
-    Keyword.merge(app_config, opts)
+    Keyword.merge(app_config, _opts)
   end
 
   defp default_repo_path do

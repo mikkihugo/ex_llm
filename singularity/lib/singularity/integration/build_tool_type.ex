@@ -91,7 +91,7 @@ defmodule Singularity.Integration.BuildToolType do
   - `{:ok, %{output: String.t(), status: 0}}` on success
   - `{:error, reason}` on failure
   """
-  @callback run_build(project_path :: String.t(), opts :: Keyword.t()) ::
+  @callback run_build(project_path :: String.t(), _opts :: Keyword.t()) ::
               {:ok, map()} | {:error, term()}
 
   @doc """
@@ -101,7 +101,7 @@ defmodule Singularity.Integration.BuildToolType do
   - `{:ok, %{output: String.t(), status: 0}}` on success
   - `{:error, reason}` on failure
   """
-  @callback run_target(target :: String.t(), opts :: Keyword.t()) ::
+  @callback run_target(target :: String.t(), _opts :: Keyword.t()) ::
               {:ok, map()} | {:error, term()}
 
   @doc """

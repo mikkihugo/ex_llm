@@ -252,8 +252,8 @@ defmodule Singularity.Tools.Todos do
 
   @impl true
   def execute_tool("list_todos", params) do
-    opts = build_list_opts(params)
-    todos = TodoStore.list(opts)
+    _opts = build_list_opts(params)
+    todos = TodoStore.list(_opts)
 
     {:ok,
      %{
@@ -265,9 +265,9 @@ defmodule Singularity.Tools.Todos do
 
   @impl true
   def execute_tool("search_todos", %{"query" => query} = params) do
-    opts = build_search_opts(params)
+    _opts = build_search_opts(params)
 
-    case TodoStore.search(query, opts) do
+    case TodoStore.search(query, _opts) do
       {:ok, results} ->
         {:ok,
          %{
@@ -399,16 +399,16 @@ defmodule Singularity.Tools.Todos do
     |> Keyword.put_new(:limit, 10)
   end
 
-  defp maybe_add_opt(opts, params, key, opt_key) do
+  defp maybe_add_opt(_opts, params, key, opt_key) do
     case Map.get(params, key) do
       nil -> opts
-      value -> Keyword.put(opts, opt_key, value)
+      value -> Keyword.put(_opts, opt_key, value)
     end
   end
 
   defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Enum.reduce(opts, msg, fn {key, value}, acc ->
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} ->
+      Enum.reduce(_opts, msg, fn {key, value}, acc ->
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)

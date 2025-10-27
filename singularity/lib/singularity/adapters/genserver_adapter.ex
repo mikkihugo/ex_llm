@@ -35,13 +35,13 @@ defmodule Singularity.Adapters.GenServerAdapter do
   end
 
   @impl Singularity.Execution.TaskAdapter
-  def execute(task, opts \\ []) do
+  def execute(task, _opts \\ []) do
     Logger.debug("GenServer adapter: Executing task", task_type: task[:type])
 
     # Extract task details
     task_type = task[:type]
     args = task[:args] || %{}
-    timeout = Keyword.get(opts, :timeout, 5000)
+    timeout = Keyword.get(_opts, :timeout, 5000)
     task_id = generate_task_id()
 
     # Find or create agent for this task type

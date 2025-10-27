@@ -44,7 +44,7 @@ defmodule Singularity.PromptEngine do
       %{
         id: :template_catalog,
         label: "Template Catalog",
-        description: "Expose built-in templates plus remote template discovery via pgmq.",
+        description: "Expose built-in templates plus remote template discovery via Singularity.Jobs.PgmqClient.",
         available?: backend_available || templates_available,
         tags: [:templates]
       },
@@ -111,8 +111,8 @@ defmodule Singularity.PromptEngine do
   # ---------------------------------------------------------------------------
 
   @spec generate_prompt(String.t(), String.t(), keyword()) :: prompt_response
-  def generate_prompt(context, language, opts \\ []) do
-    request = build_request(context, language, opts)
+  def generate_prompt(context, language, _opts \\ []) do
+    request = build_request(context, language, _opts)
 
     with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.generate_prompt(request) end)} do
       {:ok, response}
@@ -153,35 +153,35 @@ defmodule Singularity.PromptEngine do
   end
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
-  def call_llm(model_or_complexity, messages, opts \\ []) do
+  def call_llm(model_or_complexity, messages, _opts \\ []) do
     # Use centralized LLM service via pgmq-based llm-server
-    Singularity.LLM.Service.call(model_or_complexity, messages, opts)
+    Singularity.LLM.Service.call(model_or_complexity, messages, _opts)
   end
 
   @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def call_llm_with_prompt(model_or_complexity, prompt, opts \\ []) do
+  def call_llm_with_prompt(model_or_complexity, prompt, _opts \\ []) do
     messages = [%{role: "user", content: prompt}]
-    call_llm(model_or_complexity, messages, opts)
+    call_llm(model_or_complexity, messages, _opts)
   end
 
   @spec call_llm_with_system(String.t() | atom(), String.t(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def call_llm_with_system(model_or_complexity, system_prompt, user_message, opts \\ []) do
+  def call_llm_with_system(model_or_complexity, system_prompt, user_message, _opts \\ []) do
     messages = [
       %{role: "system", content: system_prompt},
       %{role: "user", content: user_message}
     ]
 
-    call_llm(model_or_complexity, messages, opts)
+    call_llm(model_or_complexity, messages, _opts)
   end
 
   @spec optimize_prompt(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
-  def optimize_prompt(prompt, opts \\ []) do
+  def optimize_prompt(prompt, _opts \\ []) do
     request = %{
       prompt: prompt,
-      context: Keyword.get(opts, :context),
-      language: Keyword.get(opts, :language)
+      context: Keyword.get(_opts, :context),
+      language: Keyword.get(_opts, :language)
     }
 
     with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.optimize_prompt(request) end)} do
@@ -202,8 +202,8 @@ defmodule Singularity.PromptEngine do
   # ---------------------------------------------------------------------------
 
   @spec get_template(String.t(), keyword()) :: prompt_response
-  def get_template(template_id, opts \\ []) do
-    context = Keyword.get(opts, :context, %{})
+  def get_template(template_id, _opts \\ []) do
+    context = Keyword.get(_opts, :context, %{})
 
     case Enum.find(@default_templates, &(&1.id == template_id)) do
       nil -> {:error, {:template_not_found, template_id, context}}
@@ -261,14 +261,14 @@ defmodule Singularity.PromptEngine do
   # Local fallback implementations
   # ---------------------------------------------------------------------------
 
-  defp build_request(context, language, opts) do
+  defp build_request(context, language, _opts) do
     %{
       context: context,
       language: language,
-      template_id: Keyword.get(opts, :template_id),
-      trigger_type: Keyword.get(opts, :trigger_type),
-      trigger_value: Keyword.get(opts, :trigger_value),
-      category: Keyword.get(opts, :category, "commands")
+      template_id: Keyword.get(_opts, :template_id),
+      trigger_type: Keyword.get(_opts, :trigger_type),
+      trigger_value: Keyword.get(_opts, :trigger_value),
+      category: Keyword.get(_opts, :category, "commands")
     }
   end
 
@@ -368,7 +368,7 @@ defmodule Singularity.PromptEngine do
 
   defmodule Native do
     @moduledoc false
-    use Rustler, otp_app: :singularity, crate: "prompt_engine", path: "../packages/prompt_engine"
+    # use Rustler, otp_app: :singularity, crate: "prompt_engine", path: "../packages/prompt_engine"
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
@@ -404,7 +404,7 @@ defmodule Singularity.PromptEngine do
   end
 
   @doc """
-  Syncs a template from the global knowledge cache via pgmq.
+  Syncs a template from the global knowledge cache via Singularity.Jobs.PgmqClient.
   """
   def sync_template_from_global(template_name) do
     :prompt_engine.sync_template_from_global(template_name)

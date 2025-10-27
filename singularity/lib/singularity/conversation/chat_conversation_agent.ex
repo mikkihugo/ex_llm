@@ -6,7 +6,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   Manages bidirectional communication between autonomous agents and humans.
   Agents ask questions, get feedback, explain decisions, and request approvals.
-  Primary interface: Google Chat (mobile & desktop friendly). No code analysis -
+  Primary interface: web interface (web-based). No code analysis -
   just business decisions.
 
   ## Public API Contract
@@ -99,7 +99,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   ## Public API
 
-  def start_link(_opts) do
+  def start_link(__opts) do
     GenServer.start_link(
       __MODULE__,
       %__MODULE__{
@@ -112,18 +112,18 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @doc "Agent asks a question and waits for human response"
-  def ask(question, opts \\ []) do
-    GenServer.call(__MODULE__, {:ask, question, opts}, :infinity)
+  def ask(question, __opts \\ []) do
+    GenServer.call(__MODULE__, {:ask, question, __opts}, :infinity)
   end
 
   @doc "Agent provides a recommendation for human to accept/reject"
-  def recommend(recommendation, opts \\ []) do
-    GenServer.call(__MODULE__, {:recommend, recommendation, opts}, :infinity)
+  def recommend(recommendation, __opts \\ []) do
+    GenServer.call(__MODULE__, {:recommend, recommendation, __opts}, :infinity)
   end
 
   @doc "Agent explains a decision (non-blocking)"
-  def explain(decision, opts \\ []) do
-    GenServer.cast(__MODULE__, {:explain, decision, opts})
+  def explain(decision, __opts \\ []) do
+    GenServer.cast(__MODULE__, {:explain, decision, __opts})
   end
 
   @doc "Human sends a message/command to the agent"
@@ -146,14 +146,13 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_call({:ask, question, opts}, from, state) do
+  def handle_call({:ask, question, __opts}, from, state) do
     conversation_id = generate_conversation_id()
-    urgency = Keyword.get(opts, :urgency, :normal)
-    context = Keyword.get(opts, :context, %{})
-    timeout = Keyword.get(opts, :timeout, :infinity)
+    urgency = Keyword.get(__opts, :urgency, :normal)
+    context = Keyword.get(__opts, :context, %{})
+    timeout = Keyword.get(__opts, :timeout, :infinity)
 
-    conversation_type =
-      opts
+    conversation_type = __opts
       |> Keyword.get(:type, :clarification)
       |> normalize_conversation_type()
 
@@ -168,8 +167,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       status: :pending
     }
 
-    # Send to configured channel (default: Google Chat)
-    channel = Keyword.get(opts, :channel, get_default_channel())
+    # Send to configured channel (default: web interface)
+    channel = Keyword.get(__opts, :channel, get_default_channel())
     send_to_channel(channel, :ask_question, conversation)
 
     new_state = %{
@@ -183,7 +182,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_call({:recommend, recommendation, opts}, from, state) do
+  def handle_call({:recommend, recommendation, __opts}, from, state) do
     conversation_id = generate_conversation_id()
 
     conversation = %{
@@ -193,14 +192,14 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       asked_at: DateTime.utc_now(),
       asked_by: from,
       status: :pending,
-      default_action: Keyword.get(opts, :default, :wait)
+      default_action: Keyword.get(__opts, :default, :wait)
     }
 
-    channel = Keyword.get(opts, :channel, get_default_channel())
-    send_to_channel(channel, :ask_approval, recommendation)
+    channel = Keyword.get(__opts, :channel, get_default_channel())
+    send_to_channel(channel, :ask_approval, conversation)
 
     # Handle timeout if specified
-    case Keyword.get(opts, :timeout) do
+    case Keyword.get(__opts, :timeout) do
       nil ->
         :ok
 
@@ -217,9 +216,9 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_cast({:explain, decision, opts}, state) do
+  def handle_cast({:explain, decision, __opts}, state) do
     # Non-blocking explanation
-    channel = Keyword.get(opts, :channel, get_default_channel())
+    channel = Keyword.get(__opts, :channel, get_default_channel())
     send_to_channel(channel, :notify, format_decision(decision))
 
     {:noreply, %{state | conversation_history: [decision | state.conversation_history]}}
@@ -669,7 +668,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     case System.get_env("CHAT_CHANNEL") do
       "slack" -> :slack
       "google_chat" -> :google_chat
-      # Default to Google Chat
+      # Default to web interface
       _ -> :google_chat
     end
   end

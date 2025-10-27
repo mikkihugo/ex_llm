@@ -198,13 +198,13 @@ defmodule Singularity.Architecture.PatternDetector do
   }}
   ```
   """
-  def detect(path, opts \\ []) when is_binary(path) do
+  def detect(path, _opts \\ []) when is_binary(path) do
     try do
       # Load all enabled detectors from config
       enabled_detectors = PatternType.load_enabled_detectors()
 
       # Filter by requested pattern types if specified
-      pattern_types = Keyword.get(opts, :pattern_types, nil)
+      pattern_types = Keyword.get(_opts, :pattern_types, nil)
 
       detectors_to_run =
         if pattern_types do
@@ -217,7 +217,7 @@ defmodule Singularity.Architecture.PatternDetector do
       results =
         detectors_to_run
         |> Enum.map(fn {pattern_type, detector_config} ->
-          Task.async(fn -> run_detector(pattern_type, detector_config, path, opts) end)
+          Task.async(fn -> run_detector(pattern_type, detector_config, path, _opts) end)
         end)
         |> Enum.map(&Task.await/1)
         |> Enum.into(%{})
@@ -268,19 +268,19 @@ defmodule Singularity.Architecture.PatternDetector do
 
   # Private helpers
 
-  defp run_detector(pattern_type, detector_config, path, opts) do
+  defp run_detector(pattern_type, detector_config, path, _opts) do
     try do
       module = detector_config[:module]
 
       if module && Code.ensure_loaded?(module) do
         Logger.debug("Running #{pattern_type} detector at #{path}")
-        patterns = module.detect(path, opts)
+        patterns = module.detect(path, _opts)
 
         # Filter and limit results
         filtered =
           patterns
-          |> filter_by_confidence(opts)
-          |> limit_results(opts)
+          |> filter_by_confidence(_opts)
+          |> limit_results(_opts)
 
         Logger.debug("#{pattern_type} detector found #{length(filtered)} patterns")
         {pattern_type, filtered}
@@ -299,16 +299,16 @@ defmodule Singularity.Architecture.PatternDetector do
     end
   end
 
-  defp filter_by_confidence(patterns, opts) do
-    min_confidence = Keyword.get(opts, :min_confidence, 0.5)
+  defp filter_by_confidence(patterns, _opts) do
+    min_confidence = Keyword.get(_opts, :min_confidence, 0.5)
 
     Enum.filter(patterns, fn pattern ->
       pattern[:confidence] || 1.0 >= min_confidence
     end)
   end
 
-  defp limit_results(patterns, opts) do
-    case Keyword.get(opts, :limit) do
+  defp limit_results(patterns, _opts) do
+    case Keyword.get(_opts, :limit) do
       nil -> patterns
       limit -> Enum.take(patterns, limit)
     end

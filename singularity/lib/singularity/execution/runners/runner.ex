@@ -77,8 +77,8 @@ defmodule Singularity.Execution.Runners.Runner do
   Start the Runner GenServer.
   """
   @spec start_link(keyword()) :: GenServer.on_start()
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @doc """
@@ -93,16 +93,16 @@ defmodule Singularity.Execution.Runners.Runner do
   Execute multiple tasks concurrently with backpressure.
   """
   @spec execute_concurrent([task()], keyword()) :: {:ok, [execution_result()]}
-  def execute_concurrent(tasks, opts \\ []) do
-    GenServer.call(__MODULE__, {:execute_concurrent, tasks, opts}, :infinity)
+  def execute_concurrent(tasks, _opts \\ []) do
+    GenServer.call(__MODULE__, {:execute_concurrent, tasks, _opts}, :infinity)
   end
 
   @doc """
   Stream execution with backpressure and real-time results.
   """
   @spec stream_execution([task()], keyword()) :: Enumerable.t()
-  def stream_execution(tasks, opts \\ []) do
-    GenServer.call(__MODULE__, {:stream_execution, tasks, opts}, :infinity)
+  def stream_execution(tasks, _opts \\ []) do
+    GenServer.call(__MODULE__, {:stream_execution, tasks, _opts}, :infinity)
   end
 
   @doc """
@@ -125,12 +125,12 @@ defmodule Singularity.Execution.Runners.Runner do
   Get execution history from database.
   """
   @spec get_execution_history(keyword()) :: [map()]
-  def get_execution_history(opts \\ []) do
-    GenServer.call(__MODULE__, {:get_execution_history, opts})
+  def get_execution_history(_opts \\ []) do
+    GenServer.call(__MODULE__, {:get_execution_history, _opts})
   end
 
   @doc """
-  Publish execution event via pgmq.
+  Publish execution event via Singularity.Jobs.PgmqClient.
   """
   @spec publish_event(String.t(), map()) :: :ok | {:error, term()}
   def publish_event(event_type, payload) do
@@ -239,9 +239,9 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   @impl true
-  def handle_call({:execute_concurrent, tasks, opts}, _from, state) do
-    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
-    timeout = Keyword.get(opts, :timeout, 30_000)
+  def handle_call({:execute_concurrent, tasks, _opts}, _from, state) do
+    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
+    timeout = Keyword.get(_opts, :timeout, 30_000)
 
     # Execute tasks concurrently with backpressure
     results =
@@ -261,9 +261,9 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   @impl true
-  def handle_call({:stream_execution, tasks, opts}, _from, state) do
-    max_concurrency = Keyword.get(opts, :max_concurrency, 10)
-    timeout = Keyword.get(opts, :timeout, 30_000)
+  def handle_call({:stream_execution, tasks, _opts}, _from, state) do
+    max_concurrency = Keyword.get(_opts, :max_concurrency, 10)
+    timeout = Keyword.get(_opts, :timeout, 30_000)
 
     # Create streaming execution
     stream =
@@ -299,9 +299,9 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   @impl true
-  def handle_call({:get_execution_history, opts}, _from, state) do
-    limit = Keyword.get(opts, :limit, 100)
-    offset = Keyword.get(opts, :offset, 0)
+  def handle_call({:get_execution_history, _opts}, _from, state) do
+    limit = Keyword.get(_opts, :limit, 100)
+    offset = Keyword.get(_opts, :offset, 0)
 
     history =
       state.execution_history
@@ -664,7 +664,7 @@ defmodule Singularity.Execution.Runners.Runner do
   # PERSISTENCE
   # ============================================================================
 
-  defp persist_execution(execution_id, task, status, opts \\ []) do
+  defp persist_execution(execution_id, task, status, _opts \\ []) do
     try do
       # Create execution record
       execution_record = %{
@@ -673,8 +673,8 @@ defmodule Singularity.Execution.Runners.Runner do
         task_args: task.args,
         status: status,
         started_at: DateTime.utc_now(),
-        result: Keyword.get(opts, :result),
-        error: Keyword.get(opts, :error)
+        result: Keyword.get(_opts, :result),
+        error: Keyword.get(_opts, :error)
       }
 
       # Store in ETS table for fast access

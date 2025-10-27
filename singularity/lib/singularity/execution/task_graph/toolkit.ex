@@ -15,7 +15,7 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
   ```
   Agent calls Toolkit.run(:shell, args, policy: :coder)
        ↓
-  Policy.enforce(:coder, :shell, args, opts)  # Security check
+  Policy.enforce(:coder, :shell, args, _opts)  # Security check
        ↓
   Dispatch to Tools.Shell (existing Singularity tools)
        ↓
@@ -55,7 +55,7 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
 
   - `tool` - Tool name (`:git`, `:fs`, `:shell`, `:docker`, `:lua`, `:http`)
   - `args` - Tool-specific arguments (map)
-  - `opts` - Options including:
+  - `_opts` - Options including:
     - `:policy` - Required: Role for policy enforcement
     - `:timeout` - Timeout in milliseconds
     - `:cpu`, `:mem` - Docker resource limits
@@ -79,13 +79,13 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
       # => {:error, :policy_violation}
   """
   @spec run(atom(), map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def run(tool, args, opts \\ []) do
-    policy = Keyword.get(opts, :policy, :coder)
+  def run(tool, args, _opts \\ []) do
+    policy = Keyword.get(_opts, :policy, :coder)
 
     start_time = System.monotonic_time(:millisecond)
 
-    with :ok <- Policy.enforce(policy, tool, args, opts),
-         {:ok, result} <- dispatch(tool, args, opts) do
+    with :ok <- Policy.enforce(policy, tool, args, _opts),
+         {:ok, result} <- dispatch(tool, args, _opts) do
       duration = System.monotonic_time(:millisecond) - start_time
 
       emit_telemetry(tool, policy, :success, duration)
@@ -109,9 +109,9 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
 
   ## Private Helpers
 
-  defp dispatch(:git, args, opts) do
+  defp dispatch(:git, args, _opts) do
     # Delegate to existing Tools.Git
-    apply_existing_tool(Singularity.Tools.Git, :execute, [args, opts])
+    apply_existing_tool(Singularity.Tools.Git, :execute, [args, _opts])
   end
 
   defp dispatch(:fs, %{write: path, content: content}, _opts) do
@@ -130,25 +130,25 @@ defmodule Singularity.Execution.TaskGraph.Toolkit do
     end
   end
 
-  defp dispatch(:shell, %{cmd: cmd}, opts) do
+  defp dispatch(:shell, %{cmd: cmd}, _opts) do
     # Delegate to existing Tools.Shell
-    apply_existing_tool(Singularity.Tools.Shell, :execute, [cmd, opts])
+    apply_existing_tool(Singularity.Tools.Shell, :execute, [cmd, _opts])
   end
 
-  defp dispatch(:docker, args, opts) do
+  defp dispatch(:docker, args, _opts) do
     # Would delegate to TaskGraph.Adapters.Docker when implemented
     # For now, return placeholder
     Logger.warning("Docker adapter not yet implemented, returning mock")
     {:ok, %{stdout: "mock docker output", exit: 0}}
   end
 
-  defp dispatch(:lua, args, opts) do
+  defp dispatch(:lua, args, _opts) do
     # Would delegate to TaskGraph.Adapters.Lua when implemented
     Logger.warning("Lua adapter not yet implemented, returning mock")
     {:ok, %{result: "mock lua result"}}
   end
 
-  defp dispatch(:http, args, opts) do
+  defp dispatch(:http, args, _opts) do
     # Would delegate to TaskGraph.Adapters.HTTP when implemented
     Logger.warning("HTTP adapter not yet implemented, returning mock")
     {:ok, %{status: 200, body: "mock response"}}

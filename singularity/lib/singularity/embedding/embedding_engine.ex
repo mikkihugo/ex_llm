@@ -185,8 +185,8 @@ defmodule Singularity.EmbeddingEngine do
       {:ok, %Pgvector{}}
   """
   @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
-  def embed(text, opts \\ []) do
-    case NxService.embed(text, opts) do
+  def embed(text, _opts \\ []) do
+    case NxService.embed(text, _opts) do
       {:ok, embedding} ->
         Logger.debug("Generated embedding", text_length: String.length(text))
         {:ok, Pgvector.new(embedding)}
@@ -208,8 +208,8 @@ defmodule Singularity.EmbeddingEngine do
       {:ok, [%Pgvector{}, %Pgvector{}]}
   """
   @spec embed_batch([String.t()], keyword()) :: {:ok, [embedding()]} | {:error, term()}
-  def embed_batch(texts, opts \\ []) do
-    case NxService.embed_batch(texts, opts) do
+  def embed_batch(texts, _opts \\ []) do
+    case NxService.embed_batch(texts, _opts) do
       {:ok, embeddings} ->
         Logger.debug("Generated batch embeddings", count: length(texts))
         {:ok, Enum.map(embeddings, &Pgvector.new/1)}
@@ -231,8 +231,8 @@ defmodule Singularity.EmbeddingEngine do
       {:ok, 0.92}
   """
   @spec similarity(String.t(), String.t(), keyword()) :: {:ok, similarity()} | {:error, term()}
-  def similarity(text1, text2, opts \\ []) do
-    case NxService.similarity(text1, text2, opts) do
+  def similarity(text1, text2, _opts \\ []) do
+    case NxService.similarity(text1, text2, _opts) do
       {:ok, similarity} ->
         Logger.debug("Calculated similarity", similarity: Float.round(similarity, 3))
         {:ok, similarity}

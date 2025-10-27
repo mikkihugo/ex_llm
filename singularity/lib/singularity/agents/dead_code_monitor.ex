@@ -11,7 +11,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
     "purpose": "Monitor and report on dead code annotations in Rust codebase",
     "related_modules": [
       "Singularity.Agents.Agent",
-      "Singularity.pgmq.ExecutionRouter"
+      "Singularity.Jobs.PgmqClient.ExecutionRouter"
     ],
     "duplicate_prevention": [
       "DO NOT create DeadCodeAnalyzer - use DeadCodeMonitor",
@@ -55,7 +55,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
       - File.read!/1 (read script output)
       - String.split/2 (parse output)
       - Logger.info/1 (log results)
-      - pgmq.publish/2 (send reports)
+      - Singularity.Jobs.PgmqClient.publish/2 (send reports)
     publishes_to:
       - "code_quality.dead_code.report"
       - "code_quality.dead_code.alert"
@@ -157,8 +157,8 @@ defmodule Singularity.Agents.DeadCodeMonitor do
 
   # GenServer Callbacks (if used as supervised process)
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true

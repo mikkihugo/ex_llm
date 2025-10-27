@@ -11,7 +11,7 @@ defmodule Singularity.Tools.Planning do
 
   require Logger
   alias Singularity.Schemas.Tools.Tool
-  alias Singularity.Execution.Planning.{SafeWorkPlanner, TaskGraphCore}
+  alias Singularity.Execution.Planning.{SafeWorkPlanner, TaskGraphEngine}
   alias Singularity.Execution.Autonomy.Planner
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 
@@ -203,9 +203,9 @@ defmodule Singularity.Tools.Planning do
     complexity = Map.get(args, "complexity", "medium")
     max_depth = Map.get(args, "max_depth", 3)
 
-    case TaskGraphCore.decompose_task(description, complexity: complexity, max_depth: max_depth) do
+    case TaskGraphEngine.decompose_task(description, complexity: complexity, max_depth: max_depth) do
       {:ok, dag} ->
-        tasks = TaskGraphCore.get_all_tasks(dag)
+        tasks = TaskGraphEngine.get_all_tasks(dag)
 
         {:ok,
          %{
@@ -214,7 +214,7 @@ defmodule Singularity.Tools.Planning do
            max_depth: max_depth,
            total_tasks: length(tasks),
            tasks: tasks,
-           dag_structure: TaskGraphCore.get_structure(dag)
+           dag_structure: TaskGraphEngine.get_structure(dag)
          }}
 
       {:error, reason} ->

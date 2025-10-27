@@ -49,7 +49,7 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
   end
 
   @impl true
-  def generate(spec, opts \\ []) when is_map(spec) do
+  def generate(spec, _opts \\ []) when is_map(spec) do
     try do
       # Unpack spec fields for CodeGenerator.generate/2
       task = spec[:spec] || spec[:task] || ""
@@ -57,19 +57,19 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
       # Extract CodeGenerator-specific options
       code_opts =
         [
-          language: spec[:language] || opts[:language],
-          method: opts[:method],
-          quality: opts[:quality],
-          use_rag: opts[:use_rag],
-          top_k: opts[:top_k],
-          repos: opts[:repos],
-          validate: opts[:validate],
-          max_retries: opts[:max_retries],
-          complexity: opts[:complexity]
+          language: spec[:language] || _opts[:language],
+          method: _opts[:method],
+          quality: _opts[:quality],
+          use_rag: _opts[:use_rag],
+          top_k: _opts[:top_k],
+          repos: _opts[:repos],
+          validate: _opts[:validate],
+          max_retries: _opts[:max_retries],
+          complexity: _opts[:complexity]
         ]
         |> Enum.filter(fn {_k, v} -> v != nil end)
 
-      Logger.debug("CodeGeneratorImpl: generating for task", task: task, opts: code_opts)
+      Logger.debug("CodeGeneratorImpl: generating for task", task: task, _opts: code_opts)
       CodeGenerator.generate(task, code_opts)
     rescue
       e ->

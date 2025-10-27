@@ -38,7 +38,7 @@ defmodule Singularity.Knowledge.TemplateService do
   ## Example: Elixir Client
 
   ```elixir
-  {:ok, response} = pgmq.request(gnat, "template.get.framework.phoenix", "")
+  {:ok, response} = Singularity.Jobs.PgmqClient.request(gnat, "template.get.framework.phoenix", "")
   {:ok, template} = Jason.decode(response.body)
   ```
 
@@ -207,8 +207,8 @@ defmodule Singularity.Knowledge.TemplateService do
 
   # Client API
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   # Server Callbacks
@@ -382,15 +382,15 @@ defmodule Singularity.Knowledge.TemplateService do
       {:ok, code_with_phoenix_best_practices}
   """
   @spec render_with_context(String.t(), map(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def render_with_context(template_id, user_variables, opts \\ []) do
+  def render_with_context(template_id, user_variables, _opts \\ []) do
     # 1. Query Package Intelligence for enriched context
-    case query_package_intelligence(user_variables, opts) do
+    case query_package_intelligence(user_variables, _opts) do
       {:ok, intelligence} ->
         # 2. Merge user variables with intelligence context
-        enriched_variables = compose_context(user_variables, intelligence, opts)
+        enriched_variables = compose_context(user_variables, intelligence, _opts)
 
         # 3. Render with enriched context
-        render_template_with_solid(template_id, enriched_variables, opts)
+        render_template_with_solid(template_id, enriched_variables, _opts)
 
       {:error, reason} ->
         # If intelligence query fails, render with user variables only
@@ -398,7 +398,7 @@ defmodule Singularity.Knowledge.TemplateService do
           reason: reason
         )
 
-        render_template_with_solid(template_id, user_variables, opts)
+        render_template_with_solid(template_id, user_variables, _opts)
     end
   end
 
@@ -419,7 +419,7 @@ defmodule Singularity.Knowledge.TemplateService do
         module_name: "MyApp.Worker",
         description: "Background worker",
         api_functions: [
-          %{name: "start_link", args: "opts", return_type: "GenServer.on_start()"}
+          %{name: "start_link", args: "_opts", return_type: "GenServer.on_start()"}
         ]
       })
       {:ok, "defmodule MyApp.Worker do\\n  @moduledoc..."}
@@ -429,9 +429,9 @@ defmodule Singularity.Knowledge.TemplateService do
   """
   @spec render_template_with_solid(String.t(), map(), keyword()) ::
           {:ok, String.t()} | {:error, term()}
-  def render_template_with_solid(template_id, variables, opts \\ []) do
+  def render_template_with_solid(template_id, variables, _opts \\ []) do
     # Delegate to Renderer for actual rendering logic
-    case Singularity.Templates.Renderer.render(template_id, variables, opts) do
+    case Singularity.Templates.Renderer.render(template_id, variables, _opts) do
       {:ok, rendered} ->
         # Track successful render for learning
         track_template_usage(template_id, :success)
@@ -458,8 +458,8 @@ defmodule Singularity.Knowledge.TemplateService do
   """
   @spec render_with_solid_only(String.t(), map(), keyword()) ::
           {:ok, String.t()} | {:error, term()}
-  def render_with_solid_only(template_id, variables, opts \\ []) do
-    case Singularity.Templates.Renderer.render_with_solid(template_id, variables, opts) do
+  def render_with_solid_only(template_id, variables, _opts \\ []) do
+    case Singularity.Templates.Renderer.render_with_solid(template_id, variables, _opts) do
       {:ok, rendered} ->
         track_template_usage(template_id, :success)
         {:ok, rendered}
@@ -477,8 +477,8 @@ defmodule Singularity.Knowledge.TemplateService do
   """
   @spec render_with_json_only(String.t(), map(), keyword()) ::
           {:ok, String.t()} | {:error, term()}
-  def render_with_json_only(template_id, variables, opts \\ []) do
-    case Singularity.Templates.Renderer.render_legacy(template_id, variables, opts) do
+  def render_with_json_only(template_id, variables, _opts \\ []) do
+    case Singularity.Templates.Renderer.render_legacy(template_id, variables, _opts) do
       {:ok, rendered} ->
         track_template_usage(template_id, :success)
         {:ok, rendered}
@@ -573,8 +573,8 @@ defmodule Singularity.Knowledge.TemplateService do
   List available templates by type.
   This helps modules discover what templates are available.
   """
-  def list_templates(template_type, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 100)
+  def list_templates(template_type, _opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 100)
 
     # First try local TemplateStore
     case Singularity.TemplateStore.search("", type: template_type, limit: limit) do
@@ -592,9 +592,9 @@ defmodule Singularity.Knowledge.TemplateService do
   Find template using convention-based discovery.
   Tries multiple naming patterns and falls back to semantic search.
   """
-  def find_template(template_type, language, use_case, opts \\ []) do
+  def find_template(template_type, language, use_case, _opts \\ []) do
     # Build candidate patterns based on convention
-    candidates = build_template_candidates(template_type, language, use_case, opts)
+    candidates = build_template_candidates(template_type, language, use_case, _opts)
 
     # Try each candidate in order of preference
     case try_template_candidates(template_type, candidates) do
@@ -646,8 +646,8 @@ defmodule Singularity.Knowledge.TemplateService do
   Search templates by query and type.
   This helps modules find relevant templates.
   """
-  def search_templates(query, template_type, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+  def search_templates(query, template_type, _opts \\ []) do
+    limit = Keyword.get(_opts, :limit, 10)
 
     # Use TemplateStore for semantic search
     case Singularity.TemplateStore.search(query, type: template_type, limit: limit) do
@@ -688,7 +688,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.publish(
-           Singularity.pgmq.RegistryClient.subject(:knowledge_template_store),
+           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_store),
            Jason.encode!(request)
          ) do
       :ok ->
@@ -714,7 +714,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.pgmq.RegistryClient.subject(:knowledge_template_get),
+           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_get),
            Jason.encode!(request),
            timeout: 5000
          ) do
@@ -743,7 +743,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.pgmq.RegistryClient.subject(:knowledge_template_list),
+           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_list),
            Jason.encode!(request),
            timeout: 5000
          ) do
@@ -761,9 +761,9 @@ defmodule Singularity.Knowledge.TemplateService do
 
   # Convention-based discovery helpers
 
-  defp build_template_candidates(template_type, language, use_case, opts) do
-    version = Keyword.get(opts, :version, "latest")
-    include_variants = Keyword.get(opts, :include_variants, true)
+  defp build_template_candidates(template_type, language, use_case, _opts) do
+    version = Keyword.get(_opts, :version, "latest")
+    include_variants = Keyword.get(_opts, :include_variants, true)
 
     base_candidates = [
       "#{language}_#{use_case}",
@@ -873,14 +873,14 @@ defmodule Singularity.Knowledge.TemplateService do
   # Package Intelligence Integration
   # ===========================
 
-  defp query_package_intelligence(user_variables, opts) do
+  defp query_package_intelligence(user_variables, _opts) do
     # Build query for Package Intelligence
     query = %{
       "description" => user_variables["description"] || "",
-      "language" => opts[:language] || user_variables["language"] || "elixir",
-      "framework" => opts[:framework],
-      "quality_level" => opts[:quality_level] || "production",
-      "task_type" => opts[:task_type] || "code_generation"
+      "language" => _opts[:language] || user_variables["language"] || "elixir",
+      "framework" => _opts[:framework],
+      "quality_level" => _opts[:quality_level] || "production",
+      "task_type" => _opts[:task_type] || "code_generation"
     }
 
     # Query via pgmq with timeout
@@ -907,15 +907,15 @@ defmodule Singularity.Knowledge.TemplateService do
     end
   end
 
-  defp compose_context(user_vars, intelligence, opts) do
+  defp compose_context(user_vars, intelligence, _opts) do
     user_vars
-    |> inject_framework_context(intelligence, opts)
-    |> inject_quality_requirements(intelligence, opts)
-    |> inject_prompt_bits(intelligence, opts)
+    |> inject_framework_context(intelligence, _opts)
+    |> inject_quality_requirements(intelligence, _opts)
+    |> inject_prompt_bits(intelligence, _opts)
   end
 
-  defp inject_framework_context(vars, intelligence, opts) do
-    if opts[:include_framework_hints] != false do
+  defp inject_framework_context(vars, intelligence, _opts) do
+    if _opts[:include_framework_hints] != false do
       framework = intelligence["framework"] || %{}
 
       Map.merge(vars, %{
@@ -931,8 +931,8 @@ defmodule Singularity.Knowledge.TemplateService do
     end
   end
 
-  defp inject_quality_requirements(vars, intelligence, opts) do
-    if opts[:include_quality_hints] != false do
+  defp inject_quality_requirements(vars, intelligence, _opts) do
+    if _opts[:include_quality_hints] != false do
       quality = intelligence["quality"] || %{}
 
       Map.merge(vars, %{
@@ -946,8 +946,8 @@ defmodule Singularity.Knowledge.TemplateService do
     end
   end
 
-  defp inject_prompt_bits(vars, intelligence, opts) do
-    if opts[:include_hints] == true do
+  defp inject_prompt_bits(vars, intelligence, _opts) do
+    if _opts[:include_hints] == true do
       framework = intelligence["framework"] || %{}
       prompts = intelligence["prompts"] || %{}
 

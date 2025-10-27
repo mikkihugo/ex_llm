@@ -28,7 +28,7 @@ defmodule Singularity.SemanticEngine do
   defdelegate health(), to: Singularity.EmbeddingEngine
 
   # Delegate all public API to EmbeddingEngine
-  defdelegate embed(text, opts \\ []), to: Singularity.EmbeddingEngine
-  defdelegate embed_batch(texts, opts \\ []), to: Singularity.EmbeddingEngine
+  defdelegate embed(text, _opts \\ []), to: Singularity.EmbeddingEngine
+  defdelegate embed_batch(texts, _opts \\ []), to: Singularity.EmbeddingEngine
   defdelegate preload_models(models), to: Singularity.EmbeddingEngine
 end

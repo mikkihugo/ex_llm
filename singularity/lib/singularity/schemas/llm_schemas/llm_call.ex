@@ -1,4 +1,4 @@
-defmodule Singularity.Schemas.Core.LLMCall do
+defmodule Singularity.Schemas.LLMSchemas.LLMCall do
   @moduledoc """
   Ecto schema for LLM call history and cost tracking.
 
@@ -7,7 +7,7 @@ defmodule Singularity.Schemas.Core.LLMCall do
   ### Module Identity (JSON)
   ```json
   {
-    "module": "Singularity.Schemas.Core.LLMCall",
+    "module": "Singularity.Schemas.LLMSchemas.LLMCall",
     "purpose": "Tracks all LLM API calls with cost, duration, embeddings for analysis",
     "role": "schema",
     "layer": "infrastructure",

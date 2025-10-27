@@ -148,8 +148,8 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   Upgrade specific module to quality 2.2.0+ standards.
   """
   @spec upgrade_module_documentation(String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def upgrade_module_documentation(module_path, opts \\ %{}) do
-    GenServer.call(__MODULE__, {:upgrade_module, module_path, opts})
+  def upgrade_module_documentation(module_path, _opts \\ %{}) do
+    GenServer.call(__MODULE__, {:upgrade_module, module_path, _opts})
   end
 
   @doc """
@@ -162,8 +162,8 @@ defmodule Singularity.Agents.DocumentationUpgrader do
 
   ## GenServer Callbacks
 
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, _opts, name: __MODULE__)
   end
 
   @impl true
@@ -201,8 +201,8 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   end
 
   @impl true
-  def handle_call({:upgrade_module, module_path, opts}, _from, state) do
-    case upgrade_module_documentation_internal(module_path, opts) do
+  def handle_call({:upgrade_module, module_path, _opts}, _from, state) do
+    case upgrade_module_documentation_internal(module_path, _opts) do
       {:ok, result} ->
         {:reply, {:ok, result}, state}
 
@@ -287,12 +287,12 @@ defmodule Singularity.Agents.DocumentationUpgrader do
     end
   end
 
-  defp upgrade_module_documentation_internal(module_path, opts) do
+  defp upgrade_module_documentation_internal(module_path, _opts) do
     Logger.info("Upgrading module documentation: #{module_path}")
 
     with {:ok, content} <- File.read(module_path),
          language <- detect_language(module_path),
-         {:ok, upgraded_content} <- apply_documentation_upgrade(content, language, opts),
+         {:ok, upgraded_content} <- apply_documentation_upgrade(content, language, _opts),
          :ok <- validate_documentation(upgraded_content),
          :ok <- File.write(module_path, upgraded_content) do
       Logger.info("Successfully upgraded documentation for #{module_path}")
@@ -305,7 +305,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   end
 
   # Apply documentation upgrade using language-specific patterns
-  defp apply_documentation_upgrade(content, language, opts) do
+  defp apply_documentation_upgrade(content, language, _opts) do
     case language do
       "elixir" ->
         # Add @moduledoc if missing
