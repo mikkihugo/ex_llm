@@ -134,30 +134,33 @@ defmodule Nexus.LLMRouter do
   @doc """
   Select appropriate model based on complexity and task type.
 
-  Returns model identifier for ex_llm (e.g., "gpt-4o", "claude-3-5-sonnet-20241022").
+  Returns model identifier for ex_llm by discovering available models dynamically.
   """
   def select_model(complexity, task_type \\ nil)
 
   def select_model(:simple, _task_type) do
     # Simple tasks: Use fast, cheap models
-    # Gemini Flash is free and fast
-    "gemini-2.0-flash-exp"
+    # Try to find a fast, cost-effective model
+    case find_model_by_criteria(:simple) do
+      {:ok, model_id} -> model_id
+      {:error, _} -> "gemini-2.5-flash"  # Fallback
+    end
   end
 
   def select_model(:medium, task_type) do
     case task_type do
-      :coder -> select_codex_or_fallback("gpt-4o")  # Codex if available, else GPT-4o
-      :planning -> "gpt-4o"  # GPT-4o for planning
-      _ -> "claude-3-5-sonnet-20241022"  # Default to Claude Sonnet
+      :coder -> select_codex_or_fallback(find_medium_model())
+      :planning -> find_medium_model()
+      _ -> find_medium_model()
     end
   end
 
   def select_model(:complex, task_type) do
     case task_type do
-      :architect -> select_codex_or_fallback("claude-3-5-sonnet-20241022")  # Codex or Claude
-      :code_generation -> select_codex_or_fallback("claude-3-5-sonnet-20241022")  # Codex best for code
-      :refactoring -> select_codex_or_fallback("claude-3-5-sonnet-20241022")  # Codex for refactors
-      _ -> "claude-3-5-sonnet-20241022"  # Default to Claude Sonnet for complex tasks
+      :architect -> select_codex_or_fallback(find_complex_model())
+      :code_generation -> select_codex_or_fallback(find_complex_model())
+      :refactoring -> select_codex_or_fallback(find_complex_model())
+      _ -> find_complex_model()
     end
   end
 
@@ -174,6 +177,62 @@ defmodule Nexus.LLMRouter do
     Nexus.Providers.Codex.configured?()
   rescue
     _ -> false  # If module not available, fallback
+  end
+
+  # Dynamic model discovery using ex_llm
+  defp find_model_by_criteria(:simple) do
+    case ExLLM.Core.Models.list_all() do
+      {:ok, models} ->
+        # Find fast, cheap models (Gemini Flash, GPT-4o-mini, etc.)
+        simple_model = models
+        |> Enum.filter(fn model ->
+          model.provider in [:gemini, :openai] and
+          String.contains?(model.id, "flash") or
+          String.contains?(model.id, "mini")
+        end)
+        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+        |> List.first()
+
+        if simple_model, do: {:ok, simple_model.id}, else: {:error, :no_model_found}
+
+      {:error, _} -> {:error, :discovery_failed}
+    end
+  end
+
+  defp find_medium_model do
+    case ExLLM.Core.Models.list_all() do
+      {:ok, models} ->
+        # Find balanced models (Claude Sonnet, GPT-4o, etc.)
+        medium_model = models
+        |> Enum.filter(fn model ->
+          model.provider in [:anthropic, :openai] and
+          (String.contains?(model.id, "sonnet") or
+           String.contains?(model.id, "gpt-4o") and not String.contains?(model.id, "mini"))
+        end)
+        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+        |> List.first()
+
+        if medium_model, do: medium_model.id, else: "claude-3-5-sonnet-latest"
+      {:error, _} -> "claude-3-5-sonnet-latest"
+    end
+  end
+
+  defp find_complex_model do
+    case ExLLM.Core.Models.list_all() do
+      {:ok, models} ->
+        # Find powerful models (Claude Opus, GPT-4, etc.)
+        complex_model = models
+        |> Enum.filter(fn model ->
+          model.provider in [:anthropic, :openai] and
+          (String.contains?(model.id, "opus") or
+           String.contains?(model.id, "gpt-4") and not String.contains?(model.id, "mini"))
+        end)
+        |> Enum.sort_by(fn model -> model.pricing[:input] || 0 end)
+        |> List.first()
+
+        if complex_model, do: complex_model.id, else: "claude-3-5-sonnet-latest"
+      {:error, _} -> "claude-3-5-sonnet-latest"
+    end
   end
 
   # Private functions
