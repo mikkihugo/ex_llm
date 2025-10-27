@@ -163,7 +163,7 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
       domain = outcome[:task_domain]
       success = outcome[:success]
       latency = outcome[:latency_ms]
-      quality = outcome[:quality_score]
+      _quality = outcome[:quality_score]
 
       Logger.debug("Recording execution outcome",
         agent: agent,
@@ -265,7 +265,7 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
   def update_success_rates(agent_name) when is_atom(agent_name) do
     case get_agent_stats(agent_name) do
       nil ->
-        Logger.warn("No stats found for agent",
+        Logger.warning("No stats found for agent",
           agent: agent_name
         )
         {:error, :no_stats}
@@ -284,7 +284,7 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
 
   # Private
 
-  defp maybe_update_success_rates(agent, domain, success) do
+  defp maybe_update_success_rates(agent, domain, _success) do
     # Check if we have enough samples for this agent+domain
     case get_domain_stats(agent, domain) do
       {:ok, {successes, failures}} ->
