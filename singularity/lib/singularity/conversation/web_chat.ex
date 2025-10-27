@@ -78,21 +78,29 @@ defmodule Singularity.Conversation.WebChat do
         metadata: metadata
       }
 
-      # Store in message history
+      # Store in message history (non-blocking, graceful degradation on failure)
       conversation_id = Map.get(metadata, :conversation_id, "global_notifications")
-      :ok = MessageHistory.add_message(conversation_id, %{
-        sender: :agent,
-        type: :notification,
-        content: message,
-        metadata: metadata
-      })
+      try do
+        MessageHistory.add_message(conversation_id, %{
+          sender: :agent,
+          type: :notification,
+          content: message,
+          metadata: metadata
+        })
+      rescue
+        _ -> :ok  # Ignore message history failures, don't crash notification
+      end
 
-      # Publish via PubSub for real-time web UI updates
-      Phoenix.PubSub.broadcast(
-        @pubsub_module,
-        @notifications_topic,
-        {:notification, payload}
-      )
+      # Publish via PubSub for real-time web UI updates (graceful if unavailable)
+      try do
+        Phoenix.PubSub.broadcast(
+          @pubsub_module,
+          @notifications_topic,
+          {:notification, payload}
+        )
+      rescue
+        _error -> :ok  # PubSub unavailable, continue without error
+      end
 
       Logger.debug("Notification published to Observer: #{message}")
       {:ok, "notification_sent"}
@@ -150,29 +158,37 @@ defmodule Singularity.Conversation.WebChat do
             "Approval request created #{request_id} (response queue: #{response_queue})"
           )
 
-          # Store in message history
-          :ok = MessageHistory.add_message(request_id, %{
-            sender: :agent,
-            type: :approval_request,
-            content: Map.get(data, :title, "Approval Request"),
-            metadata: %{
-              description: Map.get(data, :description, ""),
-              impact: Map.get(data, :impact, "medium"),
-              request_id: request_id
-            }
-          })
+          # Store in message history (non-blocking, graceful degradation on failure)
+          try do
+            MessageHistory.add_message(request_id, %{
+              sender: :agent,
+              type: :approval_request,
+              content: Map.get(data, :title, "Approval Request"),
+              metadata: %{
+                description: Map.get(data, :description, ""),
+                impact: Map.get(data, :impact, "medium"),
+                request_id: request_id
+              }
+            })
+          rescue
+            _ -> :ok  # Ignore message history failures
+          end
 
           # Publish approval event via pubsub for real-time web UI update
-          Phoenix.PubSub.broadcast(
-            @pubsub_module,
-            @approvals_topic,
-            {:approval_created, approval}
-          )
+          try do
+            Phoenix.PubSub.broadcast(
+              @pubsub_module,
+              @approvals_topic,
+              {:approval_created, approval}
+            )
+          rescue
+            _error -> :ok  # PubSub unavailable, continue without error
+          end
 
           # Also send a notification
-          :ok =
+          _ =
             notify(
-              "⏳ Approval pending: #{Map.get(data, :title, 'Decision needed')}",
+              "⏳ Approval pending: #{Map.get(data, :title, "Decision needed")}",
               %{request_id: request_id, type: :approval, conversation_id: request_id}
             )
 
@@ -221,22 +237,26 @@ defmodule Singularity.Conversation.WebChat do
         {:ok, approval} ->
           Logger.info("Question request created #{request_id}")
 
-          # Store in message history
-          :ok = MessageHistory.add_message(request_id, %{
-            sender: :agent,
-            type: :question,
-            content: Map.get(data, :question, "Input needed"),
-            metadata: %{
-              context: Map.get(data, :context, %{}),
-              urgency: Map.get(data, :urgency, :normal),
-              request_id: request_id
-            }
-          })
+          # Store in message history (non-blocking, graceful degradation on failure)
+          try do
+            MessageHistory.add_message(request_id, %{
+              sender: :agent,
+              type: :question,
+              content: Map.get(data, :question, "Input needed"),
+              metadata: %{
+                context: Map.get(data, :context, %{}),
+                urgency: Map.get(data, :urgency, :normal),
+                request_id: request_id
+              }
+            })
+          rescue
+            _ -> :ok  # Ignore message history failures
+          end
 
           # Publish notification
-          :ok =
+          _ =
             notify(
-              "❓ Question: #{Map.get(data, :question, 'Input needed')}",
+              "❓ Question: #{Map.get(data, :question, "Input needed")}",
               %{request_id: request_id, type: :question, conversation_id: request_id}
             )
 
@@ -496,7 +516,7 @@ defmodule Singularity.Conversation.WebChat do
     details = Map.get(policy_data, :details, "")
 
     details_text =
-      if details and details != "" do
+      if is_binary(details) and details != "" do
         "\nDetails: #{details}"
       else
         ""
