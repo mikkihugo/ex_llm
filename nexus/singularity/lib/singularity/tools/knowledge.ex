@@ -649,10 +649,16 @@ defmodule Singularity.Tools.Knowledge do
     end
   end
 
-  defp get_tutorial_examples_from_knowledge_base(_topic) do
+  defp get_tutorial_examples_from_knowledge_base(topic) do
     # Query existing knowledge base for tutorial examples
-    # Stub implementation - CodeSearch not fully implemented yet
-    {:ok, []}
+    case PatternStore.search_similar_patterns(
+           :framework,
+           "tutorial examples #{topic}",
+           top_k: 8
+         ) do
+      {:ok, results} -> results
+      _ -> []
+    end
   end
 
   defp get_reference_patterns_from_knowledge_base(reference_type) do
@@ -669,8 +675,14 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_reference_examples_from_knowledge_base(reference_type) do
     # Query existing knowledge base for reference examples
-    # Stub implementation - CodeSearch not fully implemented yet
-    {:ok, []}
+    case PatternStore.search_similar_patterns(
+           :framework,
+           "reference examples #{reference_type}",
+           top_k: 8
+         ) do
+      {:ok, results} -> results
+      _ -> []
+    end
   end
 
   defp get_guide_patterns_from_knowledge_base(guide_type) do
@@ -685,7 +697,7 @@ defmodule Singularity.Tools.Knowledge do
     end
   end
 
-  defp get_guide_examples_from_knowledge_base(guide_type) do
+  defp get_guide_examples_from_knowledge_base(_guide_type) do
     # Query existing knowledge base for guide examples
     # Stub implementation - CodeSearch not fully implemented yet
     {:ok, []}
@@ -703,7 +715,7 @@ defmodule Singularity.Tools.Knowledge do
     end
   end
 
-  defp get_architecture_examples_from_knowledge_base(architecture_type) do
+  defp get_architecture_examples_from_knowledge_base(_architecture_type) do
     # Query existing knowledge base for architecture examples
     # Stub implementation - CodeSearch not fully implemented yet
     {:ok, []}
@@ -723,8 +735,14 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_pattern_examples_from_knowledge_base(pattern_type) do
     # Query existing knowledge base for pattern examples
-    # Stub implementation - CodeSearch not fully implemented yet
-    {:ok, []}
+    case PatternStore.search_similar_patterns(
+           :framework,
+           "pattern examples #{pattern_type}",
+           top_k: 8
+         ) do
+      {:ok, results} -> results
+      _ -> []
+    end
   end
 
   defp get_frameworks_from_knowledge_base(framework_type) do
@@ -741,8 +759,14 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_framework_examples_from_knowledge_base(framework_type) do
     # Query existing knowledge base for framework examples
-    # Stub implementation - CodeSearch not fully implemented yet
-    {:ok, []}
+    case PatternStore.search_similar_patterns(
+           :framework,
+           "framework examples #{framework_type}",
+           top_k: 8
+         ) do
+      {:ok, results} -> results
+      _ -> []
+    end
   end
 
   defp get_generic_patterns_from_knowledge_base(knowledge_type) do
@@ -759,8 +783,14 @@ defmodule Singularity.Tools.Knowledge do
 
   defp get_generic_examples_from_knowledge_base(knowledge_type) do
     # Query existing knowledge base for generic examples
-    # Stub implementation - CodeSearch not fully implemented yet
-    {:ok, []}
+    case PatternStore.search_similar_patterns(
+           :framework,
+           "examples #{knowledge_type}",
+           top_k: 8
+         ) do
+      {:ok, results} -> results
+      _ -> []
+    end
   end
 
   # Documentation generation functions

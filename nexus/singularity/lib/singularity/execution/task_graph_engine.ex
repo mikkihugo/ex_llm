@@ -410,6 +410,9 @@ defmodule Singularity.Execution.TaskGraphEngine do
   depth-first decomposition, atomic tasks, goal hierarchy, milestone tracking, implementation tasks
   """
 
+  require Logger
+  alias Singularity.LLM.Service
+
   @type task_type :: :goal | :milestone | :implementation
   @type task_status :: :pending | :active | :blocked | :completed | :failed
   @type sparc_phase ::
@@ -585,6 +588,29 @@ defmodule Singularity.Execution.TaskGraphEngine do
   end
 
   @doc """
+  Get all tasks in the DAG.
+  """
+  @spec get_all_tasks(task_graph()) :: [task()]
+  def get_all_tasks(dag) do
+    dag.tasks
+    |> Map.values()
+  end
+
+  @doc """
+  Get the structure of the DAG.
+  """
+  @spec get_structure(task_graph()) :: map()
+  def get_structure(dag) do
+    %{
+      root_id: dag.root_id,
+      total_tasks: map_size(dag.tasks),
+      completed_tasks: length(dag.completed_tasks),
+      failed_tasks: length(dag.failed_tasks),
+      dependency_graph: dag.dependency_graph
+    }
+  end
+
+  @doc """
   Generate a unique task ID.
   """
   @spec generate_task_id(String.t()) :: String.t()
@@ -615,12 +641,66 @@ defmodule Singularity.Execution.TaskGraphEngine do
   end
 
   @doc """
+  Decompose a complex task into subtasks using LLM.
+
+  Calls the LLM service to break down a task into smaller, manageable subtasks
+  with proper dependencies and complexity estimates.
+  """
+  @spec decompose_task(task_graph(), task()) :: {:ok, task_graph()} | {:error, term()}
+  def decompose_task(dag, task) do
+    Logger.info("Decomposing task #{task.id}: #{task.description}")
+
+    # Prepare LLM prompt for task decomposition
+    prompt = """
+    Break down the following task into smaller, actionable subtasks:
+
+    Task: #{task.description}
+    Type: #{task.task_type}
+    Current Depth: #{task.depth}
+    Estimated Complexity: #{task.estimated_complexity}
+
+    Please provide a JSON response with the following structure:
+    {
+      "subtasks": [
+        {
+          "description": "Clear, actionable description",
+          "task_type": "goal|milestone|implementation",
+          "estimated_complexity": 1.0-10.0,
+          "dependencies": ["task_id_1", "task_id_2"],
+          "acceptance_criteria": ["criteria 1", "criteria 2"]
+        }
+      ]
+    }
+
+    Guidelines:
+    - Each subtask should be atomic and independently verifiable
+    - Include dependencies between subtasks where logical
+    - Set realistic complexity estimates (1.0 = trivial, 10.0 = very complex)
+    - Use appropriate task types (goal for high-level, milestone for checkpoints, implementation for code)
+    """
+
+    case Service.call(prompt, :complex) do
+      {:ok, response} ->
+        case parse_decomposition_response(response) do
+          {:ok, subtasks_data} ->
+            create_subtasks_from_llm_response(dag, task, subtasks_data)
+          {:error, reason} ->
+            Logger.error("Failed to parse LLM decomposition response: #{inspect(reason)}")
+            {:error, :parse_failed}
+        end
+
+      {:error, reason} ->
+        Logger.error("LLM decomposition failed: #{inspect(reason)}")
+        {:error, :llm_failed}
+    end
+  end
+
+  @doc """
   Decompose a task into subtasks if it's too complex.
 
-  Returns updated DAG. In real implementation, this would call LLM to decompose.
-  For now, marks task as needing decomposition.
+  Actually performs LLM-based decomposition instead of just marking as blocked.
   """
-  @spec decompose_if_needed(task_graph(), task(), non_neg_integer()) :: task_graph()
+  @spec decompose_if_needed(task_graph(), task(), non_neg_integer()) :: {:ok, task_graph()} | {:error, term()} | task_graph()
   def decompose_if_needed(dag, task, max_depth) do
     cond do
       is_atomic(task) ->
@@ -630,14 +710,94 @@ defmodule Singularity.Execution.TaskGraphEngine do
         dag
 
       true ->
-        # Task needs decomposition - mark as blocked
-        updated_task = %{task | status: :blocked}
-        tasks = Map.put(dag.tasks, task.id, updated_task)
-        %{dag | tasks: tasks}
+        # Task needs decomposition - actually decompose it
+        Logger.info("Task #{task.id} needs decomposition (complexity: #{task.estimated_complexity}, depth: #{task.depth})")
+
+        case decompose_task(dag, task) do
+          {:ok, decomposed_dag} ->
+            Logger.info("Successfully decomposed task #{task.id} into subtasks")
+            {:ok, decomposed_dag}
+
+          {:error, reason} ->
+            Logger.error("Failed to decompose task #{task.id}: #{inspect(reason)}")
+            # Mark as blocked if decomposition fails
+            updated_task = %{task | status: :blocked}
+            tasks = Map.put(dag.tasks, task.id, updated_task)
+            %{dag | tasks: tasks}
+        end
     end
   end
 
   ## Private Functions
+
+  # Parse LLM response for task decomposition
+  @spec parse_decomposition_response(String.t()) :: {:ok, [map()]} | {:error, term()}
+  defp parse_decomposition_response(response) do
+    case Jason.decode(response) do
+      {:ok, %{"subtasks" => subtasks}} when is_list(subtasks) ->
+        {:ok, subtasks}
+      {:ok, _other} ->
+        {:error, :invalid_response_structure}
+      {:error, reason} ->
+        {:error, {:json_parse_error, reason}}
+    end
+  rescue
+    e ->
+      Logger.error("Exception parsing decomposition response: #{inspect(e)}")
+      {:error, :parse_exception}
+  end
+
+  # Create subtasks from LLM response and add them to the DAG
+  @spec create_subtasks_from_llm_response(task_graph(), task(), [map()]) :: {:ok, task_graph()}
+  defp create_subtasks_from_llm_response(dag, parent_task, subtasks_data) do
+    {updated_dag, _} =
+      Enum.reduce(subtasks_data, {dag, []}, fn subtask_data, {current_dag, created_ids} ->
+        # Create new subtask
+        subtask = %{
+          id: generate_task_id("subtask"),
+          description: subtask_data["description"] || "Unnamed subtask",
+          task_type: parse_task_type(subtask_data["task_type"]),
+          depth: parent_task.depth + 1,
+          parent_id: parent_task.id,
+          children: [],
+          dependencies: resolve_dependencies(subtask_data["dependencies"] || [], created_ids),
+          status: :pending,
+          sparc_phase: parent_task.sparc_phase,
+          estimated_complexity: subtask_data["estimated_complexity"] || 3.0,
+          actual_complexity: nil,
+          code_files: [],
+          acceptance_criteria: subtask_data["acceptance_criteria"] || []
+        }
+
+        # Add subtask to DAG
+        updated_dag = add_task(current_dag, subtask)
+
+        # Update parent task to include this child
+        parent_with_child = %{parent_task | children: [subtask.id | parent_task.children]}
+        final_dag = %{updated_dag | tasks: Map.put(updated_dag.tasks, parent_task.id, parent_with_child)}
+
+        {final_dag, [subtask.id | created_ids]}
+      end)
+
+    # Mark parent task as completed (decomposed)
+    final_dag = mark_completed(updated_dag, parent_task.id)
+
+    {:ok, final_dag}
+  end
+
+  # Parse task type from string
+  @spec parse_task_type(String.t() | nil) :: task_type()
+  defp parse_task_type("goal"), do: :goal
+  defp parse_task_type("milestone"), do: :milestone
+  defp parse_task_type("implementation"), do: :implementation
+  defp parse_task_type(_), do: :implementation
+
+  # Resolve dependency references (for now, just return the list as-is)
+  @spec resolve_dependencies([String.t()], [String.t()]) :: [String.t()]
+  defp resolve_dependencies(deps, _created_ids) do
+    # TODO: Implement proper dependency resolution based on created task IDs
+    deps
+  end
 
   # Check if all dependencies for a task are completed
   defp are_dependencies_met(dag, task) do

@@ -317,7 +317,7 @@ defmodule Genesis.SharedQueueConsumer do
             :ok
 
           {:error, reason} ->
-            Logger.warn("[Genesis] Failed to archive message", %{
+            Logger.warning("[Genesis] Failed to archive message", %{
               queue: queue_name,
               msg_id: msg_id,
               error: inspect(reason)

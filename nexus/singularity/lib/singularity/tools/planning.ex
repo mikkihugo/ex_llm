@@ -11,9 +11,10 @@ defmodule Singularity.Tools.Planning do
 
   require Logger
   alias Singularity.Schemas.Tools.Tool
-  alias Singularity.Execution.Planning.{SafeWorkPlanner, TaskGraphEngine}
+  alias Singularity.Execution.SafeWorkPlanner
+  alias Singularity.Execution.TaskGraphEngine
   alias Singularity.Execution.Autonomy.Planner
-  alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
+  alias Singularity.Execution.CodeGenerationWorkflow.Orchestrator, as: SparcOrchestrator
 
   @doc "Register planning tools with the shared registry."
   def register(provider) do
@@ -254,7 +255,7 @@ defmodule Singularity.Tools.Planning do
            task_description: description,
            context: context,
            estimate: estimate,
-           confidence: estimate.confidence,
+           confidence: estimate.confidence_level,
            factors: estimate.factors
          }}
 
@@ -345,19 +346,15 @@ defmodule Singularity.Tools.Planning do
     %{task_id: task_id, completion_data: data} = feedback
 
     # Update task status and gather metrics
-    case update_task_completion(task_id, data) do
-      {:ok, updated_task} ->
-        # Validate hierarchical alignment
-        validate_hierarchical_alignment(updated_task)
+    updated_task = update_task_completion(task_id, data)
 
-        # Update decomposition metrics
-        update_decomposition_metrics(updated_task)
+    # Validate hierarchical alignment
+    validate_hierarchical_alignment(updated_task)
 
-        {:ok, updated_task}
+    # Update decomposition metrics
+    update_decomposition_metrics(updated_task)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, updated_task}
   end
 
   defp handle_context_change_feedback(feedback) do
@@ -366,14 +363,8 @@ defmodule Singularity.Tools.Planning do
     # Apply context changes to affected tasks
     task_ids
     |> Enum.reduce({:ok, []}, fn task_id, {:ok, results} ->
-      case apply_context_changes(task_id, changes) do
-        {:ok, updated_task} ->
-          {:ok, [updated_task | results]}
-
-        {:error, reason} ->
-          Logger.warning("Failed to apply context changes", task_id: task_id, reason: reason)
-          {:ok, results}
-      end
+      {:ok, updated_task} = apply_context_changes(task_id, changes)
+      {:ok, [updated_task | results]}
     end)
   end
 
@@ -381,15 +372,11 @@ defmodule Singularity.Tools.Planning do
     %{metrics: metrics, task_id: task_id} = feedback
 
     # Store metrics for effectiveness evaluation
-    case store_task_metrics(task_id, metrics) do
-      {:ok, _} ->
-        # Recalculate decomposition effectiveness
-        recalculate_decomposition_effectiveness()
-        {:ok, :metrics_updated}
+    {:ok, _} = store_task_metrics(task_id, metrics)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+    # Recalculate decomposition effectiveness
+    recalculate_decomposition_effectiveness()
+    {:ok, :metrics_updated}
   end
 
   defp update_task_completion(task_id, completion_data) do
@@ -563,7 +550,7 @@ defmodule Singularity.Tools.Planning do
     sparc_context = prepare_sparc_context(task)
 
     # Execute through SPARC orchestrator
-    case Singularity.Execution.SPARC.Orchestrator.execute_phase(
+    case SparcOrchestrator.execute_phase(
            :completion,
            task.description,
            sparc_context

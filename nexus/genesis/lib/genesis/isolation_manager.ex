@@ -87,13 +87,16 @@ defmodule Genesis.IsolationManager do
             new_state = Map.update(state, :sandboxes, %{}, &Map.delete(&1, experiment_id))
             {:reply, :ok, new_state}
 
-          {:error, reason} ->
-            Logger.error("Failed to cleanup sandbox #{experiment_id}: #{inspect(reason)}")
+          {:error, reason, file} ->
+            Logger.error(
+              "Failed to cleanup sandbox #{experiment_id}: #{inspect(reason)} (#{inspect(file)})"
+            )
+
             {:reply, {:error, reason}, state}
         end
 
       :error ->
-        Logger.warn("Attempt to cleanup non-existent sandbox #{experiment_id}")
+        Logger.warning("Attempt to cleanup non-existent sandbox #{experiment_id}")
         {:reply, {:error, :not_found}, state}
     end
   end

@@ -375,7 +375,7 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
 
     Enum.each(top_nodes, fn {name, file_path, score} ->
       Logger.info(
-        "  #{String.pad_leading(Float.to_string(score, decimals: 2), 6)} | #{name} (#{file_path})"
+        "  #{String.pad_leading(:erlang.float_to_binary(score, decimals: 2), 6)} | #{name} (#{file_path})"
       )
     end)
   end

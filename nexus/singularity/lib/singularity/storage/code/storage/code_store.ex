@@ -90,6 +90,14 @@ defmodule Singularity.CodeStore do
     GenServer.call(__MODULE__, :generate_refactoring_plan)
   end
 
+  def get_training_samples(opts \\ []) do
+    language = Keyword.get(opts, :language, "elixir")
+    min_length = Keyword.get(opts, :min_length, 50)
+    limit = Keyword.get(opts, :limit, 1000)
+
+    GenServer.call(__MODULE__, {:get_training_samples, language, min_length, limit})
+  end
+
   ## Server callbacks
 
   @impl true
@@ -328,6 +336,12 @@ defmodule Singularity.CodeStore do
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl true
+  def handle_call({:get_training_samples, language, min_length, limit}, _from, state) do
+    samples = collect_training_samples(state, language, min_length, limit)
+    {:reply, samples, state}
   end
 
   @impl true
@@ -1106,8 +1120,7 @@ defmodule Singularity.CodeStore do
       String.contains?(service_name, "data") -> :data_management
       String.contains?(service_name, "api") -> :api_gateway
       String.contains?(service_name, "message") -> :messaging
-      String.contains?(service_name, "storage") -> :storage
-      String.contains?(service_name, "config") -> :configuration
+      String.contains?(service_name, "storage") -> :configuration
       String.contains?(service_name, "monitor") -> :monitoring
       String.contains?(service_name, "log") -> :logging
       String.contains?(service_name, "cache") -> :caching
@@ -2188,5 +2201,94 @@ defmodule Singularity.CodeStore do
       |> Enum.filter(&File.exists?/1)
 
     length(orchestration_files) > 0
+  end
+
+  defp collect_training_samples(state, language, min_length, limit) do
+    # Get all registered codebases
+    codebases = Map.values(state.codebases)
+
+    # Collect code samples from all codebases
+    all_samples =
+      Enum.flat_map(codebases, fn codebase ->
+        collect_samples_from_codebase(codebase, language, min_length)
+      end)
+
+    # Shuffle and limit results
+    all_samples
+    |> Enum.shuffle()
+    |> Enum.take(limit)
+  end
+
+  defp collect_samples_from_codebase(codebase, language, min_length) do
+    codebase_path = codebase.path
+
+    if File.exists?(codebase_path) do
+      # Find files matching the language
+      file_pattern = get_file_pattern_for_language(language)
+      files = Path.wildcard(Path.join(codebase_path, "**/*#{file_pattern}"))
+
+      # Read and filter code samples
+      Enum.flat_map(files, fn file_path ->
+        case File.read(file_path) do
+          {:ok, content} ->
+            # Split into code blocks (functions, modules, etc.)
+            code_blocks = split_into_code_blocks(content, language)
+
+            # Filter by minimum length
+            Enum.filter(code_blocks, fn block ->
+              String.length(block) >= min_length
+            end)
+
+          _ ->
+            []
+        end
+      end)
+    else
+      []
+    end
+  end
+
+  defp get_file_pattern_for_language(language) do
+    case String.downcase(language) do
+      "elixir" -> ".ex"
+      "erlang" -> ".erl"
+      "javascript" -> ".js"
+      "typescript" -> ".ts"
+      "python" -> ".py"
+      "ruby" -> ".rb"
+      "go" -> ".go"
+      "rust" -> ".rs"
+      "java" -> ".java"
+      "c" -> ".c"
+      "cpp" -> ".cpp"
+      "csharp" -> ".cs"
+      _ -> ".*"
+    end
+  end
+
+  defp split_into_code_blocks(content, language) do
+    # Simple approach: split by double newlines and filter out comments/empty lines
+    blocks =
+      String.split(content, "\n\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&String.starts_with?(&1, "#"))
+      |> Enum.reject(&String.starts_with?(&1, "//"))
+      |> Enum.reject(&String.starts_with?(&1, "/*"))
+      |> Enum.reject(&(&1 == ""))
+
+    # For Elixir specifically, try to extract function definitions
+    if String.downcase(language) == "elixir" do
+      extract_elixir_functions(content) ++ blocks
+    else
+      blocks
+    end
+  end
+
+  defp extract_elixir_functions(content) do
+    # Simple regex to extract function definitions
+    regex = ~r/def\s+\w+.*?(?=^\s*(def|@|defmodule|end)\s|\z)/ms
+    Regex.scan(regex, content)
+    |> Enum.map(&List.first/1)
+    |> Enum.map(&String.trim/1)
   end
 end

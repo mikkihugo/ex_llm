@@ -12,8 +12,7 @@ defmodule Singularity.ML.Services.CodeQualityService do
   use GenServer
   require Logger
 
-  alias Singularity.CodeAnalysis.{QualityAnalyzer, _QualityScanner}
-  alias _Singularity.Repo
+  alias Singularity.CodeAnalysis.QualityAnalyzer
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

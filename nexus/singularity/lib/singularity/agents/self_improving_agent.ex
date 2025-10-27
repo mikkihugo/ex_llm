@@ -112,7 +112,8 @@ defmodule Singularity.SelfImprovingAgent do
 
   require Logger
 
-  alias Singularity.{CodeStore, Control, HotReload, ProcessRegistry}
+  alias Singularity.{CodeStore, HotReload, ProcessRegistry}
+  alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter
   alias Singularity.Control.QueueCrdt

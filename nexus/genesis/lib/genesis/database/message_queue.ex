@@ -109,7 +109,7 @@ defmodule Genesis.Database.MessageQueue do
               acknowledge(queue_name, msg_id)
               count + 1
             error ->
-              Logger.warn("Handler failed for message #{msg_id}: #{inspect(error)}")
+              Logger.warning("Handler failed for message #{msg_id}: #{inspect(error)}")
               nack(queue_name, msg_id)
               count
           end

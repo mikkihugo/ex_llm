@@ -504,7 +504,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   require Logger
 
   # INTEGRATION: Work planning (SAFe methodology)
-  alias Singularity.Execution.Planning.SafeWorkPlanner
+  alias Singularity.Execution.SafeWorkPlanner
 
   @subjects %{
     strategic_theme_create: "planning.strategic_theme.create",

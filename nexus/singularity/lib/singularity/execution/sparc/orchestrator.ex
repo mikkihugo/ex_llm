@@ -191,6 +191,20 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
   end
 
   @doc """
+  Execute a specific SPARC phase.
+  """
+  def execute_phase(phase, description, context \\ %{}) do
+    # For now, delegate to the main execute function
+    # In a full implementation, this would execute specific phases
+    goal = %{
+      phase: phase,
+      description: description,
+      context: context
+    }
+    execute(goal)
+  end
+
+  @doc """
   Get execution statistics
   """
   def get_stats do

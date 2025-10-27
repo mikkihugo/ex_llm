@@ -95,14 +95,14 @@ defmodule Genesis.RollbackManager do
         end
 
       :error ->
-        Logger.warn("Rollback requested for non-existent checkpoint #{experiment_id}")
+        Logger.warning("Rollback requested for non-existent checkpoint #{experiment_id}")
         {:reply, {:error, :not_found}, state}
     end
   end
 
   @impl true
   def handle_call({:emergency_rollback, experiment_id}, _from, state) do
-    Logger.warn("EMERGENCY ROLLBACK requested for experiment #{experiment_id}")
+    Logger.warning("EMERGENCY ROLLBACK requested for experiment #{experiment_id}")
 
     case Map.fetch(state.rollbacks, experiment_id) do
       {:ok, checkpoint} ->
@@ -119,7 +119,7 @@ defmodule Genesis.RollbackManager do
         end
 
       :error ->
-        Logger.warn("Emergency rollback requested but no checkpoint found")
+        Logger.warning("Emergency rollback requested but no checkpoint found")
         {:reply, {:error, :not_found}, state}
     end
   end
@@ -222,11 +222,8 @@ defmodule Genesis.RollbackManager do
   end
 
   defp run_git_command(repo_path, args) do
-    # Run git command in sandbox repo
     try do
-      cmd = "cd #{Path.quote(repo_path)} && git #{Enum.join(args, " ")}"
-
-      case System.cmd("bash", ["-c", cmd], stderr_to_stdout: true) do
+      case System.cmd("git", args, cd: repo_path, stderr_to_stdout: true) do
         {output, 0} ->
           {:ok, output}
 

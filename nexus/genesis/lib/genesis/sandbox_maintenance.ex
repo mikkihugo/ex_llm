@@ -97,7 +97,7 @@ defmodule Genesis.SandboxMaintenance do
         end
 
       {:error, reason} ->
-        Logger.warn("Cannot stat sandbox #{sandbox_id}: #{inspect(reason)}")
+        Logger.warning("Cannot stat sandbox #{sandbox_id}: #{inspect(reason)}")
         :skip
     end
   end
@@ -118,8 +118,10 @@ defmodule Genesis.SandboxMaintenance do
           # Record cleanup in sandbox_history
           record_sandbox_action(sandbox_id, sandbox_path, "cleaned_up", size_mb, final_metrics)
 
-        {:error, reason} ->
-          Logger.error("Failed to delete sandbox #{sandbox_id}: #{inspect(reason)}")
+        {:error, reason, file} ->
+          Logger.error(
+            "Failed to delete sandbox #{sandbox_id}: #{inspect(reason)} (#{inspect(file)})"
+          )
       end
     rescue
       e ->
@@ -143,7 +145,7 @@ defmodule Genesis.SandboxMaintenance do
       end
     rescue
       e ->
-        Logger.warn("Exception checking sandbox health: #{inspect(e)}")
+        Logger.warning("Exception checking sandbox health: #{inspect(e)}")
         {sandbox_id, :error}
     end
   end
@@ -151,16 +153,16 @@ defmodule Genesis.SandboxMaintenance do
   defp check_git_health(sandbox_path) do
     try do
       # Check if Git repository is accessible and not corrupted
-      case System.cmd("bash", [
-        "-c",
-        "cd #{Path.quote(sandbox_path)} && git status --porcelain > /dev/null 2>&1"
-      ]) do
-        {_output, 0} -> :ok
-        {_output, _code} -> {:error, "git status failed"}
-      end
-    rescue
-      e ->
-        {:error, inspect(e)}
+    case System.cmd("git", ["status", "--porcelain"],
+           cd: sandbox_path,
+           stderr_to_stdout: true
+         ) do
+      {_output, 0} -> :ok
+      {output, code} -> {:error, "git status failed (#{code}): #{output}"}
+    end
+  rescue
+    e ->
+      {:error, inspect(e)}
     end
   end
 
@@ -174,7 +176,7 @@ defmodule Genesis.SandboxMaintenance do
 
   defp calculate_directory_size(path) do
     try do
-      case System.cmd("bash", ["-c", "du -sh #{Path.quote(path)} | cut -f1"]) do
+      case System.cmd("du", ["-sh", path], stderr_to_stdout: true) do
         {size_str, 0} ->
           case parse_size_to_mb(String.trim(size_str)) do
             {:ok, mb} -> mb
@@ -190,13 +192,23 @@ defmodule Genesis.SandboxMaintenance do
   end
 
   defp parse_size_to_mb(size_str) do
-    case String.downcase(size_str) do
-      "0" <> _rest -> {:ok, 0.0}
-      <<value::binary-size(1), "m">> -> {:ok, String.to_float(value) || 0.0}
-      <<value::binary-size(2), "m">> -> {:ok, String.to_float(value) || 0.0}
-      <<value::binary-size(1), "g">> -> {:ok, (String.to_float(value) || 0.0) * 1024}
-      <<value::binary-size(2), "g">> -> {:ok, (String.to_float(value) || 0.0) * 1024}
-      _other -> :error
+    value = String.trim(String.downcase(size_str))
+
+    cond do
+      value == "0" -> {:ok, 0.0}
+      String.ends_with?(value, "m") -> parse_unit(value, "m", 1.0)
+      String.ends_with?(value, "g") -> parse_unit(value, "g", 1024.0)
+      String.ends_with?(value, "k") -> parse_unit(value, "k", 1.0 / 1024.0)
+      true -> :error
+    end
+  end
+
+  defp parse_unit(value, unit, multiplier) do
+    number_part = value |> String.trim_trailing(unit)
+
+    case Float.parse(number_part) do
+      {number, _} -> {:ok, number * multiplier}
+      :error -> :error
     end
   end
 
@@ -230,7 +242,7 @@ defmodule Genesis.SandboxMaintenance do
       Logger.debug("Recorded sandbox action: #{action} for #{experiment_id}")
     rescue
       e ->
-        Logger.warn("Failed to record sandbox action: #{inspect(e)}")
+        Logger.warning("Failed to record sandbox action: #{inspect(e)}")
     end
   end
 

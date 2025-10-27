@@ -176,7 +176,7 @@ defmodule Genesis.StructuredLogger do
   Log rollback operation.
   """
   def rollback_initiated(experiment_id, reason) do
-    Logger.warn(
+    Logger.warning(
       "Rollback initiated",
       experiment_id: experiment_id,
       reason: inspect(reason)

@@ -180,6 +180,19 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end
   end
 
+  @doc """
+  Upgrade module documentation for a specific file.
+
+  Analyzes the current documentation and applies improvements based on
+  the module's content and structure.
+  """
+  def upgrade_module_documentation(file_path, opts \\ []) do
+    case upgrade_module_documentation_internal(file_path, opts) do
+      {:error, reason} -> {:error, reason}
+      result -> {:ok, result}
+    end
+  end
+
   ## Server Callbacks
 
   @impl true
