@@ -27,6 +27,8 @@ pub struct InfrastructureRegistry {
   pub service_registries: HashMap<String, InfrastructureSystemSchema>,
   /// Queue systems: name → schema
   pub queues: HashMap<String, InfrastructureSystemSchema>,
+  /// Observability systems: name → schema (Phase 6.x)
+  pub observability: HashMap<String, InfrastructureSystemSchema>,
 }
 
 /// Schema for an infrastructure system (defines its structure)
@@ -69,6 +71,7 @@ impl InfrastructureRegistry {
       caches: HashMap::new(),
       service_registries: HashMap::new(),
       queues: HashMap::new(),
+      observability: HashMap::new(),
     };
 
     // Parse message brokers from response
@@ -89,8 +92,41 @@ impl InfrastructureRegistry {
       }
     }
 
-    // Similar parsing for caches, service_registries, queues...
-    // (abbreviated for brevity, pattern is same)
+    // Parse caches from response
+    if let Some(caches) = response.get("caches").and_then(|v| v.as_array()) {
+      for cache in caches {
+        if let Ok(schema) = Self::parse_system_schema(cache) {
+          registry.caches.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Parse service registries from response
+    if let Some(registries) = response.get("service_registries").and_then(|v| v.as_array()) {
+      for reg in registries {
+        if let Ok(schema) = Self::parse_system_schema(reg) {
+          registry.service_registries.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Parse queues from response
+    if let Some(queues) = response.get("queues").and_then(|v| v.as_array()) {
+      for queue in queues {
+        if let Ok(schema) = Self::parse_system_schema(queue) {
+          registry.queues.insert(schema.name.clone(), schema);
+        }
+      }
+    }
+
+    // Phase 6.x: Parse observability systems from response
+    if let Some(observability) = response.get("observability").and_then(|v| v.as_array()) {
+      for obs in observability {
+        if let Ok(schema) = Self::parse_system_schema(obs) {
+          registry.observability.insert(schema.name.clone(), schema);
+        }
+      }
+    }
 
     Ok(registry)
   }
@@ -145,6 +181,7 @@ impl InfrastructureRegistry {
       caches: HashMap::new(),
       service_registries: HashMap::new(),
       queues: HashMap::new(),
+      observability: HashMap::new(),
     };
 
     // Default message brokers
@@ -236,6 +273,98 @@ impl InfrastructureRegistry {
         description: "Redis in-memory cache".to_string(),
         detection_patterns: vec!["redis".to_string()],
         fields: HashMap::new(),
+      },
+    );
+
+    // Phase 6.x: Default observability systems
+    registry.observability.insert(
+      "Prometheus".to_string(),
+      InfrastructureSystemSchema {
+        name: "Prometheus".to_string(),
+        category: "observability".to_string(),
+        description: "Prometheus metrics and monitoring".to_string(),
+        detection_patterns: vec!["prometheus.yml".to_string(), "prometheus".to_string()],
+        fields: [("scrape_configs".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "Jaeger".to_string(),
+      InfrastructureSystemSchema {
+        name: "Jaeger".to_string(),
+        category: "observability".to_string(),
+        description: "Jaeger distributed tracing".to_string(),
+        detection_patterns: vec!["jaeger".to_string(), "jaeger.yml".to_string()],
+        fields: [("collector_endpoint".to_string(), "string".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "Grafana".to_string(),
+      InfrastructureSystemSchema {
+        name: "Grafana".to_string(),
+        category: "observability".to_string(),
+        description: "Grafana visualization and dashboards".to_string(),
+        detection_patterns: vec!["grafana".to_string(), "grafana.ini".to_string()],
+        fields: [("datasources".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "ELK".to_string(),
+      InfrastructureSystemSchema {
+        name: "ELK".to_string(),
+        category: "observability".to_string(),
+        description: "Elasticsearch, Logstash, Kibana stack".to_string(),
+        detection_patterns: vec!["elasticsearch".to_string(), "logstash".to_string(), "kibana".to_string()],
+        fields: [("cluster_name".to_string(), "string".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "Datadog".to_string(),
+      InfrastructureSystemSchema {
+        name: "Datadog".to_string(),
+        category: "observability".to_string(),
+        description: "Datadog APM and monitoring".to_string(),
+        detection_patterns: vec!["datadog".to_string(), "DD_AGENT".to_string()],
+        fields: [("api_key".to_string(), "string".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "NewRelic".to_string(),
+      InfrastructureSystemSchema {
+        name: "NewRelic".to_string(),
+        category: "observability".to_string(),
+        description: "New Relic APM and observability".to_string(),
+        detection_patterns: vec!["newrelic".to_string(), "NEW_RELIC".to_string()],
+        fields: [("license_key".to_string(), "string".to_string())]
+          .into_iter()
+          .collect(),
+      },
+    );
+
+    registry.observability.insert(
+      "OpenTelemetry".to_string(),
+      InfrastructureSystemSchema {
+        name: "OpenTelemetry".to_string(),
+        category: "observability".to_string(),
+        description: "OpenTelemetry instrumentation and collection".to_string(),
+        detection_patterns: vec!["opentelemetry".to_string(), "otel".to_string()],
+        fields: [("exporters".to_string(), "array".to_string())]
+          .into_iter()
+          .collect(),
       },
     );
 

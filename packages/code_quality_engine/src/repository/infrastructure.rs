@@ -88,6 +88,7 @@ impl DetectionContext {
         "cache" => reg.caches.get(infra_name),
         "service_registry" => reg.service_registries.get(infra_name),
         "queue" => reg.queues.get(infra_name),
+        "observability" => reg.observability.get(infra_name),
         _ => None,
       };
       schema.map(|s| s.detection_patterns.clone())
@@ -103,6 +104,7 @@ impl DetectionContext {
         "cache" => reg.caches.contains_key(name),
         "service_registry" => reg.service_registries.contains_key(name),
         "queue" => reg.queues.contains_key(name),
+        "observability" => reg.observability.contains_key(name),
         _ => false,
       }
     } else {
@@ -532,9 +534,10 @@ impl InfrastructureDetector for PrometheusDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    // Phase 6.3: Get patterns from registry (observability not yet in registry)
-    // Fall back to defaults for now
-    let patterns = vec!["prometheus.yml".to_string(), "prometheus".to_string()];
+    // Phase 6.x: Get patterns from registry
+    let patterns = context
+      .get_detection_patterns("Prometheus", "observability")
+      .unwrap_or_else(|| vec!["prometheus.yml".to_string(), "prometheus".to_string()]);
 
     patterns.iter().any(|pattern| {
       context.file_exists(pattern) || context.has_pattern(pattern)
@@ -542,9 +545,16 @@ impl InfrastructureDetector for PrometheusDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    // Note: Observability components not yet in InfrastructureRegistry
-    // Phase 6.x: Extend registry to include observability systems
-    Ok(DetectionResult::Observability(ObservabilityComponent::Metrics("Prometheus".to_string())))
+    // Phase 6.x: Observability systems now in InfrastructureRegistry
+    let name = "Prometheus".to_string();
+    if !context.validate_infrastructure(&name, "observability") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
+    Ok(DetectionResult::Observability(ObservabilityComponent::Metrics(name)))
   }
 }
 
@@ -562,9 +572,10 @@ impl InfrastructureDetector for JaegerDetector {
   }
 
   fn can_detect(&self, context: &DetectionContext) -> bool {
-    // Phase 6.3: Get patterns from registry (observability not yet in registry)
-    // Fall back to defaults for now
-    let patterns = vec!["jaeger".to_string()];
+    // Phase 6.x: Get patterns from registry
+    let patterns = context
+      .get_detection_patterns("Jaeger", "observability")
+      .unwrap_or_else(|| vec!["jaeger".to_string(), "jaeger.yml".to_string()]);
 
     patterns.iter().any(|pattern| {
       context.file_exists(pattern) || context.has_pattern(pattern)
@@ -572,9 +583,16 @@ impl InfrastructureDetector for JaegerDetector {
   }
 
   async fn detect(&self, context: &DetectionContext) -> Result<DetectionResult> {
-    // Note: Observability components not yet in InfrastructureRegistry
-    // Phase 6.x: Extend registry to include observability systems
-    Ok(DetectionResult::Observability(ObservabilityComponent::Tracing("Jaeger".to_string())))
+    // Phase 6.x: Observability systems now in InfrastructureRegistry
+    let name = "Jaeger".to_string();
+    if !context.validate_infrastructure(&name, "observability") {
+      return Err(anyhow::anyhow!(
+        "Infrastructure '{}' not found in registry",
+        name
+      ));
+    }
+
+    Ok(DetectionResult::Observability(ObservabilityComponent::Tracing(name)))
   }
 }
 
