@@ -17,15 +17,15 @@ defmodule Singularity.Agents.RuntimeBootstrapper do
   def init(opts) do
     state = %{
       agent_id: Keyword.get(opts, :agent_id, "task_graph-runtime"),
-      agent_opts: Keyword.get(opts, :agent_opts, [])
+      agentopts: Keyword.get(opts, :agentopts, [])
     }
 
     {:ok, state, {:continue, :bootstrap}}
   end
 
   @impl true
-  def handle_continue(:bootstrap, %{agent_id: agent_id, agent_opts: agent_opts} = state) do
-    case ensure_agent(agent_id, agent_opts) do
+  def handle_continue(:bootstrap, %{agent_id: agent_id, agentopts: agentopts} = state) do
+    case ensure_agent(agent_id, agentopts) do
       :ok ->
         {:noreply, state}
 
@@ -41,8 +41,8 @@ defmodule Singularity.Agents.RuntimeBootstrapper do
   end
 
   @impl true
-  def handle_info(:retry_bootstrap, %{agent_id: agent_id, agent_opts: agent_opts} = state) do
-    case ensure_agent(agent_id, agent_opts) do
+  def handle_info(:retry_bootstrap, %{agent_id: agent_id, agentopts: agentopts} = state) do
+    case ensure_agent(agent_id, agentopts) do
       :ok ->
         {:noreply, Map.delete(state, :last_error)}
 
@@ -57,9 +57,9 @@ defmodule Singularity.Agents.RuntimeBootstrapper do
     end
   end
 
-  defp ensure_agent(agent_id, agent_opts) do
-    spec_opts = Keyword.put(agent_opts, :id, agent_id)
-    child_spec = Singularity.SelfImprovingAgent.child_spec(spec_opts)
+  defp ensure_agent(agent_id, agentopts) do
+    specopts = Keyword.put(agentopts, :id, agent_id)
+    child_spec = Singularity.SelfImprovingAgent.child_spec(specopts)
 
     case DynamicSupervisor.start_child(AgentSupervisor, child_spec) do
       {:ok, _pid} ->

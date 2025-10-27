@@ -47,7 +47,8 @@ defmodule Singularity.TemplateStore do
   use GenServer
   require Logger
 
-  alias Singularity.{Repo, EmbeddingEngine, PackageRegistryKnowledge}
+  alias Singularity.{Repo, EmbeddingEngine}
+  # alias Singularity.PackageRegistryKnowledge  # Unused for now
   alias Singularity.Schemas.Template
 
   @templates_dir Path.join([File.cwd!(), "..", "templates_data"])
@@ -275,6 +276,39 @@ defmodule Singularity.TemplateStore do
     query = if type, do: Template.by_type(query, type), else: query
 
     templates = Repo.all(query)
+    {:ok, Enum.map(templates, &template_to_map/1)}
+  end
+
+  @doc """
+  Regenerate embeddings for all templates in the database.
+  
+  This is useful when the embedding model is updated or when
+  templates need to be re-embedded with a new model.
+  """
+  @spec embed_all() :: {:ok, integer()} | {:error, term()}
+  def embed_all() do
+    Logger.info("Regenerating embeddings for all templates...")
+    
+    with {:ok, templates} <- get_all_templates(),
+         {:ok, count} <- regenerate_embeddings(templates) do
+      Logger.info("✅ Regenerated embeddings for #{count} templates")
+      {:ok, count}
+    else
+      {:error, reason} ->
+        Logger.error("Failed to regenerate embeddings: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Load all templates from the database.
+  
+  This is a convenience function for getting all templates
+  without any filtering.
+  """
+  @spec load_all() :: {:ok, list(map())} | {:error, term()}
+  def load_all() do
+    templates = Repo.all(Template)
     {:ok, Enum.map(templates, &template_to_map/1)}
   end
 
@@ -563,4 +597,48 @@ defmodule Singularity.TemplateStore do
   end
 
   defp record_package_prompt_usage(_context, _template_id, _success), do: :ok
+
+  defp get_all_templates() do
+    templates = Repo.all(Template)
+    {:ok, templates}
+  end
+
+  defp regenerate_embeddings(templates) do
+    count =
+      templates
+      |> Enum.map(&regenerate_template_embedding/1)
+      |> Enum.count(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+
+    {:ok, count}
+  end
+
+  defp regenerate_template_embedding(template) do
+    search_text = build_search_text_from_template(template)
+
+    with {:ok, embedding} <- EmbeddingEngine.embed(search_text, model: :qodo_embed) do
+      attrs = %{embedding: embedding}
+      
+      template
+      |> Template.changeset(attrs)
+      |> Repo.update()
+    else
+      {:error, reason} ->
+        Logger.warning("Failed to regenerate embedding for template #{template.id}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp build_search_text_from_template(template) do
+    [
+      get_in(template.metadata, ["name"]),
+      get_in(template.metadata, ["description"]),
+      get_in(template.metadata, ["language"]),
+      Enum.join(get_in(template.metadata, ["tags"]) || [], " "),
+      String.slice(get_in(template.content, ["code"]) || "", 0..500)
+    ]
+    |> Enum.join(" ")
+  end
 end

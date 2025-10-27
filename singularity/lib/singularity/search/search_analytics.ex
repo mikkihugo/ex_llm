@@ -169,7 +169,7 @@ defmodule Singularity.Search.SearchAnalytics do
     - `:fallback_used` - If fallback strategy was invoked
     - `:user_id` - Optional user identifier
   """
-  def record_search(query, _opts \\ []) do
+  def record_search(query, opts \\ []) do
     elapsed_ms = Keyword.get(opts, :elapsed_ms, 0)
     results_count = Keyword.get(opts, :results_count, 0)
     embedding_model = Keyword.get(opts, :embedding_model, "unknown")
@@ -439,7 +439,7 @@ defmodule Singularity.Search.SearchAnalytics do
   ## Options
     - `:days` - Number of days to analyze (default: 7)
   """
-  def analyze_search_trends(_opts \\ []) do
+  def analyze_search_trends(opts \\ []) do
     days = Keyword.get(opts, :days, 7)
 
     with {:ok, recent_searches} <- fetch_recent_searches(days) do

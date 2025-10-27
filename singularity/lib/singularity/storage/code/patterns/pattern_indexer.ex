@@ -78,7 +78,7 @@ defmodule Singularity.PatternIndexer do
   Returns patterns ranked by similarity to the query.
   """
   @spec search(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search(query, _opts \\ []) do
+  def search(query, opts \\ []) do
     language = Keyword.get(opts, :language)
     top_k = Keyword.get(opts, :top_k, 5)
 
@@ -98,7 +98,7 @@ defmodule Singularity.PatternIndexer do
   Combines pattern search + RAG + code generation
   """
   @spec generate_with_patterns(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def generate_with_patterns(task, _opts) do
+  def generate_with_patterns(task, opts) do
     language = Keyword.get(opts, :language, "elixir")
 
     with {:ok, patterns} <- search(task, language: language, top_k: 3),

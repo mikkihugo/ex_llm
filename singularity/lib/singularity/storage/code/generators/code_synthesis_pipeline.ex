@@ -121,7 +121,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     parallel = Keyword.get(opts, :parallel, true)
 
     # Auto-detect context from path
-    context = detect_context(path, _opts)
+    context = detect_context(path, opts)
 
     Logger.debug(
       "Fast generate: #{task} in #{context.repo}/#{context.language} (fast_mode: #{fast_mode})"
@@ -156,7 +156,7 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   ## Private Functions - Context Detection
 
-  defp detect_context(nil, _opts) do
+  defp detect_context(nil, opts) do
     # No path provided, use opts
     %{
       repo: Keyword.get(opts, :repo, "unknown"),
@@ -167,7 +167,7 @@ defmodule Singularity.CodeSynthesisPipeline do
     }
   end
 
-  defp detect_context(path, _opts) when is_binary(path) do
+  defp detect_context(path, opts) when is_binary(path) do
     # Parse path to extract context
     # Examples:
     #   "singularity/lib/singularity/cache.ex" → elixir, phoenix app
@@ -866,13 +866,13 @@ defmodule Singularity.CodeSynthesisPipeline do
 
   Much faster than sequential generation.
   """
-  def batch_generate(tasks, _opts \\ []) do
+  def batch_generate(tasks, opts \\ []) do
     _language = Keyword.get(opts, :language, "elixir")
 
     # Generate all in parallel
     tasks
     |> Task.async_stream(
-      fn task -> generate(task, _opts) end,
+      fn task -> generate(task, opts) end,
       # Batch size
       max_concurrency: 4,
       timeout: 5000

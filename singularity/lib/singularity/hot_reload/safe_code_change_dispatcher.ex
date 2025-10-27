@@ -24,20 +24,20 @@ defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
   ## Options
 
     * `:agent_id` - reuse a specific agent identifier (defaults to #{@default_agent_id})
-    * `:agent_opts` - keyword list forwarded to `SelfImprovingAgent.start_link/1`
+    * `:agentopts` - keyword list forwarded to `SelfImprovingAgent.start_link/1`
     * `:metadata` - map merged into the payload metadata before dispatch
   """
   @spec dispatch(map(), keyword()) :: :ok | {:error, term()}
-  def dispatch(payload, _opts \\ []) when is_map(payload) do
+  def dispatch(payload, opts \\ []) when is_map(payload) do
     agent_id =
-      _opts
+      opts
       |> Keyword.get(:agent_id, @default_agent_id)
       |> to_string()
 
-    agent_opts = Keyword.get(opts, :agent_opts, [])
+    agentopts = Keyword.get(opts, :agentopts, [])
     metadata = Keyword.get(opts, :metadata, %{})
 
-    with :ok <- ensure_agent_started(agent_id, agent_opts),
+    with :ok <- ensure_agent_started(agent_id, agentopts),
          enriched <- merge_metadata(payload, metadata),
          :ok <- forward(agent_id, enriched) do
       :ok
@@ -52,13 +52,13 @@ defmodule Singularity.HotReload.SafeCodeChangeDispatcher do
     end
   end
 
-  defp ensure_agent_started(agent_id, extra_opts) do
+  defp ensure_agent_started(agent_id, extraopts) do
     case Registry.lookup(ProcessRegistry, {:agent, agent_id}) do
       [{pid, _}] when is_pid(pid) ->
         :ok
 
       [] ->
-        case SelfImprovingAgent.start_link(Keyword.put(extra_opts, :id, agent_id)) do
+        case SelfImprovingAgent.start_link(Keyword.put(extraopts, :id, agent_id)) do
           {:ok, _pid} ->
             :ok
 

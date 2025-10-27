@@ -69,7 +69,7 @@ defmodule Singularity.Storage.Cache.PostgresCache do
   Options:
   - `:ttl` - Time to live in seconds (default: 3600)
   """
-  def put(cache_key, value, _opts \\ []) do
+  def put(cache_key, value, opts \\ []) do
     ttl = Keyword.get(opts, :ttl, @default_ttl)
 
     query = """
@@ -97,14 +97,14 @@ defmodule Singularity.Storage.Cache.PostgresCache do
   Options:
   - `:ttl` - Time to live in seconds (default: 3600)
   """
-  def fetch(cache_key, compute_fn, _opts \\ []) do
+  def fetch(cache_key, compute_fn, opts \\ []) do
     case get(cache_key) do
       {:ok, value} ->
         value
 
       {:error, :not_found} ->
         value = compute_fn.()
-        put(cache_key, value, _opts)
+        put(cache_key, value, opts)
         value
     end
   end

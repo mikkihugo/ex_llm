@@ -134,7 +134,7 @@ defmodule Singularity.Graph.GraphQueries do
   Example: find_call_chain("process_data/2", depth: 2)
   Returns nested structure showing call hierarchy.
   """
-  def find_call_chain(function_name, _opts \\ []) do
+  def find_call_chain(function_name, opts \\ []) do
     depth = Keyword.get(opts, :depth, 2)
     codebase_id = Keyword.get(opts, :codebase_id, "singularity")
 

@@ -56,8 +56,8 @@ defmodule Singularity.Execution.Planning.Vision do
   @doc """
   Start the vision manager.
   """
-  def start_link(_opts \\ []) do
-    GenServer.start_link(__MODULE__, %{}, _opts)
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, opts)
   end
 
   @impl true

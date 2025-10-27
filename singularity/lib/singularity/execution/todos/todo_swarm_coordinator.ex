@@ -502,15 +502,15 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
   # Client API
   # ===========================
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   @doc """
   Manually trigger swarm spawning.
   """
-  def spawn_swarm(_opts \\ []) do
-    GenServer.cast(__MODULE__, {:spawn_swarm, _opts})
+  def spawn_swarm(opts \\ []) do
+    GenServer.cast(__MODULE__, {:spawn_swarm, opts})
   end
 
   @doc """
@@ -593,8 +593,8 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
   end
 
   @impl true
-  def handle_cast({:spawn_swarm, _opts}, state) do
-    {:noreply, spawn_workers(state, _opts)}
+  def handle_cast({:spawn_swarm, opts}, state) do
+    {:noreply, spawn_workers(state, opts)}
   end
 
   @impl true
@@ -699,7 +699,7 @@ defmodule Singularity.Execution.Todos.TodoSwarmCoordinator do
     end
   end
 
-  defp spawn_workers(state, _opts) do
+  defp spawn_workers(state, opts) do
     available_slots = state.max_concurrent_workers - map_size(state.active_workers)
 
     if available_slots > 0 do

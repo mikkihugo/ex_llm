@@ -96,7 +96,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   | Find examples from your code | `CodeGenerator.generate/2` with `use_rag: true` |
   | Enforce quality standards | `CodeGenerator.generate/2` with `quality: :production` |
   | Low-level token generation | `CodeGeneration.InferenceEngine.generate/4` |
-  | Token sampling strategies | `CodeGeneration.InferenceEngine.generate/4` with _opts |
+  | Token sampling strategies | `CodeGeneration.InferenceEngine.generate/4` with opts |
   | Real-time streaming | `CodeGeneration.InferenceEngine.stream/4` |
   | Constrained generation | `CodeGeneration.InferenceEngine.constrained_generate/5` |
 
@@ -104,8 +104,8 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
   require Logger
   alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
-  alias Singularity.CodeModel
-  @type generation_method :: :t5_local | :api | :auto
+  # Using current queue-based LLM service instead of old CodeModel
+  @type generation_method :: :llm_api | :auto
   @type complexity :: :simple | :medium | :complex
   @type quality_level :: :production | :standard | :draft
 
@@ -194,73 +194,88 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
   end
 
   @doc """
-  Check if T5 local model is available.
+  Check if LLM service is available.
   """
-  @spec t5_available?() :: boolean()
-  def t5_available? do
-    # Check if T5 model is downloaded
-    model_path = Path.join([Application.app_dir(:singularity, "priv"), "models", "t5-small-onnx"])
-    File.exists?(model_path) && model_downloaded?(model_path)
+  @spec llm_available?() :: boolean()
+  def llm_available? do
+    # Check if the queue-based LLM service is available
+    Code.ensure_loaded?(Singularity.LLM.Service) &&
+      function_exported?(Singularity.LLM.Service, :call_with_prompt, 3)
   end
 
   @doc """
   Get recommended generation method for a task.
   """
   @spec recommended_method(complexity()) :: generation_method()
-  def recommended_method(complexity) do
-    cond do
-      # T5 available and task is simple/medium → Use T5
-      t5_available?() and complexity in [:simple, :medium] ->
-        :t5_local
-
-      # T5 unavailable or task complex → Use API
-      true ->
-        :api
-    end
+  def recommended_method(_complexity) do
+    # Always use LLM API in current architecture
+    :llm_api
   end
 
   ## Private Functions
 
   # Select generation method based on strategy
-  defp select_method(:auto, complexity) do
-    recommended_method(complexity)
+  defp select_method(:auto, _complexity) do
+    recommended_method(:medium)
   end
 
-  defp select_method(:t5_local, _complexity) do
-    if t5_available?() do
-      :t5_local
+  defp select_method(:llm_api, _complexity) do
+    if llm_available?() do
+      :llm_api
     else
-      Logger.warning("T5 model not available, falling back to API")
-      :api
+      Logger.warning("LLM service not available, falling back to basic generation")
+      :basic
     end
   end
 
-  defp select_method(:api, _complexity), do: :api
+  defp select_method(:basic, _complexity), do: :basic
 
-  # Generate code using T5-small ONNX (local)
+  # Generate code using LLM API (current architecture)
   defp generate_with_t5(task, language, _quality) do
-    Logger.info("Generating with T5-small (local ONNX)...")
+    Logger.info("Generating with LLM API (queue-based)...")
 
-    # Call T5 NIF for code generation
-    case call_t5_nif(task, language) do
-      {:ok, generated_code} ->
-        {:ok, generated_code}
+    # Use the current queue-based LLM service
+    prompt = build_code_generation_prompt(task, language)
+    
+    case Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_generation) do
+      {:ok, %{text: code}} ->
+        {:ok, extract_code_from_response(code)}
       
       {:error, reason} ->
-        Logger.warning("T5 NIF failed, falling back to basic generation: #{inspect(reason)}")
+        Logger.warning("LLM generation failed, falling back to basic generation: #{inspect(reason)}")
         generate_basic_code(task, language)
     end
   end
 
-  defp call_t5_nif(task, language) do
-    # Call the T5 NIF for code generation
-    try do
-      case CodeGenEngine.generate_code(task, language) do
-        {:ok, code} -> {:ok, code}
-        {:error, reason} -> {:error, reason}
-      end
-    rescue
-      error -> {:error, "T5 NIF error: #{inspect(error)}"}
+  defp build_code_generation_prompt(task, language) do
+    """
+    Generate #{language} code for the following task:
+
+    Task: #{task}
+
+    Requirements:
+    - Write clean, production-ready #{language} code
+    - Include proper error handling
+    - Add appropriate documentation
+    - Follow #{language} best practices
+
+    Code:
+    """
+  end
+
+  defp extract_code_from_response(response) do
+    # Try to extract code from markdown code blocks
+    case Regex.run(~r/```(?:[a-zA-Z]*)?\s*\n?(.*?)\n?```/s, response) do
+      [_, code] -> String.trim(code)
+      nil -> 
+        # If no code blocks found, return the response as-is
+        # but try to clean up any leading/trailing text
+        response
+        |> String.split("\n")
+        |> Enum.drop_while(&(!String.contains?(&1, ["def ", "function ", "class ", "struct ", "impl ", "fn ", "pub fn"])))
+        |> Enum.take_while(&(!String.contains?(&1, ["```", "Explanation:", "Note:"])))
+        |> Enum.join("\n")
+        |> String.trim()
     end
   end
 
@@ -296,7 +311,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
     prompt = build_generation_prompt(task, language, quality)
 
-    case Service.call_with_prompt(llm_complexity, prompt, task_type: :coder) do
+    case Singularity.LLM.Service.call_with_prompt(llm_complexity, prompt, task_type: :coder) do
       {:ok, %{response: code}} ->
         {:ok, extract_code_block(code)}
 
@@ -453,11 +468,11 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     prompt = build_unified_prompt(task, language, quality, examples, quality_template)
 
     case selected_method do
-      :t5_local ->
+      :llm_api ->
         generate_with_t5(prompt, language, quality)
 
-      :api ->
-        generate_with_api_unified(prompt, language, quality, complexity)
+      :basic ->
+        generate_basic_code(prompt, language)
     end
   end
 
@@ -581,7 +596,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
     llm_complexity = map_complexity_to_llm(complexity)
 
-    case Service.call_with_prompt(llm_complexity, prompt, task_type: :coder) do
+    case Singularity.LLM.Service.call_with_prompt(llm_complexity, prompt, task_type: :coder) do
       {:ok, %{response: code}} ->
         {:ok, extract_code_block(code)}
 

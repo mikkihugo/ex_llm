@@ -125,7 +125,7 @@ defmodule Singularity.Search.AstGrepCodeSearch do
 
   require Logger
 
-  @type search_opts :: [
+  @type searchopts :: [
           query: String.t(),
           ast_pattern: String.t() | nil,
           language: String.t() | nil,
@@ -173,8 +173,8 @@ defmodule Singularity.Search.AstGrepCodeSearch do
         limit: 10
       )
   """
-  @spec search(search_opts()) :: {:ok, [map()]} | {:error, String.t()}
-  def search(opts) when is_list(_opts) do
+  @spec search(searchopts()) :: {:ok, [map()]} | {:error, String.t()}
+  def search(opts) when is_list(opts) do
     query = Keyword.fetch!(opts, :query)
     ast_pattern = Keyword.get(opts, :ast_pattern)
     language = Keyword.get(opts, :language)

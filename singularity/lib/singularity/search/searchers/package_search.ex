@@ -22,9 +22,9 @@ defmodule Singularity.Search.Searchers.PackageSearch do
   end
 
   @impl true
-  def search(query, _opts \\ []) when is_binary(query) do
+  def search(query, opts \\ []) when is_binary(query) do
     try do
-      case PackageAndCodebaseSearch.hybrid_search(query, _opts) do
+      case PackageAndCodebaseSearch.hybrid_search(query, opts) do
         {:ok, results} -> {:ok, results}
         {:error, reason} -> {:error, reason}
         results when is_list(results) -> {:ok, results}

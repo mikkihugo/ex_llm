@@ -29,7 +29,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   Args:
     - task_type: Type of task (architect, coder, classifier, etc.)
     - messages: List of message objects for LLM
-    - _opts: Optional parameters (model, provider, etc.)
+    - opts: Optional parameters (model, provider, etc.)
 
   Returns: {:ok, request_id} or {:error, reason}
   """

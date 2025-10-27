@@ -47,7 +47,7 @@ defmodule Singularity.CodeDeduplicator do
   Returns matches ranked by similarity.
   """
   @spec find_similar(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def find_similar(code, _opts \\ []) do
+  def find_similar(code, opts \\ []) do
     language = Keyword.get(opts, :language)
     # 90% = likely duplicate
     threshold = Keyword.get(opts, :threshold, 0.9)

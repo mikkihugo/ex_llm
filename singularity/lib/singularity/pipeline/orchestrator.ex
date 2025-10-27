@@ -8,7 +8,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ```
   Phase 1: Context Gathering
-  └─> Pipeline.Context.gather(story, _opts)
+  └─> Pipeline.Context.gather(story, opts)
       ├─> Framework Detection
       ├─> Technology Detection
       ├─> Pattern Detection
@@ -37,7 +37,7 @@ defmodule Singularity.Pipeline.Orchestrator do
       └─> Returns: refined plan
 
   Phase 5: Post-Execution Learning
-  └─> Pipeline.Learning.process(execution_result, _opts)
+  └─> Pipeline.Learning.process(execution_result, opts)
       ├─> Store failure patterns
       ├─> Track validation effectiveness
       ├─> Aggregate metrics
@@ -51,7 +51,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ```elixir
   {:ok, plan, validation, execution_result} =
-    Singularity.Pipeline.Orchestrator.execute_full_cycle(story, _opts)
+    Singularity.Pipeline.Orchestrator.execute_full_cycle(story, opts)
   ```
 
   ## Step-by-Step Interface
@@ -111,7 +111,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   alias Singularity.Evolution.AdaptiveConfidenceGating
 
   @type story :: String.t() | map()
-  @type _opts :: keyword()
+  @type opts :: keyword()
   @type phase_result :: {:ok, term()} | {:error, term()}
 
   @doc """
@@ -121,7 +121,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `story` - Story/goal description
-  - `_opts` - Options passed to all phases:
+  - `opts` - Options passed to all phases:
     - `:codebase_path` - Path to codebase
     - `:timeout` - Overall timeout
     - `:learning_enabled` - Enable Phase 5 (default: true)
@@ -130,15 +130,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   - `{:ok, plan, validation, execution_result}` - All phase outputs
   - `{:error, reason}` - Error in any phase
   """
-  @spec execute_full_cycle(story, _opts) ::
+  @spec execute_full_cycle(story, opts) ::
           {:ok, map(), map(), map()} | {:error, term()}
-  def execute_full_cycle(story, _opts \\ []) do
+  def execute_full_cycle(story, opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Starting full cycle execution")
 
-    with {:ok, context} <- phase_1_gather_context(story, _opts),
-         {:ok, plan} <- phase_2_generate_plan(story, context, _opts),
-         {:ok, validation} <- phase_3_validate_plan(plan, context, _opts),
-         {:ok, refined_plan} <- phase_4_refine_plan(plan, validation, context, _opts) do
+    with {:ok, context} <- phase_1_gather_context(story, opts),
+         {:ok, plan} <- phase_2_generate_plan(story, context, opts),
+         {:ok, validation} <- phase_3_validate_plan(plan, context, opts),
+         {:ok, refined_plan} <- phase_4_refine_plan(plan, validation, context, opts) do
       # Execute and learn (simplified for this example)
       Logger.info("Pipeline.Orchestrator: Plan ready for execution",
         steps: length(refined_plan[:steps] || [])
@@ -159,10 +159,10 @@ defmodule Singularity.Pipeline.Orchestrator do
   end
 
   # Phase 1: Context Gathering
-  defp phase_1_gather_context(story, _opts) do
+  defp phase_1_gather_context(story, opts) do
     Logger.info("Pipeline.Orchestrator: Phase 1 - Gathering context")
 
-    case Context.gather(story, _opts) do
+    case Context.gather(story, opts) do
       {:ok, context} ->
         Logger.info("Pipeline.Orchestrator: Phase 1 complete",
           frameworks: length(context[:frameworks] || []),
@@ -178,7 +178,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   end
 
   # Phase 2: Constrained Generation
-  defp phase_2_generate_plan(story, context, _opts) do
+  defp phase_2_generate_plan(story, context, opts) do
     Logger.info("Pipeline.Orchestrator: Phase 2 - Generating constrained plan")
 
     # In real implementation, would call PlanGenerator with context constraints
@@ -197,7 +197,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   end
 
   # Phase 3: Multi-Layer Validation
-  defp phase_3_validate_plan(plan, context, _opts) do
+  defp phase_3_validate_plan(plan, context, opts) do
     Logger.info("Pipeline.Orchestrator: Phase 3 - Validating plan")
 
     # In real implementation, would call multiple validators
@@ -218,7 +218,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   end
 
   # Phase 4: Adaptive Refinement
-  defp phase_4_refine_plan(plan, validation, context, _opts) do
+  defp phase_4_refine_plan(plan, validation, context, opts) do
     Logger.info("Pipeline.Orchestrator: Phase 4 - Refining plan")
 
     # In real implementation, would:
@@ -244,16 +244,16 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `execution_result` - Result from plan execution
-  - `_opts` - Learning options
+  - `opts` - Learning options
 
   ## Returns
   - `:ok` - Learning processed successfully
   """
-  @spec process_execution_for_learning(map(), _opts) :: :ok | {:error, term()}
-  def process_execution_for_learning(execution_result, _opts \\ []) do
+  @spec process_execution_for_learning(map(), opts) :: :ok | {:error, term()}
+  def process_execution_for_learning(execution_result, opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Phase 5 - Processing execution for learning")
 
-    case Learning.process(execution_result, _opts) do
+    case Learning.process(execution_result, opts) do
       :ok ->
         Logger.info("Pipeline.Orchestrator: Phase 5 complete - Learnings stored")
         :ok
@@ -416,7 +416,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `criteria` - Analysis criteria (task_type, complexity, time_range)
-  - `_opts` - Options (min_confidence, limit)
+  - `opts` - Options (min_confidence, limit)
 
   ## Returns
   - `{:ok, rules}` - List of proposed rules with confidence scores
@@ -447,15 +447,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Makes high-confidence rules available to other Singularity instances.
 
   ## Parameters
-  - `_opts` - Publishing options (min_confidence, limit)
+  - `opts` - Publishing options (min_confidence, limit)
 
   ## Returns
   - `{:ok, publication_results}` - List of published rules with Genesis IDs
   """
   @spec publish_evolved_rules(keyword()) :: {:ok, [map()]} | {:error, term()}
-  def publish_evolved_rules(_opts \\ []) do
+  def publish_evolved_rules(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Publishing evolved rules to Genesis")
-    GenesisPublisher.publish_rules(_opts)
+    GenesisPublisher.publish_rules(opts)
   end
 
   @doc """
@@ -464,7 +464,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   Subscribes to high-confidence rules published by other instances.
 
   ## Parameters
-  - `_opts` - Import options (min_confidence, limit)
+  - `opts` - Import options (min_confidence, limit)
 
   ## Returns
   - `{:ok, imported_rules}` - Rules from other instances
@@ -525,7 +525,7 @@ defmodule Singularity.Pipeline.Orchestrator do
   Returns log of all rules published to Genesis with effectiveness feedback.
 
   ## Parameters
-  - `_opts` - Options (limit, status filter)
+  - `opts` - Options (limit, status filter)
 
   ## Returns
   - List of publication records
@@ -542,15 +542,15 @@ defmodule Singularity.Pipeline.Orchestrator do
   Tracks correlation between rule application and execution success.
 
   ## Parameters
-  - `_opts` - Options (time_range)
+  - `opts` - Options (time_range)
 
   ## Returns
   - Map with effectiveness metrics
   """
   @spec get_rule_impact_metrics(keyword()) :: map()
-  def get_rule_impact_metrics(_opts \\ []) do
+  def get_rule_impact_metrics(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Analyzing rule impact on execution quality")
-    RuleEvolutionSystem.get_rule_impact_metrics(_opts)
+    RuleEvolutionSystem.get_rule_impact_metrics(opts)
   end
 
   @doc """
@@ -590,19 +590,19 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ## Parameters
   - `rule_id` - ID of published rule
-  - `_opts` - Options (success: boolean, effectiveness: 0.0-1.0)
+  - `opts` - Options (success: boolean, effectiveness: 0.0-1.0)
 
   ## Returns
   - `:ok` - Feedback recorded
   """
   @spec record_published_rule_feedback(String.t(), keyword()) :: :ok | {:error, term()}
-  def record_published_rule_feedback(rule_id, _opts \\ []) do
+  def record_published_rule_feedback(rule_id, opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Recording published rule feedback",
       rule_id: rule_id,
-      _opts: _opts
+      opts: opts
     )
 
-    RuleEvolutionSystem.record_rule_feedback(rule_id, _opts)
+    RuleEvolutionSystem.record_rule_feedback(rule_id, opts)
   end
 
   # Private Helpers

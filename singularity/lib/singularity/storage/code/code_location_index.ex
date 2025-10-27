@@ -11,7 +11,7 @@ defmodule Singularity.CodeLocationIndex do
 
   # Delegate service operations to the actual service
   defdelegate index_codebase(path), to: Singularity.Storage.Code.CodeLocationIndexService
-  defdelegate index_codebase(path, _opts), to: Singularity.Storage.Code.CodeLocationIndexService
+  defdelegate index_codebase(path, opts), to: Singularity.Storage.Code.CodeLocationIndexService
   defdelegate index_file(filepath), to: Singularity.Storage.Code.CodeLocationIndexService
   defdelegate find_pattern(pattern_keyword), to: Singularity.Storage.Code.CodeLocationIndexService
 

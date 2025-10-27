@@ -24,13 +24,13 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
 
   Tries execution strategies in priority order until one succeeds.
   """
-  def execute(goal, _opts \\ []) when is_map(goal) or is_binary(goal) do
+  def execute(goal, opts \\ []) when is_map(goal) or is_binary(goal) do
     try do
-      strategies = load_strategies_for_attempt(_opts)
+      strategies = load_strategies_for_attempt(opts)
 
       Logger.info("ExecutionStrategyOrchestrator: Executing goal", goal: inspect(goal))
 
-      case try_strategies(strategies, goal, _opts) do
+      case try_strategies(strategies, goal, opts) do
         {:ok, result} ->
           Logger.info("Goal executed successfully")
           {:ok, result}
@@ -102,11 +102,11 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
     end)
   end
 
-  defp try_strategies([], _goal, _opts) do
+  defp try_strategies([], _goal, opts) do
     {:error, :no_strategy_found}
   end
 
-  defp try_strategies([{strategy_type, _priority, config} | rest], goal, _opts) do
+  defp try_strategies([{strategy_type, _priority, config} | rest], goal, opts) do
     try do
       module = config[:module]
 
@@ -115,7 +115,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
 
         case module.applicable?(goal) do
           true ->
-            case module.execute(goal, _opts) do
+            case module.execute(goal, opts) do
               {:ok, result} ->
                 Logger.info("Execution succeeded with #{strategy_type}")
                 {:ok, result}
@@ -127,16 +127,16 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
 
           false ->
             Logger.debug("#{strategy_type} not applicable")
-            try_strategies(rest, goal, _opts)
+            try_strategies(rest, goal, opts)
         end
       else
         Logger.warning("Strategy module not found for #{strategy_type}")
-        try_strategies(rest, goal, _opts)
+        try_strategies(rest, goal, opts)
       end
     rescue
       e ->
         Logger.error("Strategy execution failed for #{strategy_type}", error: inspect(e))
-        try_strategies(rest, goal, _opts)
+        try_strategies(rest, goal, opts)
     end
   end
 end

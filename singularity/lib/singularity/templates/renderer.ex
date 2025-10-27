@@ -27,7 +27,7 @@ defmodule Singularity.Templates.Renderer do
   @priv_templates_dir "priv/templates"
 
   @type variables :: %{(String.t() | atom()) => any()}
-  @type render_opts :: [
+  @type renderopts :: [
           validate: boolean(),
           quality_check: boolean(),
           cache: boolean()
@@ -54,17 +54,17 @@ defmodule Singularity.Templates.Renderer do
       iex> render("phoenix-api", %{resource: "User"}, validate: true, quality_check: true)
       {:ok, validated_code}
   """
-  @spec render(String.t(), variables(), render_opts()) :: {:ok, String.t()} | {:error, term()}
-  def render(template_id, variables \\ %{}, _opts \\ []) do
-    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
+  @spec render(String.t(), variables(), renderopts()) :: {:ok, String.t()} | {:error, term()}
+  def render(template_id, variables \\ %{}, opts \\ []) do
+    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
 
     # Auto-detect format: Check for .hbs file first, fallback to JSON
     case determine_render_mode(template_id) do
       :solid ->
-        render_with_solid(template_id, variables, _opts)
+        render_with_solid(template_id, variables, opts)
 
       :legacy ->
-        render_legacy(template_id, variables, _opts)
+        render_legacy(template_id, variables, opts)
     end
   end
 
@@ -73,15 +73,15 @@ defmodule Singularity.Templates.Renderer do
 
   Supports full Handlebars syntax: conditionals, loops, partials, custom helpers.
   """
-  def render_with_solid(template_id, variables \\ %{}, _opts \\ []) do
-    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
+  def render_with_solid(template_id, variables \\ %{}, opts \\ []) do
+    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
 
     with {:ok, hbs_content} <- load_handlebars_template(template_id),
          {:ok, metadata} <- load_template_metadata(template_id),
-         {:ok, validated_vars} <- validate_variables_from_metadata(metadata, variables, _opts),
+         {:ok, validated_vars} <- validate_variables_from_metadata(metadata, variables, opts),
          {:ok, solid_template} <- parse_solid_template(hbs_content, template_id),
          {:ok, rendered} <- render_solid(solid_template, validated_vars),
-         {:ok, checked} <- maybe_quality_check(rendered, metadata, _opts) do
+         {:ok, checked} <- maybe_quality_check(rendered, metadata, opts) do
       {:ok, checked}
     else
       {:error, reason} = error ->
@@ -93,14 +93,14 @@ defmodule Singularity.Templates.Renderer do
   @doc """
   Legacy render using JSON templates (backward compatible).
   """
-  def render_legacy(template_id, variables \\ %{}, _opts \\ []) do
-    _opts = Keyword.merge([validate: true, quality_check: false, cache: true], _opts)
+  def render_legacy(template_id, variables \\ %{}, opts \\ []) do
+    opts = Keyword.merge([validate: true, quality_check: false, cache: true], opts)
 
-    with {:ok, template} <- load_template(template_id, _opts),
-         {:ok, validated_vars} <- validate_variables(template, variables, _opts),
+    with {:ok, template} <- load_template(template_id, opts),
+         {:ok, validated_vars} <- validate_variables(template, variables, opts),
          {:ok, composed} <- compose_template(template, validated_vars),
          {:ok, rendered} <- render_template(composed, validated_vars),
-         {:ok, checked} <- maybe_quality_check(rendered, template, _opts) do
+         {:ok, checked} <- maybe_quality_check(rendered, template, opts) do
       {:ok, checked}
     else
       {:error, reason} = error ->
@@ -123,10 +123,10 @@ defmodule Singularity.Templates.Renderer do
         "lib/my_app_web/controllers/user_controller.ex" => "..."
       }}
   """
-  @spec render_snippets(String.t(), variables(), render_opts()) ::
+  @spec render_snippets(String.t(), variables(), renderopts()) ::
           {:ok, %{String.t() => String.t()}} | {:error, term()}
-  def render_snippets(template_id, variables \\ %{}, _opts \\ []) do
-    with {:ok, template} <- load_template(template_id, _opts),
+  def render_snippets(template_id, variables \\ %{}, opts \\ []) do
+    with {:ok, template} <- load_template(template_id, opts),
          {:ok, snippets} <- extract_snippets(template),
          {:ok, rendered} <- render_all_snippets(snippets, variables, template) do
       {:ok, rendered}
@@ -301,7 +301,7 @@ defmodule Singularity.Templates.Renderer do
 
   ## Template Loading & Composition
 
-  defp load_template(template_id, _opts) do
+  defp load_template(template_id, opts) do
     case TemplateService.get_template("template", template_id) do
       {:ok, template} ->
         {:ok, template}

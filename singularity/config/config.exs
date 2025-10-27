@@ -26,6 +26,16 @@ config :logger,
     [level: :error]
   ]
 
+# SASL Configuration - Erlang System Architecture Support Libraries
+# Provides system monitoring, error logging, and progress reports
+config :sasl,
+  # Reduce SASL verbosity in production (default is :tty)
+  sasl_error_logger: {:file, ~c"log/sasl-error.log"},
+  # Control error report formatting
+  errlog_type: :error,  # :error | :progress | :all
+  # UTC timestamps for logs
+  utc_log: true
+
 config :libcluster,
   topologies: []
 

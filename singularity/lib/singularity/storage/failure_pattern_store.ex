@@ -15,7 +15,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   alias Singularity.Repo
   alias Singularity.Schemas.FailurePattern
 
-  @type filter_opts ::
+  @type filteropts ::
           %{
             optional(:story_type) => String.t(),
             optional(:failure_mode) => String.t(),
@@ -34,10 +34,10 @@ defmodule Singularity.Storage.FailurePatternStore do
   incremented and enriched with additional metadata.
   """
   @spec insert(map(), Keyword.t()) :: {:ok, FailurePattern.t()} | {:error, Ecto.Changeset.t()}
-  def insert(attrs, _opts \\ []) when is_map(attrs) or is_list(attrs) do
+  def insert(attrs, opts \\ []) when is_map(attrs) or is_list(attrs) do
     attrs
     |> normalize_attrs()
-    |> upsert(_opts)
+    |> upsert(opts)
   end
 
   @doc """
@@ -45,12 +45,12 @@ defmodule Singularity.Storage.FailurePatternStore do
   """
   @spec record_failure(map(), Keyword.t()) ::
           {:ok, FailurePattern.t()} | {:error, Ecto.Changeset.t()}
-  def record_failure(attrs, _opts \\ []), do: insert(attrs, _opts)
+  def record_failure(attrs, opts \\ []), do: insert(attrs, opts)
 
   @doc """
   Returns stored failure patterns that match the provided filters.
   """
-  @spec query(filter_opts) :: [FailurePattern.t()]
+  @spec query(filteropts) :: [FailurePattern.t()]
   def query(filters \\ %{}) do
     filters = Map.new(filters)
 
@@ -65,8 +65,8 @@ defmodule Singularity.Storage.FailurePatternStore do
   Returns aggregated failure modes ordered by total frequency.
   """
   @spec find_patterns(Keyword.t()) :: [map()]
-  def find_patterns(_opts \\ []) do
-    filters = Map.new(_opts)
+  def find_patterns(opts \\ []) do
+    filters = Map.new(opts)
     limit = Map.get(filters, :limit, 20)
 
     FailurePattern
@@ -91,14 +91,14 @@ defmodule Singularity.Storage.FailurePatternStore do
   sorted by descending similarity.
   """
   @spec find_similar(map(), Keyword.t()) :: [map()]
-  def find_similar(criteria, _opts \\ []) do
+  def find_similar(criteria, opts \\ []) do
     signature = extract_signature(criteria)
     threshold = Keyword.get(opts, :threshold, 0.80)
     limit = Keyword.get(opts, :limit, 10)
 
     if is_binary(signature) and signature != "" do
       filters =
-        _opts
+        opts
         |> Keyword.drop([:threshold, :limit])
         |> Map.new()
 
@@ -118,7 +118,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   @doc """
   Collects successful fixes from matching failure patterns.
   """
-  @spec get_successful_fixes(filter_opts) :: [map()]
+  @spec get_successful_fixes(filteropts) :: [map()]
   def get_successful_fixes(filters \\ %{}) do
     query(filters)
     |> Enum.flat_map(&List.wrap(&1.successful_fixes))
@@ -132,7 +132,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   Returns `{:ok, patterns}` when syncing locally, or `{:error, reason}` when the
   integration is not configured.
   """
-  @spec sync_with_centralcloud(filter_opts) :: {:ok, [FailurePattern.t()]} | {:error, term()}
+  @spec sync_with_centralcloud(filteropts) :: {:ok, [FailurePattern.t()]} | {:error, term()}
   def sync_with_centralcloud(filters \\ %{}) do
     patterns = query(filters)
 
@@ -151,7 +151,7 @@ defmodule Singularity.Storage.FailurePatternStore do
     end
   end
 
-  defp upsert(attrs, _opts) do
+  defp upsert(attrs, opts) do
     replace_existing? = Keyword.get(opts, :replace_existing, false)
 
     case find_existing(attrs) do

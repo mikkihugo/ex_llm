@@ -15,10 +15,10 @@ defmodule Singularity.LuaRunner do
   """
 
   @deprecated "Use Singularity.Execution.Runners.LuaRunner instead"
-  defdelegate execute(lua_code, _opts \\ []),
+  defdelegate execute(lua_code, opts \\ []),
     to: Singularity.Execution.Runners.LuaRunner
 
   @deprecated "Use Singularity.Execution.Runners.LuaRunner instead"
-  defdelegate execute_with_context(lua_code, context, _opts \\ []),
+  defdelegate execute_with_context(lua_code, context, opts \\ []),
     to: Singularity.Execution.Runners.LuaRunner
 end

@@ -152,7 +152,7 @@ defmodule Singularity.Validation.HistoricalValidator do
 
   ## Parameters
   - `context` - Execution context (story_signature, task_type, complexity, etc.)
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:threshold` - Similarity threshold 0.0-1.0 (default: 0.80)
     - `:limit` - Max results to return (default: 10)
 

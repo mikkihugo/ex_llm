@@ -23,7 +23,7 @@ defmodule Singularity.Pipeline.Learning do
   ## Single API
 
   ```
-  :ok = Singularity.Pipeline.Learning.process(execution_result, _opts)
+  :ok = Singularity.Pipeline.Learning.process(execution_result, opts)
   ```
 
   Processes execution results and automatically:
@@ -78,7 +78,7 @@ defmodule Singularity.Pipeline.Learning do
   alias Ecto.UUID
 
   @type execution_result :: map()
-  @type process_opts :: keyword()
+  @type processopts :: keyword()
 
   @doc """
   Process execution results and extract learnings.
@@ -97,7 +97,7 @@ defmodule Singularity.Pipeline.Learning do
     - `:validation` - validation results
     - `:metrics` - execution metrics (cost, tokens, latency)
 
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:publish_central_cloud` - Publish learnings (default: true)
     - `:store_patterns` - Store failure patterns (default: true)
     - `:track_metrics` - Track effectiveness metrics (default: true)
@@ -112,8 +112,8 @@ defmodule Singularity.Pipeline.Learning do
   - Records failures to FailurePatternStore
   - Publishes patterns to CentralCloud (if configured)
   """
-  @spec process(execution_result, process_opts) :: :ok | {:error, term()}
-  def process(result, _opts \\ []) do
+  @spec process(execution_result, processopts) :: :ok | {:error, term()}
+  def process(result, opts \\ []) do
     Logger.info("Pipeline.Learning: Processing execution result",
       success: result[:success],
       has_metrics: not is_nil(result[:metrics])
@@ -187,7 +187,7 @@ defmodule Singularity.Pipeline.Learning do
     - `:story_signature` - Story signature to match
     - `:plan` - Plan characteristics
 
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:threshold` - Similarity threshold (default: 0.80)
     - `:limit` - Max results (default: 10)
 
@@ -195,8 +195,8 @@ defmodule Singularity.Pipeline.Learning do
   - List of similar patterns with similarity scores
   """
   @spec find_similar_failures(map(), keyword()) :: [map()]
-  def find_similar_failures(criteria, _opts \\ []) do
-    FailurePatternStore.find_similar(criteria, _opts)
+  def find_similar_failures(criteria, opts \\ []) do
+    FailurePatternStore.find_similar(criteria, opts)
   rescue
     _ -> []
   end

@@ -353,7 +353,7 @@ defmodule Singularity.Store do
   """
   @spec store_knowledge(String.t(), String.t(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def store_knowledge(artifact_type, name, content, _opts \\ []) do
+  def store_knowledge(artifact_type, name, content, opts \\ []) do
     changeset = %{
       artifact_type: artifact_type,
       artifact_id: name,
@@ -408,7 +408,7 @@ defmodule Singularity.Store do
   Search knowledge artifacts semantically.
   """
   @spec search_knowledge(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_knowledge(query, _opts \\ []) do
+  def search_knowledge(query, opts \\ []) do
     use_semantic = Keyword.get(opts, :semantic, true)
     limit = Keyword.get(opts, :limit, 10)
     threshold = Keyword.get(opts, :threshold, 0.7)

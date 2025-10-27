@@ -15,7 +15,7 @@ defmodule Singularity.Execution.ExecutionOrchestrator do
   """
 
   @deprecated "Use Singularity.Execution.Orchestrator.ExecutionOrchestrator instead"
-  defdelegate execute(goal, _opts \\ []),
+  defdelegate execute(goal, opts \\ []),
     to: Singularity.Execution.Orchestrator.ExecutionOrchestrator
 
   @deprecated "Use Singularity.Execution.Orchestrator.ExecutionOrchestrator instead"

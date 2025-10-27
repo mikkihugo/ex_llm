@@ -151,6 +151,7 @@ defmodule Singularity.Application do
     children =
       [
         # Layer 1: Foundation - Database and metrics MUST start first
+        :sasl,  # Erlang SASL for system monitoring and error logging
         Singularity.Repo,
         Singularity.Infrastructure.Telemetry,
         Singularity.ProcessRegistry
@@ -220,9 +221,9 @@ defmodule Singularity.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    _opts = [strategy: :one_for_one, name: Singularity.Supervisor]
+    opts = [strategy: :one_for_one, name: Singularity.Supervisor]
 
-    case Supervisor.start_link(children, _opts) do
+    case Supervisor.start_link(children, opts) do
       {:ok, pid} ->
         # Run documentation bootstrap AFTER supervision tree starts
         # (not supervised - runs once and exits)
@@ -255,57 +256,6 @@ defmodule Singularity.Application do
     end
   end
 
-  @doc """
-  Optional child processes based on environment and configuration.
-
-  Returns additional supervisors to load based on current environment.
-  Most supervisors are now enabled in the main supervision tree.
-
-  ## Re-enabled Supervisors & Processes
-
-  As of this update, the following supervisors and processes have been re-enabled
-  in the main supervision tree (Application.start/2):
-
-  **Infrastructure**:
-  - **Infrastructure.Supervisor** - Circuit breakers, error tracking, model loading
-
-  **Domain Services**:
-  - **LLM.Supervisor** - LLM rate limiting and provider orchestration
-  - **Knowledge.Supervisor** - Template and code store services
-  - **Learning.Supervisor** - Genesis integration and learning loops
-
-  **Agents & Execution**:
-  - **Autonomy.RuleEngine** - Confidence-based autonomous decision making (Pure Elixir, no Gleam)
-  - **Autonomy.RuleLoader** - PostgreSQL-backed rule caching and evolution
-  - **Execution.Planning.Supervisor** - Work planning and task DAG execution
-  - **Execution.SPARC.Supervisor** - SPARC template-driven execution
-  - **Execution.Todos.Supervisor** - Todo/work item coordination
-  - **Agents.Supervisor** - Agent lifecycle management
-
-  **Domain Supervisors**:
-  - **ArchitectureEngine.MetaRegistry.Supervisor** - Architecture analysis
-  - **Git.Supervisor** - Git integration and repository management
-
-  **Total**: 12 supervisors/processes enabled ✅
-
-  ## Future Re-enabling (Phase 2)
-
-  The following components still need work before re-enabling:
-
-  - **Bootstrap.EvolutionStageController** - Bootstrap tracking (low priority, unused)
-  - **Engine.NifStatus** - NIF status checking (requires investigation)
-
-  ## Environment-Specific Configuration
-
-  Current environment: #{Mix.env()}
-
-  Notes:
-  - Test mode: All supervisors start normally
-  - Development: Full supervision tree enabled
-  - Production: Full supervision tree enabled
-
-  See CLAUDE.md OTP Supervision Patterns section for architecture details.
-  """
   defp optional_children do
     # Return any additional children based on environment
     # Most supervisors are now in main tree

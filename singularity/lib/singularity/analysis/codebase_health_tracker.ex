@@ -104,7 +104,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   @doc """
   Take a snapshot of current codebase health metrics.
   """
-  def snapshot_codebase(codebase_path, _opts \\ []) do
+  def snapshot_codebase(codebase_path, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
     with :ok <- File.exists?(codebase_path) |> if(do: :ok, else: {:error, :not_found}),

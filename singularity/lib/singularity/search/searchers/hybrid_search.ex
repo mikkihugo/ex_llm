@@ -22,12 +22,12 @@ defmodule Singularity.Search.Searchers.HybridSearch do
   end
 
   @impl true
-  def search(query, _opts \\ []) when is_binary(query) do
+  def search(query, opts \\ []) when is_binary(query) do
     try do
       # Use hybrid mode by default
       search_mode = Keyword.get(opts, :mode, :hybrid)
 
-      case HybridCodeSearch.search(query, [mode: search_mode] ++ _opts) do
+      case HybridCodeSearch.search(query, [mode: search_mode] ++ opts) do
         {:ok, results} -> {:ok, results}
         {:error, reason} -> {:error, reason}
         results when is_list(results) -> {:ok, results}

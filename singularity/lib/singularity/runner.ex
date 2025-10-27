@@ -15,14 +15,14 @@ defmodule Singularity.Runner do
   """
 
   @deprecated "Use Singularity.Execution.Runners.Runner instead"
-  defdelegate start_link(_opts \\ []),
+  defdelegate start_link(opts \\ []),
     to: Singularity.Execution.Runners.Runner
 
   @deprecated "Use Singularity.Execution.Runners.Runner instead"
-  defdelegate execute_concurrent(tasks, _opts \\ []),
+  defdelegate execute_concurrent(tasks, opts \\ []),
     to: Singularity.Execution.Runners.Runner
 
   @deprecated "Use Singularity.Execution.Runners.Runner instead"
-  defdelegate stream_execution(tasks, _opts \\ []),
+  defdelegate stream_execution(tasks, opts \\ []),
     to: Singularity.Execution.Runners.Runner
 end

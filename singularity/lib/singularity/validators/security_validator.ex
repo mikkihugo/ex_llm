@@ -35,12 +35,12 @@ defmodule Singularity.Validators.SecurityValidator do
   end
 
   @impl Singularity.Validation.Validator
-  def validate(code, _opts \\ []) when is_binary(code) do
+  def validate(code, opts \\ []) when is_binary(code) do
     Logger.debug("Security validator: Starting validation")
 
     violations = []
-    violations = check_for_secrets(code, violations, _opts)
-    violations = check_dangerous_patterns(code, violations, _opts)
+    violations = check_for_secrets(code, violations, opts)
+    violations = check_dangerous_patterns(code, violations, opts)
 
     if Enum.empty?(violations) do
       Logger.debug("Security validator: No violations found")
@@ -51,7 +51,7 @@ defmodule Singularity.Validators.SecurityValidator do
     end
   end
 
-  defp check_for_secrets(code, violations, _opts) do
+  defp check_for_secrets(code, violations, opts) do
     # Check for common secret patterns
     secrets = [
       {~r/password\s*=\s*"[^"]*"/i, "Hardcoded password found"},
@@ -69,7 +69,7 @@ defmodule Singularity.Validators.SecurityValidator do
     end)
   end
 
-  defp check_dangerous_patterns(code, violations, _opts) do
+  defp check_dangerous_patterns(code, violations, opts) do
     # Check for dangerous patterns
     dangerous = [
       {~r/eval\s*\(/i, "Dangerous eval/1 usage detected"},

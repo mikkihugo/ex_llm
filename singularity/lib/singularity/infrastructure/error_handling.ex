@@ -39,7 +39,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
           optional(atom()) => term()
         }
 
-  @type retry_opts :: [
+  @type retryopts :: [
           max_attempts: pos_integer(),
           base_delay_ms: pos_integer(),
           max_delay_ms: pos_integer(),
@@ -47,13 +47,13 @@ defmodule Singularity.Infrastructure.ErrorHandling do
           jitter: boolean()
         ]
 
-  @type circuit_breaker_opts :: [
+  @type circuit_breakeropts :: [
           failure_threshold: pos_integer(),
           timeout_ms: pos_integer(),
           reset_timeout_ms: pos_integer()
         ]
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
     quote do
       require Logger
       import Singularity.Infrastructure.ErrorHandling
@@ -288,8 +288,8 @@ defmodule Singularity.Infrastructure.ErrorHandling do
         ExternalAPI.call()
       end, failure_threshold: 3, timeout_ms: 3000)
   """
-  def with_circuit_breaker(circuit_name, fun, _opts \\ []) when is_function(fun, 0) do
-    case Singularity.Infrastructure.CircuitBreaker.call(circuit_name, fun, _opts) do
+  def with_circuit_breaker(circuit_name, fun, opts \\ []) when is_function(fun, 0) do
+    case Singularity.Infrastructure.CircuitBreaker.call(circuit_name, fun, opts) do
       {:ok, result} -> {:ok, result}
       {:error, :circuit_open} -> {:error, :service_unavailable}
       {:error, reason} -> {:error, reason}

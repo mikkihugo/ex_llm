@@ -305,7 +305,7 @@ defmodule Singularity.Agents.DocumentationUpgrader do
   end
 
   # Apply documentation upgrade using language-specific patterns
-  defp apply_documentation_upgrade(content, language, _opts) do
+  defp apply_documentation_upgrade(content, language, opts) do
     case language do
       "elixir" ->
         # Add @moduledoc if missing

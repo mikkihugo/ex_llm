@@ -246,7 +246,7 @@ defmodule Singularity.CodeGraph.AGEQueries do
   """
   @spec shortest_path(String.t(), String.t(), list()) ::
           {:ok, map()} | {:error, String.t()}
-  def shortest_path(source, target, _opts \\ []) do
+  def shortest_path(source, target, opts \\ []) do
     query = """
     MATCH path = shortestPath(
       (m1:Module {name: $1}) -[:CALLS*]- (m2:Module {name: $2})
@@ -549,24 +549,24 @@ defmodule Singularity.CodeGraph.AGEQueries do
   Used when AGE is not available. Same function signatures
   but uses ltree path queries instead of Cypher.
   """
-  def fallback_forward_dependencies(module_id, _opts \\ []) do
-    Singularity.CodeGraph.Queries.forward_dependencies(module_id, _opts)
+  def fallback_forward_dependencies(module_id, opts \\ []) do
+    Singularity.CodeGraph.Queries.forward_dependencies(module_id, opts)
   end
 
-  def fallback_reverse_callers(module_id, _opts \\ []) do
-    Singularity.CodeGraph.Queries.reverse_callers(module_id, _opts)
+  def fallback_reverse_callers(module_id, opts \\ []) do
+    Singularity.CodeGraph.Queries.reverse_callers(module_id, opts)
   end
 
-  def fallback_shortest_path(source_id, target_id, _opts \\ []) do
-    Singularity.CodeGraph.Queries.shortest_path(source_id, target_id, _opts)
+  def fallback_shortest_path(source_id, target_id, opts \\ []) do
+    Singularity.CodeGraph.Queries.shortest_path(source_id, target_id, opts)
   end
 
-  def fallback_find_cycles(_opts \\ []) do
-    Singularity.CodeGraph.Queries.find_cycles(_opts)
+  def fallback_find_cycles(opts \\ []) do
+    Singularity.CodeGraph.Queries.find_cycles(opts)
   end
 
-  def fallback_impact_analysis(module_id, _opts \\ []) do
-    Singularity.CodeGraph.Queries.impact_analysis(module_id, _opts)
+  def fallback_impact_analysis(module_id, opts \\ []) do
+    Singularity.CodeGraph.Queries.impact_analysis(module_id, opts)
   end
 
   # ============================================================================

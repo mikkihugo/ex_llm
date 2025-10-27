@@ -38,7 +38,7 @@ defmodule Singularity.CodeModelTrainer do
   - 1536 dimensions (richer representations)
   - Already trained on massive code corpus
   """
-  def train_on_codebase(_opts \\ []) do
+  def train_on_codebase(opts \\ []) do
     repo_filter = Keyword.get(opts, :repos, nil)
     output_path = Keyword.get(opts, :output_path, "priv/models/qodo-embed-finetuned")
 

@@ -46,7 +46,7 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
   ## Parameters
 
   - `project_path`: Path to project root
-  - `_opts`: Optional keyword list
+  - `opts`: Optional keyword list
 
   ## Returns
 
@@ -54,16 +54,16 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
   - `{:error, :no_tool_found}` - No applicable tool found
   - `{:error, reason}` - Build failed
   """
-  def run_build(project_path, _opts \\ []) when is_binary(project_path) do
+  def run_build(project_path, opts \\ []) when is_binary(project_path) do
     try do
-      tools = load_tools_for_attempt(_opts)
+      tools = load_tools_for_attempt(opts)
 
       Logger.info("BuildToolOrchestrator: Running build",
         project_path: project_path,
         tool_count: length(tools)
       )
 
-      case try_build_tools(tools, project_path, _opts) do
+      case try_build_tools(tools, project_path, opts) do
         {:ok, result} ->
           Logger.info("Build successful",
             project_path: project_path,
@@ -99,20 +99,20 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
   ## Parameters
 
   - `target`: Target to build (e.g., "//apps/api:build")
-  - `_opts`: Optional keyword list
+  - `opts`: Optional keyword list
 
   ## Returns
 
   - `{:ok, %{output: ..., status: 0}}` - Target built successfully
   - `{:error, reason}` - Build failed
   """
-  def run_target(target, _opts \\ []) when is_binary(target) do
+  def run_target(target, opts \\ []) when is_binary(target) do
     try do
-      tools = load_tools_for_attempt(_opts)
+      tools = load_tools_for_attempt(opts)
 
       Logger.info("BuildToolOrchestrator: Running target", target: target)
 
-      case try_target_tools(tools, target, _opts) do
+      case try_target_tools(tools, target, opts) do
         {:ok, result} ->
           Logger.info("Target build successful", target: target)
           {:ok, result}
@@ -134,16 +134,16 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
   ## Parameters
 
   - `project_path`: Path to project root
-  - `_opts`: Optional keyword list
+  - `opts`: Optional keyword list
 
   ## Returns
 
   - `:ok` - Cleaned successfully
   - `{:error, reason}` - Clean failed
   """
-  def clean_build(project_path, _opts \\ []) when is_binary(project_path) do
+  def clean_build(project_path, opts \\ []) when is_binary(project_path) do
     try do
-      tools = load_tools_for_attempt(_opts)
+      tools = load_tools_for_attempt(opts)
 
       Logger.info("BuildToolOrchestrator: Cleaning build", project_path: project_path)
 
@@ -216,11 +216,11 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
     end)
   end
 
-  defp try_build_tools([], _project_path, _opts) do
+  defp try_build_tools([], _project_path, opts) do
     {:error, :no_tool_found}
   end
 
-  defp try_build_tools([{tool_type, _priority, config} | rest], project_path, _opts) do
+  defp try_build_tools([{tool_type, _priority, config} | rest], project_path, opts) do
     try do
       module = config[:module]
 
@@ -231,7 +231,7 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
         case module.applicable?(project_path) do
           true ->
             # Tool is applicable, run build
-            case module.run_build(project_path, _opts) do
+            case module.run_build(project_path, opts) do
               {:ok, result} ->
                 Logger.info("Build succeeded with #{tool_type}")
                 {:ok, result}
@@ -244,46 +244,46 @@ defmodule Singularity.Integration.BuildToolOrchestrator do
           false ->
             # Tool not applicable, try next
             Logger.debug("#{tool_type} not applicable for project")
-            try_build_tools(rest, project_path, _opts)
+            try_build_tools(rest, project_path, opts)
         end
       else
         Logger.warning("Tool module not found for #{tool_type}")
-        try_build_tools(rest, project_path, _opts)
+        try_build_tools(rest, project_path, opts)
       end
     rescue
       e ->
         Logger.error("Build tool execution failed for #{tool_type}", error: inspect(e))
-        try_build_tools(rest, project_path, _opts)
+        try_build_tools(rest, project_path, opts)
     end
   end
 
-  defp try_target_tools([], _target, _opts) do
+  defp try_target_tools([], _target, opts) do
     {:error, :no_tool_found}
   end
 
-  defp try_target_tools([{tool_type, _priority, config} | rest], target, _opts) do
+  defp try_target_tools([{tool_type, _priority, config} | rest], target, opts) do
     try do
       module = config[:module]
 
       if module && Code.ensure_loaded?(module) do
         Logger.debug("Trying #{tool_type} for target", target: target)
 
-        case module.run_target(target, _opts) do
+        case module.run_target(target, opts) do
           {:ok, result} ->
             Logger.info("Target succeeded with #{tool_type}", target: target)
             {:ok, result}
 
           {:error, reason} ->
             Logger.error("#{tool_type} target failed", reason: inspect(reason))
-            try_target_tools(rest, target, _opts)
+            try_target_tools(rest, target, opts)
         end
       else
-        try_target_tools(rest, target, _opts)
+        try_target_tools(rest, target, opts)
       end
     rescue
       e ->
         Logger.error("Target tool execution failed for #{tool_type}", error: inspect(e))
-        try_target_tools(rest, target, _opts)
+        try_target_tools(rest, target, opts)
     end
   end
 

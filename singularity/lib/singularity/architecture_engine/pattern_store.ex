@@ -213,7 +213,7 @@ defmodule Singularity.Architecture.PatternStore do
   @doc """
   Search for patterns similar to a query string.
   """
-  def search_similar_patterns(pattern_type, query_text, _opts \\ [])
+  def search_similar_patterns(pattern_type, query_text, opts \\ [])
       when pattern_type in [:framework, :technology] and is_binary(query_text) do
     table = table_for(pattern_type)
     top_k = Keyword.get(opts, :top_k, 5)
@@ -339,7 +339,7 @@ defmodule Singularity.Architecture.PatternStore do
   @doc """
   List all patterns of a given type.
   """
-  def list_patterns(pattern_type, _opts \\ []) when pattern_type in [:framework, :technology] do
+  def list_patterns(pattern_type, opts \\ []) when pattern_type in [:framework, :technology] do
     table = table_for(pattern_type)
     limit = Keyword.get(opts, :limit, 100)
     offset = Keyword.get(opts, :offset, 0)

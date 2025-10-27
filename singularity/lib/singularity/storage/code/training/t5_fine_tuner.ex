@@ -59,12 +59,12 @@ defmodule Singularity.T5FineTuner do
   - `:include_tests` - Include test code (default: true)
   """
   @spec prepare_training_data(keyword()) :: {:ok, String.t()} | {:error, term()}
-  def prepare_training_data(_opts \\ []) do
+  def prepare_training_data(opts \\ []) do
     name = Keyword.fetch!(opts, :name)
 
     description =
       Keyword.get(
-        _opts,
+        opts,
         :description,
         "T5 training session for #{Keyword.get(opts, :language, "all")} languages"
       )
@@ -138,10 +138,10 @@ defmodule Singularity.T5FineTuner do
 
   ## Parameters:
   - `training_session_id` - Training session ID from prepare_training_data/1
-  - `_opts` - Training options (epochs, learning_rate, etc.)
+  - `opts` - Training options (epochs, learning_rate, etc.)
   """
   @spec fine_tune(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def fine_tune(training_session_id, _opts \\ []) do
+  def fine_tune(training_session_id, opts \\ []) do
     epochs = Keyword.get(opts, :epochs, 8)
     learning_rate = Keyword.get(opts, :learning_rate, 3.0e-4)
     batch_size = Keyword.get(opts, :batch_size, 2)

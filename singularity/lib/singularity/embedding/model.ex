@@ -23,13 +23,13 @@ defmodule Singularity.Embedding.Model do
   @doc """
   Build embedding model for a specific architecture.
   """
-  def build(model_name, _opts \\ []) do
+  def build(model_name, opts \\ []) do
     case model_name do
       :qodo ->
-        build_qodo(_opts)
+        build_qodo(opts)
 
       :jina_v3 ->
-        build_jina_v3(_opts)
+        build_jina_v3(opts)
 
       _ ->
         {:error, "Unknown model: #{model_name}"}

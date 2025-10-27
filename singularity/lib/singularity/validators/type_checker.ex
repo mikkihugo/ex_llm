@@ -35,12 +35,12 @@ defmodule Singularity.Validators.TypeChecker do
   end
 
   @impl Singularity.Validation.Validator
-  def validate(code, _opts \\ []) when is_binary(code) do
+  def validate(code, opts \\ []) when is_binary(code) do
     Logger.debug("Type checker: Starting validation")
 
     violations = []
-    violations = check_has_specs(code, violations, _opts)
-    violations = check_type_annotations(code, violations, _opts)
+    violations = check_has_specs(code, violations, opts)
+    violations = check_type_annotations(code, violations, opts)
 
     if Enum.empty?(violations) do
       Logger.debug("Type checker: No violations found")
@@ -51,7 +51,7 @@ defmodule Singularity.Validators.TypeChecker do
     end
   end
 
-  defp check_has_specs(code, violations, _opts) do
+  defp check_has_specs(code, violations, opts) do
     # Check if code contains @spec declarations
     case Regex.scan(~r/@spec\s+\w+/, code) do
       [] ->
@@ -62,7 +62,7 @@ defmodule Singularity.Validators.TypeChecker do
     end
   end
 
-  defp check_type_annotations(code, violations, _opts) do
+  defp check_type_annotations(code, violations, opts) do
     # Check for proper type annotations
     case Regex.scan(~r/def\s+\w+\([^)]*\)\s*do/, code) do
       [] ->

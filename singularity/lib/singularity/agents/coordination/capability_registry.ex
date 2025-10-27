@@ -48,7 +48,7 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("[CapabilityRegistry] Starting Agent Capability Registry")
     {:ok, %{capabilities: %{}, index_by_domain: %{}, index_by_role: %{}}}
   end

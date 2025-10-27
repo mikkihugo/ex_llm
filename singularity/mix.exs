@@ -93,13 +93,13 @@ defmodule Singularity.MixProject do
 
       # ML/AI Framework - Pure Elixir Nx + Axon + EXLA
       # Bumblebee for pre-trained models (optional, helps with HF integration)
-      {:bumblebee, "~> 0.5", optional: true},
+      {:bumblebee, "~> 0.6", optional: true},
       # Core tensor operations (required)
       {:nx, "~> 0.6"},
       # Neural network framework for fine-tuning (required for Axon)
       {:axon, "~> 0.6", optional: true},
       # GPU acceleration (CUDA/Metal) - RTX 4080 support (optional, required for GPU)
-      {:exla, "~> 0.6", optional: true, app: false},
+      {:exla, "~> 0.10", optional: true, app: false},
       # {:kino, "~> 0.12"},
 
       # Distributed Systems

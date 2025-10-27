@@ -61,7 +61,7 @@ defmodule Singularity.Code.CodebaseDetector do
 
   ## Parameters
 
-  - `_opts` - Options
+  - `opts` - Options
     - `:fallback` - Fallback codebase_id if Git detection fails (default: "singularity")
     - `:format` - Format for codebase_id (default: `:repo_only`)
       - `:repo_only` - Just repo name: "singularity-incubation"
@@ -90,7 +90,7 @@ defmodule Singularity.Code.CodebaseDetector do
       codebase_id = CodebaseDetector.detect(format: :full, extend_cache: true)
       # => Cache valid for 30 minutes instead of 5
   """
-  def detect(_opts \\ []) do
+  def detect(opts \\ []) do
     fallback = Keyword.get(opts, :fallback, "singularity")
     format = Keyword.get(opts, :format, :repo_only)
     use_cache = Keyword.get(opts, :cache, true)
@@ -187,7 +187,7 @@ defmodule Singularity.Code.CodebaseDetector do
 
   ## Parameters
 
-  - `_opts` - Options
+  - `opts` - Options
     - `:format` - Format for codebase_id (default: `:repo_only`)
       - `:repo_only` - Just repo name: "singularity-incubation"
       - `:full` - Include owner: "mikkihugo/singularity-incubation"
@@ -205,7 +205,7 @@ defmodule Singularity.Code.CodebaseDetector do
       iex> CodebaseDetector.detect_from_git(format: :full)
       {:ok, "mikkihugo/singularity-incubation"}
   """
-  def detect_from_git(_opts \\ []) do
+  def detect_from_git(opts \\ []) do
     format = Keyword.get(opts, :format, :repo_only)
 
     case System.cmd("git", ["remote", "get-url", "origin"], stderr_to_stdout: true) do
@@ -408,7 +408,7 @@ defmodule Singularity.Code.CodebaseDetector do
       iex> CodebaseDetector.reload()
       {:ok, "mikkihugo/singularity-incubation"}
   """
-  def reload(_opts \\ []) do
+  def reload(opts \\ []) do
     clear_cache()
     codebase_id = detect(Keyword.put(opts, :cache, false))
     {:ok, codebase_id}

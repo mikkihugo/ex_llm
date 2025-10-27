@@ -110,9 +110,33 @@ defmodule Singularity.PromptEngine do
   # Public API - prompt generation & optimization
   # ---------------------------------------------------------------------------
 
+  @doc """
+  Generate code using the prompt engine.
+  
+  This function provides a code generation interface that can use
+  the NIF backend when available, or fall back to LLM-based generation.
+  """
+  @spec generate_code(String.t(), String.t()) :: {:ok, String.t()} | {:error, term()}
+  def generate_code(task, language) do
+    Logger.debug("Generating code with PromptEngine", task: task, language: language)
+    
+    # Create a code generation prompt
+    prompt = build_code_generation_prompt(task, language)
+    
+    # Use the LLM to generate code
+    case call_llm_with_prompt(:medium, prompt, task_type: :code_generation) do
+      {:ok, %{text: code}} ->
+        {:ok, extract_code_from_response(code)}
+      
+      {:error, reason} ->
+        Logger.warning("Code generation failed", task: task, language: language, reason: reason)
+        {:error, reason}
+    end
+  end
+
   @spec generate_prompt(String.t(), String.t(), keyword()) :: prompt_response
-  def generate_prompt(context, language, _opts \\ []) do
-    request = build_request(context, language, _opts)
+  def generate_prompt(context, language, opts \\ []) do
+    request = build_request(context, language, opts)
 
     with {:nif, {:ok, response}} <- {:nif, call_nif(fn -> Native.generate_prompt(request) end)} do
       {:ok, response}
@@ -153,31 +177,31 @@ defmodule Singularity.PromptEngine do
   end
 
   @spec call_llm(String.t() | atom(), [map()], keyword()) :: {:ok, map()} | {:error, term()}
-  def call_llm(model_or_complexity, messages, _opts \\ []) do
+  def call_llm(model_or_complexity, messages, opts \\ []) do
     # Use centralized LLM service via pgmq-based llm-server
-    Singularity.LLM.Service.call(model_or_complexity, messages, _opts)
+    Singularity.LLM.Service.call(model_or_complexity, messages, opts)
   end
 
   @spec call_llm_with_prompt(String.t() | atom(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def call_llm_with_prompt(model_or_complexity, prompt, _opts \\ []) do
+  def call_llm_with_prompt(model_or_complexity, prompt, opts \\ []) do
     messages = [%{role: "user", content: prompt}]
-    call_llm(model_or_complexity, messages, _opts)
+    call_llm(model_or_complexity, messages, opts)
   end
 
   @spec call_llm_with_system(String.t() | atom(), String.t(), String.t(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def call_llm_with_system(model_or_complexity, system_prompt, user_message, _opts \\ []) do
+  def call_llm_with_system(model_or_complexity, system_prompt, user_message, opts \\ []) do
     messages = [
       %{role: "system", content: system_prompt},
       %{role: "user", content: user_message}
     ]
 
-    call_llm(model_or_complexity, messages, _opts)
+    call_llm(model_or_complexity, messages, opts)
   end
 
   @spec optimize_prompt(String.t(), keyword()) :: {:ok, map()} | {:error, term()}
-  def optimize_prompt(prompt, _opts \\ []) do
+  def optimize_prompt(prompt, opts \\ []) do
     request = %{
       prompt: prompt,
       context: Keyword.get(opts, :context),
@@ -202,7 +226,7 @@ defmodule Singularity.PromptEngine do
   # ---------------------------------------------------------------------------
 
   @spec get_template(String.t(), keyword()) :: prompt_response
-  def get_template(template_id, _opts \\ []) do
+  def get_template(template_id, opts \\ []) do
     context = Keyword.get(opts, :context, %{})
 
     case Enum.find(@default_templates, &(&1.id == template_id)) do
@@ -261,7 +285,7 @@ defmodule Singularity.PromptEngine do
   # Local fallback implementations
   # ---------------------------------------------------------------------------
 
-  defp build_request(context, language, _opts) do
+  defp build_request(context, language, opts) do
     %{
       context: context,
       language: language,
@@ -415,5 +439,40 @@ defmodule Singularity.PromptEngine do
   """
   def invalidate_template(template_name) do
     :prompt_engine.invalidate_template(template_name)
+  end
+
+  # Private helper functions for code generation
+
+  defp build_code_generation_prompt(task, language) do
+    """
+    Generate #{language} code for the following task:
+
+    Task: #{task}
+
+    Requirements:
+    - Write clean, production-ready #{language} code
+    - Include proper error handling
+    - Add appropriate documentation
+    - Follow #{language} best practices
+    - Return only the code, no explanations
+
+    Code:
+    """
+  end
+
+  defp extract_code_from_response(response) do
+    # Try to extract code from markdown code blocks
+    case Regex.run(~r/```(?:[a-zA-Z]*)?\s*\n?(.*?)\n?```/s, response) do
+      [_, code] -> String.trim(code)
+      nil -> 
+        # If no code blocks found, return the response as-is
+        # but try to clean up any leading/trailing text
+        response
+        |> String.split("\n")
+        |> Enum.drop_while(&(!String.contains?(&1, ["def ", "function ", "class ", "struct ", "impl ", "fn ", "pub fn"])))
+        |> Enum.take_while(&(!String.contains?(&1, ["```", "Explanation:", "Note:"])))
+        |> Enum.join("\n")
+        |> String.trim()
+    end
   end
 end

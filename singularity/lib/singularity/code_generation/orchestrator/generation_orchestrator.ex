@@ -22,7 +22,7 @@ defmodule Singularity.CodeGeneration.Orchestrator.GenerationOrchestrator do
 
   ## Public API
 
-  - `generate(spec, _opts)` - Generate code with all/specified generators
+  - `generate(spec, opts)` - Generate code with all/specified generators
   - `learn_from_generation(generator_type, result)` - Learn from generation results
 
   ## Key Features

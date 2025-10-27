@@ -222,7 +222,7 @@ defmodule Singularity.Graph.IntarrayQueries do
       IntarrayQueries.find_dependency_chain(42, depth: 2)
       # Returns all nodes in the dependency chain up to depth 2
   """
-  def find_dependency_chain(node_id, _opts \\ []) do
+  def find_dependency_chain(node_id, opts \\ []) do
     max_depth = Keyword.get(opts, :depth, 3)
     codebase_id = Keyword.get(opts, :codebase_id, "singularity")
 

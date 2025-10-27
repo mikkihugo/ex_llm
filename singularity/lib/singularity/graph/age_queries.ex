@@ -363,7 +363,7 @@ defmodule Singularity.Graph.AgeQueries do
   RETURN [node IN nodes(path) | node.name], length(path)
   ```
   """
-  def find_all_paths_cypher(from_func, to_func, _opts \\ []) do
+  def find_all_paths_cypher(from_func, to_func, opts \\ []) do
     max_hops = Keyword.get(opts, :max_hops, 5)
 
     query = """

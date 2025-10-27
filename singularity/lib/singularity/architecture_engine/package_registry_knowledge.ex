@@ -23,7 +23,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   - `:limit` - Maximum results (default: 10)
   """
   @spec search(String.t(), keyword()) :: {:ok, [package_result()]} | {:error, term()}
-  def search(query, _opts \\ []) do
+  def search(query, opts \\ []) do
     ecosystem = Keyword.get(opts, :ecosystem, :all) |> to_string()
     limit = Keyword.get(opts, :limit, 10)
 
@@ -96,7 +96,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Search across known architectural patterns.
   """
   @spec search_patterns(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_patterns(query, _opts \\ []) do
+  def search_patterns(query, opts \\ []) do
     Logger.info("🔍 Searching patterns for: #{query}")
 
     # Search for architectural patterns in the knowledge base directly
@@ -142,7 +142,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   UI responsive.
   """
   @spec search_examples(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_examples(query, _opts \\ []) do
+  def search_examples(query, opts \\ []) do
     Logger.info("📚 Searching examples for: #{query}")
 
     # Search for code examples in the knowledge base directly
@@ -229,7 +229,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Return cross-ecosystem equivalents.
   """
   @spec find_equivalents(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def find_equivalents(package_name, _opts \\ []) do
+  def find_equivalents(package_name, opts \\ []) do
     Logger.info("🔍 Finding equivalents for package: #{package_name}")
 
     # Search across all ecosystems for similar packages
@@ -267,7 +267,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Retrieve example snippets for a specific package.
   """
   @spec get_examples(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def get_examples(package_id, _opts \\ []) do
+  def get_examples(package_id, opts \\ []) do
     Logger.info("📚 Getting examples for package: #{package_id}")
 
     # Try to get examples from knowledge base
@@ -347,7 +347,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Record prompt usage metadata with real database persistence.
   """
   @spec track_prompt_usage(String.t(), String.t(), term(), keyword()) :: {:ok, :noop}
-  def track_prompt_usage(package_name, version, prompt_id, _opts \\ []) do
+  def track_prompt_usage(package_name, version, prompt_id, opts \\ []) do
     Logger.info("📊 Tracking prompt usage for package: #{package_name}")
 
     # Store usage metadata in database
@@ -356,7 +356,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
       version: version,
       prompt_id: prompt_id,
       timestamp: DateTime.utc_now(),
-      metadata: _opts
+      metadata: opts
     }
 
     case store_usage_metadata(usage_data) do

@@ -85,11 +85,11 @@ defmodule Singularity.Execution.Todos.TodoStore do
   @doc """
   List all todos with optional filters.
   """
-  def list(_opts \\ []) do
+  def list(opts \\ []) do
     Todo
-    |> apply_filters(_opts)
-    |> apply_order(_opts)
-    |> apply_limit(_opts)
+    |> apply_filters(opts)
+    |> apply_order(opts)
+    |> apply_limit(opts)
     |> Repo.all()
   end
 
@@ -187,7 +187,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   - `:status` - Filter by status
   - `:min_similarity` - Minimum similarity score (0.0-1.0, default: 0.7)
   """
-  def search(query, _opts \\ []) do
+  def search(query, opts \\ []) do
     with {:ok, embedding} <- EmbeddingGenerator.embed(query) do
       limit = Keyword.get(opts, :limit, 10)
       min_similarity = Keyword.get(opts, :min_similarity, 0.7)
@@ -195,7 +195,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
       results =
         Todo
         |> where([t], fragment("1 - (? <=> ?) > ?", t.embedding, ^embedding, ^min_similarity))
-        |> apply_filters(_opts)
+        |> apply_filters(opts)
         |> order_by([t], fragment("? <=> ?", t.embedding, ^embedding))
         |> limit(^limit)
         |> Repo.all()
@@ -211,7 +211,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   @doc """
   Find related todos (similar by embedding).
   """
-  def find_related(todo, _opts \\ []) do
+  def find_related(todo, opts \\ []) do
     if todo.embedding do
       limit = Keyword.get(opts, :limit, 5)
 
@@ -242,7 +242,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   3. Not currently assigned
   4. Oldest first (created_at)
   """
-  def get_next_available(_opts \\ []) do
+  def get_next_available(opts \\ []) do
     complexity = Keyword.get(opts, :complexity)
 
     query =
@@ -266,7 +266,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
   @doc """
   Get all todos that are ready to execute (no blocking dependencies).
   """
-  def get_ready_todos(_opts \\ []) do
+  def get_ready_todos(opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
 
     todos =
@@ -283,11 +283,11 @@ defmodule Singularity.Execution.Todos.TodoStore do
   @doc """
   Get todos by status with optional prioritization.
   """
-  def get_by_status(status, _opts \\ []) do
+  def get_by_status(status, opts \\ []) do
     Todo
     |> where([t], t.status == ^status)
-    |> apply_order(_opts)
-    |> apply_limit(_opts)
+    |> apply_order(opts)
+    |> apply_limit(opts)
     |> Repo.all()
   end
 
@@ -410,8 +410,8 @@ defmodule Singularity.Execution.Todos.TodoStore do
     todo.retry_count < todo.max_retries
   end
 
-  defp apply_filters(query, _opts) do
-    Enum.reduce(_opts, query, fn
+  defp apply_filters(query, opts) do
+    Enum.reduce(opts, query, fn
       {:status, status}, q -> where(q, [t], t.status == ^status)
       {:priority, priority}, q -> where(q, [t], t.priority == ^priority)
       {:complexity, complexity}, q -> where(q, [t], t.complexity == ^complexity)
@@ -421,7 +421,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
     end)
   end
 
-  defp apply_order(query, _opts) do
+  defp apply_order(query, opts) do
     case Keyword.get(opts, :order_by) do
       :priority -> order_by(query, [t], asc: t.priority, asc: t.inserted_at)
       :created -> order_by(query, [t], desc: t.inserted_at)
@@ -430,7 +430,7 @@ defmodule Singularity.Execution.Todos.TodoStore do
     end
   end
 
-  defp apply_limit(query, _opts) do
+  defp apply_limit(query, opts) do
     case Keyword.get(opts, :limit) do
       nil -> query
       limit -> limit(query, ^limit)

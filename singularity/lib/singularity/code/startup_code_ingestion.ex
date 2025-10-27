@@ -145,7 +145,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
 
   ## Client API
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
@@ -173,8 +173,8 @@ defmodule Singularity.Code.StartupCodeIngestion do
   @doc """
   Run bootstrap now (manual trigger).
   """
-  def run_now(_opts \\ []) do
-    GenServer.call(__MODULE__, {:run_now, _opts}, :infinity)
+  def run_now(opts \\ []) do
+    GenServer.call(__MODULE__, {:run_now, opts}, :infinity)
   end
 
   ## Server Callbacks
@@ -183,7 +183,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
   def init(opts) do
     # Merge config
     config = Keyword.merge(@default_config, get_config())
-    config = Keyword.merge(config, _opts)
+    config = Keyword.merge(config, opts)
 
     enabled = Keyword.get(config, :enabled, true)
     dry_run = Keyword.get(config, :dry_run, true)
@@ -249,11 +249,11 @@ defmodule Singularity.Code.StartupCodeIngestion do
   end
 
   @impl true
-  def handle_call({:run_now, _opts}, _from, state) do
+  def handle_call({:run_now, opts}, _from, state) do
     Logger.info("Startup Code Ingestion: Manual bootstrap triggered")
 
     # Override config with runtime opts
-    config = Keyword.merge(state.config, _opts)
+    config = Keyword.merge(state.config, opts)
     new_state = %{state | config: config, status: :running, started_at: DateTime.utc_now()}
 
     result_state = perform_bootstrap(new_state)

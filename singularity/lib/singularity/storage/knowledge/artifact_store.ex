@@ -108,7 +108,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
   - `:tags` - List of tags
   - `:skip_embedding` - Skip embedding generation (default: false)
   """
-  def store(artifact_type, artifact_id, content_map, _opts \\ []) do
+  def store(artifact_type, artifact_id, content_map, opts \\ []) do
     # Encode to pretty JSON (for Git/human readability)
     content_raw = Jason.encode!(content_map, pretty: true)
 
@@ -192,11 +192,11 @@ defmodule Singularity.Knowledge.ArtifactStore do
       iex> ArtifactStore.search("async worker pattern", language: "elixir", top_k: 5)
       {:ok, [%KnowledgeArtifact{}, ...]}
   """
-  def search(query_text, _opts \\ []) do
+  def search(query_text, opts \\ []) do
     # Generate embedding for query
     case EmbeddingGenerator.embed(query_text, provider: :auto) do
       {:ok, embedding} ->
-        results = search_by_embedding(embedding, _opts)
+        results = search_by_embedding(embedding, opts)
         {:ok, results}
 
       {:error, reason} ->
@@ -205,7 +205,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
     end
   end
 
-  defp search_by_embedding(embedding, _opts) do
+  defp search_by_embedding(embedding, opts) do
     artifact_types = opts[:artifact_types]
     language = opts[:language]
     tags = opts[:tags]
@@ -268,7 +268,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
       ...> )
       {:ok, [%KnowledgeArtifact{}, ...]}
   """
-  def query_jsonb(_opts \\ []) do
+  def query_jsonb(opts \\ []) do
     artifact_type = opts[:artifact_type]
     filter = opts[:filter]
     language = opts[:language]
@@ -323,7 +323,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
       # Sync directory
       ArtifactStore.sync_from_git(path: "templates_data/quality/")
   """
-  def sync_from_git(_opts \\ []) do
+  def sync_from_git(opts \\ []) do
     path = opts[:path] || @templates_data_dir
     full_path = Path.expand(path)
 
@@ -336,7 +336,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
 
     results =
       Enum.map(files, fn file_path ->
-        sync_file_from_git(file_path, _opts)
+        sync_file_from_git(file_path, opts)
       end)
 
     success_count = Enum.count(results, &match?({:ok, _}, &1))
@@ -347,14 +347,14 @@ defmodule Singularity.Knowledge.ArtifactStore do
     {:ok, %{success: success_count, errors: error_count, results: results}}
   end
 
-  defp sync_file_from_git(file_path, _opts) do
+  defp sync_file_from_git(file_path, opts) do
     with {:ok, json_string} <- File.read(file_path),
          {:ok, content_map} <- Jason.decode(json_string),
          {:ok, metadata} <- extract_metadata_from_path(file_path) do
       artifact_type = metadata.artifact_type
       artifact_id = metadata.artifact_id
 
-      store(artifact_type, artifact_id, content_map, _opts)
+      store(artifact_type, artifact_id, content_map, opts)
     else
       {:error, reason} ->
         Logger.error("Failed to sync #{file_path}: #{inspect(reason)}")
@@ -413,7 +413,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
         min_success_rate: 0.95
       )
   """
-  def export_learned_to_git(_opts \\ []) do
+  def export_learned_to_git(opts \\ []) do
     artifact_type = opts[:artifact_type]
     min_usage_count = opts[:min_usage_count] || 10
     min_success_rate = opts[:min_success_rate] || 0.90
@@ -474,7 +474,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
       ArtifactStore.record_usage("elixir-production", success: true)
       ArtifactStore.record_usage("rust-api-endpoint", success: false)
   """
-  def record_usage(artifact_id, _opts \\ []) do
+  def record_usage(artifact_id, opts \\ []) do
     success = Keyword.get(opts, :success, true)
 
     # Increment usage_count and update success_rate

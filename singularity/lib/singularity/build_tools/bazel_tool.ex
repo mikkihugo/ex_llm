@@ -30,7 +30,7 @@ defmodule Singularity.BuildTools.BazelTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_build(project_path, _opts \\ []) when is_binary(project_path) do
+  def run_build(project_path, opts \\ []) when is_binary(project_path) do
     Logger.debug("Bazel: Running build", project_path: project_path)
 
     case run_bazel_command(project_path, ["build", "//:all"]) do
@@ -45,7 +45,7 @@ defmodule Singularity.BuildTools.BazelTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_target(target, _opts \\ []) when is_binary(target) do
+  def run_target(target, opts \\ []) when is_binary(target) do
     Logger.debug("Bazel: Running target", target: target)
 
     case run_bazel_command(".", ["build", target]) do

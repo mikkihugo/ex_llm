@@ -96,7 +96,7 @@ defmodule Singularity.Architecture.InfrastructureDetectionOrchestrator do
     def description, do: "Detect service mesh systems (Istio, Linkerd, Consul)"
 
     @impl true
-    def detect(path, _opts), do:
+    def detect(path, opts), do:
       # ... detection logic using registry cache
 
     @impl true

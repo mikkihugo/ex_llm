@@ -287,7 +287,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
       "complexity" => todo.complexity
     }
 
-    case Singularity.Knowledge.TemplateService.render_template(
+    case Singularity.Knowledge.TemplateService.render_template_with_solid(
            "todos/execute-task.hbs",
            variables
          ) do

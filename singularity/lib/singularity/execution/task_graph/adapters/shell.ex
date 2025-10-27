@@ -38,9 +38,9 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
   - `:capture_stderr` - Capture stderr separately (default: false)
   """
   @spec exec(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def exec(args, _opts \\ [])
+  def exec(args, opts \\ [])
 
-  def exec(%{cmd: cmd}, _opts) when is_list(cmd) do
+  def exec(%{cmd: cmd}, opts) when is_list(cmd) do
     cwd = Keyword.get(opts, :cwd, File.cwd!())
     env = Keyword.get(opts, :env, %{})
     timeout = Keyword.get(opts, :timeout, @default_timeout)
@@ -60,7 +60,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
     end
   end
 
-  def exec(args, _opts) do
+  def exec(args, opts) do
     {:error, {:invalid_args, "cmd must be a list", args}}
   end
 
@@ -73,7 +73,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
     task =
       Task.async(fn ->
         try do
-          system_opts = [
+          systemopts = [
             cd: cwd,
             env: map_to_env_list(env),
             stderr_to_stdout: !capture_stderr,
@@ -82,10 +82,10 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
 
           if capture_stderr do
             # Use Port for separate stderr capture
-            port_exec(binary, args, system_opts)
+            port_exec(binary, args, systemopts)
           else
             # Use System.cmd for simplicity
-            System.cmd(binary, args, system_opts)
+            System.cmd(binary, args, systemopts)
           end
         rescue
           e ->
@@ -125,7 +125,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Shell do
     end
   end
 
-  defp port_exec(binary, args, _opts) do
+  defp port_exec(binary, args, opts) do
     # For separate stderr capture, use Port
     port =
       Port.open({:spawn_executable, System.find_executable(binary)}, [

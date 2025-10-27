@@ -102,7 +102,7 @@ defmodule Singularity.Database.MetricsAggregation do
   - `:limit` - Max results (default: 1000)
   - `:agent_id` - Filter by agent (optional)
   """
-  def get_metrics(metric_name, _opts \\ []) when is_atom(metric_name) do
+  def get_metrics(metric_name, opts \\ []) when is_atom(metric_name) do
     last_seconds = Keyword.get(opts, :last, 3600)
     limit = Keyword.get(opts, :limit, 1000)
     agent_id = Keyword.get(opts, :agent_id)
@@ -161,7 +161,7 @@ defmodule Singularity.Database.MetricsAggregation do
   - `:window` - Bucket size in seconds (default: 300 = 5min)
   - `:last` - Look back period in seconds (default: 86400 = 1 day)
   """
-  def get_time_buckets(metric_name, _opts \\ []) when is_atom(metric_name) do
+  def get_time_buckets(metric_name, opts \\ []) when is_atom(metric_name) do
     window = Keyword.get(opts, :window, 300)
     last_seconds = Keyword.get(opts, :last, 86400)
     agent_id = Keyword.get(opts, :agent_id)
@@ -227,7 +227,7 @@ defmodule Singularity.Database.MetricsAggregation do
 
   Returns p50, p75, p95, p99 percentiles (useful for SLO/performance analysis).
   """
-  def get_percentile(metric_name, percentile, _opts \\ [])
+  def get_percentile(metric_name, percentile, opts \\ [])
       when is_atom(metric_name) and is_integer(percentile) do
     last_seconds = Keyword.get(opts, :last, 86400)
 
@@ -255,7 +255,7 @@ defmodule Singularity.Database.MetricsAggregation do
 
   Returns events/second over the specified window.
   """
-  def get_rate(metric_name, _opts \\ []) when is_atom(metric_name) do
+  def get_rate(metric_name, opts \\ []) when is_atom(metric_name) do
     window = Keyword.get(opts, :window, 3600)
 
     case Repo.query(

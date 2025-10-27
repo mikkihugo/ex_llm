@@ -141,7 +141,7 @@ defmodule Singularity.Schemas.DeadCodeHistory do
       iex> DeadCodeHistory.trend(days: 30)
       [{~U[2025-01-23 09:00:00Z], 35}, {~U[2025-01-30 09:00:00Z], 37}, ...]
   """
-  def trend(_opts \\ [], repo \\ Singularity.Repo) do
+  def trend(opts \\ [], repo \\ Singularity.Repo) do
     # Default: 6 months
     days = Keyword.get(opts, :days, 180)
     start_date = DateTime.utc_now() |> DateTime.add(-days * 24 * 3600, :second)
@@ -167,8 +167,8 @@ defmodule Singularity.Schemas.DeadCodeHistory do
       iex> DeadCodeHistory.trend_slope(days: 30)
       0.14  # Increasing by ~0.14 annotations per check
   """
-  def trend_slope(_opts \\ [], repo \\ Singularity.Repo) do
-    trend_data = trend(_opts, repo)
+  def trend_slope(opts \\ [], repo \\ Singularity.Repo) do
+    trend_data = trend(opts, repo)
 
     case trend_data do
       [] ->
@@ -204,9 +204,9 @@ defmodule Singularity.Schemas.DeadCodeHistory do
       iex> DeadCodeHistory.trending_up?(threshold: 0.1)
       true  # Increasing by >0.1 per check
   """
-  def trending_up?(_opts \\ [], repo \\ Singularity.Repo) do
+  def trending_up?(opts \\ [], repo \\ Singularity.Repo) do
     threshold = Keyword.get(opts, :threshold, 0.1)
-    slope = trend_slope(_opts, repo)
+    slope = trend_slope(opts, repo)
     slope > threshold
   end
 
@@ -225,8 +225,8 @@ defmodule Singularity.Schemas.DeadCodeHistory do
         slope: 0.05
       }
   """
-  def stats(_opts \\ [], repo \\ Singularity.Repo) do
-    trend_data = trend(_opts, repo)
+  def stats(opts \\ [], repo \\ Singularity.Repo) do
+    trend_data = trend(opts, repo)
 
     case trend_data do
       [] ->
@@ -238,7 +238,7 @@ defmodule Singularity.Schemas.DeadCodeHistory do
         min = Enum.min(counts)
         max = Enum.max(counts)
         avg = Enum.sum(counts) / length(counts)
-        slope = trend_slope(_opts, repo)
+        slope = trend_slope(opts, repo)
 
         trend =
           cond do

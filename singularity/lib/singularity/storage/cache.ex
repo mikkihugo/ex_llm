@@ -185,9 +185,9 @@ defmodule Singularity.Cache do
   Put value into cache with optional TTL.
   """
   @spec put(cache_type(), cache_key(), cache_value(), keyword()) :: :ok
-  def put(cache_type, key, value, _opts \\ [])
+  def put(cache_type, key, value, opts \\ [])
 
-  def put(:llm, key, value, _opts) do
+  def put(:llm, key, value, opts) do
     changeset = %{
       cache_key: key,
       prompt: opts[:prompt] || "",
@@ -209,7 +209,7 @@ defmodule Singularity.Cache do
     :ok
   end
 
-  def put(:memory, key, value, _opts) do
+  def put(:memory, key, value, opts) do
     ttl = Keyword.get(opts, :ttl, 3600)
     expires_at = DateTime.add(DateTime.utc_now(), ttl, :second)
 
@@ -228,7 +228,7 @@ defmodule Singularity.Cache do
     :ok
   end
 
-  def put(:embeddings, key, value, _opts) do
+  def put(:embeddings, key, value, opts) do
     # Use proper Ecto schema instead of raw SQL
     attrs = %{
       code_hash: key,
@@ -259,7 +259,7 @@ defmodule Singularity.Cache do
     end
   end
 
-  def put(:semantic, key, value, _opts) do
+  def put(:semantic, key, value, opts) do
     changeset = %{
       query_hash: key,
       target_hash: opts[:target_hash] || "",
@@ -279,9 +279,9 @@ defmodule Singularity.Cache do
   Find similar items using semantic similarity.
   """
   @spec find_similar(cache_type(), String.t(), keyword()) :: {:ok, list()} | :miss
-  def find_similar(cache_type, query, _opts \\ [])
+  def find_similar(cache_type, query, opts \\ [])
 
-  def find_similar(:llm, query, _opts) do
+  def find_similar(:llm, query, opts) do
     threshold = Keyword.get(opts, :threshold, 0.92)
     provider = Keyword.get(opts, :provider)
     model = Keyword.get(opts, :model)
@@ -293,7 +293,7 @@ defmodule Singularity.Cache do
     )
   end
 
-  def find_similar(:semantic, query, _opts) do
+  def find_similar(:semantic, query, opts) do
     # Implement semantic similarity search using embedding service
     threshold = Keyword.get(opts, :threshold, 0.8)
     limit = Keyword.get(opts, :limit, 10)
@@ -325,7 +325,7 @@ defmodule Singularity.Cache do
     end
   end
 
-  def find_similar(_type, _query, _opts) do
+  def find_similar(_type, _query, opts) do
     :miss
   end
 

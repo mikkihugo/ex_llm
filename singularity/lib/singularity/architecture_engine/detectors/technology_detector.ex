@@ -97,7 +97,7 @@ defmodule Singularity.Architecture.Detectors.TechnologyDetector do
   end
 
   @impl true
-  def detect(path, _opts \\ []) when is_binary(path) do
+  def detect(path, opts \\ []) when is_binary(path) do
     # Step 1: Run hardcoded detectors
     hardcoded_results = detect_technologies(path)
 

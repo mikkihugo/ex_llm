@@ -1,0 +1,32 @@
+name: Nix Flake Auto-Update
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch: { }
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - name: Update flake.lock
+        run: |
+          nix flake lock --update-input nixpkgs --commit-lock-file
+      - name: Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo 'No updates'
+          else
+            git push
+          fi

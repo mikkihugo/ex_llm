@@ -167,7 +167,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
   Enum.each(tasks, &LLM.Service.call/1)
 
   # ✅ CORRECT - Let TaskGraphExecutor handle LLM integration
-  TaskGraphExecutor.execute(executor, dag, _opts)
+  TaskGraphExecutor.execute(executor, dag, opts)
   ```
 
   #### ❌ DO NOT inline parallel execution logic
@@ -241,8 +241,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   Returns when all tasks are completed or failed.
   """
-  def execute(executor, dag, _opts \\ []) do
-    GenServer.call(executor, {:execute, dag, _opts}, :infinity)
+  def execute(executor, dag, opts \\ []) do
+    GenServer.call(executor, {:execute, dag, opts}, :infinity)
   end
 
   @doc """
@@ -357,7 +357,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     end
   end
 
-  defp execute_task(task, state, _opts) do
+  defp execute_task(task, state, opts) do
     Logger.info("Executing task via Lua strategy",
       run_id: state.run_id,
       task_id: task.id,
@@ -369,9 +369,9 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       {:ok, strategy} ->
         # Check if task should be decomposed
         if should_decompose?(task) do
-          decompose_and_recurse(task, strategy, state, _opts)
+          decompose_and_recurse(task, strategy, state, opts)
         else
-          execute_atomic_task(task, strategy, state, _opts)
+          execute_atomic_task(task, strategy, state, opts)
         end
 
       {:error, :no_strategy_found} ->
@@ -381,7 +381,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
         )
 
         # Fallback to legacy execution
-        execute_with_default_strategy(task, state, _opts)
+        execute_with_default_strategy(task, state, opts)
     end
   end
 
@@ -395,7 +395,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       task.task_type != :implementation
   end
 
-  defp decompose_and_recurse(task, strategy, state, _opts) do
+  defp decompose_and_recurse(task, strategy, state, opts) do
     Logger.info("Decomposing task via Lua",
       task_id: task.id,
       strategy: strategy.name
@@ -405,7 +405,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     case LuaStrategyExecutor.decompose_task(strategy, task, state) do
       {:ok, []} ->
         # No decomposition needed, execute atomically
-        execute_atomic_task(task, strategy, state, _opts)
+        execute_atomic_task(task, strategy, state, opts)
 
       {:ok, subtasks} ->
         Logger.info("Decomposed into #{length(subtasks)} subtasks",
@@ -436,7 +436,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     end
   end
 
-  defp execute_atomic_task(task, strategy, state, _opts) do
+  defp execute_atomic_task(task, strategy, state, opts) do
     Logger.info("Executing atomic task via Lua agent spawning",
       task_id: task.id,
       strategy: strategy.name
@@ -539,13 +539,13 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     phase_results
   end
 
-  defp execute_with_default_strategy(task, state, _opts) do
+  defp execute_with_default_strategy(task, state, opts) do
     Logger.info("Using default execution strategy (legacy)",
       task_id: task.id
     )
 
     # Legacy fallback: use hardcoded model selection and prompt building
-    op_params = build_legacy_operation_params(task, _opts)
+    op_params = build_legacy_operation_params(task, opts)
 
     # Build execution context
     ctx = %{

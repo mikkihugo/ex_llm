@@ -89,18 +89,18 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     end
   end
 
-  def load_template(filename, _opts) do
+  def load_template(filename, opts) do
     case load_template(filename) do
       {:ok, template} ->
         {:ok, template}
 
       {:error, _reason} ->
         # Fallback to default template with options
-        {:ok, default_template(_opts)}
+        {:ok, default_template(opts)}
     end
   end
 
-  defp default_template(_opts \\ []) do
+  defp default_template(opts \\ []) do
     %{
       "quality_standards" => %{
         "documentation" => %{

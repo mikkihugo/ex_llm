@@ -70,7 +70,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
 
   # Extract functions
   {:ok, functions} = CodeAnalyzer.extract_functions(code, "python")
-  # => [%{name: "process_data", line_start: 42, parameters: ["data", "_opts"]}]
+  # => [%{name: "process_data", line_start: 42, parameters: ["data", "opts"]}]
 
   # Check language rules
   {:ok, violations} = CodeAnalyzer.check_language_rules(code, "typescript")
@@ -147,14 +147,14 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   ## Parameters
   - `code`: Source code string
   - `language_hint`: Language ID, alias, or file extension (e.g., "elixir", "rs", "javascript")
-  - `_opts`: Options
+  - `opts`: Options
     - `:cache` - Use caching (default: true if Cache is running)
 
   ## Returns
   - `{:ok, analysis}` - Language analysis result
   - `{:error, reason}` - If language unsupported or analysis fails
   """
-  def analyze_language(code, language_hint, _opts \\ [])
+  def analyze_language(code, language_hint, opts \\ [])
       when is_binary(code) and is_binary(language_hint) do
     use_cache = Keyword.get(opts, :cache, cache_enabled?())
 
@@ -406,7 +406,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
 
   ## Parameters
   - `codebase_id`: Codebase identifier
-  - `_opts`: Options
+  - `opts`: Options
     - `:max_concurrency` - Maximum parallel tasks (default: 4, safe for analysis)
     - `:timeout` - Per-file timeout in ms (default: 30000ms = 30 seconds)
 
@@ -424,7 +424,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
       # Conservative (2 parallel tasks, slower machine)
       CodeAnalyzer.analyze_codebase_from_db("my-project", max_concurrency: 2)
   """
-  def analyze_codebase_from_db(codebase_id, _opts \\ []) do
+  def analyze_codebase_from_db(codebase_id, opts \\ []) do
     import Ecto.Query
 
     # Conservative default
@@ -494,7 +494,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   ## Parameters
   - `file_id`: CodeFile ID (binary_id or integer)
   - `analysis_result`: Analysis result map from analyze_language/2
-  - `_opts`: Options
+  - `opts`: Options
     - `:analysis_type` - "full" (default), "rca_only", "ast_only"
     - `:duration_ms` - Analysis duration in milliseconds
     - `:cache_hit` - Whether result was from cache (default: false)
@@ -509,7 +509,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
       {:ok, stored} = CodeAnalyzer.store_result(file_id, analysis, duration_ms: 125)
 
   """
-  def store_result(file_id, analysis_result, _opts \\ []) do
+  def store_result(file_id, analysis_result, opts \\ []) do
     alias Singularity.Schemas.CodeAnalysisResult
 
     analysis_type = Keyword.get(opts, :analysis_type, "full")
@@ -591,13 +591,13 @@ defmodule Singularity.CodeAnalysis.Analyzer do
   - `file_id`: CodeFile ID
   - `language_id`: Language identifier
   - `error`: Error reason or message
-  - `_opts`: Options (same as store_result/3)
+  - `opts`: Options (same as store_result/3)
 
   ## Returns
   - `{:ok, code_analysis_result}` - Stored error result
   - `{:error, changeset}` - Validation error
   """
-  def store_error(file_id, language_id, error, _opts \\ []) do
+  def store_error(file_id, language_id, error, opts \\ []) do
     alias Singularity.Schemas.CodeAnalysisResult
 
     analysis_type = Keyword.get(opts, :analysis_type, "full")
@@ -635,7 +635,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
 
   ## Parameters
   - `file_id`: CodeFile ID
-  - `_opts`: Options for store_result/3
+  - `opts`: Options for store_result/3
 
   ## Returns
   - `{:ok, %{analysis: analysis, stored: stored_result}}` - Success
@@ -648,16 +648,16 @@ defmodule Singularity.CodeAnalysis.Analyzer do
       IO.inspect(result.stored.id)
 
   """
-  def analyze_and_store(file_id, _opts \\ []) do
+  def analyze_and_store(file_id, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
 
     case analyze_from_database(file_id) do
       {:ok, %{analysis: analysis, code_file: _file}} ->
         duration_ms = System.monotonic_time(:millisecond) - start_time
 
-        _opts = Keyword.merge(_opts, duration_ms: duration_ms)
+        opts = Keyword.merge(opts, duration_ms: duration_ms)
 
-        case store_result(file_id, analysis, _opts) do
+        case store_result(file_id, analysis, opts) do
           {:ok, stored} ->
             {:ok, %{analysis: analysis, stored: stored}}
 
@@ -675,7 +675,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
 
   ## Parameters
   - `codebase_id`: Codebase identifier
-  - `_opts`: Options
+  - `opts`: Options
     - `:only_rca` - Only analyze RCA-supported languages (default: false)
     - `:skip_errors` - Don't store error results (default: false)
 
@@ -691,7 +691,7 @@ defmodule Singularity.CodeAnalysis.Analyzer do
       IO.puts("Analyzed and stored \#{success_count}/\#{length(results)} files")
 
   """
-  def analyze_and_store_codebase(codebase_id, _opts \\ []) do
+  def analyze_and_store_codebase(codebase_id, opts \\ []) do
     import Ecto.Query
 
     only_rca = Keyword.get(opts, :only_rca, false)
@@ -711,14 +711,14 @@ defmodule Singularity.CodeAnalysis.Analyzer do
     Repo.all(query)
     |> Enum.map(fn file ->
       result =
-        case analyze_and_store(file.id, _opts) do
+        case analyze_and_store(file.id, opts) do
           {:ok, _} = success ->
             success
 
           {:error, reason} = error ->
             # Optionally store error
             unless skip_errors do
-              store_error(file.id, file.language, reason, _opts)
+              store_error(file.id, file.language, reason, opts)
             end
 
             error

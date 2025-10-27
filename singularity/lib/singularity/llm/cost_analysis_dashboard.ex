@@ -82,7 +82,7 @@ defmodule Singularity.LLM.CostAnalysisDashboard do
   - `:model` - Filter by model (optional)
   - `:task_type` - Filter by task type (optional)
   """
-  def get_cost_analysis(_opts \\ []) do
+  def get_cost_analysis(opts \\ []) do
     try do
       days = Keyword.get(opts, :days, 30)
       provider = Keyword.get(opts, :provider)

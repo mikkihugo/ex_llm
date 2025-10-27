@@ -86,7 +86,7 @@ defmodule Singularity.Learning.PatternMiner do
     inspect(task)
   end
 
-  defp search_semantic_patterns(task_description, _opts \\ []) do
+  defp search_semantic_patterns(task_description, opts \\ []) do
     top_k = Keyword.get(opts, :top_k, 5)
 
     # Generate embedding for task
@@ -147,7 +147,7 @@ defmodule Singularity.Learning.PatternMiner do
     end
   end
 
-  defp search_codebase_patterns(task_description, _opts \\ []) do
+  defp search_codebase_patterns(task_description, opts \\ []) do
     top_k = Keyword.get(opts, :top_k, 5)
 
     # Generate embedding for task

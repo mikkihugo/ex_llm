@@ -65,7 +65,7 @@ defmodule Singularity.System.Bootstrap do
   Phase 3: Auto-fix all issues
   Phase 4: Hand over to SafeWorkPlanner/SPARC for features
   """
-  def bootstrap(_opts \\ []) do
+  def bootstrap(opts \\ []) do
     Logger.info("Starting TaskGraph bootstrap with simple learning...")
 
     run_id = "bootstrap-#{System.unique_integer([:positive])}"
@@ -114,7 +114,7 @@ defmodule Singularity.System.Bootstrap do
   4. Hand over to SafeWorkPlanner for features
   5. Self-improving makes everything work (errors, performance, etc.)
   """
-  def fix_singularity_server(_opts \\ []) do
+  def fix_singularity_server(opts \\ []) do
     Logger.info("Auto-repairing Singularity server...")
 
     # Use the simple auto-fix approach

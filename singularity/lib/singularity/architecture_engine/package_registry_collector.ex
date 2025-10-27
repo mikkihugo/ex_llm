@@ -47,7 +47,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryCollector do
   @doc """
   Collect a package from a registry and store in PostgreSQL
   """
-  def collect_package(package_name, version, _opts \\ []) do
+  def collect_package(package_name, version, opts \\ []) do
     ecosystem = Keyword.get(opts, :ecosystem, :cargo) |> Atom.to_string()
 
     Logger.info("Collecting #{package_name}@#{version} from #{ecosystem}")
@@ -92,7 +92,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryCollector do
   @doc """
   Collect popular packages from a registry
   """
-  def collect_popular(ecosystem, _opts \\ []) do
+  def collect_popular(ecosystem, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
 
     Logger.info("Collecting top #{limit} packages from #{ecosystem}")
@@ -119,7 +119,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryCollector do
   @doc """
   Refresh a package (re-download and update)
   """
-  def refresh_package(package_name, _opts \\ []) do
+  def refresh_package(package_name, opts \\ []) do
     ecosystem = Keyword.get(opts, :ecosystem, :cargo)
 
     # Get latest version

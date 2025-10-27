@@ -196,8 +196,8 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
     end
   end
 
-  defp safe_trend_analysis(codebase_path, _opts) do
-    case CodebaseHealthTracker.analyze_health_trend(codebase_path, _opts) do
+  defp safe_trend_analysis(codebase_path, opts) do
+    case CodebaseHealthTracker.analyze_health_trend(codebase_path, opts) do
       {:ok, trend} -> trend
       {:error, reason} ->
         Logger.warning("CodebaseHealthTracker.analyze_health_trend failed: #{inspect(reason)}")

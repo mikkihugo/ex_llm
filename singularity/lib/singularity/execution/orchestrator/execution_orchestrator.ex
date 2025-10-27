@@ -142,10 +142,10 @@ defmodule Singularity.Execution.Orchestrator.ExecutionOrchestrator do
   **Use instead:**
   ```elixir
   # ❌ WRONG
-  ExecutionStrategyOrchestrator.execute(goal, _opts)
+  ExecutionStrategyOrchestrator.execute(goal, opts)
 
   # ✅ CORRECT
-  ExecutionOrchestrator.execute(goal, _opts)
+  ExecutionOrchestrator.execute(goal, opts)
   ```
 
   #### ❌ DO NOT create new executor modules (TaskGraphExecutor, SparcExecutor)

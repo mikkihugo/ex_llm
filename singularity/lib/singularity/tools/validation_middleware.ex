@@ -176,7 +176,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `tool` - The Tool to execute
   - `arguments` - Tool arguments as map
   - `context` - Execution context (includes agent info, etc.)
-  - `_opts` - Validation options (optional)
+  - `opts` - Validation options (optional)
 
   ## Returns
 
@@ -184,18 +184,18 @@ defmodule Singularity.Tools.ValidationMiddleware do
   - `{:error, type, details}` - Validation error with details
   - `{:error, reason}` - Tool execution error
   """
-  def execute(%Tool{} = tool, arguments, context, _opts \\ []) do
-    validation_opts = merge_options(tool.options || %{}, _opts)
+  def execute(%Tool{} = tool, arguments, context, opts \\ []) do
+    validationopts = merge_options(tool.options || %{}, opts)
 
-    Logger.debug("ValidationMiddleware.execute(#{tool.name})", validation_opts)
+    Logger.debug("ValidationMiddleware.execute(#{tool.name})", validationopts)
 
-    with :ok <- validate_parameters_if_enabled(tool, arguments, validation_opts),
+    with :ok <- validate_parameters_if_enabled(tool, arguments, validationopts),
          {:ok, result} <- Tool.execute(tool, arguments, context),
-         {:ok, validated} <- validate_output_if_enabled(tool, result, validation_opts) do
+         {:ok, validated} <- validate_output_if_enabled(tool, result, validationopts) do
       {:ok, validated}
     else
       {:error, type, details} when type in [:validation_failed, :schema_mismatch] ->
-        handle_validation_error(tool, arguments, context, type, details, validation_opts)
+        handle_validation_error(tool, arguments, context, type, details, validationopts)
 
       {:error, reason} ->
         {:error, reason}
@@ -333,13 +333,13 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp merge_options(tool_opts, runtime_opts) do
-    tool_opts_map = normalize_to_map(tool_opts)
-    runtime_opts_map = normalize_to_map(runtime_opts)
+  defp merge_options(toolopts, runtimeopts) do
+    toolopts_map = normalize_to_map(toolopts)
+    runtimeopts_map = normalize_to_map(runtimeopts)
 
     @default_options
-    |> Map.merge(tool_opts_map)
-    |> Map.merge(runtime_opts_map)
+    |> Map.merge(toolopts_map)
+    |> Map.merge(runtimeopts_map)
   end
 
   defp normalize_to_map(nil), do: %{}
@@ -351,7 +351,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
   defp normalize_to_keyword(opts) when is_map(opts), do: Map.to_list(opts)
   defp normalize_to_keyword(_), do: []
 
-  defp validate_generated_code(result, _opts) do
+  defp validate_generated_code(result, opts) do
     case InstructorSchemas.GeneratedCode.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}
@@ -362,7 +362,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_code_quality(result, _opts) do
+  defp validate_code_quality(result, opts) do
     case InstructorSchemas.CodeQualityResult.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}
@@ -373,7 +373,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_tool_parameters(result, _opts) do
+  defp validate_tool_parameters(result, opts) do
     case InstructorSchemas.ToolParameters.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}
@@ -384,7 +384,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_refinement_feedback(result, _opts) do
+  defp validate_refinement_feedback(result, opts) do
     case InstructorSchemas.RefinementFeedback.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}

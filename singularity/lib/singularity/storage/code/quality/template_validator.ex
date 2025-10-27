@@ -40,7 +40,7 @@ defmodule Singularity.Code.Quality.TemplateValidator do
   - `code` - The generated code to validate (string)
   - `quality_template` - The quality template (from ArtifactStore)
   - `language` - The programming language (e.g., "elixir")
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_compliance_score` - Minimum score to pass (default: 0.8)
     - `:strict` - Strict mode (all requirements must pass, default: false)
 
@@ -50,7 +50,7 @@ defmodule Singularity.Code.Quality.TemplateValidator do
   """
   @spec validate(String.t(), map(), String.t(), keyword()) ::
           {:ok, validation_result()} | {:error, term()}
-  def validate(code, quality_template, language, _opts \\ []) do
+  def validate(code, quality_template, language, opts \\ []) do
     min_compliance_score = Keyword.get(opts, :min_compliance_score, 0.8)
     strict_mode = Keyword.get(opts, :strict, false)
 
@@ -117,8 +117,8 @@ defmodule Singularity.Code.Quality.TemplateValidator do
   Quick validation check - returns true/false only.
   """
   @spec validate?(String.t(), map(), String.t(), keyword()) :: boolean()
-  def validate?(code, quality_template, language, _opts \\ []) do
-    case validate(code, quality_template, language, _opts) do
+  def validate?(code, quality_template, language, opts \\ []) do
+    case validate(code, quality_template, language, opts) do
       {:ok, %{compliant: true}} -> true
       _ -> false
     end

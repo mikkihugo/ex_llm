@@ -69,7 +69,7 @@ defmodule Singularity.Embedding.Trainer do
   @doc """
   Create a new trainer instance
   """
-  def new(model, _opts \\ []) when is_atom(model) do
+  def new(model, opts \\ []) when is_atom(model) do
     device = Keyword.get(opts, :device, :cpu)
     learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)
 
@@ -107,7 +107,7 @@ defmodule Singularity.Embedding.Trainer do
   @doc """
   Train model on contrastive data (triplets: anchor, positive, negative)
   """
-  def train(trainer, training_data, _opts \\ []) when is_list(training_data) do
+  def train(trainer, training_data, opts \\ []) when is_list(training_data) do
     epochs = Keyword.get(opts, :epochs, 1)
     batch_size = Keyword.get(opts, :batch_size, 16)
 

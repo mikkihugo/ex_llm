@@ -410,9 +410,9 @@ defmodule Singularity.Tools.Basic do
   end
 
   defp build_matcher(pattern, true, case_sensitive?) do
-    _opts = if case_sensitive?, do: "", else: "i"
+    opts = if case_sensitive?, do: "", else: "i"
 
-    case Regex.compile(pattern, _opts) do
+    case Regex.compile(pattern, opts) do
       {:ok, regex} -> {:ok, {:regex, regex}}
       {:error, {reason, _}} -> {:error, "invalid regex: #{reason}"}
     end

@@ -54,10 +54,10 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
   - `policy` - Required for URL whitelisting validation
   """
   @spec exec(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def exec(args, _opts \\ []) do
+  def exec(args, opts \\ []) do
     with :ok <- validate_args(args),
-         {:ok, request} <- build_request(args, _opts) do
-      execute_request(request, _opts)
+         {:ok, request} <- build_request(args, opts) do
+      execute_request(request, opts)
     end
   end
 
@@ -74,7 +74,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
 
   ## Request Building
 
-  defp build_request(args, _opts) do
+  defp build_request(args, opts) do
     method = args.method
     url = args.url
     body = Map.get(args, :body, "")
@@ -99,7 +99,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
 
   ## HTTP Execution
 
-  defp execute_request(request, _opts) do
+  defp execute_request(request, opts) do
     Logger.info("Executing HTTP request",
       method: request.method,
       url: request.url,
@@ -107,7 +107,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
     )
 
     # Use Req for HTTP requests
-    _opts = [
+    opts = [
       method: request.method,
       url: request.url,
       body: request.body,
@@ -115,7 +115,7 @@ defmodule Singularity.Execution.Planning.TaskGraph.Toolkit.HTTP do
       receive_timeout: request.timeout,
       max_redirects: 3,
       # Enforce TLS verification
-      transport_opts: [verify: :verify_peer]
+      transportopts: [verify: :verify_peer]
     ]
 
     case Req.request(opts) do

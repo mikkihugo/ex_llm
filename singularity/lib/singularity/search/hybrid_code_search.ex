@@ -102,7 +102,7 @@ defmodule Singularity.Search.HybridCodeSearch do
   import Ecto.Query
   require Logger
   alias Singularity.Repo
-  alias Singularity.Search.EmbeddingService
+  # alias Singularity.Search.EmbeddingService  # Using Singularity.Embedding.Service instead
 
   @type search_mode :: :keyword | :semantic | :hybrid
   @type search_result :: %{
@@ -112,7 +112,7 @@ defmodule Singularity.Search.HybridCodeSearch do
           score: float(),
           match_type: atom()
         }
-  @type _opts :: [
+  @type opts :: [
           mode: search_mode(),
           limit: pos_integer(),
           weights: map(),
@@ -165,14 +165,14 @@ defmodule Singularity.Search.HybridCodeSearch do
         language: "elixir"
       )
   """
-  @spec search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
-  def search(query, _opts \\ []) do
+  @spec search(String.t(), opts()) :: {:ok, [search_result()]} | {:error, term()}
+  def search(query, opts \\ []) do
     mode = Keyword.get(opts, :mode, :hybrid)
 
     case mode do
-      :keyword -> keyword_search(query, _opts)
-      :semantic -> semantic_search(query, _opts)
-      :hybrid -> hybrid_search(query, _opts)
+      :keyword -> keyword_search(query, opts)
+      :semantic -> semantic_search(query, opts)
+      :hybrid -> hybrid_search(query, opts)
       _ -> {:error, "Unknown search mode: #{mode}"}
     end
   end
@@ -201,8 +201,8 @@ defmodule Singularity.Search.HybridCodeSearch do
         threshold: 0.7
       )
   """
-  @spec fuzzy_search(String.t(), _opts()) :: {:ok, [search_result()]} | {:error, term()}
-  def fuzzy_search(query, _opts \\ []) do
+  @spec fuzzy_search(String.t(), opts()) :: {:ok, [search_result()]} | {:error, term()}
+  def fuzzy_search(query, opts \\ []) do
     threshold = Keyword.get(opts, :threshold, 0.3)
     limit = Keyword.get(opts, :limit, @default_limit)
     language = Keyword.get(opts, :language)
@@ -239,7 +239,7 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Keyword Search (PostgreSQL FTS)
 
-  defp keyword_search(query, _opts) do
+  defp keyword_search(query, opts) do
     limit = Keyword.get(opts, :limit, @default_limit)
     language = Keyword.get(opts, :language)
 
@@ -289,13 +289,13 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Semantic Search (pgvector)
 
-  defp semantic_search(query, _opts) do
+  defp semantic_search(query, opts) do
     limit = Keyword.get(opts, :limit, @default_limit)
     threshold = Keyword.get(opts, :threshold, @default_threshold)
     language = Keyword.get(opts, :language)
 
     # Generate embedding for query
-    with {:ok, embedding} <- EmbeddingService.embed(query) do
+    with {:ok, embedding} <- Singularity.Embedding.Service.process_request(query, :qodo) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =
@@ -335,7 +335,7 @@ defmodule Singularity.Search.HybridCodeSearch do
 
   ## Private - Hybrid Search (FTS + pgvector)
 
-  defp hybrid_search(query, _opts) do
+  defp hybrid_search(query, opts) do
     limit = Keyword.get(opts, :limit, @default_limit)
     weights = Keyword.get(opts, :weights, @default_weights)
     language = Keyword.get(opts, :language)
@@ -344,7 +344,7 @@ defmodule Singularity.Search.HybridCodeSearch do
     semantic_weight = Map.get(weights, :semantic, 0.6)
 
     # Generate embedding for query
-    with {:ok, embedding} <- EmbeddingService.embed(query) do
+    with {:ok, embedding} <- Singularity.Embedding.Service.process_request(query, :qodo) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =
@@ -406,12 +406,12 @@ defmodule Singularity.Search.HybridCodeSearch do
     else
       {:error, reason} ->
         Logger.error("Hybrid search failed: #{inspect(reason)}, falling back to keyword")
-        keyword_search(query, _opts)
+        keyword_search(query, opts)
     end
   rescue
     error ->
       Logger.error("Hybrid search error: #{inspect(error)}, falling back to keyword")
-      keyword_search(query, _opts)
+      keyword_search(query, opts)
   end
 
   ## Private - Helpers

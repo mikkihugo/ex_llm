@@ -84,7 +84,7 @@ defmodule Singularity.Embedding.NxService do
 
   Note: The :model option is ignored; both models always used for maximum quality.
   """
-  def embed(text, _opts \\ []) when is_binary(text) do
+  def embed(text, opts \\ []) when is_binary(text) do
     device = Keyword.get(opts, :device, :cpu)
 
     # Always use concatenation: Qodo + Jina v3 = 2560-dim
@@ -104,7 +104,7 @@ defmodule Singularity.Embedding.NxService do
 
   Note: The :model option is ignored; both models always used for maximum quality.
   """
-  def embed_batch(texts, _opts \\ []) when is_list(texts) do
+  def embed_batch(texts, opts \\ []) when is_list(texts) do
     device = Keyword.get(opts, :device, :cpu)
 
     # Always use concatenation for all texts in batch
@@ -119,9 +119,9 @@ defmodule Singularity.Embedding.NxService do
   @doc """
   Calculate similarity between two texts using 2560-dim concatenated embeddings.
   """
-  def similarity(text1, text2, _opts \\ []) do
-    with {:ok, emb1} <- embed(text1, _opts),
-         {:ok, emb2} <- embed(text2, _opts) do
+  def similarity(text1, text2, opts \\ []) do
+    with {:ok, emb1} <- embed(text1, opts),
+         {:ok, emb2} <- embed(text2, opts) do
       # Cosine similarity using concatenated vectors
       similarity = cosine_similarity(emb1, emb2)
       {:ok, similarity}
@@ -133,7 +133,7 @@ defmodule Singularity.Embedding.NxService do
   @doc """
   Fine-tune model on training data (pure Elixir using Axon)
   """
-  def finetune(training_data, _opts \\ []) when is_list(training_data) do
+  def finetune(training_data, opts \\ []) when is_list(training_data) do
     model = Keyword.get(opts, :model, :qodo)
     epochs = Keyword.get(opts, :epochs, 1)
     learning_rate = Keyword.get(opts, :learning_rate, 1.0e-5)
@@ -141,7 +141,7 @@ defmodule Singularity.Embedding.NxService do
 
     Logger.info("Starting fine-tuning for #{inspect(model)}")
 
-    with {:ok, trainer} <- Trainer.new(model, _opts),
+    with {:ok, trainer} <- Trainer.new(model, opts),
          {:ok, _} <-
            Trainer.train(trainer, training_data,
              epochs: epochs,

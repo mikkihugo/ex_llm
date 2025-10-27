@@ -53,11 +53,11 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
   - `timeout` - Timeout in milliseconds
   """
   @spec exec(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def exec(args, _opts \\ []) do
+  def exec(args, opts \\ []) do
     with :ok <- validate_args(args),
-         :ok <- validate_resource_limits(_opts),
-         {:ok, docker_args} <- build_docker_args(args, _opts) do
-      run_docker(docker_args, _opts)
+         :ok <- validate_resource_limits(opts),
+         {:ok, docker_args} <- build_docker_args(args, opts) do
+      run_docker(docker_args, opts)
     end
   end
 
@@ -100,7 +100,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
 
   ## Docker Command Building
 
-  defp build_docker_args(args, _opts) do
+  defp build_docker_args(args, opts) do
     docker_args = [
       "run",
       "--rm",
@@ -154,7 +154,7 @@ defmodule Singularity.Execution.TaskGraph.Adapters.Docker do
 
   ## Docker Execution
 
-  defp run_docker(docker_args, _opts) do
+  defp run_docker(docker_args, opts) do
     timeout = Keyword.get(opts, :timeout, @default_timeout)
 
     timeout =

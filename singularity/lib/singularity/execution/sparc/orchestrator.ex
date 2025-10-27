@@ -19,7 +19,7 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   ## Public API
 
-  - `execute(goal, _opts)` - Execute goal with template selection and TaskGraph
+  - `execute(goal, opts)` - Execute goal with template selection and TaskGraph
   - `get_stats/0` - Get execution statistics and performance history
 
   ## Key Features
@@ -186,8 +186,8 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
   @doc """
   Execute a task with optimal template selection and TaskGraph decomposition
   """
-  def execute(goal, _opts \\ []) do
-    GenServer.call(__MODULE__, {:execute, goal, _opts}, :infinity)
+  def execute(goal, opts \\ []) do
+    GenServer.call(__MODULE__, {:execute, goal, opts}, :infinity)
   end
 
   @doc """
@@ -292,13 +292,13 @@ defmodule Singularity.Execution.SPARC.Orchestrator do
 
   # Private Functions
 
-  defp execute_with_template(sparc_dag, template_id, _opts) do
+  defp execute_with_template(sparc_dag, template_id, opts) do
     # Get tasks from TaskGraph
     tasks = get_all_tasks(sparc_dag)
 
     # Execute each task with the selected template
     Enum.reduce_while(tasks, {:ok, []}, fn task, {:ok, results} ->
-      case execute_task_with_template(task, template_id, _opts) do
+      case execute_task_with_template(task, template_id, opts) do
         {:ok, result} ->
           # Mark task completed in TaskGraph
           TaskGraph.mark_completed(sparc_dag, task.id)

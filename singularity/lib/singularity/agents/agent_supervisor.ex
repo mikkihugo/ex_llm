@@ -32,7 +32,7 @@ defmodule Singularity.AgentSupervisor do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 

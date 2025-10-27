@@ -55,7 +55,7 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
       task = spec[:spec] || spec[:task] || ""
 
       # Extract CodeGenerator-specific options
-      code_opts =
+      codeopts =
         [
           language: spec[:language] || opts[:language],
           method: opts[:method],
@@ -69,8 +69,8 @@ defmodule Singularity.CodeGeneration.Generators.CodeGeneratorImpl do
         ]
         |> Enum.filter(fn {_k, v} -> v != nil end)
 
-      Logger.debug("CodeGeneratorImpl: generating for task", task: task, _opts: code_opts)
-      CodeGenerator.generate(task, code_opts)
+      Logger.debug("CodeGeneratorImpl: generating for task", task: task, opts: codeopts)
+      CodeGenerator.generate(task, codeopts)
     rescue
       e ->
         Logger.error("Code generation failed", error: inspect(e))

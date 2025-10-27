@@ -37,7 +37,7 @@ defmodule Singularity.Architecture.InfrastructureType do
     def description, do: "Detect service mesh systems (Istio, Linkerd, Consul)"
 
     @impl true
-    def detect(path, _opts \\ []) do
+    def detect(path, opts \\ []) do
       registry = InfrastructureRegistryCache.get_registry()
       patterns = InfrastructureRegistryCache.get_detection_patterns("Istio", "service_mesh")
       # ... detection logic using patterns from registry

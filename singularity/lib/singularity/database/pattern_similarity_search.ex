@@ -78,7 +78,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
   - `:distance_threshold` - Only return patterns closer than this (default: 1.0)
   - `:agent_id` - Filter by specific agent (optional)
   """
-  def search_patterns(query, _opts \\ []) when is_binary(query) do
+  def search_patterns(query, opts \\ []) when is_binary(query) do
     limit = Keyword.get(opts, :limit, 10)
     threshold = Keyword.get(opts, :distance_threshold, 1.0)
     agent_id = Keyword.get(opts, :agent_id)
@@ -136,7 +136,7 @@ defmodule Singularity.Database.PatternSimilaritySearch do
 
   Agent learns patterns over time - find similar ones to avoid relearning.
   """
-  def search_agent_patterns(agent_id, query, _opts \\ [])
+  def search_agent_patterns(agent_id, query, opts \\ [])
       when is_integer(agent_id) and is_binary(query) do
     limit = Keyword.get(opts, :limit, 10)
     threshold = Keyword.get(opts, :distance_threshold, 1.0)

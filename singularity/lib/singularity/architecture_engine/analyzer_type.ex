@@ -69,7 +69,7 @@ defmodule Singularity.Architecture.AnalyzerType do
   1. **analyzer_type/0** - Returns atom identifying the analyzer (`:feedback`, `:quality`, etc.)
   2. **description/0** - Human-readable description of what it analyzes
   3. **supported_types/0** - List of analysis types it can produce
-  4. **analyze/2** - Main analysis function: `analyze(input, _opts) -> [analysis_results]`
+  4. **analyze/2** - Main analysis function: `analyze(input, opts) -> [analysis_results]`
   5. **learn_pattern/1** - Optional: Learn from successful analyses
 
   ## Example Implementation
@@ -90,7 +90,7 @@ defmodule Singularity.Architecture.AnalyzerType do
     end
 
     @impl true
-    def analyze(input, _opts \\\\ []) do
+    def analyze(input, opts \\\\ []) do
       # Analyze input and return list of analysis results
       [
         %{
@@ -180,7 +180,7 @@ defmodule Singularity.Architecture.AnalyzerType do
 
   Returns list of analysis results: `[%{type: string, severity: string, ...}]`
   """
-  @callback analyze(input :: any(), _opts :: Keyword.t()) :: [map()]
+  @callback analyze(input :: any(), opts :: Keyword.t()) :: [map()]
 
   @doc """
   Learn from successful analysis results.

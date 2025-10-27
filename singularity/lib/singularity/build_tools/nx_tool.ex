@@ -29,7 +29,7 @@ defmodule Singularity.BuildTools.NxTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_build(project_path, _opts \\ []) when is_binary(project_path) do
+  def run_build(project_path, opts \\ []) when is_binary(project_path) do
     Logger.debug("NX: Running build", project_path: project_path)
 
     case run_nx_command(project_path, ["run-many", "--target=build"]) do
@@ -44,7 +44,7 @@ defmodule Singularity.BuildTools.NxTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_target(target, _opts \\ []) when is_binary(target) do
+  def run_target(target, opts \\ []) when is_binary(target) do
     Logger.debug("NX: Running target", target: target)
 
     case run_nx_command(".", ["run", target]) do

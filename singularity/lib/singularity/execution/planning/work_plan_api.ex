@@ -959,8 +959,8 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
   end
 
   defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} ->
-      Enum.reduce(_opts, msg, fn {key, value}, acc ->
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)

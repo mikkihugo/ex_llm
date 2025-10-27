@@ -89,7 +89,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   and publishes them to Genesis for other instances to use.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_confidence` - Only publish rules >= confidence (default: 0.85)
     - `:limit` - Max rules to publish (default: 10)
     - `:namespace` - Custom Genesis namespace (default: standard)
@@ -108,14 +108,14 @@ defmodule Singularity.Evolution.GenesisPublisher do
   """
   @spec publish_rules(keyword()) ::
           {:ok, [publication_result()]} | {:error, term()}
-  def publish_rules(_opts \\ []) do
+  def publish_rules(opts \\ []) do
     Logger.info("GenesisPublisher: Publishing rules to Genesis via pgmq")
 
     try do
       # Ensure genesis queue exists
       PgmqClient.ensure_queue("genesis_rule_updates")
 
-      case RuleEvolutionSystem.publish_confident_rules(_opts) do
+      case RuleEvolutionSystem.publish_confident_rules(opts) do
         {:ok, count} ->
           Logger.info("GenesisPublisher: Successfully published #{count} rules to Genesis")
 
@@ -189,7 +189,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   other Singularity instances that pass our confidence threshold.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_confidence` - Only import rules >= confidence (default: 0.85)
     - `:limit` - Max rules to import (default: 20)
     - `:namespace` - Genesis namespace (default: standard)
@@ -271,7 +271,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   and effectiveness feedback.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:limit` - Max records (default: 50)
     - `:status` - Filter by status (default: :published)
 

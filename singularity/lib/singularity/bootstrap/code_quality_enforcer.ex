@@ -79,7 +79,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
         }
       ]}
   """
-  def find_similar_code(description, _opts \\ []) do
+  def find_similar_code(description, opts \\ []) do
     threshold = Keyword.get(opts, :similarity_threshold, 0.8)
     limit = Keyword.get(opts, :limit, 10)
 

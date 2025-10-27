@@ -85,7 +85,7 @@ defmodule Singularity.Analysis.Extractors.AstExtractorImpl do
   end
 
   @impl true
-  def extract(ast_json_string, _opts \\ []) do
+  def extract(ast_json_string, opts \\ []) do
     file_path = Keyword.get(opts, :file_path, "unknown")
 
     case AstExtractor.extract_metadata(ast_json_string, file_path) do

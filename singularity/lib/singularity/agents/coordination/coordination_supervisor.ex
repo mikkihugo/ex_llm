@@ -18,7 +18,7 @@ defmodule Singularity.Agents.Coordination.CoordinationSupervisor do
   end
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     Logger.info("[CoordinationSupervisor] Starting Agent Coordination infrastructure")
 
     children = [

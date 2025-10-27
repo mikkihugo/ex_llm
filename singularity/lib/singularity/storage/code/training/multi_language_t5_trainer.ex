@@ -73,7 +73,7 @@ defmodule Singularity.MultiLanguageT5Trainer do
   - `:quality_threshold` - Minimum quality score (default: 0.7)
   """
   @spec prepare_multi_language_training(keyword()) :: {:ok, String.t()} | {:error, term()}
-  def prepare_multi_language_training(_opts \\ []) do
+  def prepare_multi_language_training(opts \\ []) do
     name = Keyword.fetch!(opts, :name)
     languages = Keyword.get(opts, :languages, ["rust", "elixir"])
     max_examples = Keyword.get(opts, :max_examples, 10000)
@@ -148,14 +148,14 @@ defmodule Singularity.MultiLanguageT5Trainer do
   Fine-tune T5 model with Rust/Elixir optimized configuration
   """
   @spec fine_tune(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
-  def fine_tune(training_session_id, _opts \\ []) do
+  def fine_tune(training_session_id, opts \\ []) do
     epochs = Keyword.get(opts, :epochs, 12)
     learning_rate = Keyword.get(opts, :learning_rate, 2.0e-4)
     batch_size = Keyword.get(opts, :batch_size, 4)
     cross_language = Keyword.get(opts, :cross_language_learning, true)
 
     # Enhanced configuration for Rust/Elixir
-    enhanced_opts = [
+    enhancedopts = [
       epochs: epochs,
       learning_rate: learning_rate,
       batch_size: batch_size,
@@ -168,7 +168,7 @@ defmodule Singularity.MultiLanguageT5Trainer do
       }
     ]
 
-    T5FineTuner.fine_tune(training_session_id, enhanced_opts)
+    T5FineTuner.fine_tune(training_session_id, enhancedopts)
   end
 
   @doc """

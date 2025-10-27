@@ -24,7 +24,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
       iex> CodeLocationIndexService.index_codebase(".")
       {:ok, %{indexed: 1523, skipped: 42, errors: 0}}
   """
-  def index_codebase(path, _opts \\ []) do
+  def index_codebase(path, opts \\ []) do
     concurrency = Keyword.get(opts, :concurrency, 10)
 
     files =

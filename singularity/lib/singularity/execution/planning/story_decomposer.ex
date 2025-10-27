@@ -353,12 +353,12 @@ defmodule Singularity.Execution.Planning.StoryDecomposer do
   alias Singularity.LLM.Service
 
   @doc "Decompose a user story using SPARC methodology"
-  def decompose_story(story, _opts \\ []) do
-    with {:ok, specification} <- generate_specification(story, _opts),
-         {:ok, pseudocode} <- generate_pseudocode(specification, _opts),
-         {:ok, architecture} <- design_architecture(pseudocode, _opts),
-         {:ok, refinement} <- refine_design(architecture, _opts),
-         {:ok, tasks} <- generate_completion_tasks(refinement, _opts) do
+  def decompose_story(story, opts \\ []) do
+    with {:ok, specification} <- generate_specification(story, opts),
+         {:ok, pseudocode} <- generate_pseudocode(specification, opts),
+         {:ok, architecture} <- design_architecture(pseudocode, opts),
+         {:ok, refinement} <- refine_design(architecture, opts),
+         {:ok, tasks} <- generate_completion_tasks(refinement, opts) do
       {:ok,
        %{
          specification: specification,

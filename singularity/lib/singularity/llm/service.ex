@@ -30,10 +30,10 @@ defmodule Singularity.LLM.Service do
 
   ## Public API
 
-  - `call(model_or_complexity, messages, _opts)` - Main entry point
-  - `call_with_prompt(complexity, prompt, _opts)` - Simple string prompt
-  - `call_with_system(complexity, system, user, _opts)` - With system prompt
-  - `call_with_script(script_path, context, _opts)` - Dynamic Lua scripts
+  - `call(model_or_complexity, messages, opts)` - Main entry point
+  - `call_with_prompt(complexity, prompt, opts)` - Simple string prompt
+  - `call_with_system(complexity, system, user, opts)` - With system prompt
+  - `call_with_script(script_path, context, opts)` - Dynamic Lua scripts
   - `determine_complexity_for_task(task_type)` - Auto-select complexity
 
   ## Key Features
@@ -249,10 +249,10 @@ defmodule Singularity.LLM.Service do
 
       Agent->>Service: call(:complex, messages, task_type: :architect)
       Service->>Service: generate_correlation_id()
-      Service->>Service: build_request(messages, _opts)
+      Service->>Service: build_request(messages, opts)
       Service-->>Agent: Telemetry [:llm_service, :call, :start]
 
-      Service->>Worker: enqueue_llm_request(task_type, messages, _opts)
+      Service->>Worker: enqueue_llm_request(task_type, messages, opts)
       Worker->>Queue: Singularity.Jobs.PgmqClient.send("ai_requests", payload)
 
       Queue->>Nexus: deliver request
@@ -325,10 +325,10 @@ defmodule Singularity.LLM.Service do
 
   ## Public API Contract
 
-  - call(model_or_complexity, messages, _opts) :: {:ok, llm_response()} | {:error, reason()}
-  - call_with_prompt(model_or_complexity, prompt, _opts) :: {:ok, llm_response()} | {:error, reason()}
-  - call_with_system(model_or_complexity, system_prompt, user_message, _opts) :: {:ok, llm_response()} | {:error, reason()}
-  - determine_complexity_for_task(task_type, _opts) :: :simple | :medium | :complex
+  - call(model_or_complexity, messages, opts) :: {:ok, llm_response()} | {:error, reason()}
+  - call_with_prompt(model_or_complexity, prompt, opts) :: {:ok, llm_response()} | {:error, reason()}
+  - call_with_system(model_or_complexity, system_prompt, user_message, opts) :: {:ok, llm_response()} | {:error, reason()}
+  - determine_complexity_for_task(task_type, opts) :: :simple | :medium | :complex
   - get_available_models() :: [model()]
 
   ## Error Matrix
@@ -451,7 +451,7 @@ defmodule Singularity.LLM.Service do
   ## Parameters
   - model_or_complexity :: String.t() | atom() - Model name or complexity level
   - messages :: [message()] - List of conversation messages
-  - _opts :: keyword() - Optional parameters
+  - opts :: keyword() - Optional parameters
 
   ## Returns
   - {:ok, llm_response()} - Successful response with metadata
@@ -484,9 +484,9 @@ defmodule Singularity.LLM.Service do
   """
   @spec call(model(), [message()], keyword()) :: {:ok, llm_response()} | {:error, term()}
   @spec call(atom(), [message()], keyword()) :: {:ok, llm_response()} | {:error, term()}
-  def call(model_or_complexity, messages, _opts \\ [])
+  def call(model_or_complexity, messages, opts \\ [])
 
-  def call(model, messages, _opts) when is_binary(model) do
+  def call(model, messages, opts) when is_binary(model) do
     start_time = System.monotonic_time(:millisecond)
     correlation_id = generate_correlation_id()
 
@@ -506,9 +506,9 @@ defmodule Singularity.LLM.Service do
 
     request =
       messages
-      |> build_request(_opts, %{model: model})
+      |> build_request(opts, %{model: model})
 
-    case dispatch_request(request, _opts) do
+    case dispatch_request(request, opts) do
       {:ok, response} = result ->
         duration = System.monotonic_time(:millisecond) - start_time
         slo_status = if duration <= 2000, do: :within_sla, else: :sla_breach
@@ -570,20 +570,20 @@ defmodule Singularity.LLM.Service do
     end
   end
 
-  def call(complexity, messages, _opts) when complexity in [:simple, :medium, :complex] do
-    _opts = Keyword.put_new(_opts, :complexity, complexity)
+  def call(complexity, messages, opts) when complexity in [:simple, :medium, :complex] do
+    opts = Keyword.put_new(opts, :complexity, complexity)
 
     request =
       messages
-      |> build_request(_opts)
+      |> build_request(opts)
 
-    dispatch_request(request, _opts)
+    dispatch_request(request, opts)
   end
 
-  def call(model, messages, _opts) when is_atom(model) do
+  def call(model, messages, opts) when is_atom(model) do
     model
     |> Atom.to_string()
-    |> call(messages, _opts)
+    |> call(messages, opts)
   end
 
   @doc """
@@ -601,9 +601,9 @@ defmodule Singularity.LLM.Service do
   """
   @spec call_with_prompt(model() | atom(), String.t(), keyword()) ::
           {:ok, llm_response()} | {:error, term()}
-  def call_with_prompt(model_or_complexity, prompt, _opts \\ []) do
+  def call_with_prompt(model_or_complexity, prompt, opts \\ []) do
     messages = [%{role: "user", content: prompt}]
-    call(model_or_complexity, messages, _opts)
+    call(model_or_complexity, messages, opts)
   end
 
   @doc """
@@ -621,13 +621,13 @@ defmodule Singularity.LLM.Service do
   """
   @spec call_with_system(model() | atom(), String.t(), String.t(), keyword()) ::
           {:ok, llm_response()} | {:error, term()}
-  def call_with_system(model_or_complexity, system_prompt, user_message, _opts \\ []) do
+  def call_with_system(model_or_complexity, system_prompt, user_message, opts \\ []) do
     messages = [
       %{role: "system", content: system_prompt},
       %{role: "user", content: user_message}
     ]
 
-    call(model_or_complexity, messages, _opts)
+    call(model_or_complexity, messages, opts)
   end
 
   @doc """
@@ -650,7 +650,7 @@ defmodule Singularity.LLM.Service do
       {:ok, %{text: "...", model: "claude-3-5-sonnet-20241022"}}
   """
   @spec call_with_script(String.t(), map(), keyword()) :: {:ok, llm_response()} | {:error, term()}
-  def call_with_script(script_path, context, _opts \\ []) do
+  def call_with_script(script_path, context, opts \\ []) do
     # 1. Load Lua script from templates_data
     full_path = Path.join(["templates_data", "prompt_library", script_path])
 
@@ -659,7 +659,7 @@ defmodule Singularity.LLM.Service do
       # 2. Call LLM with assembled messages
       complexity = Keyword.get(opts, :complexity, :complex)
 
-      case call(complexity, messages, _opts) do
+      case call(complexity, messages, opts) do
         {:ok, response} ->
           # 3. Add script metadata to response
           {:ok, Map.put(response, :script, script_path)}
@@ -705,9 +705,9 @@ defmodule Singularity.LLM.Service do
   - **Simple:** :classifier, :parser, :simple_chat, :web_search
   """
   @spec determine_complexity_for_task(atom(), keyword()) :: :simple | :medium | :complex
-  def determine_complexity_for_task(task_type, _opts \\ [])
+  def determine_complexity_for_task(task_type, opts \\ [])
 
-  def determine_complexity_for_task(task_type, _opts) when is_atom(task_type) do
+  def determine_complexity_for_task(task_type, opts) when is_atom(task_type) do
     case task_type do
       # Complex tasks - require premium models
       task
@@ -735,16 +735,16 @@ defmodule Singularity.LLM.Service do
     end
   end
 
-  def determine_complexity_for_task(task_type, _opts) when is_binary(task_type) do
+  def determine_complexity_for_task(task_type, opts) when is_binary(task_type) do
     task_type
     |> String.to_atom()
-    |> determine_complexity_for_task(_opts)
+    |> determine_complexity_for_task(opts)
   rescue
     ArgumentError ->
       Keyword.get(opts, :default_complexity, :medium)
   end
 
-  def determine_complexity_for_task(_, _opts) do
+  def determine_complexity_for_task(_, opts) do
     Keyword.get(opts, :default_complexity, :medium)
   end
 
@@ -772,38 +772,38 @@ defmodule Singularity.LLM.Service do
     ]
   end
 
-  defp build_request(messages, _opts, overrides \\ %{}) do
+  defp build_request(messages, opts, overrides \\ %{}) do
     max_tokens = Keyword.get(opts, :max_tokens, 4000)
     temperature = Keyword.get(opts, :temperature, 0.7)
     stream = Keyword.get(opts, :stream, false)
 
     model =
       overrides[:model] ||
-        _opts
+        opts
         |> Keyword.get(:model)
         |> normalize_string_option()
 
     provider =
       overrides[:provider] ||
-        _opts
+        opts
         |> Keyword.get(:provider)
         |> normalize_provider()
 
     complexity =
       overrides[:complexity] ||
-        _opts
+        opts
         |> Keyword.get(:complexity)
         |> normalize_complexity()
 
     task_type =
       overrides[:task_type] ||
-        _opts
+        opts
         |> Keyword.get(:task_type)
         |> normalize_task_type_option()
 
     capabilities =
       overrides[:capabilities] ||
-        _opts
+        opts
         |> Keyword.get(:capabilities)
         |> normalize_capabilities()
 
@@ -825,7 +825,7 @@ defmodule Singularity.LLM.Service do
   # @calls: LlmResultPoller - Polls pgmq:ai_results asynchronously
   # @error_flow: :timeout -> Request exceeded timeout threshold
   # @error_flow: :unavailable -> Nexus queue consumer not running
-  defp dispatch_request(request, _opts) do
+  defp dispatch_request(request, opts) do
     # Route LLM request through Nexus via pgmq + Oban async workflow
     # This enables distributed LLM processing without blocking Singularity
 

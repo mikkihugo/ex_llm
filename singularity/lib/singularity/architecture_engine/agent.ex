@@ -119,8 +119,8 @@ defmodule Singularity.ArchitectureEngine.Agent do
   Run the full architecture analysis pipeline for the given `codebase_id`.
   """
   @spec analyze_codebase(codebase_id(), keyword()) :: term()
-  def analyze_codebase(codebase_id, _opts \\ []) do
-    ArchitectureEngine.analyze_codebase(codebase_id, _opts)
+  def analyze_codebase(codebase_id, opts \\ []) do
+    ArchitectureEngine.analyze_codebase(codebase_id, opts)
   end
 
   @doc """
@@ -143,15 +143,15 @@ defmodule Singularity.ArchitectureEngine.Agent do
   Run quality analysis (linting, static checks, AI heuristics).
   """
   @spec run_quality_analysis(Path.t(), keyword()) :: term()
-  def run_quality_analysis(codebase_path, _opts \\ []) do
-    ArchitectureEngine.run_quality_analysis(codebase_path, _opts)
+  def run_quality_analysis(codebase_path, opts \\ []) do
+    ArchitectureEngine.run_quality_analysis(codebase_path, opts)
   end
 
   @doc """
   Perform semantic search against the analyzed code artifacts.
   """
   @spec semantic_search(String.t(), keyword()) :: term()
-  def semantic_search(query, _opts \\ []) do
-    ArchitectureEngine.semantic_search(query, _opts)
+  def semantic_search(query, opts \\ []) do
+    ArchitectureEngine.semantic_search(query, opts)
   end
 end

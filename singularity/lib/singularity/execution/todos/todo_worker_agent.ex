@@ -146,7 +146,7 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
 
       # Create TaskGraph from todo
       dag =
-        TaskGraph.decompose(%{
+        Singularity.Execution.Planning.TaskGraph.decompose(%{
           description: todo.title,
           details: todo.description,
           context: todo.context,
@@ -156,7 +156,7 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
       # Execute with TaskGraph
       run_id = "todo-#{todo.id}-#{System.system_time(:millisecond)}"
 
-      case TaskGraph.execute(dag,
+      case Singularity.Execution.Planning.TaskGraph.execute(dag,
              run_id: run_id,
              stream: false,
              # Don't evolve for simple todos
@@ -292,7 +292,7 @@ defmodule Singularity.Execution.Todos.TodoWorkerAgent do
       "complexity" => todo.complexity
     }
 
-    case Singularity.Knowledge.TemplateService.render_template(
+    case Singularity.Knowledge.TemplateService.render_template_with_solid(
            "todos/execute-task.hbs",
            variables
          ) do

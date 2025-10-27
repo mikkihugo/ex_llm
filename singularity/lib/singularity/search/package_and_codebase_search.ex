@@ -54,7 +54,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   @doc """
   Unified search combining packages and your codebase combining Tool Knowledge + RAG
   """
-  def hybrid_search(query, _opts \\ []) do
+  def hybrid_search(query, opts \\ []) do
     codebase_id = Keyword.get(opts, :codebase_id)
     ecosystem = Keyword.get(opts, :ecosystem)
     limit = Keyword.get(opts, :limit, 5)
@@ -81,7 +81,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   @doc """
   Search for implementation patterns - combines package patterns + your code
   """
-  def search_implementation(task_description, _opts \\ []) do
+  def search_implementation(task_description, opts \\ []) do
     codebase_id = Keyword.get(opts, :codebase_id)
     ecosystem = Keyword.get(opts, :ecosystem)
     limit = Keyword.get(opts, :limit, 5)
@@ -123,7 +123,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   - Quality signals (stars, downloads, recency)
   - Your previous usage (from RAG)
   """
-  def recommend_package(task_description, _opts \\ []) do
+  def recommend_package(task_description, opts \\ []) do
     codebase_id = Keyword.get(opts, :codebase_id)
     ecosystem = Keyword.get(opts, :ecosystem)
 
@@ -170,7 +170,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
   @doc """
   Find cross-ecosystem equivalents and show how YOU used similar tools
   """
-  def find_equivalent_with_context(package_name, _opts \\ []) do
+  def find_equivalent_with_context(package_name, opts \\ []) do
     from_ecosystem = Keyword.get(opts, :from)
     to_ecosystem = Keyword.get(opts, :to)
     codebase_id = Keyword.get(opts, :codebase_id)

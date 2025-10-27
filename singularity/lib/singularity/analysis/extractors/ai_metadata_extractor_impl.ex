@@ -86,7 +86,7 @@ defmodule Singularity.Analysis.Extractors.AIMetadataExtractorImpl do
   end
 
   @impl true
-  def extract(source_or_path, _opts \\ []) do
+  def extract(source_or_path, opts \\ []) do
     case read_source(source_or_path) do
       {:ok, source} ->
         metadata = AIMetadataExtractor.extract(source)

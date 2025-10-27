@@ -113,7 +113,7 @@ defmodule Singularity.Runner.ExecutionRecord do
   @doc """
   Gets execution history with pagination.
   """
-  def get_history(_opts \\ []) do
+  def get_history(opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
     offset = Keyword.get(opts, :offset, 0)
     status = Keyword.get(opts, :status)

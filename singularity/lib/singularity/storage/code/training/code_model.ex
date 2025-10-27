@@ -48,7 +48,7 @@ defmodule Singularity.CodeModel do
 
   require Logger
 
-  @type generation_opts :: [
+  @type generationopts :: [
           temperature: float(),
           max_tokens: integer(),
           top_p: float()
@@ -63,8 +63,8 @@ defmodule Singularity.CodeModel do
   - `:max_tokens` - Maximum tokens to generate (default: 256)
   - `:stop_sequences` - Stop at these tokens (default: code-only stops)
   """
-  @spec complete(String.t(), generation_opts()) :: {:ok, String.t()} | {:error, term()}
-  def complete(prompt, _opts \\ []) do
+  @spec complete(String.t(), generationopts()) :: {:ok, String.t()} | {:error, term()}
+  def complete(prompt, opts \\ []) do
     temperature = Keyword.get(opts, :temperature, 0.1)
     max_tokens = Keyword.get(opts, :max_tokens, 256)
 

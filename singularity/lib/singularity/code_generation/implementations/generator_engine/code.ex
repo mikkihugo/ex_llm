@@ -855,14 +855,14 @@ defmodule Singularity.CodeGeneration.Implementations.GeneratorEngine.Code do
           quality: quality
         }
 
-        _opts = [
+        opts = [
           language: language,
           use_prompt_engine: true,
           examples: examples,
           quality: quality
         ]
 
-        case Singularity.LLM.Prompt.TemplateAware.generate_prompt(task_struct, _opts) do
+        case Singularity.LLM.Prompt.TemplateAware.generate_prompt(task_struct, opts) do
           %{prompt: prompt} ->
             enhanced_prompt = enhance_prompt_with_examples(prompt, examples, language, quality)
             {:ok, enhanced_prompt}

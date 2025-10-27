@@ -87,7 +87,7 @@ defmodule Singularity.Architecture.Analyzers.RefactoringAnalyzer do
   end
 
   @impl true
-  def analyze(codebase_path, _opts \\ []) when is_binary(codebase_path) do
+  def analyze(codebase_path, opts \\ []) when is_binary(codebase_path) do
     try do
       case Analyzer.analyze(codebase_path) do
         {:ok, needs} when is_list(needs) ->

@@ -76,7 +76,7 @@ defmodule Singularity.Tools.InstructorAdapter do
       {:error, "Missing required field: task"}
   """
   @spec validate_parameters(String.t(), map(), Keyword.t()) :: {:ok, map()} | {:error, String.t()}
-  def validate_parameters(tool_name, params, _opts \\ []) do
+  def validate_parameters(tool_name, params, opts \\ []) do
     max_retries = Keyword.get(opts, :max_retries, 2)
 
     prompt = create_parameter_validation_prompt(tool_name, params)
@@ -113,9 +113,9 @@ defmodule Singularity.Tools.InstructorAdapter do
       {:ok, %{score: 0.92, passing: true, issues: [], suggestions: []}}
   """
   @spec validate_output(atom(), String.t(), Keyword.t()) :: {:ok, map()} | {:error, String.t()}
-  def validate_output(output_type, content, _opts \\ [])
+  def validate_output(output_type, content, opts \\ [])
 
-  def validate_output(:code, code, _opts) do
+  def validate_output(:code, code, opts) do
     language = Keyword.get(opts, :language, "elixir")
     quality = Keyword.get(opts, :quality, :production)
     max_retries = Keyword.get(opts, :max_retries, 3)
@@ -137,7 +137,7 @@ defmodule Singularity.Tools.InstructorAdapter do
     end
   end
 
-  def validate_output(_type, _content, _opts) do
+  def validate_output(_type, _content, opts) do
     {:error, "Unsupported output type"}
   end
 
@@ -154,9 +154,9 @@ defmodule Singularity.Tools.InstructorAdapter do
   """
   @spec refine_output(atom(), String.t(), map(), Keyword.t()) ::
           {:ok, String.t()} | {:error, String.t()}
-  def refine_output(output_type, content, feedback, _opts \\ [])
+  def refine_output(output_type, content, feedback, opts \\ [])
 
-  def refine_output(:code, code, %{issues: issues, suggestions: suggestions}, _opts) do
+  def refine_output(:code, code, %{issues: issues, suggestions: suggestions}, opts) do
     language = Keyword.get(opts, :language, "elixir")
     max_iterations = Keyword.get(opts, :max_iterations, 3)
     max_retries = Keyword.get(opts, :max_retries, 2)
@@ -178,7 +178,7 @@ defmodule Singularity.Tools.InstructorAdapter do
     end
   end
 
-  def refine_output(_type, _content, _feedback, _opts) do
+  def refine_output(_type, _content, _feedback, opts) do
     {:error, "Unsupported output type"}
   end
 
@@ -195,7 +195,7 @@ defmodule Singularity.Tools.InstructorAdapter do
   """
   @spec generate_validated_code(String.t(), Keyword.t()) ::
           {:ok, String.t(), map()} | {:error, String.t()}
-  def generate_validated_code(task, _opts \\ []) do
+  def generate_validated_code(task, opts \\ []) do
     language = Keyword.get(opts, :language, "elixir")
     quality = Keyword.get(opts, :quality, :production)
     quality_threshold = Keyword.get(opts, :quality_threshold, 0.85)

@@ -252,8 +252,8 @@ defmodule Singularity.Tools.Todos do
 
   @impl true
   def execute_tool("list_todos", params) do
-    _opts = build_list_opts(params)
-    todos = TodoStore.list(_opts)
+    opts = build_listopts(params)
+    todos = TodoStore.list(opts)
 
     {:ok,
      %{
@@ -265,9 +265,9 @@ defmodule Singularity.Tools.Todos do
 
   @impl true
   def execute_tool("search_todos", %{"query" => query} = params) do
-    _opts = build_search_opts(params)
+    opts = build_searchopts(params)
 
-    case TodoStore.search(query, _opts) do
+    case TodoStore.search(query, opts) do
       {:ok, results} ->
         {:ok,
          %{
@@ -383,7 +383,7 @@ defmodule Singularity.Tools.Todos do
   defp priority_label(5), do: "Backlog"
   defp priority_label(_), do: "Unknown"
 
-  defp build_list_opts(params) do
+  defp build_listopts(params) do
     []
     |> maybe_add_opt(params, "status", :status)
     |> maybe_add_opt(params, "priority", :priority)
@@ -392,23 +392,23 @@ defmodule Singularity.Tools.Todos do
     |> Keyword.put_new(:limit, 20)
   end
 
-  defp build_search_opts(params) do
+  defp build_searchopts(params) do
     []
     |> maybe_add_opt(params, "limit", :limit)
     |> maybe_add_opt(params, "min_similarity", :min_similarity)
     |> Keyword.put_new(:limit, 10)
   end
 
-  defp maybe_add_opt(_opts, params, key, opt_key) do
+  defp maybe_add_opt(opts, params, key, opt_key) do
     case Map.get(params, key) do
-      nil -> _opts
+      nil -> opts
       value -> Keyword.put(opts, opt_key, value)
     end
   end
 
   defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} ->
-      Enum.reduce(_opts, msg, fn {key, value}, acc ->
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Enum.reduce(opts, msg, fn {key, value}, acc ->
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)

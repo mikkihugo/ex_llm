@@ -199,7 +199,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
   }}
   ```
   """
-  def analyze(input, _opts \\ []) do
+  def analyze(input, opts \\ []) do
     try do
       # Load all enabled analyzers from config
       enabled_analyzers = AnalyzerType.load_enabled_analyzers()
@@ -218,7 +218,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
       results =
         analyzers_to_run
         |> Enum.map(fn {analyzer_type, analyzer_config} ->
-          Task.async(fn -> run_analyzer(analyzer_type, analyzer_config, input, _opts) end)
+          Task.async(fn -> run_analyzer(analyzer_type, analyzer_config, input, opts) end)
         end)
         |> Enum.map(&Task.await/1)
         |> Enum.into(%{})
@@ -272,19 +272,19 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
 
   # Private helpers
 
-  defp run_analyzer(analyzer_type, analyzer_config, input, _opts) do
+  defp run_analyzer(analyzer_type, analyzer_config, input, opts) do
     try do
       module = analyzer_config[:module]
 
       if module && Code.ensure_loaded?(module) do
         Logger.debug("Running #{analyzer_type} analyzer")
-        results = module.analyze(input, _opts)
+        results = module.analyze(input, opts)
 
         # Filter and limit results
         filtered =
           results
-          |> filter_by_severity(_opts)
-          |> limit_results(_opts)
+          |> filter_by_severity(opts)
+          |> limit_results(opts)
 
         Logger.debug("#{analyzer_type} analyzer found #{length(filtered)} issues")
         {analyzer_type, filtered}
@@ -303,7 +303,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
     end
   end
 
-  defp filter_by_severity(results, _opts) do
+  defp filter_by_severity(results, opts) do
     case Keyword.get(opts, :min_severity) do
       nil ->
         results
@@ -319,7 +319,7 @@ defmodule Singularity.Architecture.AnalysisOrchestrator do
     end
   end
 
-  defp limit_results(results, _opts) do
+  defp limit_results(results, opts) do
     case Keyword.get(opts, :limit) do
       nil -> results
       limit -> Enum.take(results, limit)

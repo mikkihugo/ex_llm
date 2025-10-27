@@ -67,7 +67,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
 
   ## Parameters
   - `codebase_path` - Root directory to analyze
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:languages` - Languages to analyze (default: all)
     - `:categories` - Quality categories to check (default: all)
     - `:min_severity` - Minimum severity to report (default: :info)

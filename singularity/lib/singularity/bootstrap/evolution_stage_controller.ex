@@ -134,7 +134,7 @@ defmodule Singularity.Bootstrap.EvolutionStageController do
 
   ## Client API
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 

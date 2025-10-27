@@ -48,7 +48,7 @@ defmodule Singularity.CodeTrainer do
   - `:split_ratio` - Train/validation split (default: 0.9)
   """
   @spec prepare_dataset(keyword()) :: {:ok, dataset()} | {:error, term()}
-  def prepare_dataset(_opts \\ []) do
+  def prepare_dataset(opts \\ []) do
     language = Keyword.get(opts, :language)
     min_length = Keyword.get(opts, :min_length, 50)
     max_examples = Keyword.get(opts, :max_examples, 10_000)
@@ -106,7 +106,7 @@ defmodule Singularity.CodeTrainer do
   - `:lora_rank` - LoRA rank (default: 8, lower = faster)
   """
   @spec train(dataset(), keyword()) :: {:ok, term()} | {:error, term()}
-  def train(dataset, _opts \\ []) do
+  def train(dataset, opts \\ []) do
     epochs = Keyword.get(opts, :epochs, 3)
     batch_size = Keyword.get(opts, :batch_size, 4)
     learning_rate = Keyword.get(opts, :learning_rate, 2.0e-4)

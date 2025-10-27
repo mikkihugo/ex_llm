@@ -116,7 +116,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
     - `:task_type` - Focus on specific task type
     - `:complexity` - Complexity level
     - `:time_range` - Historical window (:last_week, :last_day, etc.)
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_confidence` - Only return rules >= confidence (default: 0.0)
     - `:limit` - Max rules to return (default: 20)
 
@@ -195,7 +195,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   improve over time with more data.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_frequency` - Only rules with >= frequency (default: 5)
     - `:limit` - Max results (default: 10)
 
@@ -256,7 +256,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   making them available to other Singularity instances.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:min_confidence` - Only publish rules >= confidence (default: 0.85)
     - `:limit` - Max rules to publish (default: 10)
     - `:namespace` - Genesis namespace (default: "validation_rules")
@@ -398,7 +398,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
 
   ## Parameters
   - `rule_id` - ID of the published rule
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:success` - Boolean, did rule help execution?
     - `:effectiveness` - Float, how effective (0.0-1.0)?
 
@@ -406,8 +406,8 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   - `:ok` - Feedback recorded
   """
   @spec record_rule_feedback(String.t(), keyword()) :: :ok | {:error, term()}
-  def record_rule_feedback(rule_id, _opts \\ []) do
-    AdaptiveConfidenceGating.record_published_rule_result(rule_id, _opts)
+  def record_rule_feedback(rule_id, opts \\ []) do
+    AdaptiveConfidenceGating.record_published_rule_result(rule_id, opts)
   end
 
   @doc """
@@ -429,7 +429,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   Tracks correlation between rule application and execution success.
 
   ## Parameters
-  - `_opts` - Options:
+  - `opts` - Options:
     - `:time_range` - Historical window (default: :last_week)
 
   ## Returns

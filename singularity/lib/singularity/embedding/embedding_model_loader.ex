@@ -11,7 +11,7 @@ defmodule Singularity.EmbeddingModelLoader do
 
   alias Singularity.EmbeddingEngine
 
-  def start_link(_opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 

@@ -67,11 +67,11 @@ defmodule Singularity.TechnologyPatternAdapter do
   end
 
   @doc "Search patterns"
-  def search(query, _opts \\ []) do
+  def search(query, opts \\ []) do
     {:ok, results} =
       ArtifactStore.search(
         query,
-        Keyword.merge([artifact_type: @artifact_type], _opts)
+        Keyword.merge([artifact_type: @artifact_type], opts)
       )
 
     Enum.map(results, &to_pattern_struct/1)

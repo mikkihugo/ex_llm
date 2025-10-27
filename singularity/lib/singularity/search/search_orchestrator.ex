@@ -69,7 +69,7 @@ defmodule Singularity.Search.SearchOrchestrator do
 
   `{:ok, %{search_type => [results]}}` or `{:error, reason}`
   """
-  def search(query, _opts \\ []) when is_binary(query) do
+  def search(query, opts \\ []) when is_binary(query) do
     try do
       enabled_searches = SearchType.load_enabled_searches()
 
@@ -86,7 +86,7 @@ defmodule Singularity.Search.SearchOrchestrator do
       results =
         searches_to_run
         |> Enum.map(fn {search_type, search_config} ->
-          Task.async(fn -> run_search(search_type, search_config, query, _opts) end)
+          Task.async(fn -> run_search(search_type, search_config, query, opts) end)
         end)
         |> Enum.map(&Task.await/1)
         |> Enum.into(%{})
@@ -159,7 +159,7 @@ defmodule Singularity.Search.SearchOrchestrator do
 
   # Private helpers
 
-  defp run_search(search_type, search_config, query, _opts) do
+  defp run_search(search_type, search_config, query, opts) do
     try do
       module = search_config[:module]
 
@@ -167,13 +167,13 @@ defmodule Singularity.Search.SearchOrchestrator do
         Logger.debug("Running #{search_type} search", query: query)
 
         # Execute search
-        case module.search(query, _opts) do
+        case module.search(query, opts) do
           {:ok, results} ->
             # Filter and limit results
             filtered =
               results
-              |> filter_by_similarity(_opts)
-              |> limit_results(_opts)
+              |> filter_by_similarity(opts)
+              |> limit_results(opts)
 
             Logger.debug("#{search_type} search found #{length(filtered)} results")
             {search_type, filtered}
@@ -201,7 +201,7 @@ defmodule Singularity.Search.SearchOrchestrator do
     end
   end
 
-  defp filter_by_similarity(results, _opts) do
+  defp filter_by_similarity(results, opts) do
     case Keyword.get(opts, :min_similarity) do
       nil ->
         results
@@ -217,7 +217,7 @@ defmodule Singularity.Search.SearchOrchestrator do
     end
   end
 
-  defp limit_results(results, _opts) do
+  defp limit_results(results, opts) do
     case Keyword.get(opts, :limit) do
       nil -> results
       limit when is_integer(limit) -> Enum.take(results, limit)

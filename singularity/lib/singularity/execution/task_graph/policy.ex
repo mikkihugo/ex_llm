@@ -170,7 +170,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(role, policy, :git, %{cmd: cmd}, _opts) do
+  defp check_tool_specific_policy(role, policy, :git, %{cmd: cmd}, opts) do
     # Check for dangerous git commands
     cmd_str = Enum.join(cmd, " ")
 
@@ -183,7 +183,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, policy, :shell, %{cmd: cmd}, _opts) do
+  defp check_tool_specific_policy(_role, policy, :shell, %{cmd: cmd}, opts) do
     # Check shell command whitelist
     binary = List.first(cmd)
     whitelist = policy[:shell_whitelist] || []
@@ -195,7 +195,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, policy, :fs, %{write: path}, _opts) do
+  defp check_tool_specific_policy(_role, policy, :fs, %{write: path}, opts) do
     cond do
       policy[:fs_write_denied] == true ->
         {:error, :write_access_denied}
@@ -212,7 +212,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, policy, :fs, %{read: path}, _opts) do
+  defp check_tool_specific_policy(_role, policy, :fs, %{read: path}, opts) do
     # Read is usually allowed if tool is allowed
     allowed_paths = policy[:fs_allowed_paths]
 
@@ -227,7 +227,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, policy, :http, %{url: url}, _opts) do
+  defp check_tool_specific_policy(_role, policy, :http, %{url: url}, opts) do
     case policy[:network] do
       :deny ->
         {:error, :policy_violation}
@@ -262,7 +262,7 @@ defmodule Singularity.Execution.TaskGraph.Policy do
     end
   end
 
-  defp check_tool_specific_policy(_role, _policy, _tool, _args, _opts) do
+  defp check_tool_specific_policy(_role, _policy, _tool, _args, opts) do
     :ok
   end
 end

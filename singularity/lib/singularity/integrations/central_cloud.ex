@@ -24,7 +24,7 @@ defmodule Singularity.CentralCloud do
   into optional Rust engines if they are running.
   """
   @spec analyze_codebase(map(), keyword()) :: {:ok, map()} | {:error, term()}
-  def analyze_codebase(codebase_info, _opts \\ []) do
+  def analyze_codebase(codebase_info, opts \\ []) do
     analysis_type = Keyword.get(opts, :analysis_type, :comprehensive)
     include_patterns = Keyword.get(opts, :include_patterns, true)
     include_learning = Keyword.get(opts, :include_learning, true)
@@ -67,7 +67,7 @@ defmodule Singularity.CentralCloud do
   This aggregates learning from all Singularity instances.
   """
   @spec learn_patterns(list(map()), keyword()) :: {:ok, map()} | {:error, term()}
-  def learn_patterns(instance_patterns, _opts \\ []) do
+  def learn_patterns(instance_patterns, opts \\ []) do
     learning_type = Keyword.get(opts, :learning_type, :cross_instance)
     confidence_threshold = Keyword.get(opts, :confidence_threshold, 0.8)
 
@@ -90,7 +90,7 @@ defmodule Singularity.CentralCloud do
   Get global statistics and insights.
   """
   @spec get_global_stats(keyword()) :: {:ok, map()} | {:error, term()}
-  def get_global_stats(_opts \\ []) do
+  def get_global_stats(opts \\ []) do
     stats_type = Keyword.get(opts, :stats_type, :comprehensive)
     time_range = Keyword.get(opts, :time_range, :last_30_days)
 
@@ -107,7 +107,7 @@ defmodule Singularity.CentralCloud do
   Train models with aggregated data.
   """
   @spec train_models(keyword()) :: {:ok, map()} | {:error, term()}
-  def train_models(_opts \\ []) do
+  def train_models(opts \\ []) do
     model_types = Keyword.get(opts, :model_types, [:naming, :patterns, :quality])
     training_data_size = Keyword.get(opts, :training_data_size, :large)
 
@@ -142,7 +142,7 @@ defmodule Singularity.CentralCloud do
   Get cross-instance insights and recommendations.
   """
   @spec get_cross_instance_insights(keyword()) :: {:ok, list(map())} | {:error, term()}
-  def get_cross_instance_insights(_opts \\ []) do
+  def get_cross_instance_insights(opts \\ []) do
     insight_types = Keyword.get(opts, :insight_types, [:patterns, :performance, :quality])
     instance_count = Keyword.get(opts, :instance_count, :all)
 

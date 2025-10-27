@@ -289,17 +289,17 @@ defmodule Singularity.Search.CodeSearchStack do
   `{:ok, [search_result()]}` - Results deduplicated, sorted by score
   """
   @spec search(String.t(), Keyword.t()) :: {:ok, [search_result()]} | {:error, String.t()}
-  def search(query, _opts \\ []) when is_binary(query) do
+  def search(query, opts \\ []) when is_binary(query) do
     strategy = Keyword.get(opts, :strategy, :intelligent)
 
     Logger.info("CodeSearchStack search", query: query, strategy: strategy)
 
     case strategy do
-      :precise -> search_precise(query, _opts)
-      :semantic -> search_semantic(query, _opts)
-      :literal -> search_literal(query, _opts)
-      :hybrid -> search_hybrid(query, _opts)
-      :intelligent -> search_intelligent(query, _opts)
+      :precise -> search_precise(query, opts)
+      :semantic -> search_semantic(query, opts)
+      :literal -> search_literal(query, opts)
+      :hybrid -> search_hybrid(query, opts)
+      :intelligent -> search_intelligent(query, opts)
       _ -> {:error, "Unknown strategy: #{inspect(strategy)}"}
     end
   rescue
@@ -312,14 +312,14 @@ defmodule Singularity.Search.CodeSearchStack do
   # Best for finding exact patterns with semantic understanding.
   @spec search_precise(String.t(), Keyword.t()) ::
           {:ok, [search_result()]} | {:error, String.t()}
-  defp search_precise(query, _opts) do
+  defp search_precise(query, opts) do
     Logger.debug("Precise search: ast-grep + pgvector", query: query)
 
     # Layer 1: AST-grep (syntax structure)
-    ast_results = search_layer_ast_grep(query, _opts)
+    ast_results = search_layer_ast_grep(query, opts)
 
     # Layer 2: pgvector (semantic similarity)
-    vec_results = search_layer_pgvector(query, _opts)
+    vec_results = search_layer_pgvector(query, opts)
 
     # Combine results: ast-grep has higher weight (95% precise)
     combined =
@@ -328,7 +328,7 @@ defmodule Singularity.Search.CodeSearchStack do
       |> Kernel.++(vec_results)
       |> deduplicate_results()
       |> sort_by_score()
-      |> apply_limit(_opts)
+      |> apply_limit(opts)
 
     {:ok, combined}
   end
@@ -337,16 +337,16 @@ defmodule Singularity.Search.CodeSearchStack do
   # Best for finding similar code patterns and learning from codebase.
   @spec search_semantic(String.t(), Keyword.t()) ::
           {:ok, [search_result()]} | {:error, String.t()}
-  defp search_semantic(query, _opts) do
+  defp search_semantic(query, opts) do
     Logger.debug("Semantic search: pgvector + ast-grep fallback", query: query)
 
     # Layer 1: pgvector (semantic similarity)
-    vec_results = search_layer_pgvector(query, _opts)
+    vec_results = search_layer_pgvector(query, opts)
 
     # Layer 2: ast-grep fallback (if pgvector has low confidence)
     ast_results =
       if Enum.empty?(vec_results) || low_confidence?(vec_results) do
-        search_layer_ast_grep(query, _opts)
+        search_layer_ast_grep(query, opts)
       else
         []
       end
@@ -356,7 +356,7 @@ defmodule Singularity.Search.CodeSearchStack do
       |> Kernel.++(ast_results)
       |> deduplicate_results()
       |> sort_by_score()
-      |> apply_limit(_opts)
+      |> apply_limit(opts)
 
     {:ok, combined}
   end
@@ -365,21 +365,21 @@ defmodule Singularity.Search.CodeSearchStack do
   # Best for keyword searching and finding specific strings/comments.
   @spec search_literal(String.t(), Keyword.t()) ::
           {:ok, [search_result()]} | {:error, String.t()}
-  defp search_literal(query, _opts) do
+  defp search_literal(query, opts) do
     Logger.debug("Literal search: git grep + pg_trgm", query: query)
 
     # Layer 1: git grep (exact keyword match)
-    git_results = search_layer_git_grep(query, _opts)
+    git_results = search_layer_git_grep(query, opts)
 
     # Layer 2: pg_trgm (fuzzy match for typos)
-    trgm_results = search_layer_pg_trgm(query, _opts)
+    trgm_results = search_layer_pg_trgm(query, opts)
 
     combined =
       git_results
       |> Kernel.++(trgm_results)
       |> deduplicate_results()
       |> sort_by_score()
-      |> apply_limit(_opts)
+      |> apply_limit(opts)
 
     {:ok, combined}
   end
@@ -388,20 +388,20 @@ defmodule Singularity.Search.CodeSearchStack do
   # Best overall approach: covers all bases.
   @spec search_hybrid(String.t(), Keyword.t()) ::
           {:ok, [search_result()]} | {:error, String.t()}
-  defp search_hybrid(query, _opts) do
+  defp search_hybrid(query, opts) do
     Logger.debug("Hybrid search: all 4 layers", query: query)
 
     # Layer 1: ast-grep (syntax)
-    ast_results = search_layer_ast_grep(query, _opts)
+    ast_results = search_layer_ast_grep(query, opts)
 
     # Layer 2: pgvector (semantic)
-    vec_results = search_layer_pgvector(query, _opts)
+    vec_results = search_layer_pgvector(query, opts)
 
     # Layer 3: pg_trgm (fuzzy)
-    trgm_results = search_layer_pg_trgm(query, _opts)
+    trgm_results = search_layer_pg_trgm(query, opts)
 
     # Layer 4: git grep (literal)
-    git_results = search_layer_git_grep(query, _opts)
+    git_results = search_layer_git_grep(query, opts)
 
     combined =
       []
@@ -411,7 +411,7 @@ defmodule Singularity.Search.CodeSearchStack do
       |> Kernel.++(git_results)
       |> deduplicate_results()
       |> sort_by_score()
-      |> apply_limit(_opts)
+      |> apply_limit(opts)
 
     {:ok, combined}
   end
@@ -424,7 +424,7 @@ defmodule Singularity.Search.CodeSearchStack do
   # - Is this a typo/fuzzy? Use pg_trgm
   @spec search_intelligent(String.t(), Keyword.t()) ::
           {:ok, [search_result()]} | {:error, String.t()}
-  defp search_intelligent(query, _opts) do
+  defp search_intelligent(query, opts) do
     Logger.debug("Intelligent search: auto-detect strategy", query: query)
 
     # Analyze query to determine best layers
@@ -435,12 +435,12 @@ defmodule Singularity.Search.CodeSearchStack do
     # Run only selected layers
     results =
       selected_layers
-      |> Enum.map(fn layer -> search_layer(layer, query, _opts) end)
+      |> Enum.map(fn layer -> search_layer(layer, query, opts) end)
       |> Enum.filter(fn {_layer, results} -> not Enum.empty?(results) end)
       |> Enum.flat_map(fn {_layer, results} -> results end)
       |> deduplicate_results()
       |> sort_by_score()
-      |> apply_limit(_opts)
+      |> apply_limit(opts)
 
     {:ok, results}
   end
@@ -450,7 +450,7 @@ defmodule Singularity.Search.CodeSearchStack do
   # ============================================================================
 
   @spec search_layer_ast_grep(String.t(), Keyword.t()) :: [search_result()]
-  defp search_layer_ast_grep(query, _opts) do
+  defp search_layer_ast_grep(query, opts) do
     Logger.debug("Layer 1: ast-grep (syntax tree matching)")
 
     case AstGrepCodeSearch.search(
@@ -480,7 +480,7 @@ defmodule Singularity.Search.CodeSearchStack do
   end
 
   @spec search_layer_pgvector(String.t(), Keyword.t()) :: [search_result()]
-  defp search_layer_pgvector(query, _opts) do
+  defp search_layer_pgvector(query, opts) do
     Logger.debug("Layer 2: pgvector (semantic embeddings)")
 
     case HybridCodeSearch.search(query,
@@ -509,7 +509,7 @@ defmodule Singularity.Search.CodeSearchStack do
   end
 
   @spec search_layer_pg_trgm(String.t(), Keyword.t()) :: [search_result()]
-  defp search_layer_pg_trgm(query, _opts) do
+  defp search_layer_pg_trgm(query, opts) do
     Logger.debug("Layer 3: pg_trgm (fuzzy text matching)")
 
     # Query: SELECT * FROM code_chunks WHERE content % 'query' ORDER BY similarity
@@ -549,7 +549,7 @@ defmodule Singularity.Search.CodeSearchStack do
   end
 
   @spec search_layer_git_grep(String.t(), Keyword.t()) :: [search_result()]
-  defp search_layer_git_grep(query, _opts) do
+  defp search_layer_git_grep(query, opts) do
     Logger.debug("Layer 4: git grep (literal keyword search)")
 
     case System.cmd("git", ["grep", "-n", "-i", query],
@@ -579,17 +579,17 @@ defmodule Singularity.Search.CodeSearchStack do
   # ============================================================================
 
   @spec search_layer(layer(), String.t(), Keyword.t()) :: {layer(), [search_result()]}
-  defp search_layer(:ast_grep, query, _opts),
-    do: {:ast_grep, search_layer_ast_grep(query, _opts)}
+  defp search_layer(:ast_grep, query, opts),
+    do: {:ast_grep, search_layer_ast_grep(query, opts)}
 
-  defp search_layer(:pgvector, query, _opts),
-    do: {:pgvector, search_layer_pgvector(query, _opts)}
+  defp search_layer(:pgvector, query, opts),
+    do: {:pgvector, search_layer_pgvector(query, opts)}
 
-  defp search_layer(:pg_trgm, query, _opts),
-    do: {:pg_trgm, search_layer_pg_trgm(query, _opts)}
+  defp search_layer(:pg_trgm, query, opts),
+    do: {:pg_trgm, search_layer_pg_trgm(query, opts)}
 
-  defp search_layer(:git_grep, query, _opts),
-    do: {:git_grep, search_layer_git_grep(query, _opts)}
+  defp search_layer(:git_grep, query, opts),
+    do: {:git_grep, search_layer_git_grep(query, opts)}
 
   @spec analyze_query(String.t()) :: {strategy(), [layer()]}
   defp analyze_query(query) do
@@ -635,7 +635,7 @@ defmodule Singularity.Search.CodeSearchStack do
   end
 
   @spec apply_limit([search_result()], Keyword.t()) :: [search_result()]
-  defp apply_limit(results, _opts) do
+  defp apply_limit(results, opts) do
     limit = Keyword.get(opts, :limit, 20)
     Enum.take(results, limit)
   end

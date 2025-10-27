@@ -88,7 +88,7 @@ defmodule Singularity.PseudocodeGenerator do
     path = Keyword.get(opts, :path)
 
     # Detect context (same as CodeSynthesisPipeline)
-    context = detect_context(path, _opts)
+    context = detect_context(path, opts)
 
     Logger.debug("Pseudocode gen: #{task} in #{context.repo}/#{context.language}")
 
@@ -115,7 +115,7 @@ defmodule Singularity.PseudocodeGenerator do
   This is the expensive step (GPU, RAG, etc.)
   Only called after user approves pseudocode.
   """
-  def to_code(pseudocode_result, _opts \\ []) do
+  def to_code(pseudocode_result, opts \\ []) do
     # Extract approved pseudocode
     pseudocode = pseudocode_result.pseudocode
     context = pseudocode_result.context
@@ -147,7 +147,7 @@ defmodule Singularity.PseudocodeGenerator do
 
   Super fast - just pattern matching and text manipulation.
   """
-  def refine(pseudocode_result, refinement, _opts \\ []) do
+  def refine(pseudocode_result, refinement, opts \\ []) do
     current = pseudocode_result.pseudocode
     _context = pseudocode_result.context
 
@@ -176,7 +176,7 @@ defmodule Singularity.PseudocodeGenerator do
 
   ## Private Functions
 
-  defp detect_context(nil, _opts) do
+  defp detect_context(nil, opts) do
     %{
       repo: Keyword.get(opts, :repo, "unknown"),
       language: Keyword.get(opts, :language, "elixir"),
@@ -185,7 +185,7 @@ defmodule Singularity.PseudocodeGenerator do
     }
   end
 
-  defp detect_context(path, _opts) when is_binary(path) do
+  defp detect_context(path, opts) when is_binary(path) do
     parts = Path.split(path)
     language = detect_language_from_path(path)
     repo = List.first(parts) || "unknown"
@@ -432,10 +432,10 @@ defmodule Singularity.PseudocodeGenerator do
   @doc """
   Batch generate pseudocode for multiple tasks (parallel)
   """
-  def batch_generate(tasks, _opts \\ []) do
+  def batch_generate(tasks, opts \\ []) do
     tasks
     |> Task.async_stream(
-      fn task -> generate(task, _opts) end,
+      fn task -> generate(task, opts) end,
       # Very lightweight, can parallelize heavily
       max_concurrency: 10,
       timeout: 1000

@@ -29,7 +29,7 @@ defmodule Singularity.BuildTools.MoonTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_build(project_path, _opts \\ []) when is_binary(project_path) do
+  def run_build(project_path, opts \\ []) when is_binary(project_path) do
     Logger.debug("Moon: Running build", project_path: project_path)
 
     case run_moon_command(project_path, ["run", ":build"]) do
@@ -44,7 +44,7 @@ defmodule Singularity.BuildTools.MoonTool do
   end
 
   @impl Singularity.Integration.BuildToolType
-  def run_target(target, _opts \\ []) when is_binary(target) do
+  def run_target(target, opts \\ []) when is_binary(target) do
     Logger.debug("Moon: Running target", target: target)
 
     case run_moon_command(".", ["run", target]) do

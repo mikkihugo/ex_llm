@@ -15,7 +15,7 @@ defmodule Singularity.Control do
   """
 
   @deprecated "Use Singularity.Execution.Runners.Control instead"
-  defdelegate start_link(_opts \\ []),
+  defdelegate start_link(opts \\ []),
     to: Singularity.Execution.Runners.Control
 
   @deprecated "Use Singularity.Execution.Runners.Control instead"

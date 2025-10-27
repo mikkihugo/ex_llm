@@ -100,7 +100,7 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   end
 
   @impl true
-  def analyze(agent_id, _opts \\ []) when is_binary(agent_id) do
+  def analyze(agent_id, opts \\ []) when is_binary(agent_id) do
     try do
       case Analyzer.analyze_agent(agent_id) do
         {:ok, analysis} ->

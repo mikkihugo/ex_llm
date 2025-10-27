@@ -309,13 +309,13 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     # Call LLM with automatic model selection
     messages = [%{role: "user", content: prompt}]
 
-    _opts = [
+    opts = [
       system_prompt: system_prompt_for_specialization(state.specialization),
       max_tokens: 4000,
       temperature: 0.7
     ]
 
-    case Singularity.LLM.Service.call(:complex, messages, _opts) do
+    case Singularity.LLM.Service.call(:complex, messages, opts) do
       {:ok, response} ->
         # Write code to workspace
         code_result = write_llm_code_to_workspace(response.content, task, state.workspace)

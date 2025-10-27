@@ -154,7 +154,7 @@ defmodule Singularity.Architecture.Detectors.ServiceArchitectureDetector do
   end
 
   @impl true
-  def detect(path, _opts \\ []) when is_binary(path) do
+  def detect(path, opts \\ []) when is_binary(path) do
     detect_architecture(path)
   end
 
