@@ -389,9 +389,17 @@ mod tests {
       })
       .collect();
 
+    // Phase 6.4: Create dynamic MessageBroker struct (not enum variant)
+    let mut kafka_config = HashMap::new();
+    kafka_config.insert("topics".to_string(), json!(vec![]));
+    kafka_config.insert("partitions".to_string(), json!(3));
+
     let infrastructure = InfrastructureAnalysis {
-      // NATS removed in Phase 4, use Kafka instead for testing
-      message_brokers: vec![MessageBroker::Kafka { topics: vec![], partitions: 3 }],
+      // Phase 6: Dynamic MessageBroker with name + HashMap config
+      message_brokers: vec![MessageBroker {
+        name: "Kafka".to_string(),
+        config: kafka_config,
+      }],
       databases: vec![],
       caches: vec![],
       service_registries: vec![],
