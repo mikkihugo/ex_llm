@@ -54,10 +54,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
   """
 
   require Logger
-  import Ecto.Query
-  alias Singularity.Repo
   alias Singularity.Metrics.Aggregator
-  alias Singularity.Schemas.AgentMetric
 
   @doc """
   Analyze an agent's performance and identify improvement opportunities.
@@ -277,7 +274,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
     []
   end
 
-  defp generate_suggestions(agent_id, aggregated, issues) do
+  defp generate_suggestions(_agent_id, _aggregated, issues) do
     suggestions = []
 
     # Suggestion for low success rate

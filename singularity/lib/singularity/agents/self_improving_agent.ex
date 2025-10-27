@@ -351,7 +351,7 @@ defmodule Singularity.SelfImprovingAgent do
     subject = "agent.events.experiment.completed.#{agent_id}"
 
     case Singularity.Messaging.Client.subscribe(subject) do
-      :ok ->
+      {:ok, _queue_name} ->
         Logger.debug("Subscribed to Genesis results", agent_id: agent_id, subject: subject)
 
       {:error, reason} ->

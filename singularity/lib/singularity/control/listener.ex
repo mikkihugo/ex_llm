@@ -17,7 +17,7 @@ defmodule Singularity.Control.Listener do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     ensure_pg()
     :ok = :pg.join(@group, self())
     Logger.debug("Joined control group", node: node(), group: @group)

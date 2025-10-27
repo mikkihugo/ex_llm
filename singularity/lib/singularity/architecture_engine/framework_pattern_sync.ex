@@ -71,7 +71,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternSync do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     # Create ETS table
     :ets.new(@ets_table, [:named_table, :set, :public, read_concurrency: true])
 

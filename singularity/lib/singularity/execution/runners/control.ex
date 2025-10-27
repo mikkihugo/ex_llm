@@ -99,7 +99,7 @@ defmodule Singularity.Execution.Runners.Control do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %{
       active_agents: MapSet.new(),
       event_count: 0,

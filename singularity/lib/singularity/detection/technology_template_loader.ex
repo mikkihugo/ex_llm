@@ -15,7 +15,7 @@ defmodule Singularity.TechnologyTemplateLoader do
   alias Singularity.TemplateStore
 
   @doc "Return decoded template map (or nil if missing)"
-  def template(identifier, opts \\ []) do
+  def template(identifier, _opts \\ []) do
     # Use dynamic template discovery - tries multiple patterns and semantic search
     case Singularity.Knowledge.TemplateService.find_technology_template(identifier) do
       {:ok, template} ->

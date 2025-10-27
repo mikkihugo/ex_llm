@@ -127,7 +127,7 @@ defmodule Singularity.MemoryCache do
   # Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     # Create ETS tables
     tables =
       for {name, table_name} <- @tables do
