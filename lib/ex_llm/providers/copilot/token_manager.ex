@@ -14,6 +14,7 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
 
   require Logger
   use GenServer
+  alias ExLLM.Providers.Shared.HTTP.Core
 
   @copilot_token_file ".copilot_token"
   @github_api_base "https://api.github.com"
@@ -80,12 +81,12 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
   end
 
   @impl true
-  def handle_call(:get_token, _from, state) do
+  def handle_call(:get_token, _from, %State{} = state) do
     {:reply, {:ok, state.token}, state}
   end
 
   @impl true
-  def handle_call(:refresh_token, _from, state) do
+  def handle_call(:refresh_token, _from, %State{} = state) do
     case get_or_refresh_token(state.github_token) do
       {:ok, token, expires_at} ->
         # Cancel old refresh task
@@ -110,7 +111,7 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
   end
 
   @impl true
-  def handle_info(:refresh_copilot_token, state) do
+  def handle_info(:refresh_copilot_token, %State{} = state) do
     Logger.debug("Auto-refreshing Copilot token")
 
     case get_or_refresh_token(state.github_token) do
@@ -164,27 +165,28 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
       {"accept", "application/json"}
     ]
 
-    case HTTPoison.get(url, headers) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
-        case Jason.decode(body) do
-          {:ok, %{"token" => token, "refresh_in" => _refresh_in, "expires_at" => expires_at}} ->
-            Logger.debug("Got new Copilot token from GitHub API")
-            save_cached_token(token, expires_at)
-            {:ok, token, expires_at}
+    client_opts = [
+      provider: :github,
+      base_url: @github_api_base
+    ]
 
-          {:ok, %{"token" => token, "refresh_in" => refresh_in}} ->
-            # Calculate expires_at if not provided
-            expires_at = DateTime.utc_now() |> DateTime.add(refresh_in) |> DateTime.to_unix()
-            Logger.debug("Got new Copilot token from GitHub API")
-            save_cached_token(token, expires_at)
-            {:ok, token, expires_at}
+    client = Core.client(client_opts)
 
-          {:error, reason} ->
-            {:error, "Failed to parse Copilot token response: #{inspect(reason)}"}
-        end
+    case execute_request(client, :get, @copilot_token_endpoint, headers) do
+      {:ok, %{"token" => token, "refresh_in" => _refresh_in, "expires_at" => expires_at}} ->
+        Logger.debug("Got new Copilot token from GitHub API")
+        save_cached_token(token, expires_at)
+        {:ok, token, expires_at}
 
-      {:ok, %HTTPoison.Response{status_code: code, body: body}} ->
-        {:error, "Copilot token request failed (#{code}): #{body}"}
+      {:ok, %{"token" => token, "refresh_in" => refresh_in}} ->
+        # Calculate expires_at if not provided
+        expires_at = DateTime.utc_now() |> DateTime.add(refresh_in) |> DateTime.to_unix()
+        Logger.debug("Got new Copilot token from GitHub API")
+        save_cached_token(token, expires_at)
+        {:ok, token, expires_at}
+
+      {:error, "unauthorized"} ->
+        {:error, "GitHub token invalid or expired"}
 
       {:error, reason} ->
         {:error, "Copilot token request failed: #{inspect(reason)}"}
@@ -222,5 +224,21 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
 
     Logger.debug("Scheduling Copilot token refresh in #{delay_ms}ms")
     Process.send_after(self(), :refresh_copilot_token, delay_ms)
+  end
+
+  defp execute_request(client, method, path, headers) do
+    case Tesla.request(client, method: method, url: path, headers: headers) do
+      {:ok, %Tesla.Env{status: 200, body: response_body}} ->
+        Jason.decode(response_body)
+
+      {:ok, %Tesla.Env{status: 401}} ->
+        {:error, "unauthorized"}
+
+      {:ok, %Tesla.Env{status: code, body: response_body}} ->
+        {:error, "GitHub API failed with status #{code}: #{response_body}"}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end
