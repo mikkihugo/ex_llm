@@ -160,3 +160,7 @@ temp_file
 **/*_cache/
 .cache/
 rust/quality/src/nif.rs.backup
+
+# Large generated bundles
+singularity-docs-packed.txt
+singularity-full-packed.txt
