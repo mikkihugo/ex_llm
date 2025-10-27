@@ -42,6 +42,7 @@ defmodule ExLLM.MixProject do
           :req,
           :tesla,
           :hackney,
+          :httpoison,
           :gun,
           :yaml_elixir,
           :ex_llm
@@ -117,6 +118,9 @@ defmodule ExLLM.MixProject do
 
       # Telemetry instrumentation
       {:telemetry, "~> 1.0"},
+
+      # Legacy HTTP client used by Copilot/GitHub token managers
+      {:httpoison, "~> 1.8"},
 
       # WebSocket client for Live API
       {:gun, "~> 2.1"},

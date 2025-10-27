@@ -167,7 +167,7 @@ defmodule ExLLM.Providers.Copilot.TokenManager do
     case HTTPoison.get(url, headers) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         case Jason.decode(body) do
-          {:ok, %{"token" => token, "refresh_in" => refresh_in, "expires_at" => expires_at}} ->
+          {:ok, %{"token" => token, "refresh_in" => _refresh_in, "expires_at" => expires_at}} ->
             Logger.debug("Got new Copilot token from GitHub API")
             save_cached_token(token, expires_at)
             {:ok, token, expires_at}

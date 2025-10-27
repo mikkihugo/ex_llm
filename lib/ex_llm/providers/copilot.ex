@@ -54,8 +54,9 @@ defmodule ExLLM.Providers.Copilot do
            %ExLLM.Types.LLMResponse{
              content: response,
              model: "copilot",
-             tokens_used: %{"prompt" => 0, "completion" => 0},
-             cost: 0.0
+             usage: %{input_tokens: 0, output_tokens: 0},
+             cost: 0.0,
+             metadata: %{thread_id: thread["id"]}
            }}
 
         {:error, reason} ->
@@ -74,10 +75,12 @@ defmodule ExLLM.Providers.Copilot do
   @impl true
   def stream(messages, _model \\ "copilot", callback \\ nil, opts \\ []) do
     with {:ok, github_token} <- GitHub.TokenManager.get_token(),
-         {:ok, thread} <- Copilot.API.create_thread(""),
-         {:ok, _} <- Copilot.API.send_message("", thread["id"], format_messages(messages)) do
+         :ok <- ensure_copilot_token_manager(github_token),
+         {:ok, copilot_token} <- Copilot.TokenManager.get_token(),
+         {:ok, thread} <- Copilot.API.create_thread(copilot_token),
+         {:ok, _} <- Copilot.API.send_message(copilot_token, thread["id"], format_messages(messages)) do
       # Poll for messages with streaming simulation
-      stream_responses(thread["id"], callback, opts)
+      stream_responses(thread["id"], copilot_token, callback, opts)
     else
       {:error, reason} -> {:error, reason}
     end
@@ -89,8 +92,10 @@ defmodule ExLLM.Providers.Copilot do
   Returns thread_id for use with send_message/3.
   """
   def create_thread() do
-    with {:ok, _github_token} <- GitHub.TokenManager.get_token(),
-         {:ok, thread} <- Copilot.API.create_thread("") do
+    with {:ok, github_token} <- GitHub.TokenManager.get_token(),
+         :ok <- ensure_copilot_token_manager(github_token),
+         {:ok, copilot_token} <- Copilot.TokenManager.get_token(),
+         {:ok, thread} <- Copilot.API.create_thread(copilot_token) do
       {:ok, thread["id"]}
     else
       {:error, reason} -> {:error, reason}
@@ -104,9 +109,10 @@ defmodule ExLLM.Providers.Copilot do
   """
   def send_message(thread_id, user_message) do
     with {:ok, _github_token} <- GitHub.TokenManager.get_token(),
-         {:ok, _} <- Copilot.API.send_message("", thread_id, user_message) do
+         {:ok, copilot_token} <- Copilot.TokenManager.get_token(),
+         {:ok, _} <- Copilot.API.send_message(copilot_token, thread_id, user_message) do
       # Get response
-      case Copilot.API.list_messages("", thread_id) do
+      case Copilot.API.list_messages(copilot_token, thread_id) do
         {:ok, messages} ->
           response = find_assistant_response(messages)
           {:ok, response}
@@ -124,7 +130,8 @@ defmodule ExLLM.Providers.Copilot do
   """
   def get_thread(thread_id) do
     with {:ok, _github_token} <- GitHub.TokenManager.get_token(),
-         {:ok, messages} <- Copilot.API.list_messages("", thread_id) do
+         {:ok, copilot_token} <- Copilot.TokenManager.get_token(),
+         {:ok, messages} <- Copilot.API.list_messages(copilot_token, thread_id) do
       {:ok, messages}
     else
       {:error, reason} -> {:error, reason}
@@ -132,6 +139,21 @@ defmodule ExLLM.Providers.Copilot do
   end
 
   # Private helpers
+
+  defp ensure_copilot_token_manager(github_token) do
+    case :global.whereis_name(Copilot.TokenManager) do
+      :undefined ->
+        # Start token manager if not already running
+        case Copilot.TokenManager.start_link(github_token: github_token) do
+          {:ok, _pid} -> :ok
+          {:error, {:already_started, _pid}} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+
+      _pid ->
+        :ok
+    end
+  end
 
   defp format_messages(messages) when is_list(messages) do
     messages
@@ -166,9 +188,9 @@ defmodule ExLLM.Providers.Copilot do
     end
   end
 
-  defp stream_responses(thread_id, callback, opts) do
+  defp stream_responses(thread_id, copilot_token, callback, opts) do
     # Simulate streaming by polling for messages
-    case poll_for_response(thread_id, 0) do
+    case poll_for_response(thread_id, copilot_token, 0) do
       {:ok, message} ->
         if callback, do: callback.(message)
         {:ok, message}
@@ -178,12 +200,12 @@ defmodule ExLLM.Providers.Copilot do
     end
   end
 
-  defp poll_for_response(thread_id, attempt) when attempt > 30 do
+  defp poll_for_response(thread_id, _copilot_token, attempt) when attempt > 30 do
     {:error, "Response timeout"}
   end
 
-  defp poll_for_response(thread_id, attempt) do
-    case Copilot.API.list_messages("", thread_id) do
+  defp poll_for_response(thread_id, copilot_token, attempt) do
+    case Copilot.API.list_messages(copilot_token, thread_id) do
       {:ok, messages} ->
         response = find_assistant_response(messages)
 
@@ -191,12 +213,12 @@ defmodule ExLLM.Providers.Copilot do
           {:ok, response}
         else
           Process.sleep(1000)
-          poll_for_response(thread_id, attempt + 1)
+          poll_for_response(thread_id, copilot_token, attempt + 1)
         end
 
       {:error, _reason} ->
         Process.sleep(1000)
-        poll_for_response(thread_id, attempt + 1)
+        poll_for_response(thread_id, copilot_token, attempt + 1)
     end
   end
 end
