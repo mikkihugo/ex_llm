@@ -16,7 +16,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.Supervisor do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     Logger.info("Starting Architecture Engine Meta-Registry Supervisor...")
 
     children = [

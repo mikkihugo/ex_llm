@@ -12,8 +12,8 @@ defmodule Singularity.ML.Services.CodeQualityService do
   use GenServer
   require Logger
 
-  alias Singularity.CodeAnalysis.{QualityAnalyzer, QualityScanner}
-  alias Singularity.Repo
+  alias Singularity.CodeAnalysis.{QualityAnalyzer, _QualityScanner}
+  alias _Singularity.Repo
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -69,7 +69,7 @@ defmodule Singularity.ML.Services.CodeQualityService do
   end
 
   @impl true
-  def handle_call({:get_improvement_suggestions, code_path, opts}, _from, state) do
+  def handle_call({:get_improvement_suggestions, code_path, _opts}, _from, state) do
     Logger.info("Getting improvement suggestions for: #{code_path}")
 
     # Mock improvement suggestions - in real implementation, this would:

@@ -649,7 +649,7 @@ defmodule Singularity.Tools.Knowledge do
     end
   end
 
-  defp get_tutorial_examples_from_knowledge_base(topic) do
+  defp get_tutorial_examples_from_knowledge_base(_topic) do
     # Query existing knowledge base for tutorial examples
     # Stub implementation - CodeSearch not fully implemented yet
     {:ok, []}

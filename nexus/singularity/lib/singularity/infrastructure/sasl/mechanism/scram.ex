@@ -42,7 +42,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
          {:ok, client_first} <- parse_client_first(credentials),
          {:ok, server_first} <- generate_server_first(client_first, user_record, opts),
          {:ok, client_final} <- parse_client_final(credentials),
-         {:ok, context} <- verify_client_proof(client_final, server_first, user_record) do
+         {:ok, _context} <- verify_client_proof(client_final, server_first, user_record) do
       context = Mechanism.create_security_context(credentials, :standard_scram, %{
         scram_session_id: generate_scram_session_id(),
         iterations: server_first.iterations,
@@ -59,7 +59,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
   end
 
   @impl Singularity.Infrastructure.Sasl.Mechanism
-  def generate_challenge(opts \\ []) do
+  def generate_challenge(_opts \\ []) do
     # SCRAM doesn't use traditional challenges like other mechanisms
     # Instead, it uses the server-first message format
     nonce = generate_nonce()
@@ -71,7 +71,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
   end
 
   @impl Singularity.Infrastructure.Sasl.Mechanism
-  def verify_response(challenge, response, opts \\ []) do
+  def verify_response(challenge, response, _opts \\ []) do
     Logger.debug("Verifying SCRAM response: challenge_size=#{byte_size(challenge)}")
 
     case validate_scram_response(challenge, response) do
@@ -284,7 +284,7 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
     :crypto.hash(:sha256, data)
   end
 
-  defp validate_scram_response(challenge, response) do
+  defp validate_scram_response(_challenge, response) do
     # Validate SCRAM response format
     min_size = 16  # Minimum response size
 

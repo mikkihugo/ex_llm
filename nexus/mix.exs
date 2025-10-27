@@ -10,12 +10,11 @@ defmodule Nexus.MixProject do
       deps: deps(),
       apps_path: ".",
       apps: [
+        :ex_pgflow,
         :singularity,
         :genesis,
         :central_services,
-        :ex_llm,
-        :ex_pgflow,
-        :ml_complexity
+        :ex_llm
       ]
     ]
   end
@@ -26,12 +25,11 @@ defmodule Nexus.MixProject do
       extra_applications: [:logger],
       mod: {Nexus.Application, []},
       applications: [
+        :ex_pgflow,
         :singularity,
         :genesis,
         :central_services,
-        :ex_llm,
-        :ex_pgflow,
-        :ml_complexity
+        :ex_llm
       ]
     ]
   end
@@ -53,7 +51,12 @@ defmodule Nexus.MixProject do
       {:mox, "~> 1.0", only: :test},
 
       # Code coverage reporting
-      {:excoveralls, "~> 0.18", only: :test}
+      {:excoveralls, "~> 0.18", only: :test},
+
+      # ex_pgflow dependencies
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, ">= 0.19.0 and < 2.0.0"},
+      {:castore, "~> 1.0"}
     ]
   end
 end
