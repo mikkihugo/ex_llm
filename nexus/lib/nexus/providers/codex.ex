@@ -38,6 +38,7 @@ defmodule Nexus.Providers.Codex do
 
   require Logger
   alias Nexus.OAuthToken
+  alias Nexus.Providers.Codex.OAuth2
 
   @base_url "https://chatgpt.com/backend-api"
   @default_model "gpt-5-codex"

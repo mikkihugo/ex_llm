@@ -110,7 +110,7 @@ defmodule Nexus.WorkflowWorker do
   defp poll_and_execute(state) do
     # Read messages from pgmq
     case read_messages(state.batch_size) do
-      {:ok, messages} when length(messages) > 0 ->
+      {:ok, messages} when messages != [] ->
         # Execute workflow for each message
         results =
           Enum.map(messages, fn msg ->
@@ -128,7 +128,7 @@ defmodule Nexus.WorkflowWorker do
     end
   end
 
-  defp read_messages(limit) do
+  defp read_messages(_limit) do
     # TODO: Use pgmq Elixir client
     # For now, simulate empty queue
     {:ok, []}
