@@ -72,19 +72,67 @@ defmodule ExLLM.Providers.Copilot do
   end
 
   @impl true
-  def list_models(_opts \\ []) do
-    {:ok, [
-      %Types.Model{
-        id: "gpt-4.1",
-        name: "GPT-4.1",
-        description: "GitHub Copilot with GPT-4.1 - 128K context, 16K output for search & analysis",
-        context_window: 128_000,
-        max_output_tokens: 16_384,
-        pricing: %{input: 0.002, output: 0.008},
-        capabilities: ["streaming", "chat", "code_generation", "vision", "structured_output", "search"]
-      }
-    ]}
+  def list_models(opts \\ []) do
+    # Load models from YAML registry (config/models/github_copilot.yml)
+    case load_models_from_registry() do
+      {:ok, models} -> {:ok, models}
+      {:error, _} -> {:error, "Failed to load GitHub Copilot models from registry"}
+    end
   end
+
+  # Private helpers for model loading
+
+  defp load_models_from_registry() do
+    config_path = get_config_path()
+
+    case File.read(config_path) do
+      {:ok, content} ->
+        case YamlElixir.read_string(content) do
+          {:ok, %{"models" => models}} when is_map(models) ->
+            registry_models = build_models_from_registry(models)
+            {:ok, registry_models}
+
+          {:ok, _} ->
+            Logger.error("Invalid GitHub Copilot config format: missing 'models' key")
+            {:error, "Invalid config format"}
+
+          {:error, reason} ->
+            Logger.error("Failed to parse GitHub Copilot config: #{inspect(reason)}")
+            {:error, "Failed to parse config"}
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to read GitHub Copilot config: #{inspect(reason)}")
+        {:error, "Config file not found"}
+    end
+  end
+
+  defp get_config_path() do
+    Path.expand("config/models/github_copilot.yml")
+  end
+
+  defp build_models_from_registry(models) when is_map(models) do
+    Enum.map(models, fn {model_id, config} ->
+      %Types.Model{
+        id: model_id,
+        name: String.upcase(model_id),
+        description: Map.get(config, "description", "GitHub Copilot #{model_id}"),
+        context_window: Map.get(config, "context_window", 128_000),
+        max_output_tokens: Map.get(config, "max_output_tokens", 16_384),
+        pricing: build_pricing(Map.get(config, "pricing", %{})),
+        capabilities: Map.get(config, "capabilities", [])
+      }
+    end)
+  end
+
+  defp build_pricing(pricing) when is_map(pricing) do
+    %{
+      input: pricing["input"] || 0.0,
+      output: pricing["output"] || 0.0
+    }
+  end
+
+  defp build_pricing(_), do: %{input: 0.0, output: 0.0}
 
   # Private helpers
 
