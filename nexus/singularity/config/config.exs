@@ -300,6 +300,10 @@ config :oban,
        {"15 2 * * *", Singularity.Jobs.TemplateSyncWorker},
        # Cache cleanup: daily at 3:00 AM (was: mix analyze.cache clear)
        {"0 3 * * *", Singularity.Jobs.CacheClearWorker},
+       # Dev LLM improvement: daily at 3:10 AM (CodeGen2-1B, 100 pairs, ~5-8 min)
+       {"10 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob, args: %{"model" => "dev", "epochs" => 1, "pair_count" => 100}},
+       # Prod LLM improvement: daily at 3:40 AM (CodeLlama-3.4B, 1000 pairs, ~20 min)
+       {"40 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob, args: %{"model" => "prod", "epochs" => 1, "pair_count" => 1000}},
        # Registry sync: daily at 4:00 AM (was: mix registry.sync)
        {"0 4 * * *", Singularity.Jobs.RegistrySyncWorker},
        # Template embed: weekly on Sundays at 5:00 AM (was: mix templates.embed --missing)
