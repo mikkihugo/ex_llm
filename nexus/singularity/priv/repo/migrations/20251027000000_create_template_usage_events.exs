@@ -37,17 +37,10 @@ defmodule Singularity.Repo.Migrations.CreateTemplateUsageEvents do
       timestamps()  # created_at, updated_at
     end
 
-    # Index for learning loop queries (get recent events for template)
-    create index(:template_usage_events, [:template_id, :created_at])
-
-    # Index for performance tracking (events in time window)
-    create index(:template_usage_events, [:created_at])
-
-    # Index for instance-specific queries (cross-instance learning)
+    # Create indexes
+    create index(:template_usage_events, [:template_id])
     create index(:template_usage_events, [:instance_id])
-
-    # Composite index for common queries
-    create index(:template_usage_events, [:template_id, :status])
+    create index(:template_usage_events, [:status])
   end
 
   def down do

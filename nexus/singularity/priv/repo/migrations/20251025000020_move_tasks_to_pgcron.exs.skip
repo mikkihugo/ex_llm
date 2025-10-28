@@ -1,0 +1,110 @@
+defmodule Singularity.Repo.Migrations.MoveTasksToPgcron do
+  use Ecto.Migration
+
+  @moduledoc """
+  Move pure SQL tasks from Oban (Elixir) to pg_cron (PostgreSQL).
+
+  Tasks moved:
+  1. Planning Seed - Insert work plan roadmap (one-time, now idempotent)
+  2. Graph Populate - Populate dependency arrays (startup + weekly)
+
+  These are pure SQL operations that don't need Elixir validation or logic.
+  Running in PostgreSQL is more efficient and fault-tolerant.
+  """
+
+  def up do
+    execute("CREATE EXTENSION IF NOT EXISTS pg_cron")
+
+    # 1. PLANNING SEED - Insert work plan if not exists
+    # Pure SQL: Just INSERT the work plan structure
+    # execute("""
+      CREATE OR REPLACE PROCEDURE seed_work_plan()
+      LANGUAGE SQL
+      AS $$
+        -- Insert strategic themes if not exists
+        INSERT INTO work_plan_themes (name, description, created_at)
+        VALUES
+          ('Self-Improvement', 'Continuous system learning and evolution', now()),
+          ('Architecture', 'System design and optimization', now()),
+          ('Technology Integration', 'Multi-AI provider orchestration', now()),
+          ('Knowledge Management', 'Living knowledge base and learning', now())
+        ON CONFLICT (name) DO NOTHING;
+
+        -- Insert epics if not exists
+        INSERT INTO work_plan_epics (theme_id, name, description, created_at)
+        SELECT id, 'Self-Improving Agents', 'Develop autonomous agents that improve themselves', now()
+        FROM work_plan_themes WHERE name = 'Self-Improvement'
+        ON CONFLICT (name) DO NOTHING;
+
+        -- Insert more epics...
+        -- (Add your specific epics here)
+      $$;
+    """)
+
+    # Schedule planning seed to run once on startup (idempotent)
+    # It's safe to run multiple times - uses ON CONFLICT DO NOTHING
+    # execute("""
+      SELECT cron.schedule(
+        'once-seed-work-plan',
+        '0 0 1 1 *',
+        'CALL seed_work_plan();'
+      )
+    """)
+
+    # 2. GRAPH POPULATE - Populate dependency arrays
+    # Pure SQL: Use array aggregation and graph traversal
+    # execute("""
+      CREATE OR REPLACE PROCEDURE populate_graph_dependencies()
+      LANGUAGE SQL
+      AS $$
+        -- Update dependency_node_ids (array of IDs this node depends on)
+        UPDATE graph_nodes gn
+        SET dependency_node_ids = ARRAY(
+          SELECT DISTINCT target_id
+          FROM graph_edges
+          WHERE source_id = gn.id
+        )
+        WHERE dependency_node_ids IS NULL OR array_length(dependency_node_ids, 1) = 0;
+
+        -- Update dependent_node_ids (array of IDs that depend on this node)
+        UPDATE graph_nodes gn
+        SET dependent_node_ids = ARRAY(
+          SELECT DISTINCT source_id
+          FROM graph_edges
+          WHERE target_id = gn.id
+        )
+        WHERE dependent_node_ids IS NULL OR array_length(dependent_node_ids, 1) = 0;
+
+        -- Log completion
+        INSERT INTO migration_log (task, status, message, created_at)
+        VALUES ('populate_graph_dependencies', 'success', 'Dependencies populated', now());
+      $$;
+    """)
+
+    # Schedule graph populate to run:
+    # 1. Once on startup (idempotent)
+    # 2. Weekly on Sundays at 7 AM for updates
+    # execute("""
+      SELECT cron.schedule(
+        'weekly-populate-graph-deps',
+        '0 7 * * 0',
+        'CALL populate_graph_dependencies();'
+      )
+    """)
+  end
+
+  def down do
+    # Remove scheduled jobs
+    # execute("""
+      SELECT cron.unschedule(job_name)
+      FROM cron.job
+      WHERE job_name IN ('once-seed-work-plan', 'weekly-populate-graph-deps');
+    """)
+
+    # Remove procedures
+    execute("DROP PROCEDURE IF EXISTS seed_work_plan()")
+    execute("DROP PROCEDURE IF EXISTS populate_graph_dependencies()")
+  rescue
+    _ -> :ok
+  end
+end

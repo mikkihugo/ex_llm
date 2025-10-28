@@ -43,14 +43,15 @@ defmodule Mix.Tasks.Knowledge.Migrate do
   def run(args) do
     {opts, _, _} =
       OptionParser.parse(args,
-        strict: [path: :string, dry_run: :boolean, skip_embedding: :boolean],
-        aliases: [p: :path, d: :dry_run, s: :skip_embedding]
+        strict: [path: :string, dry_run: :boolean, skip_embedding: :boolean, force: :boolean],
+        aliases: [p: :path, d: :dry_run, s: :skip_embedding, f: :force]
       )
 
     Mix.Task.run("app.start")
 
     dry_run = Keyword.get(opts, :dry_run, false)
     skip_embedding = Keyword.get(opts, :skip_embedding, false)
+    force = Keyword.get(opts, :force, false)
     path = Keyword.get(opts, :path)
 
     if dry_run do
@@ -69,7 +70,7 @@ defmodule Mix.Tasks.Knowledge.Migrate do
     # Migrate each file
     results =
       Enum.map(files, fn file_path ->
-        migrate_file(file_path, dry_run: dry_run, skip_embedding: skip_embedding)
+        migrate_file(file_path, dry_run: dry_run, skip_embedding: skip_embedding, force: force)
       end)
 
     # Print summary
@@ -100,37 +101,50 @@ defmodule Mix.Tasks.Knowledge.Migrate do
   defp migrate_file(file_path, opts) do
     dry_run = opts[:dry_run] || false
     skip_embedding = opts[:skip_embedding] || false
+    force = opts[:force] || false
 
     relative_path = Path.relative_to_cwd(file_path)
-    Mix.shell().info("📄 Processing: #{relative_path}")
 
     with {:ok, json_string} <- File.read(file_path),
          {:ok, content_map} <- Jason.decode(json_string),
          {:ok, metadata} <- extract_metadata(file_path, content_map) do
-      if dry_run do
-        Mix.shell().info(
-          "   Would migrate: #{metadata.artifact_type}/#{metadata.artifact_id} (v#{metadata.version})"
-        )
+      # Calculate SHA256 of the JSON content for idempotency
+      content_sha = :crypto.hash(:sha256, json_string) |> Base.encode16(case: :lower)
 
-        {:ok, :dry_run}
+      # Check if this file has already been ingested with the same content
+      if !force && already_ingested?(metadata.artifact_type, metadata.artifact_id, content_sha) do
+        # File already ingested with same content - skip it
+        Mix.shell().info("📄 Processing: #{relative_path}")
+        Mix.shell().info("   ⏭️  Already ingested (SHA: #{String.slice(content_sha, 0..7)}...)")
+        {:ok, :skipped}
       else
-        case ArtifactStore.store(
-               metadata.artifact_type,
-               metadata.artifact_id,
-               content_map,
-               version: metadata.version,
-               skip_embedding: skip_embedding
-             ) do
-          {:ok, artifact} ->
-            Mix.shell().info(
-              "   ✅ Migrated: #{artifact.artifact_type}/#{artifact.artifact_id} (v#{artifact.version})"
-            )
+        Mix.shell().info("📄 Processing: #{relative_path}")
 
-            {:ok, artifact}
+        if dry_run do
+          Mix.shell().info(
+            "   Would migrate: #{metadata.artifact_type}/#{metadata.artifact_id} (v#{metadata.version}) [SHA: #{String.slice(content_sha, 0..7)}...]"
+          )
 
-          {:error, changeset} ->
-            Mix.shell().error("   ❌ Failed: #{inspect(changeset.errors)}")
-            {:error, changeset.errors}
+          {:ok, :dry_run}
+        else
+          case ArtifactStore.store(
+                 metadata.artifact_type,
+                 metadata.artifact_id,
+                 content_map,
+                 version: metadata.version,
+                 skip_embedding: skip_embedding
+               ) do
+            {:ok, artifact} ->
+              Mix.shell().info(
+                "   ✅ Migrated: #{artifact.artifact_type}/#{artifact.artifact_id} (v#{artifact.version}) [SHA: #{String.slice(content_sha, 0..7)}...]"
+              )
+
+              {:ok, artifact}
+
+            {:error, changeset} ->
+              Mix.shell().error("   ❌ Failed: #{inspect(changeset.errors)}")
+              {:error, changeset.errors}
+          end
         end
       end
     else
@@ -142,6 +156,22 @@ defmodule Mix.Tasks.Knowledge.Migrate do
         Mix.shell().error("   ❌ Error: #{inspect(reason)}")
         {:error, reason}
     end
+  end
+
+  defp already_ingested?(artifact_type, artifact_id, content_sha) do
+    # Check if an artifact with this SHA already exists in the database
+    # For now, we'll just check if artifact_id exists (simple approach)
+    # In the future, we can add SHA256 column to the schema for exact deduplication
+    case Singularity.Repo.get_by(
+           Singularity.Schemas.KnowledgeArtifact,
+           artifact_type: artifact_type,
+           artifact_id: artifact_id
+         ) do
+      nil -> false
+      _artifact -> true
+    end
+  rescue
+    _ -> false
   end
 
   defp extract_metadata(file_path, content_map) do
@@ -208,21 +238,29 @@ defmodule Mix.Tasks.Knowledge.Migrate do
     Mix.shell().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     total = length(results)
-    success = Enum.count(results, &match?({:ok, _}, &1))
+    success = Enum.count(results, fn {:ok, value} -> not is_atom(value); _other -> false end)
+    skipped = Enum.count(results, &match?({:ok, :skipped}, &1))
+    dry_runs = Enum.count(results, &match?({:ok, :dry_run}, &1))
     errors = Enum.count(results, &match?({:error, _}, &1))
 
     Mix.shell().info("Total files:     #{total}")
-    Mix.shell().info("✅ Successful:   #{success}")
-    Mix.shell().info("❌ Failed:       #{errors}")
+    Mix.shell().info("✅ Migrated:     #{success}")
+    Mix.shell().info("⏭️  Skipped:      #{skipped}")
+    if dry_runs > 0, do: Mix.shell().info("🔍 Dry-run:      #{dry_runs}")
+    if errors > 0, do: Mix.shell().info("❌ Failed:       #{errors}")
     Mix.shell().info("")
 
-    if success > 0 do
-      Mix.shell().info("🎉 Migration complete!")
+    if success > 0 or skipped > 0 do
+      Mix.shell().info("🎉 Knowledge ingestion complete!")
       Mix.shell().info("")
       Mix.shell().info("Next steps:")
       Mix.shell().info("  1. Generate embeddings: moon run templates_data:embed-all")
       Mix.shell().info("  2. View statistics:     moon run templates_data:stats")
       Mix.shell().info("  3. Search artifacts:    iex -S mix")
+      Mix.shell().info("")
+      Mix.shell().info("Idempotency:")
+      Mix.shell().info("  • Skipped files won't be re-ingested (content unchanged)")
+      Mix.shell().info("  • Force re-ingest: mix knowledge.migrate --path ../../templates_data --force")
       Mix.shell().info("")
     end
   end

@@ -210,19 +210,27 @@ defmodule Singularity.Application do
           |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
 
         unless is_test do
-          Task.start(fn ->
-            Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
-          end)
+          bootstrap_config = Application.get_env(:singularity, :bootstrap_tasks, %{})
 
-          # Initialize PageRank calculation on startup
-          Task.start(fn ->
-            Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
-          end)
+          if bootstrap_config[:enabled] do
+            delay_ms = bootstrap_config[:delay_ms] || 0
 
-          # Populate graph dependency arrays for fast queries (10-100x faster)
-          Task.start(fn ->
-            Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
-          end)
+            start_boot_task(fn ->
+              Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
+            end, delay_ms)
+
+            # Initialize PageRank calculation on startup
+            start_boot_task(fn ->
+              Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
+            end, delay_ms)
+
+            # Populate graph dependency arrays for fast queries (10-100x faster)
+            start_boot_task(fn ->
+              Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
+            end, delay_ms)
+          else
+            Logger.info("Startup bootstrap tasks disabled via config")
+          end
         end
 
         {:ok, pid}
@@ -239,8 +247,15 @@ defmodule Singularity.Application do
     if is_test_mode?() do
       []
     else
-      # Development and production: run one-time setup jobs
-      [Singularity.Bootstrap.SetupBootstrap]
+      setup_config = Application.get_env(:singularity, :setup_bootstrap, %{})
+
+      if setup_config[:enabled] do
+        # Development and production: run one-time setup jobs (delayed via config)
+        [Singularity.Bootstrap.SetupBootstrap]
+      else
+        Logger.info("Setup bootstrap disabled via config")
+        []
+      end
     end
   end
 
@@ -265,6 +280,16 @@ defmodule Singularity.Application do
           children
       end
     end
+  end
+
+  defp start_boot_task(fun, delay_ms) when is_function(fun, 0) do
+    Task.start(fn ->
+      if delay_ms > 0 do
+        Process.sleep(delay_ms)
+      end
+
+      fun.()
+    end)
   end
 
   # Detect test mode by checking if ExUnit is loaded

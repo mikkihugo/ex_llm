@@ -1,0 +1,41 @@
+defmodule Singularity.Repo.Migrations.CreatePgflowInstancesTable do
+  use Ecto.Migration
+
+  @moduledoc """
+  Create pgflow_instances table for multi-instance coordination.
+
+  This table tracks which Singularity instances are online, enabling:
+  - Instance discovery for load distribution
+  - Heartbeat monitoring for fault detection
+  - Job distribution across multiple instances
+  - Multi-BEAM architecture support
+
+  ## Schema
+
+  - `instance_id` (uuid) - Unique instance identifier
+  - `status` (enum: online, offline, stale) - Current instance status
+  - `load` (integer) - Number of currently executing jobs
+  - `hostname` (string) - Hostname where instance is running
+  - `pid` (integer) - OS process ID
+  - `created_at` (timestamp) - When instance registered
+  - `last_heartbeat` (timestamp) - Last heartbeat update
+  """
+
+  def change do
+    create table(:pgflow_instances, primary_key: false) do
+      add :instance_id, :uuid, primary_key: true
+
+      add :status, :string, default: "online", null: false
+      add :load, :integer, default: 0, null: false
+      add :hostname, :string, null: false
+      add :pid, :integer, null: true
+
+      timestamps(type: :utc_datetime_usec)
+      add :last_heartbeat, :utc_datetime_usec, null: false
+    end
+
+    create index(:pgflow_instances, [:status])
+    create index(:pgflow_instances, [:last_heartbeat])
+    create index(:pgflow_instances, [:hostname])
+  end
+end

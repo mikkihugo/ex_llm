@@ -86,31 +86,21 @@ defmodule Singularity.Repo.Migrations.AddDependencyCatalogPerformanceIndexes2025
       -- Main table embedding index (already exists as dependency_catalog_embedding_idx)
       -- Skip to avoid duplicate
 
-      -- Code embedding index for examples (only if table exists)
-      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_examples') THEN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_indexes
-          WHERE indexname = 'dependency_catalog_examples_code_embedding_idx'
-        ) THEN
-          CREATE INDEX dependency_catalog_examples_code_embedding_idx
-          ON dependency_catalog_examples
-#           USING ivfflat (code_embedding vector_cosine_ops)
-          WITH (lists = 100);
-        END IF;
-      END IF;
+      -- Code embedding index disabled: vectors exceed 2000-dim ivfflat limit
+      -- IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_examples') THEN
+      --   IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'dependency_catalog_examples_code_embedding_idx') THEN
+      --     CREATE INDEX dependency_catalog_examples_code_embedding_idx
+      --     ON dependency_catalog_examples USING ivfflat (code_embedding vector_cosine_ops) WITH (lists = 100);
+      --   END IF;
+      -- END IF;
 
-      -- Pattern embedding index for patterns (only if table exists)
-      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_patterns') THEN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_indexes
-          WHERE indexname = 'dependency_catalog_patterns_pattern_embedding_idx'
-        ) THEN
-          CREATE INDEX dependency_catalog_patterns_pattern_embedding_idx
-          ON dependency_catalog_patterns
-#           USING ivfflat (pattern_embedding vector_cosine_ops)
-          WITH (lists = 100);
-        END IF;
-      END IF;
+      -- Pattern embedding index disabled: vectors exceed 2000-dim ivfflat limit
+      -- IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'dependency_catalog_patterns') THEN
+      --   IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'dependency_catalog_patterns_pattern_embedding_idx') THEN
+      --     CREATE INDEX dependency_catalog_patterns_pattern_embedding_idx
+      --     ON dependency_catalog_patterns USING ivfflat (pattern_embedding vector_cosine_ops) WITH (lists = 100);
+      --   END IF;
+      -- END IF;
     END $$;
     """
   end

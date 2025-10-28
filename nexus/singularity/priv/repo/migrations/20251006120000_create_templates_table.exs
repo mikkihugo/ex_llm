@@ -15,21 +15,21 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
       add :usage, :jsonb,
         default: ~s({"count": 0, "success_rate": 0.0, "last_used": null})
 
-      # Qodo-Embed-1 vector (1536 dimensions)# 
-#       add :embedding, :vector, size: 1536  # pgvector - install via separate migration
+      # Qodo-Embed-1 vector (1536 dimensions)
+      # add :embedding, :vector, size: 1536  # pgvector - install via separate migration
 
       timestamps(type: :timestamptz)
     end
 
     # Indexes for fast queries
 
-    # Vector similarity search (IVFFlat for pgvector)
-    execute """
-    CREATE INDEX templates_embedding_idx
-      ON templates
-#       USING ivfflat (embedding vector_cosine_ops)
-      WITH (lists = 100);
-    """
+    # Vector similarity search (IVFFlat for pgvector) - disabled, vector column commented out
+    # execute """
+    # CREATE INDEX templates_embedding_idx
+    #   ON templates
+    #   USING ivfflat (embedding vector_cosine_ops)
+    #   WITH (lists = 100);
+    # """
 
     # Type filter
     execute("""
@@ -39,8 +39,8 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
 
     # Language filter (JSONB)
     execute("""
-      CREATE INDEX IF NOT EXISTS templates_"(metadata->>'language')"_index
-      ON templates ("(metadata->>'language')")
+      CREATE INDEX IF NOT EXISTS templates_metadata_language_index
+      ON templates ((metadata->>'language'))
     """, "")
 
     # Tags search (JSONB array contains)
@@ -63,8 +63,8 @@ defmodule Singularity.Repo.Migrations.CreateTemplatesTable do
 
     # Composite index for common queries
     execute("""
-      CREATE INDEX IF NOT EXISTS templates_type_"(metadata->>'language')"_index
-      ON templates (type, "(metadata->>'language')")
+      CREATE INDEX IF NOT EXISTS templates_type_language_index
+      ON templates (type, (metadata->>'language'))
     """, "")
   end
 

@@ -31,14 +31,32 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
   end
 
   @impl GenServer
-  def init(opts) do
-    Logger.info("Scheduling one-time setup jobs...")
+  def init(_opts) do
+    config = Application.get_env(:singularity, :setup_bootstrap, %{})
 
-    # Schedule all setup jobs with unique constraints
-    # They will run in order of queue priority
-    schedule_setup_jobs()
+    cond do
+      config[:enabled] == true ->
+        delay_ms = config[:delay_ms] || 0
+
+        if delay_ms > 0 do
+          Logger.info("Scheduling one-time setup jobs after #{delay_ms}ms delay...")
+          Process.send_after(self(), :run_setup_jobs, delay_ms)
+        else
+          Logger.info("Scheduling one-time setup jobs immediately...")
+          schedule_setup_jobs()
+        end
+
+      true ->
+        Logger.info("Setup bootstrap disabled; skipping one-time setup jobs")
+    end
 
     {:ok, %{}}
+  end
+
+  @impl GenServer
+  def handle_info(:run_setup_jobs, state) do
+    schedule_setup_jobs()
+    {:noreply, state}
   end
 
   defp schedule_setup_jobs do

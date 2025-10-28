@@ -41,8 +41,8 @@ defmodule Singularity.Repo.Migrations.CreateExperimentResults do
 
     # JSONB index for metrics queries
     execute("""
-      CREATE INDEX IF NOT EXISTS experiment_results_"(metrics)"_index
-      ON experiment_results ("(metrics)")
+      CREATE INDEX IF NOT EXISTS experiment_results_metrics_index
+      ON experiment_results USING gin (metrics)
     """, "")
   end
 end

@@ -35,7 +35,7 @@ defmodule Singularity.Repo.Migrations.CreateAstStorageTables do
     create_if_not_exists table(:codebase_chunk_embeddings, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :chunk_id, references(:codebase_chunks, type: :binary_id, on_delete: :delete_all)# 
-#       add :embedding, :vector, size: 768  # pgvector - install via separate migration
+  #       add :embedding, :vector, size: 768  # pgvector - install via separate migration
       add :model_name, :string
       add :metadata, :jsonb, default: fragment("'{}'::jsonb")
       timestamps()
@@ -51,6 +51,6 @@ defmodule Singularity.Repo.Migrations.CreateAstStorageTables do
     """, "")
     
     # Vector similarity search index
-#     execute "CREATE INDEX ON codebase_chunk_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
+  #     execute "CREATE INDEX ON codebase_chunk_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100)"
   end
 end

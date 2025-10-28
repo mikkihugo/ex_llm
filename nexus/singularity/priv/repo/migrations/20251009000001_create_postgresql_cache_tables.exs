@@ -85,8 +85,7 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
       description,
       github_stars,
       download_count,
-      tags,
-      embedding
+      tags
     FROM dependency_catalog
     WHERE
       github_stars > 1000
@@ -110,12 +109,12 @@ defmodule Singularity.Repo.Migrations.CreatePostgresqlCacheTables do
     ON hot_packages USING GIN(tags)
     """
 
-    # Vector similarity index (if using pgvector)
-    execute """
-#     CREATE INDEX idx_hot_packages_embedding
-#     ON hot_packages USING ivfflat (embedding vector_cosine_ops)
-    WITH (lists = 100)
-    """
+    # Vector similarity index disabled - embedding column not selected in view
+    # execute """
+    # CREATE INDEX idx_hot_packages_embedding
+    # ON hot_packages USING ivfflat (embedding vector_cosine_ops)
+    # WITH (lists = 100)
+    # """
 
     # ============================================================================
     # Enable extensions for monitoring

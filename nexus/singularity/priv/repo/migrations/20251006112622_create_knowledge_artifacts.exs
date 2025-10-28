@@ -17,8 +17,8 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
       add :content_raw, :text, null: false
       add :content, :jsonb, null: false
 
-      # Semantic search (1536 dims for text-embedding-004 / Jina v2)# 
-#       add :embedding, :vector, size: 1536  # pgvector - install via separate migration
+      # Semantic search (1536 dims for text-embedding-004 / Jina v2)
+      # add :embedding, :vector, size: 1536  # pgvector - install via separate migration
 
       # Generated columns (auto-extracted from JSONB for fast filtering)
       # Note: Ecto doesn't support GENERATED ALWAYS in schema, so we use execute
@@ -87,10 +87,10 @@ defmodule Singularity.Repo.Migrations.CreateKnowledgeArtifacts do
     # pgvector index for semantic search (ivfflat with cosine distance)
     # Note: We'll create this after data is loaded (needs tuning based on row count)
     # For now, just add a comment
-    execute("""
-    COMMENT ON COLUMN knowledge_artifacts.embedding IS
-#     'Vector embedding for semantic search. Create ivfflat index after loading data: CREATE INDEX CONCURRENTLY ON knowledge_artifacts USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);'
-    """)
+    # execute("""
+    # COMMENT ON COLUMN knowledge_artifacts.embedding IS
+    # 'Vector embedding for semantic search. Create ivfflat index after loading data: CREATE INDEX CONCURRENTLY ON knowledge_artifacts USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);'
+    # """)
 
     # Trigger to auto-update updated_at
     execute("""

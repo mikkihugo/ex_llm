@@ -66,14 +66,9 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       ON tools (last_release_date)
     """, "")
 
-    # Vector similarity index (HNSW for faster approximate search)
-    execute """
-    CREATE INDEX IF NOT EXISTS tools_semantic_embedding_idx ON tools
-    USING hnsw (semantic_embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 200)
-    """, """
-    DROP INDEX IF EXISTS tools_semantic_embedding_idx
-    """
+    # Vector similarity index disabled - both HNSW and ivfflat limited to 2000 dims
+    # We use 2560-dim vectors (Qodo 1536 + Jina 1024), exceeding index limits
+    # Vector search uses sequential scan (adequate for package registry size)
 
     # Package Code Examples - Code examples from package documentation
     create_if_not_exists table(:tool_examples, primary_key: false) do
@@ -104,14 +99,8 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       ON tool_examples (example_order)
     """, "")
 
-    # Vector similarity index for code examples
-    execute """
-    CREATE INDEX IF NOT EXISTS tool_examples_code_embedding_idx ON tool_examples
-    USING hnsw (code_embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 200)
-    """, """
-    DROP INDEX IF EXISTS tool_examples_code_embedding_idx
-    """
+    # Vector similarity index disabled - 2560-dim vectors exceed index limits
+    # Uses sequential scan for semantic search on code examples
 
     # Package Usage Patterns - Best practices and patterns
     create_if_not_exists table(:tool_patterns, primary_key: false) do
@@ -137,14 +126,8 @@ defmodule Singularity.Repo.Migrations.CreatePackageRegistryTables do
       ON tool_patterns (pattern_type)
     """, "")
 
-    # Vector similarity index for patterns
-    execute """
-    CREATE INDEX IF NOT EXISTS tool_patterns_pattern_embedding_idx ON tool_patterns
-    USING hnsw (pattern_embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 200)
-    """, """
-    DROP INDEX IF EXISTS tool_patterns_pattern_embedding_idx
-    """
+    # Vector similarity index disabled - 2560-dim vectors exceed index limits
+    # Uses sequential scan for semantic search on patterns
 
     # Package Dependencies - Package dependency information
     create_if_not_exists table(:tool_dependencies, primary_key: false) do

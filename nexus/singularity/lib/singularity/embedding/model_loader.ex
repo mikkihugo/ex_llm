@@ -69,10 +69,32 @@ defmodule Singularity.Embedding.ModelLoader do
       Logger.info("Model already cached at: #{model_dir}")
       {:ok, model_dir}
     else
-      Logger.info("Downloading model: #{info.repo}")
-      download_model(info, model_dir)
+      # For Jina v3: try using cached version from priv/models first
+      case check_jina_cache(model) do
+        {:ok, cached_path} ->
+          Logger.info("Using cached Jina v3 from repo: #{cached_path}")
+          {:ok, cached_path}
+
+        :not_jina ->
+          Logger.info("Downloading model: #{info.repo}")
+          download_model(info, model_dir)
+      end
     end
   end
+
+  # Check for cached Jina v3 in repo (priv/models/jina_v3_cached)
+  defp check_jina_cache(:jina_v3) do
+    # Try cached version first
+    cached_path = Path.join(models_dir(), "jina_v3_cached")
+
+    if File.dir?(cached_path) and File.exists?(Path.join(cached_path, "model.onnx")) do
+      {:ok, cached_path}
+    else
+      :not_found
+    end
+  end
+
+  defp check_jina_cache(_other), do: :not_jina
 
   defp model_exists?(model_dir, info) do
     case info.framework do

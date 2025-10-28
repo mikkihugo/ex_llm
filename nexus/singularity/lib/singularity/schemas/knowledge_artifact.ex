@@ -17,42 +17,19 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  schema "knowledge_artifacts" do
+  schema "curated_knowledge_artifacts" do
     # Template identification
     field :artifact_type, :string
     field :artifact_id, :string
     field :version, :string, default: "1.0.0"
 
-    # Dual storage
+    # Dual storage (dual storage pattern: raw JSON + parsed JSONB)
     field :content_raw, :string
     field :content, :map
 
-    # Semantic search
-    field :embedding, Pgvector.Ecto.Vector
-
-    # Learning metadata
-    # 'git' or 'learned'
-    field :source, :string, default: "git"
-    field :learned_from, :map
-
-    # Usage tracking
-    field :usage_count, :integer, default: 0
-    field :success_count, :integer, default: 0
-    field :failure_count, :integer, default: 0
-    field :avg_performance_ms, :float
-    field :user_ratings, {:array, :float}, default: []
-
-    # Change tracking
-    field :created_by, :string
-    field :change_reason, :string
-
-    # Versioning
-    belongs_to :previous_version, __MODULE__, type: :binary_id
-
-    # Generated columns (read-only)
-    field :language, :string, virtual: true
-    field :category, :string, virtual: true
-    field :tags, {:array, :string}, virtual: true
+    # Generated columns (read-only) - extracted from JSONB content
+    field :language, :string
+    field :tags, {:array, :string}
 
     timestamps(type: :utc_datetime)
   end
@@ -67,46 +44,13 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
       :artifact_id,
       :version,
       :content_raw,
-      :content,
-      :embedding,
-      :source,
-      :learned_from,
-      :usage_count,
-      :success_count,
-      :failure_count,
-      :avg_performance_ms,
-      :user_ratings,
-      :created_by,
-      :change_reason,
-      :previous_version_id
+      :content
     ])
     |> validate_required([:artifact_type, :artifact_id, :version, :content_raw, :content])
-    |> validate_inclusion(:source, ["git", "learned"])
     |> validate_content_consistency()
     |> unique_constraint([:artifact_type, :artifact_id, :version])
   end
 
-  @doc """
-  Changeset for tracking usage
-  """
-  def usage_changeset(artifact, result) do
-    artifact
-    |> change(%{
-      usage_count: artifact.usage_count + 1,
-      success_count: artifact.success_count + if(result.success?, do: 1, else: 0),
-      failure_count: artifact.failure_count + if(result.success?, do: 0, else: 1),
-      avg_performance_ms: calculate_avg_performance(artifact, result.duration_ms)
-    })
-  end
-
-  defp calculate_avg_performance(artifact, new_duration) do
-    if artifact.avg_performance_ms do
-      (artifact.avg_performance_ms * artifact.usage_count + new_duration) /
-        (artifact.usage_count + 1)
-    else
-      new_duration
-    end
-  end
 
   @doc """
   Validate that content matches content_raw
@@ -157,31 +101,6 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
     from a in query, where: fragment("category = ?", ^category)
   end
 
-  @doc """
-  Get learned templates (high usage + success)
-  """
-  def learning_candidates(query \\ __MODULE__, min_usage \\ 1000, min_success_rate \\ 0.95) do
-    from a in query,
-      where: a.usage_count >= ^min_usage,
-      where:
-        fragment(
-          "?::float / NULLIF(?, 0) >= ?",
-          a.success_count,
-          a.usage_count,
-          ^min_success_rate
-        ),
-      where: a.source == "git",
-      order_by: [desc: a.usage_count]
-  end
-
-  @doc """
-  Semantic search by embedding
-  """
-  def semantic_search(query \\ __MODULE__, embedding, limit \\ 10) do
-    from a in query,
-      order_by: fragment("embedding <-> ?", ^embedding),
-      limit: ^limit
-  end
 
   @doc """
   JSONB queries - find by content
@@ -203,13 +122,4 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
         )
   end
 
-  @doc """
-  Get version history for an artifact
-  """
-  def version_history(artifact_id) do
-    from a in __MODULE__,
-      where: a.artifact_id == ^artifact_id,
-      order_by: [desc: a.inserted_at],
-      preload: [:previous_version]
-  end
 end

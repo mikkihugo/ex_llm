@@ -20,16 +20,16 @@ config :singularity, :auto_ingestion,
   enabled: System.get_env("AUTO_INGESTION_ENABLED", "true") == "true",
   # File watching configuration
   watch_directories: String.split(System.get_env("AUTO_INGESTION_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
-  debounce_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_DEBOUNCE_MS", "500")),
-  busy_file_threshold_ms: String.to_integer(System.get_env("AUTO_INGESTION_BUSY_THRESHOLD_MS", "100")),
+  debounce_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_DEBOUNCE_MS", "60000")),
+  busy_file_threshold_ms: String.to_integer(System.get_env("AUTO_INGESTION_BUSY_THRESHOLD_MS", "1000")),
   # Retry configuration
-  max_retries: String.to_integer(System.get_env("AUTO_INGESTION_MAX_RETRIES", "3")),
+  max_retries: String.to_integer(System.get_env("AUTO_INGESTION_MAX_RETRIES", "1")),
   retry_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_RETRY_DELAY_MS", "1000")),
   # File filtering
   include_extensions: String.split(System.get_env("AUTO_INGESTION_INCLUDE_EXT", ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"), ","),
   ignore_patterns: String.split(System.get_env("AUTO_INGESTION_IGNORE_PATTERNS", "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"), ","),
   # Performance tuning
-  max_concurrent_ingestions: String.to_integer(System.get_env("AUTO_INGESTION_MAX_CONCURRENT", "5")),
+  max_concurrent_ingestions: String.to_integer(System.get_env("AUTO_INGESTION_MAX_CONCURRENT", "1")),
   ingestion_timeout_ms: String.to_integer(System.get_env("AUTO_INGESTION_TIMEOUT_MS", "30000")),
   # Auto-detection settings
   auto_detect_codebase: System.get_env("AUTO_INGESTION_AUTO_DETECT_CODEBASE", "true") == "true",
@@ -40,7 +40,7 @@ config :singularity, :auto_ingestion,
 # HTDAG Auto Code Ingestion Configuration
 # Enables HTDAG-based automatic code ingestion with PgFlow orchestration
 config :singularity, :htdag_auto_ingestion,
-  enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "true") == "true",
+  enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "false") == "true",
   # File watching configuration
   watch_directories: String.split(System.get_env("HTDAG_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
   debounce_delay_ms: String.to_integer(System.get_env("HTDAG_DEBOUNCE_MS", "2000")), # Increased from 500ms to 2s
@@ -79,6 +79,14 @@ config :singularity, :htdag_auto_ingestion,
   reload_delay_ms: String.to_integer(System.get_env("HTDAG_RELOAD_DELAY_MS", "1000")),
   max_concurrent_reloads: String.to_integer(System.get_env("HTDAG_MAX_CONCURRENT_RELOADS", "5")),
   dependency_timeout_ms: String.to_integer(System.get_env("HTDAG_DEPENDENCY_TIMEOUT_MS", "30000"))
+
+config :singularity, :bootstrap_tasks,
+  enabled: System.get_env("STARTUP_BOOT_TASKS_ENABLED", "true") == "true",
+  delay_ms: String.to_integer(System.get_env("STARTUP_BOOT_TASKS_DELAY_MS", "60000"))
+
+config :singularity, :setup_bootstrap,
+  enabled: System.get_env("SETUP_BOOTSTRAP_ENABLED", "true") == "true",
+  delay_ms: String.to_integer(System.get_env("SETUP_BOOTSTRAP_DELAY_MS", "60000"))
 
 config :singularity, Singularity.Telemetry, metrics: []
 
