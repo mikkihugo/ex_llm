@@ -38,12 +38,22 @@ defmodule Mix.Tasks.Artifacts.EmbedNx do
         aliases: [d: :device, v: :verbose, l: :limit]
       )
 
-    # Ensure application is started
-    Application.ensure_all_started(:singularity)
+    # Start Ecto repo explicitly (uses DATABASE_URL or config)
+    {:ok, _} = Application.ensure_all_started(:singularity)
+
+    # Give Repo supervisor time to start and initialize connection pool
+    Process.sleep(1000)
 
     # Wait for Repo to be ready by attempting to acquire a connection
-    # Increased retries to 30 (15 seconds total)
-    wait_for_repo(30)
+    # Retries 60 times (30 seconds total at 500ms intervals)
+    unless wait_for_repo(60) do
+      Mix.shell().error("Error: Database connection failed after retries")
+      Mix.shell().info("Tips:")
+      Mix.shell().info("  1. Ensure PostgreSQL is running on localhost:5432")
+      Mix.shell().info("  2. Set DATABASE_URL environment variable (e.g., ecto://user:password@localhost/singularity)")
+      Mix.shell().info("  3. Or run: mix ecto.create && mix ecto.migrate")
+      exit({:shutdown, 1})
+    end
 
     device = (Keyword.get(opts, :device, "cpu") |> String.to_atom())
     verbose = Keyword.get(opts, :verbose, false)
@@ -53,12 +63,12 @@ defmodule Mix.Tasks.Artifacts.EmbedNx do
     run_embedding_generation(device, verbose, dry_run, limit)
   end
 
-  # Wait for Repo to be ready
+  # Wait for Repo to be ready (returns true if successful, false if timeout)
   defp wait_for_repo(retries) when retries > 0 do
     try do
       # Try a simple query to verify Repo is ready
       Repo.query("SELECT 1", [])
-      :ok
+      true
     rescue
       _ ->
         Process.sleep(500)
@@ -67,8 +77,7 @@ defmodule Mix.Tasks.Artifacts.EmbedNx do
   end
 
   defp wait_for_repo(0) do
-    Mix.shell().error("Error: Database not available after retries")
-    exit({:shutdown, 1})
+    false
   end
 
   defp run_embedding_generation(device, verbose, dry_run, limit) do
