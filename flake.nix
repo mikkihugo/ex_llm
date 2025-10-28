@@ -187,7 +187,7 @@
         getDataServices = env: lib.optionals (lib.elem "postgresql" env.services) [
           # PostgreSQL 17 with 20+ extensions for search, time-series, spatial, graph, security, and messaging
           # Built-in extensions (from PostgreSQL): ltree, hstore, pg_trgm, uuid-ossp, fuzzystrmatch, etc
-          # pg_uuidv7 installed via: pgxn install pg_uuidv7 (see UUIDV7_SETUP.md)
+          # All extensions below are available via nixpkgs.postgresql17Packages
           # PostgreSQL 18 is stable but Apache AGE PG18_prepare branch is still unstable/incomplete
           # Ready to upgrade to PG18 + AGE once PR #2165 is merged (follow https://github.com/apache/age/pull/2165)
           (pkgs.postgresql_17.withPackages (ps:
@@ -208,7 +208,7 @@
               ps.age                # Apache AGE - graph database extension (stable on PG17)
 
               # Distributed IDs & UUIDs
-              # pg_uuidv7 - Install via: pgxn install pg_uuidv7 (see UUIDV7_SETUP.md)
+              ps.pg_uuidv7          # UUID v7 support (1.7.0 in nixpkgs)
 
               # Security & Encryption
               ps.pgsodium           # Modern encryption & hashing (libsodium binding)
