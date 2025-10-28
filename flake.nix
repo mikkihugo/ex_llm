@@ -163,7 +163,7 @@
         # Each function returns packages for a specific purpose
 
         getBaseTools = env: with pkgs; [
-          git gh curl pkg-config direnv gnused gawk coreutils findutils
+          git git-lfs gh curl pkg-config direnv gnused gawk coreutils findutils
           ripgrep fd jq bat btop htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
           postgresql_17  # For pgxn (pg_config and dev headers)
