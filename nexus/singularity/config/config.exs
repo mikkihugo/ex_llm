@@ -294,8 +294,10 @@ config :oban,
        {"0 * * * *", Singularity.Database.BackupWorker, args: %{"type" => "hourly"}},
        # Database backup: daily at 1:00 AM (keep 7)
        {"0 1 * * *", Singularity.Database.BackupWorker, args: %{"type" => "daily"}},
-       # Template sync: daily at 2:00 AM (was: mix templates.sync --force)
-       {"0 2 * * *", Singularity.Jobs.TemplateSyncWorker},
+       # Embedding fine-tuning: daily at 2:00 AM (BEAM-optimized Qodo)
+       {"0 2 * * *", Singularity.Jobs.EmbeddingFinetuneJob, args: %{"model" => "qodo", "epochs" => 1}},
+       # Template sync: daily at 2:15 AM (was: mix templates.sync --force)
+       {"15 2 * * *", Singularity.Jobs.TemplateSyncWorker},
        # Cache cleanup: daily at 3:00 AM (was: mix analyze.cache clear)
        {"0 3 * * *", Singularity.Jobs.CacheClearWorker},
        # Registry sync: daily at 4:00 AM (was: mix registry.sync)
