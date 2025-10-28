@@ -133,7 +133,7 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-      {:ex_pgflow, path: "../ex_pgflow", from_umbrella: true, env: :dev},
+      {:ex_pgflow, path: "../ex_pgflow", from_umbrella: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},

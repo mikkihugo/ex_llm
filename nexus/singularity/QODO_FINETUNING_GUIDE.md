@@ -1,14 +1,16 @@
-# Qodo Fine-tuning on BEAM + C++ Codebase
+# Automatic BEAM-Focused Qodo Fine-tuning
 
-Complete guide to fine-tune Qodo embeddings on your mixed-language codebase (750 MLOC Elixir + C++).
+**AUTOMATIC LEARNING NOW ENABLED** - Your Qodo embeddings improve daily at 2 AM UTC.
+
+Complete guide to understand how Qodo fine-tunes automatically on your BEAM codebase (750 MLOC Elixir).
 
 ## Overview
 
-**Problem**: Generic Qodo trained on Python/JS/Go, not optimized for BEAM (Elixir/Erlang) + C++ patterns
+**Problem**: Generic Qodo trained on Python/JS/Go, not optimized for BEAM (Elixir/Erlang) idioms
 
-**Solution**: Fine-tune Qodo using **contrastive learning** on your actual codebase
+**Solution**: EmbeddingFinetuneJob automatically fine-tunes Qodo using contrastive learning daily
 
-**Result**: BEAM-specialized embeddings for semantic code search
+**Result**: BEAM-specialized embeddings that improve continuously without manual intervention
 
 ---
 
