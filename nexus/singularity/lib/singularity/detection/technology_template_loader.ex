@@ -170,17 +170,19 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp persist_template(identifier, %{} = template, source, opts) do
     if Keyword.get(opts, :persist, true) do
       try do
-        case TechnologyTemplateStore.upsert(identifier, template,
-               source: to_string(source),
-               metadata: %{persisted_at: DateTime.utc_now()}
-             ) do
+        template_data = Map.merge(template, %{
+          source: to_string(source),
+          metadata: %{persisted_at: DateTime.utc_now()}
+        })
+
+        case Singularity.Knowledge.TemplateService.store_template("technology", identifier, template_data) do
           {:ok, _record} ->
             :ok
 
-          {:error, changeset} ->
+          {:error, reason} ->
             Logger.debug("Failed to persist technology template",
               identifier: inspect(identifier),
-              errors: inspect(changeset.errors)
+              errors: inspect(reason)
             )
         end
       rescue
@@ -264,7 +266,7 @@ defmodule Singularity.TechnologyTemplateLoader do
 
   defp get_existing_template(identifier) do
     # Try to get existing template from database
-    case TechnologyTemplateStore.get(identifier) do
+    case Singularity.TemplateStore.get(identifier) do
       {:ok, template} -> template
       {:error, :not_found} -> nil
       {:error, _reason} -> nil
@@ -282,7 +284,7 @@ defmodule Singularity.TechnologyTemplateLoader do
         "updated_at" => DateTime.utc_now()
       })
 
-    case TechnologyTemplateStore.create(template_data) do
+    case Singularity.Knowledge.TemplateService.store_template("technology", identifier, template_data) do
       {:ok, created_template} ->
         Logger.info("Created new technology template",
           identifier: identifier,
@@ -312,7 +314,7 @@ defmodule Singularity.TechnologyTemplateLoader do
         "updated_at" => DateTime.utc_now()
       })
 
-    case TechnologyTemplateStore.update(identifier, update_data) do
+    case Singularity.Knowledge.TemplateService.store_template("technology", identifier, update_data) do
       {:ok, updated_template} ->
         Logger.info("Updated technology template",
           identifier: identifier,

@@ -71,9 +71,10 @@ defmodule Singularity.Knowledge.ArtifactGraph do
   ```
   """
 
-  import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Schemas.KnowledgeArtifact
+
+  @graph_name "artifact_graph"
 
   @doc """
   Populate graph with artifacts and relationships.
@@ -277,12 +278,16 @@ defmodule Singularity.Knowledge.ArtifactGraph do
   end
 
   defp generate_nodes(artifact_id, related_list) do
-    related_list
+    root_node = "        ROOT[\"#{artifact_id}\"]"
+
+    related_nodes = related_list
     |> Enum.map(fn item ->
       node_id = String.replace(item.related_artifact, "-", "_")
       "        #{node_id}[\"#{item.related_artifact}\"]"
     end)
     |> Enum.uniq()
+
+    [root_node | related_nodes]
     |> Enum.join("\n")
   end
 

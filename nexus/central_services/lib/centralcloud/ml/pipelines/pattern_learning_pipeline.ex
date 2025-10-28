@@ -13,8 +13,7 @@ defmodule CentralCloud.ML.Pipelines.PatternLearningPipeline do
   use Broadway
   require Logger
 
-  alias CentralCloud.Models.{ModelCache, ComplexityScorer}
-  alias CentralCloud.Repo
+  alias CentralCloud.Models.ComplexityScorer
 
   @doc """
   Start the pattern learning pipeline.

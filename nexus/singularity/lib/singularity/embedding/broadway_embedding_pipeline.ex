@@ -83,7 +83,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
     Logger.info("  Device: #{device}")
 
     start_time = System.monotonic_time(:millisecond)
-    processed = :persistent_term.put({:embedding_pipeline, :processed}, 0)
+    _processed = :persistent_term.put({:embedding_pipeline, :processed}, 0)
 
     with {:ok, _supervisor} <- start_pipeline(artifacts, device, workers, batch_size, verbose),
          :ok <- wait_completion(timeout),
@@ -115,13 +115,18 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
 
   # Start Broadway pipeline with multiple stages
   defp start_pipeline(artifacts, device, workers, batch_size, verbose) do
-    {producer_pid, producer_ref} = spawn_producer(artifacts)
-
     Broadway.start_link(__MODULE__,
       name: __MODULE__.Pipeline,
       producer: [
-        module: {Broadway.DummyProducer, []},
-        concurrency: 1
+        module: {Broadway.PgflowProducer, [
+          workflow_name: "embedding_producer",
+          queue_name: "embedding_jobs",
+          concurrency: 10,
+          batch_size: batch_size,
+          pgflow_config: [timeout_ms: 300_000, retries: 3],
+          resource_hints: [gpu: true]
+        ]},
+        concurrency: 10
       ],
       processors: [
         default: [
@@ -140,24 +145,9 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
       context: %{
         device: device,
         batch_size: batch_size,
-        verbose: verbose,
-        producer_pid: producer_pid
+        verbose: verbose
       }
     )
-  end
-
-  # Spawn producer process that emits artifacts
-  defp spawn_producer(artifacts) do
-    pid = self()
-
-    producer_pid = spawn(fn ->
-      Enum.each(artifacts, fn artifact ->
-        send(pid, {:artifact, artifact})
-      end)
-      send(pid, :producer_done)
-    end)
-
-    {producer_pid, make_ref()}
   end
 
   # Wait for pipeline completion with timeout
@@ -169,7 +159,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
       elapsed < timeout
     end
     |> Stream.repeatedly()
-    |> Enum.find_index(fn ready? -> not ready?() end)
+    |> Enum.find_index(fn time_ok -> not time_ok end)
     |> case do
       nil -> :ok
       _index -> {:error, :timeout}
@@ -185,7 +175,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
   def handle_processor_default(_, message, context) do
     case message do
       {:artifact, artifact} ->
-        process_embedding(artifact, context)
+        process_embedding(message, artifact, context)
 
       _ ->
         message
@@ -198,7 +188,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
   end
 
   # Process single artifact embedding
-  defp process_embedding(artifact, context) do
+  defp process_embedding(message, artifact, context) do
     try do
       device = context.device
       text = extract_artifact_text(artifact)
@@ -211,14 +201,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
             update_processed_count()
 
             %Broadway.Message{
-              data: {artifact.id, embedding_list}
+              data: {artifact.id, embedding_list},
+              acknowledger: message.acknowledger
             }
           else
             Logger.warning("Wrong embedding dimension for #{artifact.artifact_id}")
 
-            %Broadway.Message{
-              data: nil
-            }
+            message
           end
 
         {:error, reason} ->
@@ -226,7 +215,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
 
           %Broadway.Message{
             data: nil,
-            ack_data: :error
+            acknowledger: message.acknowledger
           }
       end
     rescue
@@ -235,7 +224,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
 
         %Broadway.Message{
           data: nil,
-          ack_data: :error
+          acknowledger: message.acknowledger
         }
     end
   end

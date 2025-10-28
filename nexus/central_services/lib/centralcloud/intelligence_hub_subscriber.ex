@@ -246,7 +246,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   
   # Fallback
   defp handle_payload(subject, payload) do
-    Logger.warn("Unhandled message on #{subject}: #{inspect(payload)}")
+    Logger.warning("Unhandled message on #{subject}: #{inspect(payload)}")
     :ok
   end
   

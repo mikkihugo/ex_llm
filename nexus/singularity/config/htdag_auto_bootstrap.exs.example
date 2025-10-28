@@ -4,39 +4,123 @@
 config :singularity, Singularity.Execution.Planning.HTDAGAutoBootstrap,
   # Enable automatic self-diagnosis on server startup
   enabled: true,
-  
+
   # Maximum number of fix iterations (prevents infinite loops)
   max_iterations: 10,
-  
+
   # Auto-fix issues on startup (set to false to just learn without fixing)
   fix_on_startup: true,
-  
+
   # Enable runtime tracing to detect broken/slow/dead functions
   trace_runtime: true,
-  
+
   # Duration to trace runtime behavior (in milliseconds)
   # 60 seconds gives good coverage without slowing startup
   trace_duration_ms: 60_000,
-  
+
   # Log completion summary with metrics
   notify_on_complete: true,
-  
+
   # Run asynchronously (non-blocking startup)
   # Server starts immediately, bootstrap runs in background
   run_async: true,
-  
+
   # Minimum time between auto-fix runs (in milliseconds)
   # Prevents too-frequent auto-fixes
   cooldown_ms: 300_000,  # 5 minutes
-  
+
   # Severity threshold for auto-fixing
   # :high = only fix critical issues
   # :medium = fix critical + moderate issues (default)
   # :low = fix everything including docs/style
   fix_severity: :medium,
-  
+
   # Enable integration with existing systems
   use_rag: true,                 # Learn from existing code patterns
   use_quality_templates: true,   # Enforce quality standards
   integrate_sparc: true,         # Use SPARC methodology
   safe_planning: true            # Hierarchical planning
+
+# Broadway Embedding Pipeline Configuration
+# See docs/EMBEDDING_PIPELINE_PGFLOW.md for detailed documentation
+config :singularity, :broadway_embedding_pipeline,
+  # Enable the embedding pipeline
+  enabled: System.get_env("EMBEDDING_PIPELINE_ENABLED", "true") == "true",
+
+  # PGFlow integration settings
+  pgflow: %{
+    enabled: System.get_env("EMBEDDING_PGFLOW_ENABLED", "true") == "true",
+    queue_name: System.get_env("EMBEDDING_QUEUE_NAME", "embedding_jobs"),
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_TIMEOUT_MS", "300000")),
+    concurrency: String.to_integer(System.get_env("EMBEDDING_PGFLOW_CONCURRENCY", "5")),
+    retries: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRIES", "3")),
+    retry_delay_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRY_DELAY_MS", "5000"))
+  },
+
+  # Pipeline performance settings
+  pipeline: %{
+    device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),
+    workers: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),
+    batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_TIMEOUT_MS", "300000")),
+    verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true"
+  },
+
+  # HTDAG auto-bootstrap node definition
+  htdag_node: %{
+    id: "broadway_embedding_pipeline",
+    type: :workflow,
+    module: Singularity.Embedding.BroadwayEmbeddingPipeline,
+    function: :run,
+    args: %{
+      # Artifacts will be populated by the workflow system
+      artifacts: [],
+      device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),
+      workers: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),
+      batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),
+      timeout: String.to_integer(System.get_env("EMBEDDING_TIMEOUT_MS", "300000")),
+      verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true"
+    },
+    # Node execution settings
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_NODE_TIMEOUT_MS", "600000")),
+    retry_policy: %{
+      max_attempts: String.to_integer(System.get_env("EMBEDDING_MAX_RETRIES", "3")),
+      backoff_ms: String.to_integer(System.get_env("EMBEDDING_RETRY_BACKOFF_MS", "10000"))
+    }
+  }
+
+# Supervisor child spec example for manual startup
+# Add to your Application supervisor children list
+# children = [
+#   # ... other children ...
+#   {
+#     BroadwayEmbeddingPipeline,
+#     [
+#       name: BroadwayEmbeddingPipeline.Pipeline,
+#       producer: [
+#         module: {Broadway.DummyProducer, []},
+#         concurrency: 1
+#       ],
+#       processors: [
+#         default: [
+#           concurrency: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),
+#           min_demand: 5,
+#           max_demand: 20
+#         ]
+#       ],
+#       batchers: [
+#         db: [
+#           concurrency: 2,
+#           batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),
+#           batch_timeout: 1000
+#         ]
+#       ],
+#       context: %{
+#         device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),
+#         batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),
+#         verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true",
+#         producer_pid: nil  # Will be set at runtime
+#       }
+#     ]
+#   }
+# ]

@@ -146,7 +146,7 @@ defmodule Singularity.Workflows do
   end
 
   defp execute_node(node, _opts) do
-    Logger.warn("Unknown node type: #{inspect(node)}")
+    Logger.warning("Unknown node type: #{inspect(node)}")
     %{node_id: node.id, status: :unknown}
   end
 

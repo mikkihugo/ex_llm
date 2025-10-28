@@ -252,7 +252,7 @@ defmodule Singularity.Knowledge.ArtifactSemanticSearch do
             Logger.info("Generated embedding for #{artifact.artifact_id}")
 
           {:error, reason} ->
-            Logger.warn("Failed to embed #{artifact.artifact_id}: #{reason}")
+            Logger.warning("Failed to embed #{artifact.artifact_id}: #{reason}")
         end
       end)
 

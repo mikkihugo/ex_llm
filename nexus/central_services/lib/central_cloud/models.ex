@@ -10,7 +10,7 @@ defmodule CentralCloud.Models do
 
   import Ecto.Query, warn: false
   alias CentralCloud.Repo
-  alias CentralCloud.Models.{ModelProvider, ModelCache}
+  alias CentralCloud.Models.ModelCache
 
   @doc """
   Get all active models.
@@ -171,7 +171,7 @@ defmodule CentralCloud.Models do
     {:ok, []}
   end
 
-  defp load_yaml_model(yaml_file) do
+  defp load_yaml_model(_yaml_file) do
     # TODO: Implement YAML loading
     # For now, return mock data
     {:ok, %{}}

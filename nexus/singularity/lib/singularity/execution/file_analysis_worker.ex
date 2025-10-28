@@ -95,7 +95,7 @@ defmodule Singularity.Execution.FileAnalysisWorker do
         {:ok, enhanced_analysis}
 
       {:error, reason} ->
-        Logger.warn("[FileAnalysisWorker] BeamAnalysisEngine failed for #{file_path}: #{reason}")
+        Logger.warning("[FileAnalysisWorker] BeamAnalysisEngine failed for #{file_path}: #{reason}")
         {:error, reason}
     end
   end

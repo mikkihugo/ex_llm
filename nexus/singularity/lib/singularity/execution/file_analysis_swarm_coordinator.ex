@@ -347,7 +347,7 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
       {:ok, analysis} ->
         Logger.info("[FileAnalysisSwarm] Stored analysis for #{file_path}: #{analysis.language}")
       {:error, _reason} ->
-        Logger.warn("[FileAnalysisSwarm] Failed to analyze #{file_path}")
+        Logger.warning("[FileAnalysisSwarm] Failed to analyze #{file_path}")
     end
   end
 

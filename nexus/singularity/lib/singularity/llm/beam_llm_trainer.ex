@@ -123,7 +123,7 @@ defmodule Singularity.LLM.BeamLLMTrainer do
     epochs = Keyword.get(opts, :epochs, 3)
     learning_rate = Keyword.get(opts, :learning_rate, 5.0e-4)
     batch_size = Keyword.get(opts, :batch_size, 16)
-    warmup_steps = Keyword.get(opts, :warmup_steps, 100)
+    _warmup_steps = Keyword.get(opts, :warmup_steps, 100)
     save_checkpoints = Keyword.get(opts, :save_checkpoints, true)
 
     Logger.info("🎓 Starting LoRA fine-tuning")
@@ -218,7 +218,7 @@ defmodule Singularity.LLM.BeamLLMTrainer do
   @doc """
   Load previously trained LoRA adapter
   """
-  def load_adapter(trainer, path) do
+  def load_adapter(_trainer, path) do
     Logger.info("📂 Loading LoRA adapter from #{path}")
 
     case File.read(path <> "/config.json") do
@@ -285,7 +285,7 @@ defmodule Singularity.LLM.BeamLLMTrainer do
   end
 
   # Simulate training (placeholder)
-  defp simulate_epoch_loss(epoch, pair_count) do
+  defp simulate_epoch_loss(epoch, _pair_count) do
     # Realistic loss curve: starts high, decreases with epochs
     base_loss = 2.5
     decay = 0.6 ** (epoch - 1)

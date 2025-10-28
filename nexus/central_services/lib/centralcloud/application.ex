@@ -46,6 +46,13 @@ defmodule CentralCloud.Application do
       # Uses PGMQ for task queuing and Broadway for pipeline orchestration
       CentralCloud.ML.PipelineSupervisor,
 
+      # PGFlow Workflow Supervisors - New workflow orchestration
+      # Handles: Complexity training workflows with better observability
+      {PGFlow.WorkflowSupervisor,
+       workflow: CentralCloud.Workflows.ComplexityTrainingWorkflow,
+       name: ComplexityTrainingWorkflowSupervisor,
+       enabled: Application.get_env(:centralcloud, :complexity_training_pipeline, %{})[:pgflow_enabled] || false},
+
       # pgmq Consumers: Read from distributed queues
       # Pattern Learning: Consumes pattern discoveries and learned patterns from instances
       {CentralCloud.PgmqConsumer,

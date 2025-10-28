@@ -1,13 +1,23 @@
 defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
   @moduledoc """
-  Broadway Pipeline for Architecture Learning
+  Architecture Learning Pipeline with PGFlow Migration Support
 
-  Processes architecture learning tasks through multiple stages:
-  1. Pattern Discovery - Extract architectural patterns from codebases
-  2. Pattern Analysis - Analyze pattern characteristics and relationships
-  3. Model Training - Train architecture learning models with Axon
-  4. Model Validation - Test model performance
-  5. Model Deployment - Save and deploy trained models
+  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
+  Use PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true to enable PGFlow mode.
+
+  ## Migration Notes
+
+  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **Canary Rollout**: Environment flag controls rollout percentage
+
+  ## Configuration
+
+  ```elixir
+  config :singularity, :architecture_learning_pipeline,
+    pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
+    canary_percentage: String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
+  ```
   """
 
   use Broadway
@@ -18,8 +28,38 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
 
   @doc """
   Start the architecture learning pipeline.
+
+  Supports both Broadway and PGFlow modes based on configuration.
   """
-  def start_link(_opts) do
+  def start_link(opts \\ []) do
+    if pgflow_enabled?() do
+      start_pgflow_pipeline(opts)
+    else
+      start_broadway_pipeline(opts)
+    end
+  end
+
+  # Check if PGFlow mode is enabled
+  defp pgflow_enabled? do
+    Application.get_env(:singularity, :architecture_learning_pipeline, %{})
+    |> Map.get(:pgflow_enabled, false)
+  end
+
+  # Start PGFlow-based pipeline
+  defp start_pgflow_pipeline(_opts) do
+    Logger.info("🚀 Starting Architecture Learning Pipeline (PGFlow mode)")
+
+    # Start PGFlow workflow supervisor
+    PGFlow.WorkflowSupervisor.start_workflow(
+      Singularity.Workflows.ArchitectureLearningWorkflow,
+      name: ArchitectureLearningWorkflowSupervisor
+    )
+  end
+
+  # Start legacy Broadway-based pipeline
+  defp start_broadway_pipeline(_opts) do
+    Logger.info("🎭 Starting Architecture Learning Pipeline (Broadway legacy mode)")
+
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
@@ -65,6 +105,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
     end
   end
 
+  # Legacy Broadway handlers (unchanged)
   # Pattern Discovery Stage
   defp handle_pattern_discovery(message) do
     Logger.info("Discovering architectural patterns in: #{message.data.codebase_path}")
@@ -168,7 +209,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
     end)
   end
 
-  # Private helper functions
+  # Private helper functions (shared between Broadway and PGFlow)
   defp extract_pattern_features(pattern) do
     # Mock feature extraction - in real implementation, this would:
     # 1. Extract structural features

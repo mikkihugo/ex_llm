@@ -86,6 +86,95 @@ Agent processes result
 | **CentralCloud** | Analytics (read-only) | All queues | (none) |
 | **Genesis** | Code execution | job_requests | job_results |
 
+## PGFlow Integration
+
+### Why PGFlow vs pgmq/pgmq
+
+While pgmq provides excellent PostgreSQL-native queuing, PGFlow was chosen for the Broadway embedding pipeline because:
+
+- **Workflow Orchestration**: PGFlow provides higher-level workflow management with job dependencies, retries, and state tracking
+- **Complex Job Lifecycle**: Embedding pipelines require multi-step workflows (data prep → batch processing → result aggregation)
+- **Reliability Guarantees**: PGFlow's transactional semantics ensure embedding jobs complete or fail atomically
+- **Monitoring & Observability**: Built-in metrics and tracing for production embedding workloads
+- **Scalability**: Better suited for long-running, resource-intensive embedding jobs vs simple message passing
+
+pgmq remains the primary choice for simple message queuing (LLM requests, approvals), while PGFlow handles complex workflows like embedding generation.
+
+### Operating PGFlow Workflows for Embeddings
+
+#### Enqueueing Embedding Jobs
+
+```elixir
+# Create embedding workflow job
+{:ok, job_id} = PGFlow.enqueue_job(%{
+  type: "embedding_pipeline",
+  payload: %{
+    artifacts: [
+      %{id: 1, artifact_id: "doc_1", content: %{"title" => "Document Title"}},
+      %{id: 2, artifact_id: "doc_2", content: "Plain text content"}
+    ],
+    device: :cuda,
+    workers: 10,
+    batch_size: 16
+  },
+  queue: "embedding_jobs",
+  priority: 1,
+  max_attempts: 3
+})
+```
+
+#### Checking Job Status
+
+```elixir
+# Get job status
+{:ok, job} = PGFlow.get_job(job_id)
+# Returns: %{status: :pending|:running|:completed|:failed, progress: 0.0..1.0}
+
+# List active embedding jobs
+{:ok, jobs} = PGFlow.list_jobs(queue: "embedding_jobs", status: :running)
+
+# Get job metrics
+{:ok, metrics} = PGFlow.get_queue_metrics("embedding_jobs")
+# Returns: %{pending: 5, running: 2, completed: 100, failed: 1}
+```
+
+#### Workflow Execution
+
+```elixir
+# Monitor workflow progress
+case PGFlow.get_job(job_id) do
+  {:ok, %{status: :completed, result: result}} ->
+    # Process completed embedding results
+    process_embedding_results(result)
+
+  {:ok, %{status: :running, progress: progress}} ->
+    # Update progress UI
+    IO.puts("Embedding progress: #{Float.round(progress * 100, 1)}%")
+
+  {:ok, %{status: :failed, error: error}} ->
+    # Handle failure
+    Logger.error("Embedding job failed: #{inspect(error)}")
+end
+```
+
+#### Batch Operations
+
+```elixir
+# Enqueue multiple embedding jobs
+artifacts_batches = Enum.chunk_every(all_artifacts, 100)
+
+jobs = Enum.map(artifacts_batches, fn batch ->
+  PGFlow.enqueue_job(%{
+    type: "embedding_pipeline",
+    payload: %{artifacts: batch, device: :cuda, workers: 8, batch_size: 12},
+    queue: "embedding_jobs"
+  })
+end)
+
+# Wait for all jobs to complete
+PGFlow.wait_for_jobs(jobs, timeout: :timer.minutes(30))
+```
+
 ## Configuration
 
 ### Environment Variables

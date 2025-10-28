@@ -55,7 +55,7 @@ defmodule Singularity.Embedding.NxService do
   """
 
   require Logger
-  alias Singularity.Embedding.{ModelLoader, Trainer, Tokenizer}
+  alias Singularity.Embedding.{Model, ModelLoader, Trainer, Tokenizer}
 
   @models %{
     qodo: %{

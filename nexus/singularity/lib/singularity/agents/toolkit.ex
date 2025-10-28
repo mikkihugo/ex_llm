@@ -36,7 +36,7 @@ defmodule Singularity.Agents.Toolkit do
       if opts[:backup] and File.exists?(path) do
         case backup_file(path) do
           :ok -> :ok
-          {:error, reason} -> Logger.warn("Failed to backup #{path}: #{inspect(reason)}")
+          {:error, reason} -> Logger.warning("Failed to backup #{path}: #{inspect(reason)}")
         end
       end
 

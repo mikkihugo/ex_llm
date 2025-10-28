@@ -37,7 +37,37 @@ config :singularity, :auto_ingestion,
   # Logging control
   quiet_mode: System.get_env("AUTO_INGESTION_QUIET_MODE", "false") == "true"
 
-# HTDAG Auto Code Ingestion Configuration
+# =============================================================================
+# Broadway Embedding Pipeline Configuration
+# =============================================================================
+# High-performance concurrent embedding generation with PGFlow orchestration
+# See docs/EMBEDDING_PIPELINE_PGFLOW.md for detailed documentation
+
+# Embedding Pipeline Settings
+# Enable/disable the Broadway embedding pipeline
+config :singularity, :broadway_embedding_pipeline,
+  enabled: System.get_env("EMBEDDING_PIPELINE_ENABLED", "true") == "true",
+  # PGFlow workflow orchestration settings
+  pgflow: %{
+    enabled: System.get_env("EMBEDDING_PGFLOW_ENABLED", "true") == "true",
+    queue_name: System.get_env("EMBEDDING_QUEUE_NAME", "embedding_jobs"),
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_TIMEOUT_MS", "300000")),
+    concurrency: String.to_integer(System.get_env("EMBEDDING_PGFLOW_CONCURRENCY", "5")),
+    retries: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRIES", "3")),
+    retry_delay_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRY_DELAY_MS", "5000"))
+  },
+  # Pipeline performance and hardware settings
+  pipeline: %{
+    device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),  # :cpu, :cuda, :metal
+    workers: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),  # Concurrent processors
+    batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),  # GPU batch size
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_TIMEOUT_MS", "300000")),  # Pipeline timeout
+    verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true"  # Progress logging
+  }
+
+# =============================================================================
+# HTDAG Auto-Bootstrap Configuration (Consolidated)
+# =============================================================================
 # Enables HTDAG-based automatic code ingestion with PgFlow orchestration
 config :singularity, :htdag_auto_ingestion,
   enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "false") == "true",
@@ -180,6 +210,37 @@ config :singularity, :sasl,
     rust_acceleration: true
   }
 
+# =============================================================================
+# CentralCloud Complexity Training Pipeline Configuration
+# =============================================================================
+# PGFlow migration for complexity training pipeline with canary rollout support
+config :centralcloud, :complexity_training_pipeline,
+  # Enable PGFlow mode (canary rollout)
+  pgflow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
+  # Canary rollout percentage (0-100)
+  canary_percentage: String.to_integer(System.get_env("COMPLEXITY_TRAINING_CANARY_PERCENT", "10"))
+
+# PGFlow workflow configuration for complexity training
+config :centralcloud, :complexity_training_workflow,
+  # Workflow-level timeouts and retries
+  timeout_ms: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_TIMEOUT_MS", "300000")),
+  retries: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_RETRIES", "3")),
+  retry_delay_ms: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_RETRY_DELAY_MS", "5000")),
+  # Concurrency settings
+  concurrency: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_CONCURRENCY", "1")),
+  # Step-specific timeouts
+  step_timeouts: %{
+    data_collection: String.to_integer(System.get_env("COMPLEXITY_DATA_COLLECTION_TIMEOUT_MS", "60000")),
+    feature_engineering: String.to_integer(System.get_env("COMPLEXITY_FEATURE_ENGINEERING_TIMEOUT_MS", "30000")),
+    model_training: String.to_integer(System.get_env("COMPLEXITY_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_evaluation: String.to_integer(System.get_env("COMPLEXITY_MODEL_EVALUATION_TIMEOUT_MS", "30000")),
+    model_deployment: String.to_integer(System.get_env("COMPLEXITY_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+  },
+  # Resource allocation hints
+  resource_hints: %{
+    model_training: %{gpu: true, single_worker: true}
+  }
+
 config :libcluster,
   topologies: []
 
@@ -230,7 +291,72 @@ config :singularity, :claude,
     }
   }
 
+# Import broadway_pgflow package defaults for PGFlow configuration
+import_config "../packages/broadway_pgflow/config/config.exs"
+
 import_config "#{config_env()}.exs"
+
+# =============================================================================
+# Singularity Architecture Learning Pipeline Configuration
+# =============================================================================
+# PGFlow migration for architecture learning pipeline with canary rollout support
+config :singularity, :architecture_learning_pipeline,
+  # Enable PGFlow mode (canary rollout)
+  pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
+  # Canary rollout percentage (0-100)
+  canary_percentage: String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
+
+# PGFlow workflow configuration for architecture learning
+config :singularity, :architecture_learning_workflow,
+  # Workflow-level timeouts and retries
+  timeout_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_TIMEOUT_MS", "300000")),
+  retries: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_RETRIES", "3")),
+  retry_delay_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_RETRY_DELAY_MS", "5000")),
+  # Concurrency settings
+  concurrency: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_CONCURRENCY", "1")),
+  # Step-specific timeouts
+  step_timeouts: %{
+    pattern_discovery: String.to_integer(System.get_env("ARCHITECTURE_PATTERN_DISCOVERY_TIMEOUT_MS", "60000")),
+    pattern_analysis: String.to_integer(System.get_env("ARCHITECTURE_PATTERN_ANALYSIS_TIMEOUT_MS", "30000")),
+    model_training: String.to_integer(System.get_env("ARCHITECTURE_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_validation: String.to_integer(System.get_env("ARCHITECTURE_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
+    model_deployment: String.to_integer(System.get_env("ARCHITECTURE_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+  },
+  # Resource allocation hints
+  resource_hints: %{
+    model_training: %{gpu: true, single_worker: true}
+  }
+
+# =============================================================================
+# Singularity Embedding Training Pipeline Configuration
+# =============================================================================
+# PGFlow migration for embedding training pipeline with canary rollout support
+config :singularity, :embedding_training_pipeline,
+  # Enable PGFlow mode (canary rollout)
+  pgflow_enabled: System.get_env("PGFLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
+  # Canary rollout percentage (0-100)
+  canary_percentage: String.to_integer(System.get_env("EMBEDDING_TRAINING_CANARY_PERCENT", "10"))
+
+# PGFlow workflow configuration for embedding training
+config :singularity, :embedding_training_workflow,
+  # Workflow-level timeouts and retries
+  timeout_ms: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_TIMEOUT_MS", "300000")),
+  retries: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_RETRIES", "3")),
+  retry_delay_ms: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_RETRY_DELAY_MS", "5000")),
+  # Concurrency settings
+  concurrency: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_CONCURRENCY", "1")),
+  # Step-specific timeouts
+  step_timeouts: %{
+    data_collection: String.to_integer(System.get_env("EMBEDDING_DATA_COLLECTION_TIMEOUT_MS", "60000")),
+    data_preparation: String.to_integer(System.get_env("EMBEDDING_DATA_PREPARATION_TIMEOUT_MS", "30000")),
+    model_training: String.to_integer(System.get_env("EMBEDDING_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_validation: String.to_integer(System.get_env("EMBEDDING_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
+    model_deployment: String.to_integer(System.get_env("EMBEDDING_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+  },
+  # Resource allocation hints
+  resource_hints: %{
+    model_training: %{gpu: true, single_worker: true}
+  }
 
 # Database Configuration - Auto-detected by Nix
 # Dev: PostgreSQL auto-starts via nix develop

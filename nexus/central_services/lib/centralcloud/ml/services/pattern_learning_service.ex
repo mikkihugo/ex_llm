@@ -19,9 +19,6 @@ defmodule CentralCloud.ML.Services.PatternLearningService do
   use GenServer
   require Logger
 
-  alias CentralCloud.Models.ModelCache
-  alias CentralCloud.Repo
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -112,7 +109,7 @@ defmodule CentralCloud.ML.Services.PatternLearningService do
 
   # Private functions
 
-  defp discover_patterns_in_repo(repo_path, options) do
+  defp discover_patterns_in_repo(_repo_path, _options) do
     # Simulate pattern discovery
     [
       %{
@@ -174,7 +171,7 @@ defmodule CentralCloud.ML.Services.PatternLearningService do
 
   defp process_usage_data(usage_data, patterns) do
     # Update pattern usage counts and scores based on usage data
-    Enum.reduce(usage_data, patterns, fn {pattern_id, usage_info}, acc ->
+    Enum.reduce(usage_data, patterns, fn {pattern_id, _usage_info}, acc ->
       case Map.get(acc, pattern_id) do
         nil -> acc
         pattern ->

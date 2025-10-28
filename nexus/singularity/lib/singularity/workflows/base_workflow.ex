@@ -91,6 +91,13 @@ defmodule Singularity.Workflows.BaseWorkflow do
   - Include step information in error messages
   """
 
+  @doc false
+  def __workflow_steps__ do
+    raise "workflow modules must implement __workflow_steps__/0"
+  end
+
+  defoverridable __workflow_steps__: 0
+
   @doc """
   Execute a workflow with the given input.
 
@@ -110,13 +117,6 @@ defmodule Singularity.Workflows.BaseWorkflow do
 
       {:ok, result} = MyWorkflow.execute(%{data: "test"})
   """
-  @doc false
-  def __workflow_steps__ do
-    raise "workflow modules must implement __workflow_steps__/0"
-  end
-
-  defoverridable __workflow_steps__: 0
-
   def execute_workflow(input) do
     try do
       steps = __workflow_steps__()

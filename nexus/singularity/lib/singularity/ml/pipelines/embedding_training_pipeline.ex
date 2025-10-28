@@ -1,13 +1,23 @@
 defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
   @moduledoc """
-  Broadway Pipeline for Embedding Model Training (Qodo + Jina)
+  Embedding Training Pipeline with PGFlow Migration Support
 
-  Processes embedding training tasks through multiple stages:
-  1. Data Collection - Gather training data from codebase
-  2. Data Preparation - Clean and format training data
-  3. Model Training - Fine-tune Qodo/Jina models with Axon
-  4. Model Validation - Test model performance
-  5. Model Deployment - Save and deploy trained models
+  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
+  Use PGFLOW_EMBEDDING_TRAINING_ENABLED=true to enable PGFlow mode.
+
+  ## Migration Notes
+
+  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **Canary Rollout**: Environment flag controls rollout percentage
+
+  ## Configuration
+
+  ```elixir
+  config :singularity, :embedding_training_pipeline,
+    pgflow_enabled: System.get_env("PGFLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
+    canary_percentage: String.to_integer(System.get_env("EMBEDDING_TRAINING_CANARY_PERCENT", "10"))
+  ```
   """
 
   use Broadway
@@ -18,8 +28,38 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
 
   @doc """
   Start the embedding training pipeline.
+
+  Supports both Broadway and PGFlow modes based on configuration.
   """
-  def start_link(_opts) do
+  def start_link(opts \\ []) do
+    if pgflow_enabled?() do
+      start_pgflow_pipeline(opts)
+    else
+      start_broadway_pipeline(opts)
+    end
+  end
+
+  # Check if PGFlow mode is enabled
+  defp pgflow_enabled? do
+    Application.get_env(:singularity, :embedding_training_pipeline, %{})
+    |> Map.get(:pgflow_enabled, false)
+  end
+
+  # Start PGFlow-based pipeline
+  defp start_pgflow_pipeline(_opts) do
+    Logger.info("🚀 Starting Embedding Training Pipeline (PGFlow mode)")
+
+    # Start PGFlow workflow supervisor
+    PGFlow.WorkflowSupervisor.start_workflow(
+      Singularity.Workflows.EmbeddingTrainingWorkflow,
+      name: EmbeddingTrainingWorkflowSupervisor
+    )
+  end
+
+  # Start legacy Broadway-based pipeline
+  defp start_broadway_pipeline(_opts) do
+    Logger.info("🎭 Starting Embedding Training Pipeline (Broadway legacy mode)")
+
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
