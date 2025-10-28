@@ -116,8 +116,14 @@ mod tests {
 
     #[test]
     fn resolves_aliases_case_insensitive() {
-        assert_eq!(SupportedLanguage::from_label("TS"), Some(SupportedLanguage::TypeScript));
-        assert_eq!(SupportedLanguage::from_label("Markdown"), Some(SupportedLanguage::Markdown));
+        assert_eq!(
+            SupportedLanguage::from_label("TS"),
+            Some(SupportedLanguage::TypeScript)
+        );
+        assert_eq!(
+            SupportedLanguage::from_label("Markdown"),
+            Some(SupportedLanguage::Markdown)
+        );
         assert!(SupportedLanguage::from_label("unknown").is_none());
     }
 }

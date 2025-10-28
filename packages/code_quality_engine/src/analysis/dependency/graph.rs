@@ -8,10 +8,10 @@
 //! - Publishes graph metrics to "intelligence_hub.graph.stats"
 //! - No local databases - all health data from CentralCloud
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Dependency graph analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -300,7 +300,11 @@ impl DependencyGraphAnalyzer {
     }
 
     /// Build dependency graph from code content
-    async fn build_dependency_graph(&self, content: &str, file_path: &str) -> Result<DependencyGraph> {
+    async fn build_dependency_graph(
+        &self,
+        content: &str,
+        file_path: &str,
+    ) -> Result<DependencyGraph> {
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
 
@@ -355,11 +359,13 @@ impl DependencyGraphAnalyzer {
         }
 
         // Identify root and leaf nodes
-        let root_nodes: Vec<String> = nodes.iter()
+        let root_nodes: Vec<String> = nodes
+            .iter()
             .filter(|n| n.in_degree == 0)
             .map(|n| n.id.clone())
             .collect();
-        let leaf_nodes: Vec<String> = nodes.iter()
+        let leaf_nodes: Vec<String> = nodes
+            .iter()
             .filter(|n| n.out_degree == 0)
             .map(|n| n.id.clone())
             .collect();
@@ -380,7 +386,10 @@ impl DependencyGraphAnalyzer {
         // Simple heuristic: look for import/use/require statements
         for line in content.lines() {
             let trimmed = line.trim();
-            if trimmed.starts_with("import ") || trimmed.starts_with("use ") || trimmed.starts_with("require ") {
+            if trimmed.starts_with("import ")
+                || trimmed.starts_with("use ")
+                || trimmed.starts_with("require ")
+            {
                 if let Some(dep_name) = Self::extract_dep_name(trimmed) {
                     dependencies.push(dep_name);
                 }
@@ -395,7 +404,11 @@ impl DependencyGraphAnalyzer {
         // Simplified: extract first word after import/use/require
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() > 1 {
-            Some(parts[1].trim_matches(|c| c == ';' || c == ',' || c == '\'' || c == '"').to_string())
+            Some(
+                parts[1]
+                    .trim_matches(|c| c == ';' || c == ',' || c == '\'' || c == '"')
+                    .to_string(),
+            )
         } else {
             None
         }
@@ -408,11 +421,15 @@ impl DependencyGraphAnalyzer {
         }
 
         // Prepare request for CentralCloud
-        let dependencies: Vec<serde_json::Value> = graph.nodes.iter()
-            .map(|node| json!({
-                "name": node.name,
-                "version": node.version,
-            }))
+        let dependencies: Vec<serde_json::Value> = graph
+            .nodes
+            .iter()
+            .map(|node| {
+                json!({
+                    "name": node.name,
+                    "version": node.version,
+                })
+            })
             .collect();
 
         let request = json!({
@@ -422,17 +439,16 @@ impl DependencyGraphAnalyzer {
         });
 
         // Query CentralCloud for health data
-        let response = query_centralcloud(
-            "intelligence_hub.dependency_health.query",
-            &request,
-            5000
-        )?;
+        let response =
+            query_centralcloud("intelligence_hub.dependency_health.query", &request, 5000)?;
 
         let health_data: Vec<serde_json::Value> = extract_data(&response, "health_data");
 
         // Enrich nodes with health data
         for (node, health) in graph.nodes.iter_mut().zip(health_data.iter()) {
-            if let Some(maintainability) = health.get("maintainability_score").and_then(|v| v.as_f64()) {
+            if let Some(maintainability) =
+                health.get("maintainability_score").and_then(|v| v.as_f64())
+            {
                 node.metadata.maintainability = maintainability;
             }
             if let Some(security) = health.get("security_score").and_then(|v| v.as_f64()) {
@@ -457,7 +473,9 @@ impl DependencyGraphAnalyzer {
             0.0
         };
 
-        let degrees: Vec<u32> = graph.nodes.iter()
+        let degrees: Vec<u32> = graph
+            .nodes
+            .iter()
             .map(|n| n.in_degree + n.out_degree)
             .collect();
 
@@ -475,8 +493,13 @@ impl DependencyGraphAnalyzer {
         let radius = diameter / 2;
         let clustering_coefficient = if node_count > 2 { density } else { 0.0 };
         let modularity = 1.0 - density;
-        let connectivity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
-        let robustness = 1.0 - (graph.strongly_connected_components.len() as f64 / node_count.max(1) as f64);
+        let connectivity = if node_count > 0 {
+            edge_count as f64 / node_count as f64
+        } else {
+            0.0
+        };
+        let robustness =
+            1.0 - (graph.strongly_connected_components.len() as f64 / node_count.max(1) as f64);
 
         GraphMetrics {
             node_count,
@@ -530,7 +553,12 @@ impl DependencyGraphAnalyzer {
     }
 
     /// Generate recommendations based on graph analysis
-    fn generate_recommendations(&self, graph: &DependencyGraph, metrics: &GraphMetrics, cycles: &[CircularDependency]) -> Vec<GraphRecommendation> {
+    fn generate_recommendations(
+        &self,
+        graph: &DependencyGraph,
+        metrics: &GraphMetrics,
+        cycles: &[CircularDependency],
+    ) -> Vec<GraphRecommendation> {
         let mut recommendations = Vec::new();
 
         // Recommendations for circular dependencies
@@ -573,14 +601,17 @@ impl DependencyGraphAnalyzer {
                 category: GraphCategory::Modularity,
                 title: "Improve Modularity".to_string(),
                 description: format!("Low modularity detected ({:.2})", metrics.modularity),
-                implementation: "Reorganize code into more cohesive modules with clear boundaries".to_string(),
+                implementation: "Reorganize code into more cohesive modules with clear boundaries"
+                    .to_string(),
                 expected_benefit: 0.5,
                 effort_required: EffortEstimate::High,
             });
         }
 
         // Recommendations for unhealthy dependencies
-        let unhealthy_nodes: Vec<&DependencyNode> = graph.nodes.iter()
+        let unhealthy_nodes: Vec<&DependencyNode> = graph
+            .nodes
+            .iter()
             .filter(|n| n.metadata.security_score < 0.5 || n.metadata.maintainability < 0.5)
             .collect();
 
@@ -589,8 +620,13 @@ impl DependencyGraphAnalyzer {
                 priority: RecommendationPriority::High,
                 category: GraphCategory::Security,
                 title: "Address Unhealthy Dependencies".to_string(),
-                description: format!("{} dependencies have low health scores", unhealthy_nodes.len()),
-                implementation: "Review and update dependencies with low security or maintainability scores".to_string(),
+                description: format!(
+                    "{} dependencies have low health scores",
+                    unhealthy_nodes.len()
+                ),
+                implementation:
+                    "Review and update dependencies with low security or maintainability scores"
+                        .to_string(),
                 expected_benefit: 0.7,
                 effort_required: EffortEstimate::Medium,
             });
@@ -600,7 +636,12 @@ impl DependencyGraphAnalyzer {
     }
 
     /// Publish graph statistics to CentralCloud for collective learning
-    async fn publish_graph_stats(&self, graph: &DependencyGraph, metrics: &GraphMetrics, cycles: &[CircularDependency]) {
+    async fn publish_graph_stats(
+        &self,
+        graph: &DependencyGraph,
+        metrics: &GraphMetrics,
+        cycles: &[CircularDependency],
+    ) {
         let stats = json!({
             "type": "dependency_graph_analysis",
             "timestamp": chrono::Utc::now().to_rfc3339(),

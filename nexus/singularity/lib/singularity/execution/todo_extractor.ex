@@ -111,12 +111,12 @@ defmodule Singularity.Execution.TodoExtractor do
     {"elixir", "# INFO: $$$", "INFO comment - pure information"},
     {"elixir", "# DOC: $$$", "DOC comment - pure documentation"},
     {"elixir", "# COMMENT: $$$", "COMMENT comment - pure explanation"},
-    
+
     # Test/example code (not actionable in production)
     {"elixir", "# TEST: $$$", "TEST comment - test code"},
     {"elixir", "# EXAMPLE: $$$", "EXAMPLE comment - example code"},
     {"elixir", "# SAMPLE: $$$", "SAMPLE comment - sample code"},
-    
+
     # Rust equivalents
     {"rust", "// NOTE: $$$", "NOTE comment - pure documentation"},
     {"rust", "// INFO: $$$", "INFO comment - pure information"},
@@ -125,7 +125,7 @@ defmodule Singularity.Execution.TodoExtractor do
     {"rust", "// TEST: $$$", "TEST comment - test code"},
     {"rust", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
     {"rust", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
-    
+
     # JavaScript equivalents
     {"javascript", "// NOTE: $$$", "NOTE comment - pure documentation"},
     {"javascript", "// INFO: $$$", "INFO comment - pure information"},
@@ -134,7 +134,7 @@ defmodule Singularity.Execution.TodoExtractor do
     {"javascript", "// TEST: $$$", "TEST comment - test code"},
     {"javascript", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
     {"javascript", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
-    
+
     # Python equivalents
     {"python", "# NOTE: $$$", "NOTE comment - pure documentation"},
     {"python", "# INFO: $$$", "INFO comment - pure information"},
@@ -147,21 +147,36 @@ defmodule Singularity.Execution.TodoExtractor do
 
   # Priority mapping for comment types
   @priority_map %{
-    "FIXME" => 1,      # Critical - needs fixing
-    "TODO" => 2,       # High - incomplete work
-    "STUB" => 3,       # High - placeholder code
-    "HACK" => 4,       # Medium - temporary solution
-    "DEBUG" => 5,      # Medium - debugging code
-    "DEAD" => 6,       # Medium - dead code
-    "UNUSED" => 7,     # Medium - unused code
-    "DEPRECATED" => 8, # Medium - deprecated code
-    "REMOVE" => 9,     # Medium - code to remove
-    "WORKAROUND" => 10, # Low - temporary fix
-    "QUICKFIX" => 11,  # Low - quick fix
-    "TEMP" => 12,      # Low - temporary code
-    "TEMPORARY" => 13, # Low - temporary code
-    "PLACEHOLDER" => 14, # Low - placeholder code
-    "NOTE" => 15       # Low - hidden todo or important info
+    # Critical - needs fixing
+    "FIXME" => 1,
+    # High - incomplete work
+    "TODO" => 2,
+    # High - placeholder code
+    "STUB" => 3,
+    # Medium - temporary solution
+    "HACK" => 4,
+    # Medium - debugging code
+    "DEBUG" => 5,
+    # Medium - dead code
+    "DEAD" => 6,
+    # Medium - unused code
+    "UNUSED" => 7,
+    # Medium - deprecated code
+    "DEPRECATED" => 8,
+    # Medium - code to remove
+    "REMOVE" => 9,
+    # Low - temporary fix
+    "WORKAROUND" => 10,
+    # Low - quick fix
+    "QUICKFIX" => 11,
+    # Low - temporary code
+    "TEMP" => 12,
+    # Low - temporary code
+    "TEMPORARY" => 13,
+    # Low - placeholder code
+    "PLACEHOLDER" => 14,
+    # Low - hidden todo or important info
+    "NOTE" => 15
   }
 
   @doc """
@@ -184,19 +199,25 @@ defmodule Singularity.Execution.TodoExtractor do
       {:ok, comments} when comments != [] ->
         # Filter out development artifacts and non-actionable comments
         actionable_comments = filter_actionable_comments(comments)
-        
+
         if actionable_comments != [] do
-          Logger.info("Found #{length(actionable_comments)} actionable TODO comments in #{file_path} (filtered from #{length(comments)} total)")
-          
-          todos = if create_todos do
-            Enum.map(actionable_comments, &create_todo_from_comment(&1, file_path))
-          else
-            actionable_comments
-          end
+          Logger.info(
+            "Found #{length(actionable_comments)} actionable TODO comments in #{file_path} (filtered from #{length(comments)} total)"
+          )
+
+          todos =
+            if create_todos do
+              Enum.map(actionable_comments, &create_todo_from_comment(&1, file_path))
+            else
+              actionable_comments
+            end
 
           {:ok, todos}
         else
-          Logger.debug("No actionable TODO comments found in #{file_path} (filtered out #{length(comments)} development artifacts)")
+          Logger.debug(
+            "No actionable TODO comments found in #{file_path} (filtered out #{length(comments)} development artifacts)"
+          )
+
           {:ok, []}
         end
 
@@ -237,7 +258,7 @@ defmodule Singularity.Execution.TodoExtractor do
 
   defp is_excluded_comment?(comment) do
     pattern = comment[:pattern] || ""
-    
+
     # Check if this comment matches any excluded pattern
     Enum.any?(@excluded_patterns, fn {_lang, excluded_pattern, _desc} ->
       String.contains?(pattern, excluded_pattern)
@@ -247,47 +268,47 @@ defmodule Singularity.Execution.TodoExtractor do
   defp is_actionable_comment?(comment) do
     pattern = comment[:pattern] || ""
     matched_text = comment[:matched_text] || ""
-    
+
     # Must be any code smell marker (not excluded)
-    is_code_smell = String.contains?(pattern, "TODO:") or 
-                   String.contains?(pattern, "FIXME:") or
-                   String.contains?(pattern, "NOTE:") or
-                   String.contains?(pattern, "STUB:") or
-                   String.contains?(pattern, "HACK:") or
-                   String.contains?(pattern, "DEBUG:") or
-                   String.contains?(pattern, "DEAD:") or
-                   String.contains?(pattern, "UNUSED:") or
-                   String.contains?(pattern, "DEPRECATED:") or
-                   String.contains?(pattern, "REMOVE:") or
-                   String.contains?(pattern, "WORKAROUND:") or
-                   String.contains?(pattern, "QUICKFIX:") or
-                   String.contains?(pattern, "TEMP:") or
-                   String.contains?(pattern, "TEMPORARY:") or
-                   String.contains?(pattern, "PLACEHOLDER:")
-    
+    is_code_smell =
+      String.contains?(pattern, "TODO:") or
+        String.contains?(pattern, "FIXME:") or
+        String.contains?(pattern, "NOTE:") or
+        String.contains?(pattern, "STUB:") or
+        String.contains?(pattern, "HACK:") or
+        String.contains?(pattern, "DEBUG:") or
+        String.contains?(pattern, "DEAD:") or
+        String.contains?(pattern, "UNUSED:") or
+        String.contains?(pattern, "DEPRECATED:") or
+        String.contains?(pattern, "REMOVE:") or
+        String.contains?(pattern, "WORKAROUND:") or
+        String.contains?(pattern, "QUICKFIX:") or
+        String.contains?(pattern, "TEMP:") or
+        String.contains?(pattern, "TEMPORARY:") or
+        String.contains?(pattern, "PLACEHOLDER:")
+
     # Must have meaningful content (not just the marker)
     has_content = String.length(String.trim(matched_text)) > 10
-    
+
     is_code_smell and has_content
   end
-
 
   defp create_todo_from_comment(comment, file_path) do
     # Extract TODO text from the comment
     todo_text = extract_todo_text(comment)
-    
+
     # Check if comment already has a UUID
     existing_uuid = extract_uuid_from_comment(comment)
-    
+
     # Generate new UUID if none exists
     file_uuid = existing_uuid || generate_uuid()
-    
+
     # Check if todo with this UUID already exists
     case find_todo_by_file_uuid(file_uuid) do
       nil ->
         # Create new todo
         create_new_todo(comment, file_path, todo_text, file_uuid)
-      
+
       existing_todo ->
         # Update existing todo if content changed
         update_existing_todo(existing_todo, comment, file_path, todo_text)
@@ -297,7 +318,7 @@ defmodule Singularity.Execution.TodoExtractor do
   defp extract_todo_text(comment) do
     # Get the matched text and clean it up
     text = comment[:matched_text] || ""
-    
+
     # Remove the comment prefix and clean up
     text
     |> String.replace(~r/^#\s*(TODO|FIXME|HACK|NOTE):\s*/, "")
@@ -311,14 +332,15 @@ defmodule Singularity.Execution.TodoExtractor do
 
   defp determine_priority(comment) do
     pattern = comment[:pattern] || ""
-    
+
     case String.split(pattern, ":") do
       [prefix, _] ->
         comment_type = String.trim(prefix) |> String.replace(~r/^[#\/\s]+/, "")
         Map.get(@priority_map, comment_type, 3)
-      
+
       _ ->
-        3  # Default to medium priority
+        # Default to medium priority
+        3
     end
   end
 
@@ -335,7 +357,7 @@ defmodule Singularity.Execution.TodoExtractor do
 
   defp extract_uuid_from_comment(comment) do
     text = comment[:matched_text] || ""
-    
+
     # Look for UUID pattern in comment text
     case Regex.run(~r/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i, text) do
       [uuid] -> uuid
@@ -349,17 +371,19 @@ defmodule Singularity.Execution.TodoExtractor do
     |> :binary.encode_hex()
     |> String.downcase()
     |> then(fn hex ->
-      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4), e::binary-size(12)>> = hex
+      <<a::binary-size(8), b::binary-size(4), c::binary-size(4), d::binary-size(4),
+        e::binary-size(12)>> = hex
+
       "#{a}-#{b}-#{c}-#{d}-#{e}"
     end)
   end
 
   defp find_todo_by_file_uuid(file_uuid) do
     import Ecto.Query
-    
+
     Singularity.Repo.one(
       from t in Singularity.Execution.Todo,
-      where: t.file_uuid == ^file_uuid
+        where: t.file_uuid == ^file_uuid
     )
   end
 
@@ -368,20 +392,20 @@ defmodule Singularity.Execution.TodoExtractor do
     complexity = determine_complexity(todo_text)
 
     case TodoStore.create(%{
-      title: todo_text,
-      description: "Auto-extracted from #{Path.relative_to_cwd(file_path)}",
-      priority: priority,
-      complexity: complexity,
-      status: "pending",
-      source: "code_comment",
-      file_uuid: file_uuid,
-      context: %{
-        file_path: file_path,
-        line_number: comment[:line] || 0,
-        comment_type: comment[:pattern] || "TODO",
-        extracted_at: DateTime.utc_now()
-      }
-    }) do
+           title: todo_text,
+           description: "Auto-extracted from #{Path.relative_to_cwd(file_path)}",
+           priority: priority,
+           complexity: complexity,
+           status: "pending",
+           source: "code_comment",
+           file_uuid: file_uuid,
+           context: %{
+             file_path: file_path,
+             line_number: comment[:line] || 0,
+             comment_type: comment[:pattern] || "TODO",
+             extracted_at: DateTime.utc_now()
+           }
+         }) do
       {:ok, todo} ->
         Logger.debug("Created todo from comment: #{todo.title} (UUID: #{file_uuid})")
         todo
@@ -397,16 +421,20 @@ defmodule Singularity.Execution.TodoExtractor do
     if existing_todo.title != todo_text do
       # Update the todo with new content
       case TodoStore.update(existing_todo, %{
-        title: todo_text,
-        context: Map.merge(existing_todo.context || %{}, %{
-          file_path: file_path,
-          line_number: comment[:line] || 0,
-          comment_type: comment[:pattern] || "TODO",
-          updated_at: DateTime.utc_now()
-        })
-      }) do
+             title: todo_text,
+             context:
+               Map.merge(existing_todo.context || %{}, %{
+                 file_path: file_path,
+                 line_number: comment[:line] || 0,
+                 comment_type: comment[:pattern] || "TODO",
+                 updated_at: DateTime.utc_now()
+               })
+           }) do
         {:ok, updated_todo} ->
-          Logger.debug("Updated existing todo: #{updated_todo.title} (UUID: #{existing_todo.file_uuid})")
+          Logger.debug(
+            "Updated existing todo: #{updated_todo.title} (UUID: #{existing_todo.file_uuid})"
+          )
+
           updated_todo
 
         {:error, reason} ->

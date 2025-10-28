@@ -56,7 +56,7 @@ tracing = "0.1"
 # Note: RCA analysis now uses in-memory processing with dummy paths
 
 # Singularity rust-code-analysis for comprehensive complexity metrics
-singularity-code-analysis = { path = "../analyzers/rust_code_analysis" }
+singularity-code-analysis = { path = "../../singularity-code-analysis" }
 
 # Tree-sitter language grammars (for ast-grep)
 tree-sitter-javascript = { workspace = true }

@@ -168,7 +168,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     GenServer.call(__MODULE__, :get_pipeline_status)
   end
 
-
   @doc """
   Analyze file documentation quality.
   """
@@ -254,8 +253,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     {:reply, {:ok, status}, state}
   end
 
-
-
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, :normal}, state) do
     # Pipeline completed successfully
@@ -283,7 +280,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     Logger.error("Documentation pipeline failed: #{inspect(reason)}")
     {:noreply, new_state}
   end
-
 
   ## Private Functions
 
@@ -458,7 +454,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     }
   end
 
-
   defp detect_language(file_path) do
     cond do
       String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
@@ -482,9 +477,9 @@ defmodule Singularity.Agents.DocumentationPipeline do
   defp scan_codebase_documentation_internal do
     # Get all source files
     files = get_all_source_files()
-    
+
     # Scan for documentation quality
-    results = 
+    results =
       files
       |> Enum.map(fn file_path ->
         case File.read(file_path) do
@@ -492,21 +487,23 @@ defmodule Singularity.Agents.DocumentationPipeline do
             language = detect_language(file_path)
             has_docs = has_documentation?(content, language)
             %{file: file_path, language: language, has_docs: has_docs}
+
           {:error, _} ->
             %{file: file_path, language: :unknown, has_docs: false}
         end
       end)
-    
+
     total_files = length(files)
     files_with_docs = Enum.count(results, & &1.has_docs)
     quality_score = if total_files > 0, do: files_with_docs / total_files, else: 0.0
-    
-    {:ok, %{
-      total_files: total_files,
-      files_with_docs: files_with_docs,
-      quality_score: quality_score,
-      results: results
-    }}
+
+    {:ok,
+     %{
+       total_files: total_files,
+       files_with_docs: files_with_docs,
+       quality_score: quality_score,
+       results: results
+     }}
   end
 
   defp upgrade_module_documentation_internal(module_path, opts) do
@@ -516,6 +513,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
         upgraded_content = apply_documentation_upgrade(content, language, opts)
         File.write(module_path, upgraded_content)
         {:ok, %{module: module_path, language: language, status: :upgraded}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -538,10 +536,14 @@ defmodule Singularity.Agents.DocumentationPipeline do
         if not String.contains?(content, "@moduledoc") do
           # Add basic @moduledoc
           content
-          |> String.replace(~r/defmodule\s+(\w+)/, "defmodule \\1 do\n  @moduledoc \"\"\"\n  TODO: Add module documentation\n  \"\"\"")
+          |> String.replace(
+            ~r/defmodule\s+(\w+)/,
+            "defmodule \\1 do\n  @moduledoc \"\"\"\n  TODO: Add module documentation\n  \"\"\""
+          )
         else
           content
         end
+
       _ ->
         content
     end
@@ -597,7 +599,8 @@ defmodule Singularity.Agents.DocumentationPipeline do
             %{
               file: file_path,
               language: :typescript,
-              has_documentation: String.contains?(content, "/**") and String.contains?(content, "Module Identity"),
+              has_documentation:
+                String.contains?(content, "/**") and String.contains?(content, "Module Identity"),
               has_identity: String.contains?(content, "Module Identity"),
               has_architecture_diagram: String.contains?(content, "Architecture Diagram"),
               has_call_graph: String.contains?(content, "Call Graph"),
@@ -609,7 +612,8 @@ defmodule Singularity.Agents.DocumentationPipeline do
             %{
               file: file_path,
               language: language,
-              has_documentation: String.contains?(content, "@doc") or String.contains?(content, "///"),
+              has_documentation:
+                String.contains?(content, "@doc") or String.contains?(content, "///"),
               has_identity: false,
               has_architecture_diagram: false,
               has_call_graph: false,
@@ -622,5 +626,4 @@ defmodule Singularity.Agents.DocumentationPipeline do
         {:error, reason}
     end
   end
-
 end

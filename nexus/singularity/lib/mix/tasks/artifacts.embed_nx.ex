@@ -50,12 +50,16 @@ defmodule Mix.Tasks.Artifacts.EmbedNx do
       Mix.shell().error("Error: Database connection failed after retries")
       Mix.shell().info("Tips:")
       Mix.shell().info("  1. Ensure PostgreSQL is running on localhost:5432")
-      Mix.shell().info("  2. Set DATABASE_URL environment variable (e.g., ecto://user:password@localhost/singularity)")
+
+      Mix.shell().info(
+        "  2. Set DATABASE_URL environment variable (e.g., ecto://user:password@localhost/singularity)"
+      )
+
       Mix.shell().info("  3. Or run: mix ecto.create && mix ecto.migrate")
       exit({:shutdown, 1})
     end
 
-    device = (Keyword.get(opts, :device, "cpu") |> String.to_atom())
+    device = Keyword.get(opts, :device, "cpu") |> String.to_atom()
     verbose = Keyword.get(opts, :verbose, false)
     dry_run = Keyword.get(opts, :dry_run, false)
     limit = Keyword.get(opts, :limit, nil)

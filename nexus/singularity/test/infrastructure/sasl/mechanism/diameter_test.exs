@@ -46,7 +46,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.DiameterTest do
     test "generates challenge with default size" do
       assert {:ok, challenge} = Diameter.generate_challenge()
       assert is_binary(challenge)
-      assert byte_size(challenge) == 32  # Default challenge size
+      # Default challenge size
+      assert byte_size(challenge) == 32
     end
 
     test "generates challenge with custom size" do

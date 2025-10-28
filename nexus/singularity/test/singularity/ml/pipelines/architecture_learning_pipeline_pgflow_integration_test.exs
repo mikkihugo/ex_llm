@@ -96,13 +96,15 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
       Enum.each(steps, fn step ->
         if step.depends_on do
           Enum.each(step.depends_on, fn dep ->
-            assert Map.has_key?(step_map, dep), "Step #{step.id} depends on non-existent step #{dep}"
+            assert Map.has_key?(step_map, dep),
+                   "Step #{step.id} depends on non-existent step #{dep}"
           end)
         end
 
         if step.next do
           Enum.each(step.next, fn next_step ->
-            assert Map.has_key?(step_map, next_step), "Step #{step.id} references non-existent next step #{next_step}"
+            assert Map.has_key?(step_map, next_step),
+                   "Step #{step.id} references non-existent next step #{next_step}"
           end)
         end
       end)
@@ -217,7 +219,8 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
     test "step functions handle errors appropriately" do
       # Test that step functions are designed to return {:ok, result} or {:error, reason}
       # This is validated by the function signatures and workflow expectations
-      assert true # Placeholder - actual error testing would require mocking
+      # Placeholder - actual error testing would require mocking
+      assert true
     end
   end
 

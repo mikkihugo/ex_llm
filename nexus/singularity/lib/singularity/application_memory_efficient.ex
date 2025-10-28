@@ -1,7 +1,7 @@
 defmodule Singularity.ApplicationMemoryEfficient do
   @moduledoc """
   Memory-efficient version of Singularity.Application for resource-constrained environments.
-  
+
   Starts processes in stages to reduce memory pressure during startup.
   """
 
@@ -21,7 +21,7 @@ defmodule Singularity.ApplicationMemoryEfficient do
       Singularity.ProcessRegistry
     ]
 
-    Logger.info("Starting Singularity Stage 1 (Foundation)", 
+    Logger.info("Starting Singularity Stage 1 (Foundation)",
       child_count: length(stage1_children),
       environment: Mix.env()
     )
@@ -30,12 +30,12 @@ defmodule Singularity.ApplicationMemoryEfficient do
     case Supervisor.start_link(stage1_children, strategy: :one_for_one) do
       {:ok, supervisor} ->
         Logger.info("Stage 1 started successfully, starting Stage 2 in 2 seconds...")
-        
+
         # Start Stage 2 after a delay
         Process.send_after(self(), :start_stage2, 2000)
-        
+
         {:ok, supervisor}
-      
+
       error ->
         Logger.error("Failed to start Stage 1", error: error)
         error
@@ -49,15 +49,18 @@ defmodule Singularity.ApplicationMemoryEfficient do
       Singularity.Tools.ProviderToolkitBootstrapper
     ]
 
-    Logger.info("Starting Singularity Stage 2 (Infrastructure)", 
+    Logger.info("Starting Singularity Stage 2 (Infrastructure)",
       child_count: length(stage2_children)
     )
 
     # Start Stage 2 children
     for child <- stage2_children do
       case Supervisor.start_child(state, child) do
-        {:ok, _} -> Logger.debug("Started child: #{inspect(child)}")
-        error -> Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
+        {:ok, _} ->
+          Logger.debug("Started child: #{inspect(child)}")
+
+        error ->
+          Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
       end
     end
 
@@ -74,15 +77,18 @@ defmodule Singularity.ApplicationMemoryEfficient do
       Singularity.Agents.DocumentationPipeline
     ]
 
-    Logger.info("Starting Singularity Stage 3 (Domain Services)", 
+    Logger.info("Starting Singularity Stage 3 (Domain Services)",
       child_count: length(stage3_children)
     )
 
     # Start Stage 3 children
     for child <- stage3_children do
       case Supervisor.start_child(state, child) do
-        {:ok, _} -> Logger.debug("Started child: #{inspect(child)}")
-        error -> Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
+        {:ok, _} ->
+          Logger.debug("Started child: #{inspect(child)}")
+
+        error ->
+          Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
       end
     end
 
@@ -98,15 +104,18 @@ defmodule Singularity.ApplicationMemoryEfficient do
       Singularity.ApplicationSupervisor
     ]
 
-    Logger.info("Starting Singularity Stage 4 (Agents & Execution)", 
+    Logger.info("Starting Singularity Stage 4 (Agents & Execution)",
       child_count: length(stage4_children)
     )
 
     # Start Stage 4 children
     for child <- stage4_children do
       case Supervisor.start_child(state, child) do
-        {:ok, _} -> Logger.debug("Started child: #{inspect(child)}")
-        error -> Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
+        {:ok, _} ->
+          Logger.debug("Started child: #{inspect(child)}")
+
+        error ->
+          Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
       end
     end
 
@@ -123,15 +132,18 @@ defmodule Singularity.ApplicationMemoryEfficient do
       Singularity.Git.Supervisor
     ]
 
-    Logger.info("Starting Singularity Stage 5 (Optional Services)", 
+    Logger.info("Starting Singularity Stage 5 (Optional Services)",
       child_count: length(stage5_children)
     )
 
     # Start Stage 5 children
     for child <- stage5_children do
       case Supervisor.start_child(state, child) do
-        {:ok, _} -> Logger.debug("Started child: #{inspect(child)}")
-        error -> Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
+        {:ok, _} ->
+          Logger.debug("Started child: #{inspect(child)}")
+
+        error ->
+          Logger.warning("Failed to start child: #{inspect(child)}, error: #{inspect(error)}")
       end
     end
 

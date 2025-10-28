@@ -8,10 +8,10 @@
 //! - Publishes bottleneck detections to "intelligence_hub.performance_issue.detected"
 //! - No local pattern databases - all patterns from CentralCloud
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Performance profiling result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -253,7 +253,9 @@ impl PerformanceProfiler {
         let patterns = self.query_bottleneck_patterns(file_path).await?;
 
         // 2. Detect bottlenecks using patterns (use content!)
-        let bottlenecks = self.detect_bottlenecks(content, file_path, &patterns).await?;
+        let bottlenecks = self
+            .detect_bottlenecks(content, file_path, &patterns)
+            .await?;
 
         // 3. Analyze resource usage (use content!)
         let resource_usage = self.analyze_resource_usage(content, file_path).await?;
@@ -290,11 +292,8 @@ impl PerformanceProfiler {
             "include_remediation": true,
         });
 
-        let response = query_centralcloud(
-            "intelligence_hub.bottleneck_patterns.query",
-            &request,
-            3000
-        )?;
+        let response =
+            query_centralcloud("intelligence_hub.bottleneck_patterns.query", &request, 3000)?;
 
         Ok(extract_data(&response, "patterns"))
     }
@@ -373,14 +372,22 @@ impl PerformanceProfiler {
     }
 
     /// Analyze resource usage from content
-    async fn analyze_resource_usage(&self, content: &str, _file_path: &str) -> Result<ResourceUsage> {
+    async fn analyze_resource_usage(
+        &self,
+        content: &str,
+        _file_path: &str,
+    ) -> Result<ResourceUsage> {
         // Simple heuristic analysis based on code patterns
         let memory_leaks = self.detect_memory_leaks(content);
         let cpu_intensive = self.detect_cpu_intensive_functions(content);
 
         Ok(ResourceUsage {
             memory_usage: MemoryUsage {
-                peak_memory_mb: if memory_leaks.is_empty() { 100.0 } else { 500.0 },
+                peak_memory_mb: if memory_leaks.is_empty() {
+                    100.0
+                } else {
+                    500.0
+                },
                 average_memory_mb: if memory_leaks.is_empty() { 50.0 } else { 300.0 },
                 memory_leaks,
                 garbage_collection_impact: 0.1,
@@ -447,7 +454,11 @@ impl PerformanceProfiler {
     }
 
     /// Calculate performance metrics from resource usage and bottlenecks
-    fn calculate_performance_metrics(&self, resource_usage: &ResourceUsage, bottlenecks: &[PerformanceBottleneck]) -> PerformanceMetrics {
+    fn calculate_performance_metrics(
+        &self,
+        resource_usage: &ResourceUsage,
+        bottlenecks: &[PerformanceBottleneck],
+    ) -> PerformanceMetrics {
         // Use resource_usage to calculate throughput
         let throughput = if resource_usage.cpu_usage.peak_cpu_percent > 50.0 {
             100.0
@@ -456,26 +467,32 @@ impl PerformanceProfiler {
         };
 
         // Use bottlenecks to calculate latency
-        let latency = bottlenecks.iter()
+        let latency = bottlenecks
+            .iter()
             .filter_map(|b| b.impact.estimated_latency_ms)
-            .sum::<f64>() / bottlenecks.len().max(1) as f64;
+            .sum::<f64>()
+            / bottlenecks.len().max(1) as f64;
 
         // Use bottlenecks to calculate error rate
         let error_rate = if bottlenecks.len() > 10 { 0.1 } else { 0.01 };
 
         // Use bottlenecks to calculate availability
-        let availability = if bottlenecks.iter().any(|b| matches!(b.severity, PerformanceSeverity::Critical)) {
+        let availability = if bottlenecks
+            .iter()
+            .any(|b| matches!(b.severity, PerformanceSeverity::Critical))
+        {
             0.9
         } else {
             0.99
         };
 
         // Use resource_usage and bottlenecks for scalability
-        let scalability = if resource_usage.memory_usage.memory_leaks.is_empty() && bottlenecks.len() < 5 {
-            1.0
-        } else {
-            0.5
-        };
+        let scalability =
+            if resource_usage.memory_usage.memory_leaks.is_empty() && bottlenecks.len() < 5 {
+                1.0
+            } else {
+                0.5
+            };
 
         PerformanceMetrics {
             throughput,

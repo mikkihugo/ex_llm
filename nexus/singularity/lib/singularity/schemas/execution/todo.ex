@@ -113,8 +113,10 @@ defmodule Singularity.Execution.Todo do
     field :actual_duration_seconds, :integer
     field :retry_count, :integer, default: 0
     field :max_retries, :integer, default: 3
-    field :file_uuid, :string  # UUID for tracking todos in files
-    field :source, :string, default: "manual"  # source: manual, code_comment, etc.
+    # UUID for tracking todos in files
+    field :file_uuid, :string
+    # source: manual, code_comment, etc.
+    field :source, :string, default: "manual"
 
     timestamps()
   end
@@ -143,7 +145,8 @@ defmodule Singularity.Execution.Todo do
     |> validate_inclusion(:complexity, @valid_complexities)
     |> validate_length(:title, min: 1, max: 500)
     |> validate_length(:description, max: 5000)
-    |> validate_length(:file_uuid, max: 36)  # UUID format validation
+    # UUID format validation
+    |> validate_length(:file_uuid, max: 36)
   end
 
   @doc """

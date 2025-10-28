@@ -9,5 +9,5 @@
 pub mod extractor;
 pub mod rust_extractor;
 
-pub use extractor::{FeatureExtractor, ExtractedFeature, FeatureType};
+pub use extractor::{ExtractedFeature, FeatureExtractor, FeatureType};
 pub use rust_extractor::RustFeatureExtractor;

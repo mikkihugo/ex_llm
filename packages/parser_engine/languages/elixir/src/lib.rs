@@ -1,13 +1,13 @@
 //! Elixir parser implemented with tree-sitter and the parser-framework traits.
 
 use parser_core::{
-    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
     beam_analysis::{
-        BeamAnalysisResult, OtpPatterns, GenServerInfo, SupervisorInfo, ApplicationInfo,
-        ActorAnalysis, ProcessSpawningAnalysis, MessagePassingAnalysis, ConcurrencyPatterns,
-        FaultToleranceAnalysis, BeamMetrics, LanguageFeatures, ElixirFeatures,
-        PhoenixUsage, EctoUsage, LiveViewUsage, NervesUsage, BroadwayUsage,
+        ActorAnalysis, ApplicationInfo, BeamAnalysisResult, BeamMetrics, BroadwayUsage,
+        ConcurrencyPatterns, EctoUsage, ElixirFeatures, FaultToleranceAnalysis, GenServerInfo,
+        LanguageFeatures, LiveViewUsage, MessagePassingAnalysis, NervesUsage, OtpPatterns,
+        PhoenixUsage, ProcessSpawningAnalysis, SupervisorInfo,
     },
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
@@ -53,8 +53,13 @@ impl LanguageParser for ElixirParser {
 
         // Use RCA for real complexity and accurate LOC metrics
         let (complexity_score, _sloc, ploc, cloc, blank_lines) =
-            parser_core::calculate_rca_complexity(&ast.content, "elixir")
-                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+            parser_core::calculate_rca_complexity(&ast.content, "elixir").unwrap_or((
+                1.0,
+                ast.content.lines().count() as u64,
+                ast.content.lines().count() as u64,
+                comments.len() as u64,
+                0,
+            ));
 
         Ok(LanguageMetrics {
             lines_of_code: ploc.saturating_sub(blank_lines + cloc),
@@ -62,9 +67,9 @@ impl LanguageParser for ElixirParser {
             blank_lines,
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
-            classes: 0, // Elixir doesn't have classes
+            classes: 0,       // Elixir doesn't have classes
             complexity_score, // Real cyclomatic complexity from RCA!
-            imports: imports.len() as u64
+            imports: imports.len() as u64,
         })
     }
 
@@ -273,13 +278,14 @@ impl ElixirParser {
         let mut genservers = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // behavior name
+                if capture.index == 0 {
+                    // behavior name
                     let behavior = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if behavior == "use" {
                         // Check if it's GenServer
                         if let Some(next_capture) = m.captures.get(1) {
@@ -288,7 +294,7 @@ impl ElixirParser {
                                 .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default()
                                 .to_owned();
-                            
+
                             if module_name.contains("GenServer") {
                                 let line = capture.node.start_position().row + 1;
                                 genservers.push(GenServerInfo {
@@ -337,13 +343,14 @@ impl ElixirParser {
         let mut supervisors = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // behavior name
+                if capture.index == 0 {
+                    // behavior name
                     let behavior = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if behavior == "use" {
                         if let Some(next_capture) = m.captures.get(1) {
                             let module_name = next_capture
@@ -351,7 +358,7 @@ impl ElixirParser {
                                 .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default()
                                 .to_owned();
-                            
+
                             if module_name.contains("Supervisor") {
                                 let line = capture.node.start_position().row + 1;
                                 supervisors.push(SupervisorInfo {
@@ -392,13 +399,14 @@ impl ElixirParser {
         let mut applications = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // behavior name
+                if capture.index == 0 {
+                    // behavior name
                     let behavior = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if behavior == "use" {
                         if let Some(next_capture) = m.captures.get(1) {
                             let module_name = next_capture
@@ -406,7 +414,7 @@ impl ElixirParser {
                                 .utf8_text(ast.content.as_bytes())
                                 .unwrap_or_default()
                                 .to_owned();
-                            
+
                             if module_name.contains("Application") {
                                 let line = capture.node.start_position().row + 1;
                                 applications.push(ApplicationInfo {
@@ -472,21 +480,21 @@ impl ElixirParser {
         otp_patterns: &OtpPatterns,
         actor_analysis: &ActorAnalysis,
     ) -> Result<BeamMetrics, ParseError> {
-        let estimated_process_count = otp_patterns.genservers.len() as u32 + 
-                                    otp_patterns.supervisors.len() as u32 +
-                                    otp_patterns.applications.len() as u32;
-        
-        let supervision_complexity = otp_patterns.supervisors.len() as f64 * 2.0 +
-                                   otp_patterns.genservers.len() as f64 * 1.5;
-        
-        let actor_complexity = actor_analysis.process_spawning.spawn_calls.len() as f64 +
-                             actor_analysis.message_passing.send_calls.len() as f64;
+        let estimated_process_count = otp_patterns.genservers.len() as u32
+            + otp_patterns.supervisors.len() as u32
+            + otp_patterns.applications.len() as u32;
+
+        let supervision_complexity = otp_patterns.supervisors.len() as f64 * 2.0
+            + otp_patterns.genservers.len() as f64 * 1.5;
+
+        let actor_complexity = actor_analysis.process_spawning.spawn_calls.len() as f64
+            + actor_analysis.message_passing.send_calls.len() as f64;
 
         Ok(BeamMetrics {
             estimated_process_count,
             estimated_message_queue_size: 0, // TODO: implement queue size estimation
-            estimated_memory_usage: 0, // TODO: implement memory usage estimation
-            gc_pressure: 0.0, // TODO: implement GC pressure calculation
+            estimated_memory_usage: 0,       // TODO: implement memory usage estimation
+            gc_pressure: 0.0,                // TODO: implement GC pressure calculation
             supervision_complexity,
             actor_complexity,
             fault_tolerance_score: 0.0, // TODO: implement fault tolerance scoring

@@ -2,8 +2,8 @@
 //!
 //! Detects performance issues and optimization opportunities.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Performance analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -305,24 +305,24 @@ impl PerformancePatternRegistry {
             patterns: Vec::new(),
         }
     }
-    
+
     /// Register a performance detector
     pub fn register_detector(&mut self, detector: Box<dyn PerformanceDetectorTrait>) {
         self.detectors.push(detector);
     }
-    
+
     /// Register a performance pattern
     pub fn register_pattern(&mut self, pattern: PerformancePattern) {
         self.patterns.push(pattern);
     }
-    
+
     /// Analyze code for performance issues
     pub fn analyze(&self, content: &str, file_path: &str) -> Result<PerformanceAnalysis> {
         // PSEUDO CODE:
         /*
         let mut bottlenecks = Vec::new();
         let mut optimization_opportunities = Vec::new();
-        
+
         // Run pattern-based detection
         for pattern in &self.patterns {
             if let Ok(regex) = Regex::new(&pattern.pattern) {
@@ -345,25 +345,25 @@ impl PerformancePatternRegistry {
                 }
             }
         }
-        
+
         // Run custom detectors
         for detector in &self.detectors {
             let detector_bottlenecks = detector.detect(content, file_path)?;
             bottlenecks.extend(detector_bottlenecks);
         }
-        
+
         // Calculate performance score
         let performance_score = calculate_performance_score(&bottlenecks);
-        
+
         // Generate optimization opportunities
         optimization_opportunities = generate_optimization_opportunities(&bottlenecks);
-        
+
         // Analyze resource usage
         let resource_usage = analyze_resource_usage(content, file_path)?;
-        
+
         // Generate recommendations
         let recommendations = generate_recommendations(&bottlenecks, &optimization_opportunities);
-        
+
         Ok(PerformanceAnalysis {
             bottlenecks,
             optimization_opportunities,
@@ -379,7 +379,7 @@ impl PerformancePatternRegistry {
             },
         })
         */
-        
+
         Ok(PerformanceAnalysis {
             bottlenecks: Vec::new(),
             optimization_opportunities: Vec::new(),

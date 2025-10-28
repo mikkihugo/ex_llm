@@ -285,7 +285,7 @@ defmodule Singularity.Learning.PatternMiner do
   defp analyze_trial(trial_dir) do
     Logger.info("Analyzing trial: #{trial_dir}")
 
-    # Use Runner for Rust analyzer execution
+    # Use Runner for Singularity Code Analyzer (rust-analyzer) execution
     case Singularity.Runner.execute_task(%{
            type: :analysis,
            args: %{path: trial_dir, tool: "analysis-suite"}

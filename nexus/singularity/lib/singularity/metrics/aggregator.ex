@@ -40,11 +40,13 @@ defmodule Singularity.Metrics.Aggregator do
       :ok
     rescue
       e ->
-        SASL.infrastructure_failure(:telemetry_error,
+        SASL.infrastructure_failure(
+          :telemetry_error,
           "Failed to handle telemetry event",
           event_name: event_name,
           error: e
         )
+
         :ok
     end
   end
@@ -77,11 +79,13 @@ defmodule Singularity.Metrics.Aggregator do
       end
     rescue
       e ->
-        SASL.database_failure(:metrics_retrieval_error,
+        SASL.database_failure(
+          :metrics_retrieval_error,
           "Failed to retrieve metrics for agent",
           agent_id: agent_id,
           error: e
         )
+
         {:error, :metrics_retrieval_failed}
     end
   end
@@ -145,11 +149,13 @@ defmodule Singularity.Metrics.Aggregator do
       case MetricsAggregation.record_metric(metric_type, value, metadata_with_agent) do
         :ok ->
           :ok
+
         {:error, reason} ->
           Logger.warning("Failed to record metric for agent #{agent_id}",
             metric_type: metric_type,
             reason: reason
           )
+
           {:error, reason}
       end
     rescue
@@ -158,6 +164,7 @@ defmodule Singularity.Metrics.Aggregator do
           metric_type: metric_type,
           error: inspect(e)
         )
+
         {:error, :metric_recording_failed}
     end
   end
@@ -207,7 +214,8 @@ defmodule Singularity.Metrics.Aggregator do
       :last_week -> 7 * 24 * 3600
       :last_month -> 30 * 24 * 3600
       seconds when is_integer(seconds) -> seconds
-      _ -> 7 * 24 * 3600  # Default to last week
+      # Default to last week
+      _ -> 7 * 24 * 3600
     end
   end
 
@@ -358,11 +366,12 @@ defmodule Singularity.Metrics.Aggregator do
     {measurement, metric_type} = extract_measurement_and_type(event_name, measurements)
 
     # Enrich metadata with environment and node information
-    enriched_metadata = Map.merge(metadata, %{
-      environment: Application.get_env(:singularity, :environment, "development"),
-      node: Node.self() |> to_string(),
-      telemetry_event: Enum.join(event_name, ".")
-    })
+    enriched_metadata =
+      Map.merge(metadata, %{
+        environment: Application.get_env(:singularity, :environment, "development"),
+        node: Node.self() |> to_string(),
+        telemetry_event: Enum.join(event_name, ".")
+      })
 
     # Record the metric using the existing MetricsAggregation system
     MetricsAggregation.record_metric(metric_type, measurement, enriched_metadata)

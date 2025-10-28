@@ -151,7 +151,9 @@ defmodule Singularity.LLM.BeamLLMTrainer do
           Logger.info("   💾 Checkpoint: #{checkpoint_path}")
         end
 
-        Logger.info("Epoch #{epoch}/#{epochs}: loss=#{Float.round(loss, 3)}, accuracy=#{Float.round(accuracy, 3)} (#{Float.round(epoch_time, 1)}s)")
+        Logger.info(
+          "Epoch #{epoch}/#{epochs}: loss=#{Float.round(loss, 3)}, accuracy=#{Float.round(accuracy, 3)} (#{Float.round(epoch_time, 1)}s)"
+        )
 
         %{
           epoch: epoch,
@@ -175,7 +177,11 @@ defmodule Singularity.LLM.BeamLLMTrainer do
       history: history
     }
 
-    new_trainer = %{trainer | trained_epochs: trainer.trained_epochs + epochs, training_history: history}
+    new_trainer = %{
+      trainer
+      | trained_epochs: trainer.trained_epochs + epochs,
+        training_history: history
+    }
 
     Logger.info("✅ Fine-tuning complete!")
     Logger.info("   Total time: #{Float.round(total_time, 2)}s")

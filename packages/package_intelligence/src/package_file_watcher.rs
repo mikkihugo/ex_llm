@@ -12,8 +12,8 @@
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use dependency_parser::{DependencyParser, PackageDependency};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
@@ -50,7 +50,6 @@ pub enum ProgrammingLanguage {
   Julia,
   Unknown,
 }
-
 
 #[cfg(feature = "orchestration")]
 use notify::{
@@ -468,18 +467,21 @@ impl PackageFileWatcher {
             path: package_file.parent().unwrap_or(repo_path).to_path_buf(),
             name: project_name.clone(),
             language: project_language,
-            dependencies: dependencies.iter().map(|dep: &PackageDependency| VersionedDependency {
-              name: dep.name.clone(),
-              version: dep.version.clone(),
-              ecosystem: dep.ecosystem.clone(),
-              source: None,
-              first_seen: Utc::now(),
-              last_seen: Utc::now(),
-              last_hit: Utc::now(),
-              hit_count: 1,
-              recent_hits: vec![Utc::now()],
-              used_by_projects: vec![],
-            }).collect(),
+            dependencies: dependencies
+              .iter()
+              .map(|dep: &PackageDependency| VersionedDependency {
+                name: dep.name.clone(),
+                version: dep.version.clone(),
+                ecosystem: dep.ecosystem.clone(),
+                source: None,
+                first_seen: Utc::now(),
+                last_seen: Utc::now(),
+                last_hit: Utc::now(),
+                hit_count: 1,
+                recent_hits: vec![Utc::now()],
+                used_by_projects: vec![],
+              })
+              .collect(),
             last_scanned: SystemTime::now(),
             version: None, // Could be extracted from package file
             last_active: Utc::now(),
@@ -500,7 +502,7 @@ impl PackageFileWatcher {
               dep.ecosystem,
               package_file.display()
             );
-            
+
             // TODO: Download dependency source and analyze it
             // This would involve:
             // 1. Download the dependency from npm/crates.io/hex/etc.
@@ -522,13 +524,17 @@ impl PackageFileWatcher {
   }
 
   /// Detect project language based on file extensions
-  fn detect_project_language(&self, repo_path: &std::path::Path) -> ProgrammingLanguage {
+  fn detect_project_language(
+    &self,
+    repo_path: &std::path::Path,
+  ) -> ProgrammingLanguage {
     // Look for source files to detect language
     if let Ok(entries) = std::fs::read_dir(repo_path) {
       for entry in entries.flatten() {
         let path = entry.path();
         if path.is_file() {
-          if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+          if let Some(extension) = path.extension().and_then(|ext| ext.to_str())
+          {
             match extension {
               "ex" | "exs" => return ProgrammingLanguage::Elixir,
               "erl" | "hrl" => return ProgrammingLanguage::Erlang,
@@ -550,31 +556,42 @@ impl PackageFileWatcher {
         }
       }
     }
-    
+
     // Fallback to unknown if no source files found
     ProgrammingLanguage::Unknown
   }
 
   /// Analyze downloaded dependency source code using source code parser (temporarily disabled)
-  async fn analyze_dependency_source(&self, dep_path: &std::path::Path, dep_name: &str) -> Result<()> {
+  async fn analyze_dependency_source(
+    &self,
+    dep_path: &std::path::Path,
+    dep_name: &str,
+  ) -> Result<()> {
     // Source code parser temporarily disabled due to compilation issues
-    debug!("Source code parser not available, skipping source analysis for {}", dep_name);
+    debug!(
+      "Source code parser not available, skipping source analysis for {}",
+      dep_name
+    );
     Ok(())
   }
 
   /// Find source files in a directory
-  fn find_source_files(&self, dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+  fn find_source_files(
+    &self,
+    dir: &std::path::Path,
+  ) -> Vec<std::path::PathBuf> {
     let mut source_files = Vec::new();
-    
+
     if let Ok(entries) = std::fs::read_dir(dir) {
       for entry in entries.flatten() {
         let path = entry.path();
         if path.is_file() {
-          if let Some(extension) = path.extension().and_then(|ext| ext.to_str()) {
+          if let Some(extension) = path.extension().and_then(|ext| ext.to_str())
+          {
             match extension {
-              "ex" | "exs" | "erl" | "hrl" | "gleam" | "rs" | "js" | "jsx" | 
-              "ts" | "tsx" | "py" | "go" | "java" | "c" | "cpp" | "cc" | "cxx" | 
-              "cs" | "swift" | "kt" => {
+              "ex" | "exs" | "erl" | "hrl" | "gleam" | "rs" | "js" | "jsx"
+              | "ts" | "tsx" | "py" | "go" | "java" | "c" | "cpp" | "cc"
+              | "cxx" | "cs" | "swift" | "kt" => {
                 source_files.push(path);
               }
               _ => continue,
@@ -587,7 +604,7 @@ impl PackageFileWatcher {
         }
       }
     }
-    
+
     source_files
   }
 
@@ -625,7 +642,6 @@ impl PackageFileWatcher {
 
     package_files
   }
-
 
   /// Register a dependency in the version registry
   fn register_dependency(
@@ -1502,7 +1518,10 @@ impl PackageFileWatcher {
       }
       "setup.py" => {
         let content = fs::read_to_string(file_path).await?;
-        (ProgrammingLanguage::Python, Self::parse_python_setup(&content))
+        (
+          ProgrammingLanguage::Python,
+          Self::parse_python_setup(&content),
+        )
       }
       "pyproject.toml" => {
         let content = fs::read_to_string(file_path).await?;
@@ -1521,7 +1540,10 @@ impl PackageFileWatcher {
       // Go
       "go.mod" => {
         let content = fs::read_to_string(file_path).await?;
-        (ProgrammingLanguage::Go, self.parse_go_dependencies(&content))
+        (
+          ProgrammingLanguage::Go,
+          self.parse_go_dependencies(&content),
+        )
       }
       // Java/JVM
       "pom.xml" => {
@@ -1556,7 +1578,10 @@ impl PackageFileWatcher {
       // PHP
       "composer.json" => {
         let content = fs::read_to_string(file_path).await?;
-        (ProgrammingLanguage::PHP, self.parse_php_dependencies(&content))
+        (
+          ProgrammingLanguage::PHP,
+          self.parse_php_dependencies(&content),
+        )
       }
       // .NET
       name

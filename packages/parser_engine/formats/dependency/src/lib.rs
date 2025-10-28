@@ -1,5 +1,5 @@
 use anyhow::Result;
-use parser_core::{SpecializedParser, ParseError};
+use parser_core::{ParseError, SpecializedParser};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -66,22 +66,28 @@ impl DependencyParser {
 
     pub fn parse_go_mod(&self, source: &str) -> Result<Value, ParseError> {
         use regex::Regex;
-        
+
         let mut result = serde_json::Map::new();
-        result.insert("file_type".to_string(), serde_json::Value::String("go.mod".to_string()));
-        
+        result.insert(
+            "file_type".to_string(),
+            serde_json::Value::String("go.mod".to_string()),
+        );
+
         // Parse module declaration
         let module_re = Regex::new(r"^module\s+(\S+)").unwrap();
         if let Some(caps) = module_re.captures(source) {
-            result.insert("module".to_string(), serde_json::Value::String(caps[1].to_string()));
+            result.insert(
+                "module".to_string(),
+                serde_json::Value::String(caps[1].to_string()),
+            );
         }
-        
+
         // Parse require statements
         let require_re = Regex::new(r"^\s*require\s+\(([\s\S]*?)\)").unwrap();
         let dep_re = Regex::new(r"^\s*(\S+)\s+(\S+)").unwrap();
-        
+
         let mut dependencies = Vec::new();
-        
+
         for cap in require_re.captures_iter(source) {
             let require_block = &cap[1];
             for line in require_block.lines() {
@@ -94,7 +100,7 @@ impl DependencyParser {
                 }
             }
         }
-        
+
         // Also check for single-line requires
         let single_require_re = Regex::new(r"^\s*require\s+(\S+)\s+(\S+)").unwrap();
         for cap in single_require_re.captures_iter(source) {
@@ -104,10 +110,23 @@ impl DependencyParser {
             });
             dependencies.push(dep);
         }
-        
-        result.insert("dependencies".to_string(), serde_json::Value::Array(dependencies));
-        result.insert("dependency_count".to_string(), serde_json::Value::Number(serde_json::Number::from(result.get("dependencies").unwrap().as_array().unwrap().len())));
-        
+
+        result.insert(
+            "dependencies".to_string(),
+            serde_json::Value::Array(dependencies),
+        );
+        result.insert(
+            "dependency_count".to_string(),
+            serde_json::Value::Number(serde_json::Number::from(
+                result
+                    .get("dependencies")
+                    .unwrap()
+                    .as_array()
+                    .unwrap()
+                    .len(),
+            )),
+        );
+
         Ok(serde_json::Value::Object(result))
     }
 
@@ -128,7 +147,10 @@ impl DependencyParser {
 
     /// Parse a package file and return structured dependency information
     /// This is the method expected by package_engine
-    pub fn parse_package_file(&self, _path: &std::path::Path) -> anyhow::Result<Vec<PackageDependency>> {
+    pub fn parse_package_file(
+        &self,
+        _path: &std::path::Path,
+    ) -> anyhow::Result<Vec<PackageDependency>> {
         // For now, return empty vec - actual implementation would parse the file
         // TODO: Implement actual parsing logic using tree-sitter
         Ok(vec![])
@@ -146,5 +168,5 @@ impl Default for DependencyParser {
 pub struct PackageDependency {
     pub name: String,
     pub version: String,
-    pub ecosystem: String,  // hex, crates.io, npm, pypi, etc.
+    pub ecosystem: String, // hex, crates.io, npm, pypi, etc.
 }

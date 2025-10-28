@@ -36,13 +36,13 @@ pub mod assembly;
 pub mod caching;
 pub mod language_support;
 pub mod metrics;
-pub mod templates;  // Generic types only - data comes from central_cloud
+pub mod templates; // Generic types only - data comes from central_cloud
 
 // Local fallback templates (methodology-specific, not domain-specific)
-pub mod sparc_templates;  // SPARC methodology prompts - kept for offline operation
+pub mod sparc_templates; // SPARC methodology prompts - kept for offline operation
 
 // ML/Performance infrastructure
-pub mod template_performance_tracker;  // Tracks performance for ML learning
+pub mod template_performance_tracker; // Tracks performance for ML learning
 
 // Context-aware prompt generation
 pub mod prompt_bits;
@@ -263,11 +263,13 @@ impl PromptEngine {
             .into_iter()
             .map(|template| {
                 // Apply COPRO optimization to each template
-                let optimization_result = self.optimize_prompt(&template.template).unwrap_or_else(|_| OptimizationResult {
-                    optimized_prompt: template.template.clone(),
-                    optimization_score: 0.5,
-                    improvement_summary: "Template optimization applied".to_string(),
-                });
+                let optimization_result =
+                    self.optimize_prompt(&template.template)
+                        .unwrap_or_else(|_| OptimizationResult {
+                            optimized_prompt: template.template.clone(),
+                            optimization_score: 0.5,
+                            improvement_summary: "Template optimization applied".to_string(),
+                        });
 
                 OptimizedTemplate {
                     original: template.clone(),

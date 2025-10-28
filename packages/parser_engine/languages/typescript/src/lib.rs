@@ -62,8 +62,13 @@ impl LanguageParser for TypescriptParser {
 
         // Use RCA for real complexity and accurate LOC metrics
         let (complexity_score, _sloc, ploc, cloc, blank_lines) =
-            parser_core::calculate_rca_complexity(&ast.content, "typescript")
-                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+            parser_core::calculate_rca_complexity(&ast.content, "typescript").unwrap_or((
+                1.0,
+                ast.content.lines().count() as u64,
+                ast.content.lines().count() as u64,
+                comments.len() as u64,
+                0,
+            ));
 
         Ok(LanguageMetrics {
             lines_of_code: ploc.saturating_sub(blank_lines + cloc),
@@ -182,7 +187,8 @@ impl LanguageParser for TypescriptParser {
 
             if let Some(node) = arrow_node {
                 let full_text = Self::extract_text(node, &ast.content);
-                let is_async = full_text.trim_start().starts_with("async ") || full_text.contains("async (");
+                let is_async =
+                    full_text.trim_start().starts_with("async ") || full_text.contains("async (");
                 let is_generator = body.contains("yield");
                 let signature = if ret.is_empty() || ret == "any" {
                     format!("{}({})", name, params)

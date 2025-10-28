@@ -19,17 +19,34 @@ config :singularity, :shared_queue,
 config :singularity, :auto_ingestion,
   enabled: System.get_env("AUTO_INGESTION_ENABLED", "true") == "true",
   # File watching configuration
-  watch_directories: String.split(System.get_env("AUTO_INGESTION_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
+  watch_directories:
+    String.split(System.get_env("AUTO_INGESTION_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
   debounce_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_DEBOUNCE_MS", "60000")),
-  busy_file_threshold_ms: String.to_integer(System.get_env("AUTO_INGESTION_BUSY_THRESHOLD_MS", "1000")),
+  busy_file_threshold_ms:
+    String.to_integer(System.get_env("AUTO_INGESTION_BUSY_THRESHOLD_MS", "1000")),
   # Retry configuration
   max_retries: String.to_integer(System.get_env("AUTO_INGESTION_MAX_RETRIES", "1")),
   retry_delay_ms: String.to_integer(System.get_env("AUTO_INGESTION_RETRY_DELAY_MS", "1000")),
   # File filtering
-  include_extensions: String.split(System.get_env("AUTO_INGESTION_INCLUDE_EXT", ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"), ","),
-  ignore_patterns: String.split(System.get_env("AUTO_INGESTION_IGNORE_PATTERNS", "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"), ","),
+  include_extensions:
+    String.split(
+      System.get_env(
+        "AUTO_INGESTION_INCLUDE_EXT",
+        ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"
+      ),
+      ","
+    ),
+  ignore_patterns:
+    String.split(
+      System.get_env(
+        "AUTO_INGESTION_IGNORE_PATTERNS",
+        "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"
+      ),
+      ","
+    ),
   # Performance tuning
-  max_concurrent_ingestions: String.to_integer(System.get_env("AUTO_INGESTION_MAX_CONCURRENT", "1")),
+  max_concurrent_ingestions:
+    String.to_integer(System.get_env("AUTO_INGESTION_MAX_CONCURRENT", "1")),
   ingestion_timeout_ms: String.to_integer(System.get_env("AUTO_INGESTION_TIMEOUT_MS", "30000")),
   # Auto-detection settings
   auto_detect_codebase: System.get_env("AUTO_INGESTION_AUTO_DETECT_CODEBASE", "true") == "true",
@@ -58,11 +75,16 @@ config :singularity, :broadway_embedding_pipeline,
   },
   # Pipeline performance and hardware settings
   pipeline: %{
-    device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),  # :cpu, :cuda, :metal
-    workers: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),  # Concurrent processors
-    batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),  # GPU batch size
-    timeout_ms: String.to_integer(System.get_env("EMBEDDING_TIMEOUT_MS", "300000")),  # Pipeline timeout
-    verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true"  # Progress logging
+    # :cpu, :cuda, :metal
+    device: String.to_atom(System.get_env("EMBEDDING_DEVICE", "cpu")),
+    # Concurrent processors
+    workers: String.to_integer(System.get_env("EMBEDDING_WORKERS", "10")),
+    # GPU batch size
+    batch_size: String.to_integer(System.get_env("EMBEDDING_BATCH_SIZE", "16")),
+    # Pipeline timeout
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_TIMEOUT_MS", "300000")),
+    # Progress logging
+    verbose: System.get_env("EMBEDDING_VERBOSE", "false") == "true"
   }
 
 # =============================================================================
@@ -72,33 +94,61 @@ config :singularity, :broadway_embedding_pipeline,
 config :singularity, :htdag_auto_ingestion,
   enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "false") == "true",
   # File watching configuration
-  watch_directories: String.split(System.get_env("HTDAG_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
-  debounce_delay_ms: String.to_integer(System.get_env("HTDAG_DEBOUNCE_MS", "2000")), # Increased from 500ms to 2s
+  watch_directories:
+    String.split(System.get_env("HTDAG_WATCH_DIRS", "lib,packages,nexus,observer"), ","),
+  # Increased from 500ms to 2s
+  debounce_delay_ms: String.to_integer(System.get_env("HTDAG_DEBOUNCE_MS", "2000")),
   # HTDAG-specific configuration - GENTLE LOAD SETTINGS
-  max_concurrent_dags: String.to_integer(System.get_env("HTDAG_MAX_CONCURRENT", "3")), # Reduced from 10 to 3
-  batch_size: String.to_integer(System.get_env("HTDAG_BATCH_SIZE", "5")), # Reduced from 10 to 5
+  # Reduced from 10 to 3
+  max_concurrent_dags: String.to_integer(System.get_env("HTDAG_MAX_CONCURRENT", "3")),
+  # Reduced from 10 to 5
+  batch_size: String.to_integer(System.get_env("HTDAG_BATCH_SIZE", "5")),
   dependency_aware: System.get_env("HTDAG_DEPENDENCY_AWARE", "true") == "true",
   # Rate limiting and throttling
-  rate_limit_per_minute: String.to_integer(System.get_env("HTDAG_RATE_LIMIT_PER_MIN", "30")), # Max 30 files per minute
-  cpu_threshold: String.to_float(System.get_env("HTDAG_CPU_THRESHOLD", "0.7")), # Pause if CPU > 70%
-  memory_threshold: String.to_float(System.get_env("HTDAG_MEMORY_THRESHOLD", "0.8")), # Pause if memory > 80%
-  cooldown_period_ms: String.to_integer(System.get_env("HTDAG_COOLDOWN_MS", "5000")), # 5s cooldown after high load
+  # Max 30 files per minute
+  rate_limit_per_minute: String.to_integer(System.get_env("HTDAG_RATE_LIMIT_PER_MIN", "30")),
+  # Pause if CPU > 70%
+  cpu_threshold: String.to_float(System.get_env("HTDAG_CPU_THRESHOLD", "0.7")),
+  # Pause if memory > 80%
+  memory_threshold: String.to_float(System.get_env("HTDAG_MEMORY_THRESHOLD", "0.8")),
+  # 5s cooldown after high load
+  cooldown_period_ms: String.to_integer(System.get_env("HTDAG_COOLDOWN_MS", "5000")),
   # Retry policy - More conservative
   retry_policy: %{
-    max_retries: String.to_integer(System.get_env("HTDAG_MAX_RETRIES", "2")), # Reduced from 3 to 2
-    backoff_multiplier: String.to_float(System.get_env("HTDAG_BACKOFF_MULTIPLIER", "3.0")), # Increased from 2.0 to 3.0
-    initial_delay_ms: String.to_integer(System.get_env("HTDAG_INITIAL_DELAY_MS", "2000")) # Increased from 1000 to 2000
+    # Reduced from 3 to 2
+    max_retries: String.to_integer(System.get_env("HTDAG_MAX_RETRIES", "2")),
+    # Increased from 2.0 to 3.0
+    backoff_multiplier: String.to_float(System.get_env("HTDAG_BACKOFF_MULTIPLIER", "3.0")),
+    # Increased from 1000 to 2000
+    initial_delay_ms: String.to_integer(System.get_env("HTDAG_INITIAL_DELAY_MS", "2000"))
   },
   # File filtering
-  include_extensions: String.split(System.get_env("HTDAG_INCLUDE_EXT", ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"), ","),
-  ignore_patterns: String.split(System.get_env("HTDAG_IGNORE_PATTERNS", "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"), ","),
+  include_extensions:
+    String.split(
+      System.get_env(
+        "HTDAG_INCLUDE_EXT",
+        ".ex,.exs,.rs,.ts,.tsx,.js,.jsx,.py,.go,.nix,.sh,.toml,.json,.yaml,.yml,.md"
+      ),
+      ","
+    ),
+  ignore_patterns:
+    String.split(
+      System.get_env(
+        "HTDAG_IGNORE_PATTERNS",
+        "/_build/,/deps/,/node_modules/,/target/,/.git/,/.nix/,.log,.tmp,.pid,.DS_Store,Thumbs.db"
+      ),
+      ","
+    ),
   # Performance tuning - More conservative timeouts
-  node_timeout_ms: String.to_integer(System.get_env("HTDAG_NODE_TIMEOUT_MS", "120000")), # Increased from 60s to 120s
-  dag_timeout_ms: String.to_integer(System.get_env("HTDAG_DAG_TIMEOUT_MS", "600000")), # Increased from 300s to 600s
+  # Increased from 60s to 120s
+  node_timeout_ms: String.to_integer(System.get_env("HTDAG_NODE_TIMEOUT_MS", "120000")),
+  # Increased from 300s to 600s
+  dag_timeout_ms: String.to_integer(System.get_env("HTDAG_DAG_TIMEOUT_MS", "600000")),
   # Load balancing
   load_balancing: %{
     enabled: System.get_env("HTDAG_LOAD_BALANCING", "true") == "true",
-    check_interval_ms: String.to_integer(System.get_env("HTDAG_LOAD_CHECK_INTERVAL", "10000")), # Check every 10s
+    # Check every 10s
+    check_interval_ms: String.to_integer(System.get_env("HTDAG_LOAD_CHECK_INTERVAL", "10000")),
     adaptive_scaling: System.get_env("HTDAG_ADAPTIVE_SCALING", "true") == "true"
   },
   # Auto-detection settings
@@ -230,11 +280,16 @@ config :centralcloud, :complexity_training_workflow,
   concurrency: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_CONCURRENCY", "1")),
   # Step-specific timeouts
   step_timeouts: %{
-    data_collection: String.to_integer(System.get_env("COMPLEXITY_DATA_COLLECTION_TIMEOUT_MS", "60000")),
-    feature_engineering: String.to_integer(System.get_env("COMPLEXITY_FEATURE_ENGINEERING_TIMEOUT_MS", "30000")),
-    model_training: String.to_integer(System.get_env("COMPLEXITY_MODEL_TRAINING_TIMEOUT_MS", "180000")),
-    model_evaluation: String.to_integer(System.get_env("COMPLEXITY_MODEL_EVALUATION_TIMEOUT_MS", "30000")),
-    model_deployment: String.to_integer(System.get_env("COMPLEXITY_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+    data_collection:
+      String.to_integer(System.get_env("COMPLEXITY_DATA_COLLECTION_TIMEOUT_MS", "60000")),
+    feature_engineering:
+      String.to_integer(System.get_env("COMPLEXITY_FEATURE_ENGINEERING_TIMEOUT_MS", "30000")),
+    model_training:
+      String.to_integer(System.get_env("COMPLEXITY_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_evaluation:
+      String.to_integer(System.get_env("COMPLEXITY_MODEL_EVALUATION_TIMEOUT_MS", "30000")),
+    model_deployment:
+      String.to_integer(System.get_env("COMPLEXITY_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
   },
   # Resource allocation hints
   resource_hints: %{
@@ -292,7 +347,7 @@ config :singularity, :claude,
   }
 
 # Import broadway_pgflow package defaults for PGFlow configuration
-import_config "../packages/broadway_pgflow/config/config.exs"
+import_config Path.expand("../../../packages/broadway_pgflow/config/config.exs", __DIR__)
 
 import_config "#{config_env()}.exs"
 
@@ -304,23 +359,30 @@ config :singularity, :architecture_learning_pipeline,
   # Enable PGFlow mode (canary rollout)
   pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
   # Canary rollout percentage (0-100)
-  canary_percentage: String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
+  canary_percentage:
+    String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
 
 # PGFlow workflow configuration for architecture learning
 config :singularity, :architecture_learning_workflow,
   # Workflow-level timeouts and retries
   timeout_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_TIMEOUT_MS", "300000")),
   retries: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_RETRIES", "3")),
-  retry_delay_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_RETRY_DELAY_MS", "5000")),
+  retry_delay_ms:
+    String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_RETRY_DELAY_MS", "5000")),
   # Concurrency settings
   concurrency: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_CONCURRENCY", "1")),
   # Step-specific timeouts
   step_timeouts: %{
-    pattern_discovery: String.to_integer(System.get_env("ARCHITECTURE_PATTERN_DISCOVERY_TIMEOUT_MS", "60000")),
-    pattern_analysis: String.to_integer(System.get_env("ARCHITECTURE_PATTERN_ANALYSIS_TIMEOUT_MS", "30000")),
-    model_training: String.to_integer(System.get_env("ARCHITECTURE_MODEL_TRAINING_TIMEOUT_MS", "180000")),
-    model_validation: String.to_integer(System.get_env("ARCHITECTURE_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
-    model_deployment: String.to_integer(System.get_env("ARCHITECTURE_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+    pattern_discovery:
+      String.to_integer(System.get_env("ARCHITECTURE_PATTERN_DISCOVERY_TIMEOUT_MS", "60000")),
+    pattern_analysis:
+      String.to_integer(System.get_env("ARCHITECTURE_PATTERN_ANALYSIS_TIMEOUT_MS", "30000")),
+    model_training:
+      String.to_integer(System.get_env("ARCHITECTURE_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_validation:
+      String.to_integer(System.get_env("ARCHITECTURE_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
+    model_deployment:
+      String.to_integer(System.get_env("ARCHITECTURE_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
   },
   # Resource allocation hints
   resource_hints: %{
@@ -347,11 +409,16 @@ config :singularity, :embedding_training_workflow,
   concurrency: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_CONCURRENCY", "1")),
   # Step-specific timeouts
   step_timeouts: %{
-    data_collection: String.to_integer(System.get_env("EMBEDDING_DATA_COLLECTION_TIMEOUT_MS", "60000")),
-    data_preparation: String.to_integer(System.get_env("EMBEDDING_DATA_PREPARATION_TIMEOUT_MS", "30000")),
-    model_training: String.to_integer(System.get_env("EMBEDDING_MODEL_TRAINING_TIMEOUT_MS", "180000")),
-    model_validation: String.to_integer(System.get_env("EMBEDDING_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
-    model_deployment: String.to_integer(System.get_env("EMBEDDING_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
+    data_collection:
+      String.to_integer(System.get_env("EMBEDDING_DATA_COLLECTION_TIMEOUT_MS", "60000")),
+    data_preparation:
+      String.to_integer(System.get_env("EMBEDDING_DATA_PREPARATION_TIMEOUT_MS", "30000")),
+    model_training:
+      String.to_integer(System.get_env("EMBEDDING_MODEL_TRAINING_TIMEOUT_MS", "180000")),
+    model_validation:
+      String.to_integer(System.get_env("EMBEDDING_MODEL_VALIDATION_TIMEOUT_MS", "30000")),
+    model_deployment:
+      String.to_integer(System.get_env("EMBEDDING_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
   },
   # Resource allocation hints
   resource_hints: %{
@@ -421,15 +488,18 @@ config :oban,
        # Database backup: daily at 1:00 AM (keep 7)
        {"0 1 * * *", Singularity.Database.BackupWorker, args: %{"type" => "daily"}},
        # Embedding fine-tuning: daily at 2:00 AM (BEAM-optimized Qodo)
-       {"0 2 * * *", Singularity.Jobs.EmbeddingFinetuneJob, args: %{"model" => "qodo", "epochs" => 1}},
+       {"0 2 * * *", Singularity.Jobs.EmbeddingFinetuneJob,
+        args: %{"model" => "qodo", "epochs" => 1}},
        # Template sync: daily at 2:15 AM (was: mix templates.sync --force)
        {"15 2 * * *", Singularity.Jobs.TemplateSyncWorker},
        # Cache cleanup: daily at 3:00 AM (was: mix analyze.cache clear)
        {"0 3 * * *", Singularity.Jobs.CacheClearWorker},
        # Dev LLM improvement: daily at 3:10 AM (CodeGen2-1B, 100 pairs, ~5-8 min)
-       {"10 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob, args: %{"model" => "dev", "epochs" => 1, "pair_count" => 100}},
+       {"10 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob,
+        args: %{"model" => "dev", "epochs" => 1, "pair_count" => 100}},
        # Prod LLM improvement: daily at 3:40 AM (CodeLlama-3.4B, 1000 pairs, ~20 min)
-       {"40 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob, args: %{"model" => "prod", "epochs" => 1, "pair_count" => 1000}},
+       {"40 3 * * *", Singularity.Jobs.BeamLLMDailyImproveJob,
+        args: %{"model" => "prod", "epochs" => 1, "pair_count" => 1000}},
        # Registry sync: daily at 4:00 AM (was: mix registry.sync)
        {"0 4 * * *", Singularity.Jobs.RegistrySyncWorker},
        # Template embed: weekly on Sundays at 5:00 AM (was: mix templates.embed --missing)

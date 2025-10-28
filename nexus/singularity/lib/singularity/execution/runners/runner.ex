@@ -241,22 +241,26 @@ defmodule Singularity.Execution.Runners.Runner do
             {:noreply, new_state}
 
           {:error, reason} ->
-            SASL.execution_failure(:task_start_failure,
+            SASL.execution_failure(
+              :task_start_failure,
               "Failed to start execution task",
               execution_id: execution_id,
               reason: reason
             )
+
             # Update database with failure
             persist_execution(execution_id, task, :failed, error: reason)
             {:reply, {:error, reason}, state}
         end
 
       {:error, reason} ->
-        SASL.database_failure(:execution_persistence_failure,
+        SASL.database_failure(
+          :execution_persistence_failure,
           "Failed to persist execution",
           execution_id: execution_id,
           reason: reason
         )
+
         {:reply, {:error, reason}, state}
     end
   end

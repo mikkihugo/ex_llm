@@ -85,7 +85,10 @@ defmodule Singularity.Startup.GitTreeBootstrap do
             :ok
 
           {:error, reason} ->
-            Logger.warning("[GitTreeBootstrap] Failed to start Git.Supervisor: #{inspect(reason)}")
+            Logger.warning(
+              "[GitTreeBootstrap] Failed to start Git.Supervisor: #{inspect(reason)}"
+            )
+
             {:error, reason}
         end
       else

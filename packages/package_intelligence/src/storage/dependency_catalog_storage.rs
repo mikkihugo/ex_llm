@@ -14,8 +14,8 @@ use uuid::Uuid;
 
 /// PostgreSQL storage backend
 pub struct DependencyCatalogStorage {
-    pg_client: Client,
-    // jetstream_cache: Option<JetStreamCache>,  // NATS JetStream disabled - Phase 4 NATS removal
+  pg_client: Client,
+  // jetstream_cache: Option<JetStreamCache>,  // NATS JetStream disabled - Phase 4 NATS removal
 }
 
 // Stub for disabled JetStreamCache
@@ -24,31 +24,36 @@ pub struct DependencyCatalogStorage {
 // }
 
 impl DependencyCatalogStorage {
-    /// Create new PostgreSQL storage
-    ///
-    /// Connects directly to dependency_catalog table
-    /// NOTE: NATS JetStream caching disabled - Phase 4 NATS removal
-    /// Use pgmq or ex_pgflow via Elixir for message queue functionality
-    pub async fn new(db_url: &str, _nats_url: Option<&str>) -> Result<Self> {
-        let (pg_client, connection) = tokio_postgres::connect(db_url, NoTls).await?;
+  /// Create new PostgreSQL storage
+  ///
+  /// Connects directly to dependency_catalog table
+  /// NOTE: NATS JetStream caching disabled - Phase 4 NATS removal
+  /// Use pgmq or ex_pgflow via Elixir for message queue functionality
+  pub async fn new(db_url: &str, _nats_url: Option<&str>) -> Result<Self> {
+    let (pg_client, connection) =
+      tokio_postgres::connect(db_url, NoTls).await?;
 
-        tokio::spawn(async move {
-            if let Err(e) = connection.await {
-                eprintln!("PostgreSQL error: {}", e);
-            }
-        });
+    tokio::spawn(async move {
+      if let Err(e) = connection.await {
+        eprintln!("PostgreSQL error: {}", e);
+      }
+    });
 
-        info!("PostgreSQL connected: dependency_catalog table (NATS caching disabled)");
+    info!(
+      "PostgreSQL connected: dependency_catalog table (NATS caching disabled)"
+    );
 
-        // NATS JetStream caching disabled - use PostgreSQL only
-        // let jetstream_cache = if let Some(url) = nats_url {
-        //     JetStreamCache::new(url).await.ok()
-        // } else {
-        //     None
-        // };
+    // NATS JetStream caching disabled - use PostgreSQL only
+    // let jetstream_cache = if let Some(url) = nats_url {
+    //     JetStreamCache::new(url).await.ok()
+    // } else {
+    //     None
+    // };
 
-        Ok(Self { pg_client /* jetstream_cache: None */ })
-    }
+    Ok(Self {
+      pg_client, /* jetstream_cache: None */
+    })
+  }
 }
 
 // Disabled JetStream cache implementation (NATS removed in Phase 4)
@@ -63,10 +68,14 @@ impl DependencyCatalogStorage {
 
 #[async_trait]
 impl PackageStorage for DependencyCatalogStorage {
-    async fn store_fact(&self, key: &PackageKey, data: &PackageMetadata) -> Result<()> {
-        let id = Uuid::new_v4();
+  async fn store_fact(
+    &self,
+    key: &PackageKey,
+    data: &PackageMetadata,
+  ) -> Result<()> {
+    let id = Uuid::new_v4();
 
-        self.pg_client.execute(
+    self.pg_client.execute(
             "INSERT INTO dependency_catalog
              (id, package_name, version, ecosystem, description, documentation, tags)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -77,117 +86,146 @@ impl PackageStorage for DependencyCatalogStorage {
               &data.documentation, &data.tags]
         ).await?;
 
-        // NATS JetStream caching disabled - PostgreSQL only
+    // NATS JetStream caching disabled - PostgreSQL only
 
-        Ok(())
-    }
+    Ok(())
+  }
 
-    async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>> {
-        // NATS JetStream caching disabled - PostgreSQL only
+  async fn get_fact(
+    &self,
+    key: &PackageKey,
+  ) -> Result<Option<PackageMetadata>> {
+    // NATS JetStream caching disabled - PostgreSQL only
 
-        let row = self.pg_client.query_opt(
-            "SELECT package_name, version, ecosystem, documentation, tags
+    let row = self
+      .pg_client
+      .query_opt(
+        "SELECT package_name, version, ecosystem, documentation, tags
              FROM dependency_catalog
              WHERE package_name = $1 AND version = $2 AND ecosystem = $3",
+        &[&key.tool, &key.version, &key.ecosystem],
+      )
+      .await?;
+
+    Ok(row.map(|r| PackageMetadata {
+      tool: r.get(0),
+      version: r.get(1),
+      ecosystem: r.get(2),
+      documentation: r.get(3),
+      tags: r.get(4),
+      ..Default::default()
+    }))
+  }
+
+  async fn exists(&self, key: &PackageKey) -> Result<bool> {
+    Ok(self.get_fact(key).await?.is_some())
+  }
+
+  async fn delete_fact(&self, key: &PackageKey) -> Result<()> {
+    self.pg_client.execute(
+            "DELETE FROM dependency_catalog WHERE package_name = $1 AND version = $2 AND ecosystem = $3",
             &[&key.tool, &key.version, &key.ecosystem]
         ).await?;
 
-        Ok(row.map(|r| PackageMetadata {
+    // NATS JetStream caching disabled - PostgreSQL only
+
+    Ok(())
+  }
+
+  async fn list_tools(&self, ecosystem: &str) -> Result<Vec<PackageKey>> {
+    let rows = self.pg_client.query(
+            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE ecosystem = $1",
+            &[&ecosystem]
+        ).await?;
+
+    Ok(
+      rows
+        .iter()
+        .map(|r| PackageKey {
+          tool: r.get(0),
+          version: r.get(1),
+          ecosystem: r.get(2),
+        })
+        .collect(),
+    )
+  }
+
+  async fn search_tools(&self, prefix: &str) -> Result<Vec<PackageKey>> {
+    let pattern = format!("{}%", prefix);
+    let rows = self.pg_client.query(
+            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE package_name LIKE $1",
+            &[&pattern]
+        ).await?;
+
+    Ok(
+      rows
+        .iter()
+        .map(|r| PackageKey {
+          tool: r.get(0),
+          version: r.get(1),
+          ecosystem: r.get(2),
+        })
+        .collect(),
+    )
+  }
+
+  async fn stats(&self) -> Result<StorageStats> {
+    let row = self
+      .pg_client
+      .query_one("SELECT COUNT(*) FROM dependency_catalog", &[])
+      .await?;
+    Ok(StorageStats {
+      total_entries: row.get::<_, i64>(0) as u64,
+      total_size_bytes: 0,
+      ecosystems: std::collections::HashMap::new(),
+      last_compaction: None,
+    })
+  }
+
+  async fn search_by_tags(&self, tags: &[String]) -> Result<Vec<PackageKey>> {
+    let rows = self.pg_client.query(
+            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE tags && $1::text[]",
+            &[&tags]
+        ).await?;
+
+    Ok(
+      rows
+        .iter()
+        .map(|r| PackageKey {
+          tool: r.get(0),
+          version: r.get(1),
+          ecosystem: r.get(2),
+        })
+        .collect(),
+    )
+  }
+
+  async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> {
+    let rows = self.pg_client.query(
+            "SELECT package_name, version, ecosystem, documentation, tags FROM dependency_catalog",
+            &[]
+        ).await?;
+
+    Ok(
+      rows
+        .iter()
+        .map(|r| {
+          let key = PackageKey {
+            tool: r.get(0),
+            version: r.get(1),
+            ecosystem: r.get(2),
+          };
+          let meta = PackageMetadata {
             tool: r.get(0),
             version: r.get(1),
             ecosystem: r.get(2),
             documentation: r.get(3),
             tags: r.get(4),
             ..Default::default()
-        }))
-    }
-
-    async fn exists(&self, key: &PackageKey) -> Result<bool> {
-        Ok(self.get_fact(key).await?.is_some())
-    }
-
-    async fn delete_fact(&self, key: &PackageKey) -> Result<()> {
-        self.pg_client.execute(
-            "DELETE FROM dependency_catalog WHERE package_name = $1 AND version = $2 AND ecosystem = $3",
-            &[&key.tool, &key.version, &key.ecosystem]
-        ).await?;
-
-        // NATS JetStream caching disabled - PostgreSQL only
-
-        Ok(())
-    }
-
-    async fn list_tools(&self, ecosystem: &str) -> Result<Vec<PackageKey>> {
-        let rows = self.pg_client.query(
-            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE ecosystem = $1",
-            &[&ecosystem]
-        ).await?;
-        
-        Ok(rows.iter().map(|r| PackageKey {
-            tool: r.get(0),
-            version: r.get(1),
-            ecosystem: r.get(2),
-        }).collect())
-    }
-
-    async fn search_tools(&self, prefix: &str) -> Result<Vec<PackageKey>> {
-        let pattern = format!("{}%", prefix);
-        let rows = self.pg_client.query(
-            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE package_name LIKE $1",
-            &[&pattern]
-        ).await?;
-        
-        Ok(rows.iter().map(|r| PackageKey {
-            tool: r.get(0),
-            version: r.get(1),
-            ecosystem: r.get(2),
-        }).collect())
-    }
-
-    async fn stats(&self) -> Result<StorageStats> {
-        let row = self.pg_client.query_one("SELECT COUNT(*) FROM dependency_catalog", &[]).await?;
-        Ok(StorageStats {
-            total_entries: row.get::<_, i64>(0) as u64,
-            total_size_bytes: 0,
-            ecosystems: std::collections::HashMap::new(),
-            last_compaction: None,
+          };
+          (key, meta)
         })
-    }
-
-    async fn search_by_tags(&self, tags: &[String]) -> Result<Vec<PackageKey>> {
-        let rows = self.pg_client.query(
-            "SELECT package_name, version, ecosystem FROM dependency_catalog WHERE tags && $1::text[]",
-            &[&tags]
-        ).await?;
-        
-        Ok(rows.iter().map(|r| PackageKey {
-            tool: r.get(0),
-            version: r.get(1),
-            ecosystem: r.get(2),
-        }).collect())
-    }
-
-    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> {
-        let rows = self.pg_client.query(
-            "SELECT package_name, version, ecosystem, documentation, tags FROM dependency_catalog",
-            &[]
-        ).await?;
-        
-        Ok(rows.iter().map(|r| {
-            let key = PackageKey {
-                tool: r.get(0),
-                version: r.get(1),
-                ecosystem: r.get(2),
-            };
-            let meta = PackageMetadata {
-                tool: r.get(0),
-                version: r.get(1),
-                ecosystem: r.get(2),
-                documentation: r.get(3),
-                tags: r.get(4),
-                ..Default::default()
-            };
-            (key, meta)
-        }).collect())
-    }
+        .collect(),
+    )
+  }
 }

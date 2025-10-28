@@ -82,12 +82,14 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
       fallback_analyses: 0,
       failed_analyses: 0,
       language_stats: %{},
-      recent_errors: [],  # Keep last 100 errors
+      # Keep last 100 errors
+      recent_errors: [],
       start_time: DateTime.utc_now()
     }
 
     # Schedule periodic health reporting
-    Process.send_after(self(), :report_health, 300_000)  # Every 5 minutes
+    # Every 5 minutes
+    Process.send_after(self(), :report_health, 300_000)
 
     {:ok, state}
   end
@@ -96,41 +98,47 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
   def handle_cast({:success, language, file_path, analysis_time_ms}, state) do
     Logger.debug("[CodeEngineHealth] Success: #{language} #{file_path} (#{analysis_time_ms}ms)")
 
-    new_state = state
-    |> update_counter(:total_analyses)
-    |> update_counter(:successful_analyses)
-    |> update_language_stats(language, :success, analysis_time_ms)
+    new_state =
+      state
+      |> update_counter(:total_analyses)
+      |> update_counter(:successful_analyses)
+      |> update_language_stats(language, :success, analysis_time_ms)
 
     {:noreply, new_state}
   end
 
   @impl true
   def handle_cast({:fallback, language, file_path, error_reason}, state) do
-    Logger.warning("[CodeEngineHealth] ⚠️ Fallback used: #{language} #{file_path} - #{error_reason}")
+    Logger.warning(
+      "[CodeEngineHealth] ⚠️ Fallback used: #{language} #{file_path} - #{error_reason}"
+    )
 
-    new_state = state
-    |> update_counter(:total_analyses)
-    |> update_counter(:fallback_analyses)
-    |> update_language_stats(language, :fallback, error_reason)
-    |> add_recent_error(language, file_path, error_reason, :fallback)
+    new_state =
+      state
+      |> update_counter(:total_analyses)
+      |> update_counter(:fallback_analyses)
+      |> update_language_stats(language, :fallback, error_reason)
+      |> add_recent_error(language, file_path, error_reason, :fallback)
 
     {:noreply, new_state}
   end
 
   @impl true
   def handle_cast({:failure, language, file_path, error_reason}, state) do
-    SASL.critical_failure(:code_engine_complete_failure,
+    SASL.critical_failure(
+      :code_engine_complete_failure,
       "CodeEngine complete failure - no analysis possible",
       language: language,
       file_path: file_path,
       error_reason: error_reason
     )
 
-    new_state = state
-    |> update_counter(:total_analyses)
-    |> update_counter(:failed_analyses)
-    |> update_language_stats(language, :failure, error_reason)
-    |> add_recent_error(language, file_path, error_reason, :failure)
+    new_state =
+      state
+      |> update_counter(:total_analyses)
+      |> update_counter(:failed_analyses)
+      |> update_language_stats(language, :failure, error_reason)
+      |> add_recent_error(language, file_path, error_reason, :failure)
 
     {:noreply, new_state}
   end
@@ -146,7 +154,8 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
       fallback_rate: calculate_rate(state.fallback_analyses, state.total_analyses),
       failure_rate: calculate_rate(state.failed_analyses, state.total_analyses),
       language_stats: state.language_stats,
-      recent_errors: Enum.take(state.recent_errors, 10),  # Last 10 errors
+      # Last 10 errors
+      recent_errors: Enum.take(state.recent_errors, 10),
       uptime_seconds: DateTime.diff(DateTime.utc_now(), state.start_time),
       health_score: calculate_health_score(state)
     }
@@ -185,17 +194,20 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
   end
 
   defp update_language_stats(state, language, event_type, data) do
-    lang_stats = state.language_stats[language] || %{success: 0, fallback: 0, failure: 0, total: 0}
+    lang_stats =
+      state.language_stats[language] || %{success: 0, fallback: 0, failure: 0, total: 0}
 
-    new_lang_stats = lang_stats
-    |> Map.update!(:total, &(&1 + 1))
-    |> Map.update!(event_type, &(&1 + 1))
+    new_lang_stats =
+      lang_stats
+      |> Map.update!(:total, &(&1 + 1))
+      |> Map.update!(event_type, &(&1 + 1))
 
     # Calculate rates
-    new_lang_stats = new_lang_stats
-    |> Map.put(:success_rate, lang_stats.success / new_lang_stats.total)
-    |> Map.put(:fallback_rate, lang_stats.fallback / new_lang_stats.total)
-    |> Map.put(:failure_rate, lang_stats.failure / new_lang_stats.total)
+    new_lang_stats =
+      new_lang_stats
+      |> Map.put(:success_rate, lang_stats.success / new_lang_stats.total)
+      |> Map.put(:fallback_rate, lang_stats.fallback / new_lang_stats.total)
+      |> Map.put(:failure_rate, lang_stats.failure / new_lang_stats.total)
 
     put_in(state.language_stats[language], new_lang_stats)
   end
@@ -209,7 +221,8 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
       error_type: error_type
     }
 
-    new_errors = [error | state.recent_errors] |> Enum.take(100)  # Keep last 100
+    # Keep last 100
+    new_errors = [error | state.recent_errors] |> Enum.take(100)
     %{state | recent_errors: new_errors}
   end
 
@@ -223,7 +236,8 @@ defmodule Singularity.Monitoring.CodeEngineHealthTracker do
 
   defp calculate_health_score(state) do
     if state.total_analyses == 0 do
-      10.0  # Perfect score if no analyses yet
+      # Perfect score if no analyses yet
+      10.0
     else
       success_weight = 0.6
       fallback_penalty = 0.3

@@ -173,20 +173,24 @@ defmodule Singularity.Execution.Evolution do
           end
 
         {:error, reason} ->
-          SASL.execution_failure(:agent_analysis_failure,
+          SASL.execution_failure(
+            :agent_analysis_failure,
             "Failed to analyze agent for evolution",
             agent_id: agent_id,
             reason: reason
           )
+
           {:error, reason}
       end
     rescue
       e ->
-        SASL.critical_failure(:evolution_system_failure,
+        SASL.critical_failure(
+          :evolution_system_failure,
           "Evolution system failed catastrophically",
           agent_id: agent_id,
           error: e
         )
+
         {:error, e}
     end
   end

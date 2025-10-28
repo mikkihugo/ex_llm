@@ -3,10 +3,10 @@
 //! Analyzes manifest files (Cargo.toml, package.json, mix.exs, etc.) to extract
 //! project dependencies and detect frameworks.
 
-use std::path::{Path, PathBuf};
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use std::path::{Path, PathBuf};
 
 /// A detected dependency
 #[derive(Debug, Clone)]
@@ -131,12 +131,11 @@ impl DependencyAnalyzer {
             for (name, version_info) in dependencies {
                 let version = match version_info {
                     toml::Value::String(v) => v.clone(),
-                    toml::Value::Table(t) => {
-                        t.get("version")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("*")
-                            .to_string()
-                    }
+                    toml::Value::Table(t) => t
+                        .get("version")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("*")
+                        .to_string(),
                     _ => "*".to_string(),
                 };
 
@@ -154,12 +153,11 @@ impl DependencyAnalyzer {
             for (name, version_info) in dev_deps {
                 let version = match version_info {
                     toml::Value::String(v) => v.clone(),
-                    toml::Value::Table(t) => {
-                        t.get("version")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("*")
-                            .to_string()
-                    }
+                    toml::Value::Table(t) => t
+                        .get("version")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("*")
+                        .to_string(),
                     _ => "*".to_string(),
                 };
 
@@ -200,10 +198,7 @@ impl DependencyAnalyzer {
         }
 
         // Parse devDependencies
-        if let Some(dev_deps) = manifest
-            .get("devDependencies")
-            .and_then(|d| d.as_object())
-        {
+        if let Some(dev_deps) = manifest.get("devDependencies").and_then(|d| d.as_object()) {
             for (name, version) in dev_deps {
                 deps.push(Dependency {
                     name: name.clone(),
@@ -248,10 +243,7 @@ impl DependencyAnalyzer {
                             .to_string();
 
                         let version = if parts.len() > 1 {
-                            parts[1]
-                                .trim()
-                                .trim_matches('"')
-                                .to_string()
+                            parts[1].trim().trim_matches('"').to_string()
                         } else {
                             "*".to_string()
                         };
@@ -304,30 +296,15 @@ impl DependencyAnalyzer {
 
             // Parse different formats: name==version, name>=version, name, etc.
             let (name, version) = if let Some(pos) = trimmed.find("==") {
-                (
-                    trimmed[..pos].to_string(),
-                    trimmed[pos + 2..].to_string(),
-                )
+                (trimmed[..pos].to_string(), trimmed[pos + 2..].to_string())
             } else if let Some(pos) = trimmed.find(">=") {
-                (
-                    trimmed[..pos].to_string(),
-                    trimmed[pos + 2..].to_string(),
-                )
+                (trimmed[..pos].to_string(), trimmed[pos + 2..].to_string())
             } else if let Some(pos) = trimmed.find("<=") {
-                (
-                    trimmed[..pos].to_string(),
-                    trimmed[pos + 2..].to_string(),
-                )
+                (trimmed[..pos].to_string(), trimmed[pos + 2..].to_string())
             } else if let Some(pos) = trimmed.find(">") {
-                (
-                    trimmed[..pos].to_string(),
-                    trimmed[pos + 1..].to_string(),
-                )
+                (trimmed[..pos].to_string(), trimmed[pos + 1..].to_string())
             } else if let Some(pos) = trimmed.find("<") {
-                (
-                    trimmed[..pos].to_string(),
-                    trimmed[pos + 1..].to_string(),
-                )
+                (trimmed[..pos].to_string(), trimmed[pos + 1..].to_string())
             } else {
                 (trimmed.to_string(), "*".to_string())
             };

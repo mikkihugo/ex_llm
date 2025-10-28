@@ -1,11 +1,10 @@
 //! Technology Detection Integration
 //!
-//! Bridges analysis_suite with tool_doc_index's LayeredDetector
+//! Bridges analysis_suite with dependency parser for package file detection.
 
 use anyhow::Result;
-use std::path::Path;
 use dependency_parser::DependencyParser;
-// use tool_doc_index::detection::{LayeredDetector, LayeredDetectionResult}; // Removed - crate doesn't exist
+use std::path::Path;
 
 /// Technology detection facade for analysis suite
 pub struct TechnologyDetection {
@@ -22,21 +21,26 @@ impl TechnologyDetection {
     /// Detect technologies in a codebase
     pub async fn detect_technologies(&self, codebase_path: &Path) -> Result<Vec<String>> {
         use walkdir::WalkDir;
-        
+
         let mut technologies = Vec::new();
-        
+
         // Walk through the codebase looking for package files
         for entry in WalkDir::new(codebase_path).max_depth(3) {
             let entry = entry?;
             let file_path = entry.path();
-            
+
             if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
                 match file_name {
-                    "package.json" | "Cargo.toml" | "mix.exs" | "requirements.txt" | 
-                    "pyproject.toml" | "go.mod" | "composer.json" => {
-                        if let Ok(dependencies) = self.dependency_parser.parse_package_file(file_path) {
+                    "package.json" | "Cargo.toml" | "mix.exs" | "requirements.txt"
+                    | "pyproject.toml" | "go.mod" | "composer.json" => {
+                        if let Ok(dependencies) =
+                            self.dependency_parser.parse_package_file(file_path)
+                        {
                             for dep in dependencies {
-                                technologies.push(format!("{}@{} ({})", dep.name, dep.version, dep.ecosystem));
+                                technologies.push(format!(
+                                    "{}@{} ({})",
+                                    dep.name, dep.version, dep.ecosystem
+                                ));
                             }
                         }
                     }
@@ -44,7 +48,7 @@ impl TechnologyDetection {
                 }
             }
         }
-        
+
         Ok(technologies)
     }
 
@@ -62,11 +66,21 @@ impl TechnologyDetection {
 
         // Categorize detected technologies
         for tech in &technologies {
-            if tech.contains("react") || tech.contains("vue") || tech.contains("angular") {
+            let tech_lower = tech.to_lowercase();
+            if tech_lower.contains("react")
+                || tech_lower.contains("vue")
+                || tech_lower.contains("angular")
+            {
                 summary.frameworks.push(tech.clone());
-            } else if tech.contains("express") || tech.contains("django") || tech.contains("rails") {
+            } else if tech_lower.contains("express")
+                || tech_lower.contains("django")
+                || tech_lower.contains("rails")
+            {
                 summary.frameworks.push(tech.clone());
-            } else if tech.contains("postgres") || tech.contains("mysql") || tech.contains("mongodb") {
+            } else if tech_lower.contains("postgres")
+                || tech_lower.contains("mysql")
+                || tech_lower.contains("mongodb")
+            {
                 summary.databases.push(tech.clone());
             } else {
                 summary.languages.push(tech.clone());

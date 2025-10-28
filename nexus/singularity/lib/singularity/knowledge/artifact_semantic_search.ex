@@ -216,7 +216,8 @@ defmodule Singularity.Knowledge.ArtifactSemanticSearch do
     depth = Keyword.get(opts, :depth, 2)
     min_similarity = Keyword.get(opts, :min_similarity, 0.5)
 
-    with {:ok, semantic_results} <- search(query_text, limit: limit, min_similarity: min_similarity) do
+    with {:ok, semantic_results} <-
+           search(query_text, limit: limit, min_similarity: min_similarity) do
       # Enrich with graph relationships
       enriched =
         Enum.map(semantic_results, fn result ->
@@ -269,7 +270,9 @@ defmodule Singularity.Knowledge.ArtifactSemanticSearch do
   """
   def embedding_stats do
     total = Repo.aggregate(KnowledgeArtifact, :count)
-    with_embeddings = Repo.aggregate(from(a in KnowledgeArtifact, where: not is_nil(a.embedding)), :count)
+
+    with_embeddings =
+      Repo.aggregate(from(a in KnowledgeArtifact, where: not is_nil(a.embedding)), :count)
 
     {:ok,
      %{
@@ -336,15 +339,15 @@ defmodule Singularity.Knowledge.ArtifactSemanticSearch do
     vector_str = embedding_to_pgvector(embedding)
 
     case Repo.query(
-      """
-      UPDATE curated_knowledge_artifacts
-      SET embedding = $1::vector,
-          embedding_model = $2,
-          embedding_generated_at = $3
-      WHERE id = $4
-      """,
-      [vector_str, "jina_v3", DateTime.utc_now(), artifact.id]
-    ) do
+           """
+           UPDATE curated_knowledge_artifacts
+           SET embedding = $1::vector,
+               embedding_model = $2,
+               embedding_generated_at = $3
+           WHERE id = $4
+           """,
+           [vector_str, "jina_v3", DateTime.utc_now(), artifact.id]
+         ) do
       {:ok, _} -> {:ok, "Embedding updated"}
       {:error, reason} -> {:error, reason}
     end

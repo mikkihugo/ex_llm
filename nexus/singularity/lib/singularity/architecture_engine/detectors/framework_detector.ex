@@ -96,7 +96,9 @@ defmodule Singularity.Architecture.Detectors.FrameworkDetector do
     use_learned_patterns = Keyword.get(opts, :use_learned_patterns, true)
     max_depth = Keyword.get(opts, :max_depth, 3)
 
-    Logger.debug("Framework detection for #{path}: learned_patterns=#{use_learned_patterns}, max_depth=#{max_depth}")
+    Logger.debug(
+      "Framework detection for #{path}: learned_patterns=#{use_learned_patterns}, max_depth=#{max_depth}"
+    )
 
     # Step 1: Run hardcoded detectors
     hardcoded_results = detect_frameworks(path)

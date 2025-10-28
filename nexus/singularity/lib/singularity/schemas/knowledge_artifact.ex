@@ -51,7 +51,6 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
     |> unique_constraint([:artifact_type, :artifact_id, :version])
   end
 
-
   @doc """
   Validate that content matches content_raw
   """
@@ -101,7 +100,6 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
     from a in query, where: fragment("category = ?", ^category)
   end
 
-
   @doc """
   JSONB queries - find by content
   """
@@ -121,5 +119,4 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
           ^search_term
         )
   end
-
 end

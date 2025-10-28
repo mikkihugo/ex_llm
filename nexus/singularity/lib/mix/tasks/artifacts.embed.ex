@@ -169,7 +169,7 @@ defmodule Mix.Tasks.Artifacts.Embed do
     for i <- 1..dims do
       # Generate value between -1 and 1 using the hash and index
       :rand.seed(:exsplus, {text_hash, i, i + 1})
-      (:rand.uniform() * 2) - 1
+      :rand.uniform() * 2 - 1
     end
   end
 

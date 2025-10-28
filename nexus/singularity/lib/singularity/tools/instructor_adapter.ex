@@ -95,11 +95,13 @@ defmodule Singularity.Tools.InstructorAdapter do
         {:error, error_msg}
 
       {:error, reason} ->
-        SASL.execution_failure(:instructor_validation_failure,
+        SASL.execution_failure(
+          :instructor_validation_failure,
           "Instructor validation failed for tool",
           tool_name: tool_name,
           reason: reason
         )
+
         {:error, "Validation failed: #{inspect(reason)}"}
     end
   end
@@ -306,12 +308,14 @@ defmodule Singularity.Tools.InstructorAdapter do
         end
 
       {:error, reason} ->
-        SASL.execution_failure(:code_generation_failure,
+        SASL.execution_failure(
+          :code_generation_failure,
           "Code generation failed",
           task: task,
           language: language,
           reason: reason
         )
+
         {:error, "Generation failed: #{inspect(reason)}"}
     end
   end

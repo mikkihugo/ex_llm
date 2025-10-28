@@ -25,36 +25,48 @@ defmodule Singularity.Agents.Arbiter do
     :ets.insert(@table, {token, entry})
     # also persist into Workflows so approvals are visible as full records
     workflow = %{workflow_id: token, type: :approval, payload: entry}
+
     try do
       Singularity.Workflows.create_workflow(workflow)
     rescue
       _ -> :ok
     end
+
     token
   end
 
-  @doc "Issue an approval for a planned workflow. Persists to Workflows for visibility." 
+  @doc "Issue an approval for a planned workflow. Persists to Workflows for visibility."
   def issue_workflow_approval(workflow_map, _opts \\ []) when is_map(workflow_map) do
     token = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
     now = :erlang.system_time(:millisecond)
-    entry = %{token: token, workflow: workflow_map, issued_at: now, expires_at: now + @token_ttl_ms}
+
+    entry = %{
+      token: token,
+      workflow: workflow_map,
+      issued_at: now,
+      expires_at: now + @token_ttl_ms
+    }
+
     :ets.insert(@table, {token, entry})
     record = %{workflow_id: token, type: :workflow_approval, payload: entry}
+
     try do
       Singularity.Workflows.create_workflow(record)
     rescue
       _ -> :ok
     end
+
     token
   end
 
-  @doc "Authorize a workflow execution using a token" 
+  @doc "Authorize a workflow execution using a token"
   def authorize_workflow(token) when is_binary(token) do
     # Prefer Workflows-backed check (visibility), fall back to local ETS
     case Singularity.Workflows.fetch_workflow(token) do
       {:ok, workflow} when is_map(workflow) ->
         entry = Map.get(workflow, :payload)
         now = :erlang.system_time(:millisecond)
+
         if entry && entry.expires_at > now do
           :ets.delete(@table, token)
           # remove persisted record for safety/consumption
@@ -63,6 +75,7 @@ defmodule Singularity.Agents.Arbiter do
           rescue
             _ -> :ok
           end
+
           :ok
         else
           # expired
@@ -75,6 +88,7 @@ defmodule Singularity.Agents.Arbiter do
         case :ets.lookup(@table, token) do
           [{^token, entry}] ->
             now = :erlang.system_time(:millisecond)
+
             if entry.expires_at > now do
               :ets.delete(@table, token)
               :ok
@@ -89,26 +103,30 @@ defmodule Singularity.Agents.Arbiter do
     end
   end
 
-  @doc "Authorize a workflow execution using a token" 
+  @doc "Authorize a workflow execution using a token"
   def authorize_workflow(token) when is_binary(token) do
     case Singularity.PgFlowAdapter.fetch_workflow(token) do
       {:ok, workflow} when is_map(workflow) ->
         entry = Map.get(workflow, :payload)
         now = :erlang.system_time(:millisecond)
+
         if entry && entry.expires_at > now do
           :ets.delete(@table, token)
+
           try do
             :ets.delete(:pgflow_workflows, token)
           rescue
             _ -> :ok
           end
+
           :ok
         else
           :ets.delete(@table, token)
           {:error, :expired}
         end
 
-      :not_found -> {:error, :not_found}
+      :not_found ->
+        {:error, :not_found}
     end
   end
 
@@ -118,6 +136,7 @@ defmodule Singularity.Agents.Arbiter do
       {:ok, workflow} when is_map(workflow) ->
         entry = Map.get(workflow, :payload) || Map.get(workflow, :payload)
         now = :erlang.system_time(:millisecond)
+
         if entry && entry.expires_at > now do
           # consume token from both stores
           :ets.delete(@table, token)
@@ -127,15 +146,18 @@ defmodule Singularity.Agents.Arbiter do
           rescue
             _ -> :ok
           end
+
           :ok
         else
           # expired
           :ets.delete(@table, token)
+
           try do
             :ets.delete(:pgflow_workflows, token)
           rescue
             _ -> :ok
           end
+
           {:error, :expired}
         end
 
@@ -144,6 +166,7 @@ defmodule Singularity.Agents.Arbiter do
         case :ets.lookup(@table, token) do
           [{^token, entry}] ->
             now = :erlang.system_time(:millisecond)
+
             if entry.expires_at > now do
               :ets.delete(@table, token)
               :ok
@@ -168,11 +191,13 @@ defmodule Singularity.Agents.Arbiter do
 
   def handle_info(:cleanup, state) do
     now = :erlang.system_time(:millisecond)
+
     for {token, entry} <- :ets.tab2list(@table) do
       if entry.expires_at <= now do
         :ets.delete(@table, token)
       end
     end
+
     schedule_cleanup()
     {:noreply, state}
   end

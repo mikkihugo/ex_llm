@@ -5,7 +5,8 @@
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
 use crate::storage::{
-  CodeIndex, Export, PackageMetadata, CodeSnippet, IndexedFile, NamingConventions,
+  CodeIndex, CodeSnippet, Export, IndexedFile, NamingConventions,
+  PackageMetadata,
 };
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
@@ -37,34 +38,68 @@ impl CargoCollector {
     // Determine license type and properties based on SPDX identifier
     match license_lower.as_str() {
       // Permissive licenses
-      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache" |
-      "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" | "unlicense" => {
-        ("permissive".to_string(), license_id.to_string(), true, true, false)
-      },
+      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache"
+      | "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" | "unlicense" => (
+        "permissive".to_string(),
+        license_id.to_string(),
+        true,
+        true,
+        false,
+      ),
       // Copyleft licenses
-      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" |
-      "gpl-2.0" | "gpl-2.0-or-later" | "gpl-2.0-only" |
-      "agpl-3.0" | "agpl-3.0-or-later" | "agpl-3.0-only" => {
-        ("copyleft".to_string(), license_id.to_string(), false, true, true)
-      },
+      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" | "gpl-2.0"
+      | "gpl-2.0-or-later" | "gpl-2.0-only" | "agpl-3.0"
+      | "agpl-3.0-or-later" | "agpl-3.0-only" => (
+        "copyleft".to_string(),
+        license_id.to_string(),
+        false,
+        true,
+        true,
+      ),
       // Weak copyleft
-      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" |
-      "lgpl-2.1" | "lgpl-2.1-or-later" | "lgpl-2.1-only" => {
-        ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
-      },
+      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" | "lgpl-2.1"
+      | "lgpl-2.1-or-later" | "lgpl-2.1-only" => (
+        "weak-copyleft".to_string(),
+        license_id.to_string(),
+        true,
+        true,
+        true,
+      ),
       // Proprietary
-      "proprietary" => {
-        ("proprietary".to_string(), license_id.to_string(), false, false, false)
-      },
+      "proprietary" => (
+        "proprietary".to_string(),
+        license_id.to_string(),
+        false,
+        false,
+        false,
+      ),
       // Unknown or other
       _ => {
         // Default: assume permissive if not in exclusion list
         if license_lower.contains("gpl") || license_lower.contains("agpl") {
-          ("copyleft".to_string(), license_id.to_string(), false, true, true)
+          (
+            "copyleft".to_string(),
+            license_id.to_string(),
+            false,
+            true,
+            true,
+          )
         } else if license_lower.contains("lgpl") {
-          ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+          (
+            "weak-copyleft".to_string(),
+            license_id.to_string(),
+            true,
+            true,
+            true,
+          )
         } else {
-          ("unknown".to_string(), license_id.to_string(), true, false, false)
+          (
+            "unknown".to_string(),
+            license_id.to_string(),
+            true,
+            false,
+            false,
+          )
         }
       }
     }
@@ -378,8 +413,8 @@ impl CargoCollector {
     }
 
     let content = fs::read_to_string(&manifest_path).await?;
-    let toml: Value = toml::from_str(&content)
-      .context("Failed to parse Cargo.toml")?;
+    let toml: Value =
+      toml::from_str(&content).context("Failed to parse Cargo.toml")?;
 
     // Try to extract license from [package] section
     let license_str = toml
@@ -389,8 +424,13 @@ impl CargoCollector {
       .map(|s| s.to_string());
 
     if let Some(license_id) = license_str {
-      let (license_type, license_id_normalized, commercial_use, requires_attribution, is_copyleft) =
-        Self::classify_license(&license_id);
+      let (
+        license_type,
+        license_id_normalized,
+        commercial_use,
+        requires_attribution,
+        is_copyleft,
+      ) = Self::classify_license(&license_id);
 
       Ok(Some(crate::storage::LicenseInfo {
         license: license_id_normalized,
@@ -420,7 +460,11 @@ impl PackageCollector for CargoCollector {
     "cargo"
   }
 
-  async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata> {
+  async fn collect(
+    &self,
+    package: &str,
+    version: &str,
+  ) -> Result<PackageMetadata> {
     let start_time = std::time::Instant::now();
 
     log::info!("Collecting cargo package: {} v{}", package, version);

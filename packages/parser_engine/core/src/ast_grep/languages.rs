@@ -1,5 +1,5 @@
-use ast_grep_core::{language::Language, matcher::PatternBuilder, Pattern, PatternError};
 use ast_grep_core::tree_sitter::{LanguageExt, StrDoc, TSLanguage};
+use ast_grep_core::{language::Language, matcher::PatternBuilder, Pattern, PatternError};
 
 macro_rules! impl_language {
     ($name:ident, $lang:expr) => {
@@ -49,5 +49,5 @@ impl_language!(MarkdownLang, tree_sitter_md::LANGUAGE);
 
 // Updated tree-sitter 0.25 compatible versions
 impl_language!(SqlLang, tree_sitter_sequel::LANGUAGE);
-impl_language!(DockerfileLang, tree_sitter_dockerfile_updated::language());  // Uses function, not constant
+impl_language!(DockerfileLang, tree_sitter_dockerfile_updated::language()); // Uses function, not constant
 impl_language!(TomlLang, tree_sitter_toml_ng::LANGUAGE);

@@ -31,18 +31,22 @@ defmodule Singularity.Jobs.RagSetupWorker do
         :ok
 
       {:error, reason} ->
-        SASL.critical_failure(:rag_setup_failure,
+        SASL.critical_failure(
+          :rag_setup_failure,
           "RAG system setup failed catastrophically",
           reason: reason
         )
+
         {:error, reason}
     end
   rescue
     e ->
-      SASL.critical_failure(:rag_setup_exception,
+      SASL.critical_failure(
+        :rag_setup_exception,
         "RAG system setup failed with exception",
         error: e
       )
+
       {:error, "Exception: #{inspect(e)}"}
   end
 end

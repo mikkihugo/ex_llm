@@ -45,24 +45,25 @@ defmodule Singularity.HTDAG.Supervisor do
     # Check if HTDAG auto ingestion is enabled
     enabled = Application.get_env(:singularity, :htdag_auto_ingestion, %{})[:enabled] || false
 
-    children = if enabled do
-      [
-        # Real-time file watching for automatic detection
-        Singularity.Execution.Planning.CodeFileWatcher,
-        
-        # HTDAG workflow management
-        Singularity.HTDAG.AutoCodeIngestionDAG,
-        
-        # Load balancer for gentle operation
-        Singularity.HTDAG.LoadBalancer,
-        
-        # PgFlow workflow orchestration
-        Singularity.Workflows
-      ]
-    else
-      Logger.info("HTDAG auto ingestion disabled, skipping file watcher")
-      []
-    end
+    children =
+      if enabled do
+        [
+          # Real-time file watching for automatic detection
+          Singularity.Execution.Planning.CodeFileWatcher,
+
+          # HTDAG workflow management
+          Singularity.HTDAG.AutoCodeIngestionDAG,
+
+          # Load balancer for gentle operation
+          Singularity.HTDAG.LoadBalancer,
+
+          # PgFlow workflow orchestration
+          Singularity.Workflows
+        ]
+      else
+        Logger.info("HTDAG auto ingestion disabled, skipping file watcher")
+        []
+      end
 
     Supervisor.init(children, strategy: :one_for_one)
   end

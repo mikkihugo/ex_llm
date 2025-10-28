@@ -60,7 +60,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   def run(args) do
     {opts, _parsed, _invalid} =
       OptionParser.parse(args,
-        strict:         [
+        strict: [
           files: :string,
           language: :string,
           enforce_quality: :boolean,
@@ -187,12 +187,16 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       {:ok, changes} ->
         if length(changes) > 0 do
           file_paths = Enum.map(changes, & &1.file_path)
-          Mix.shell().info("Found #{length(changes)} changed files: #{Enum.join(file_paths, ", ")}")
-          
+
+          Mix.shell().info(
+            "Found #{length(changes)} changed files: #{Enum.join(file_paths, ", ")}"
+          )
+
           # Run incremental pipeline for changed files
           case DocumentationPipeline.run_incremental_pipeline(file_paths) do
             {:ok, :pipeline_started} ->
               Mix.shell().info("✅ Incremental updates started successfully")
+
             {:error, reason} ->
               Mix.shell().error("Failed to start incremental updates: #{inspect(reason)}")
               System.halt(1)
@@ -218,6 +222,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       {:ok, changes} ->
         if length(changes) > 0 do
           file_paths = Enum.map(changes, & &1.file_path)
+
           Mix.shell().info("""
           📋 Dry Run Results
           ═══════════════════════════════════════════════════════════════════════════════
@@ -229,6 +234,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
         else
           Mix.shell().info("No files have changed - nothing to upgrade")
         end
+
       {:error, reason} ->
         Mix.shell().error("Failed to get changed files: #{inspect(reason)}")
         System.halt(1)
@@ -257,9 +263,11 @@ defmodule Mix.Tasks.Documentation.Upgrade do
       {:ok, changes} ->
         if length(changes) > 0 do
           file_paths = Enum.map(changes, & &1.file_path)
+
           case DocumentationPipeline.run_incremental_pipeline(file_paths) do
             {:ok, :pipeline_started} ->
               Mix.shell().info("✅ Incremental pipeline started successfully")
+
             {:error, reason} ->
               Mix.shell().error("Failed to start incremental pipeline: #{inspect(reason)}")
               System.halt(1)
@@ -267,6 +275,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
         else
           Mix.shell().info("No files have changed - nothing to update")
         end
+
       {:error, reason} ->
         Mix.shell().error("Failed to get changed files: #{inspect(reason)}")
         System.halt(1)
@@ -308,14 +317,14 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   defp get_files_by_language(language) do
     case language do
       "elixir" ->
-        (Path.wildcard("./singularity/lib/**/*.ex") ++ 
-         Path.wildcard("./observer/lib/**/*.ex") ++
-         Path.wildcard("./packages/**/*.ex"))
+        (Path.wildcard("./singularity/lib/**/*.ex") ++
+           Path.wildcard("./observer/lib/**/*.ex") ++
+           Path.wildcard("./packages/**/*.ex"))
         |> Enum.filter(&File.regular?/1)
 
       "rust" ->
         (Path.wildcard("./rust/**/*.rs") ++
-         Path.wildcard("./packages/**/*.rs"))
+           Path.wildcard("./packages/**/*.rs"))
         |> Enum.filter(&File.regular?/1)
 
       "javascript" ->

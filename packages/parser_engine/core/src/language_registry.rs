@@ -11,10 +11,10 @@
 //! - **Performance Optimized**: Pre-built maps for fast lookups
 //! - **Extensible**: Easy to add new languages and capabilities
 
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use serde::{Serialize, Deserialize};
-use anyhow::Result;
 
 /// Language-level pattern signatures (syntax/keywords only, NOT libraries!)
 ///
@@ -92,12 +92,12 @@ impl LanguageRegistry {
             alias_map: HashMap::new(),
             mime_map: HashMap::new(),
         };
-        
+
         // Register all supported languages
         registry.register_all_languages();
         registry
     }
-    
+
     /// Register all supported languages
     fn register_all_languages(&mut self) {
         // BEAM Languages
@@ -109,12 +109,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("elixir".to_string()),
             rca_supported: false, // RCA doesn't support BEAM languages
             ast_grep_supported: true,
-            mime_types: vec!["text/x-elixir".to_string(), "application/x-elixir".to_string()],
+            mime_types: vec![
+                "text/x-elixir".to_string(),
+                "application/x-elixir".to_string(),
+            ],
             family: Some("BEAM".to_string()),
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "erlang".to_string(),
             name: "Erlang".to_string(),
@@ -123,12 +126,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("erlang".to_string()),
             rca_supported: false,
             ast_grep_supported: true,
-            mime_types: vec!["text/x-erlang".to_string(), "application/x-erlang".to_string()],
+            mime_types: vec![
+                "text/x-erlang".to_string(),
+                "application/x-erlang".to_string(),
+            ],
             family: Some("BEAM".to_string()),
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "gleam".to_string(),
             name: "Gleam".to_string(),
@@ -137,12 +143,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("gleam".to_string()),
             rca_supported: false,
             ast_grep_supported: true,
-            mime_types: vec!["text/x-gleam".to_string(), "application/x-gleam".to_string()],
+            mime_types: vec![
+                "text/x-gleam".to_string(),
+                "application/x-gleam".to_string(),
+            ],
             family: Some("BEAM".to_string()),
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Systems Programming Languages
         self.register_language(LanguageInfo {
             id: "rust".to_string(),
@@ -157,14 +166,38 @@ impl LanguageRegistry {
             is_compiled: true,
             pattern_signatures: PatternSignatures {
                 // Only language syntax, NOT libraries!
-                error_handling_syntax: vec!["Result<".to_string(), "Option<".to_string(), "?".to_string(), "unwrap".to_string(), "expect".to_string()],
-                async_syntax: vec!["async".to_string(), "await".to_string(), ".await".to_string()],
-                testing_syntax: vec!["#[test]".to_string(), "assert!".to_string(), "assert_eq!".to_string(), "#[cfg(test)]".to_string()],
-                pattern_matching_syntax: vec!["match".to_string(), "if let".to_string(), "while let".to_string()],
-                module_syntax: vec!["use".to_string(), "mod".to_string(), "pub".to_string(), "crate::".to_string()],
+                error_handling_syntax: vec![
+                    "Result<".to_string(),
+                    "Option<".to_string(),
+                    "?".to_string(),
+                    "unwrap".to_string(),
+                    "expect".to_string(),
+                ],
+                async_syntax: vec![
+                    "async".to_string(),
+                    "await".to_string(),
+                    ".await".to_string(),
+                ],
+                testing_syntax: vec![
+                    "#[test]".to_string(),
+                    "assert!".to_string(),
+                    "assert_eq!".to_string(),
+                    "#[cfg(test)]".to_string(),
+                ],
+                pattern_matching_syntax: vec![
+                    "match".to_string(),
+                    "if let".to_string(),
+                    "while let".to_string(),
+                ],
+                module_syntax: vec![
+                    "use".to_string(),
+                    "mod".to_string(),
+                    "pub".to_string(),
+                    "crate::".to_string(),
+                ],
             },
         });
-        
+
         self.register_language(LanguageInfo {
             id: "c".to_string(),
             name: "C".to_string(),
@@ -178,12 +211,22 @@ impl LanguageRegistry {
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "cpp".to_string(),
             name: "C++".to_string(),
-            extensions: vec!["cpp".to_string(), "cc".to_string(), "cxx".to_string(), "c++".to_string(), "hpp".to_string()],
-            aliases: vec!["cpp".to_string(), "c++".to_string(), "cplusplus".to_string()],
+            extensions: vec![
+                "cpp".to_string(),
+                "cc".to_string(),
+                "cxx".to_string(),
+                "c++".to_string(),
+                "hpp".to_string(),
+            ],
+            aliases: vec![
+                "cpp".to_string(),
+                "c++".to_string(),
+                "cplusplus".to_string(),
+            ],
             tree_sitter_language: Some("cpp".to_string()),
             rca_supported: true,
             ast_grep_supported: true,
@@ -192,7 +235,7 @@ impl LanguageRegistry {
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Web Technologies
         self.register_language(LanguageInfo {
             id: "javascript".to_string(),
@@ -202,12 +245,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("javascript".to_string()),
             rca_supported: true,
             ast_grep_supported: true,
-            mime_types: vec!["text/javascript".to_string(), "application/javascript".to_string()],
+            mime_types: vec![
+                "text/javascript".to_string(),
+                "application/javascript".to_string(),
+            ],
             family: Some("Web".to_string()),
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "typescript".to_string(),
             name: "TypeScript".to_string(),
@@ -216,12 +262,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("typescript".to_string()),
             rca_supported: true,
             ast_grep_supported: true,
-            mime_types: vec!["text/typescript".to_string(), "application/typescript".to_string()],
+            mime_types: vec![
+                "text/typescript".to_string(),
+                "application/typescript".to_string(),
+            ],
             family: Some("Web".to_string()),
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // High-Level Languages
         self.register_language(LanguageInfo {
             id: "python".to_string(),
@@ -231,12 +280,15 @@ impl LanguageRegistry {
             tree_sitter_language: Some("python".to_string()),
             rca_supported: true,
             ast_grep_supported: true,
-            mime_types: vec!["text/x-python".to_string(), "application/x-python".to_string()],
+            mime_types: vec![
+                "text/x-python".to_string(),
+                "application/x-python".to_string(),
+            ],
             family: Some("Scripting".to_string()),
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "java".to_string(),
             name: "Java".to_string(),
@@ -259,7 +311,10 @@ impl LanguageRegistry {
             tree_sitter_language: Some("c_sharp".to_string()),
             rca_supported: true,
             ast_grep_supported: true,
-            mime_types: vec!["text/x-csharp".to_string(), "application/x-csharp".to_string()],
+            mime_types: vec![
+                "text/x-csharp".to_string(),
+                "application/x-csharp".to_string(),
+            ],
             family: Some("CLR".to_string()),
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
@@ -278,7 +333,7 @@ impl LanguageRegistry {
             is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Scripting Languages
         self.register_language(LanguageInfo {
             id: "lua".to_string(),
@@ -293,7 +348,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "bash".to_string(),
             name: "Bash".to_string(),
@@ -307,7 +362,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Data Formats
         self.register_language(LanguageInfo {
             id: "json".to_string(),
@@ -322,7 +377,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "yaml".to_string(),
             name: "YAML".to_string(),
@@ -336,7 +391,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "toml".to_string(),
             name: "TOML".to_string(),
@@ -350,7 +405,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Documentation
         self.register_language(LanguageInfo {
             id: "markdown".to_string(),
@@ -365,7 +420,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         // Infrastructure
         self.register_language(LanguageInfo {
             id: "dockerfile".to_string(),
@@ -380,7 +435,7 @@ impl LanguageRegistry {
             is_compiled: false,
             pattern_signatures: PatternSignatures::default(),
         });
-        
+
         self.register_language(LanguageInfo {
             id: "sql".to_string(),
             name: "SQL".to_string(),
@@ -395,102 +450,113 @@ impl LanguageRegistry {
             pattern_signatures: PatternSignatures::default(),
         });
     }
-    
+
     /// Register a single language
     fn register_language(&mut self, language: LanguageInfo) {
         let id = language.id.clone();
-        
+
         // Store the language
         self.languages.insert(id.clone(), language);
-        
+
         // Build extension map
         for ext in &self.languages[&id].extensions {
             self.extension_map.insert(ext.clone(), id.clone());
         }
-        
+
         // Build alias map
         for alias in &self.languages[&id].aliases {
             self.alias_map.insert(alias.clone(), id.clone());
         }
-        
+
         // Build MIME type map
         for mime_type in &self.languages[&id].mime_types {
             self.mime_map.insert(mime_type.clone(), id.clone());
         }
     }
-    
+
     /// Detect language from file path
     pub fn detect_language(&self, file_path: &Path) -> Result<&LanguageInfo> {
-        let extension = file_path.extension()
+        let extension = file_path
+            .extension()
             .and_then(|ext| ext.to_str())
             .ok_or_else(|| anyhow::anyhow!("No file extension found"))?;
-            
-        let language_id = self.extension_map.get(extension)
+
+        let language_id = self
+            .extension_map
+            .get(extension)
             .ok_or_else(|| anyhow::anyhow!("Unsupported file extension: {}", extension))?;
-            
-        self.languages.get(language_id)
+
+        self.languages
+            .get(language_id)
             .ok_or_else(|| anyhow::anyhow!("Language not found: {}", language_id))
     }
-    
+
     /// Get language by ID
     pub fn get_language(&self, id: &str) -> Option<&LanguageInfo> {
         self.languages.get(id)
     }
-    
+
     /// Get language by alias
     pub fn get_language_by_alias(&self, alias: &str) -> Option<&LanguageInfo> {
         let id = self.alias_map.get(alias)?;
         self.languages.get(id)
     }
-    
+
     /// Get language by MIME type
     pub fn get_language_by_mime_type(&self, mime_type: &str) -> Option<&LanguageInfo> {
         let id = self.mime_map.get(mime_type)?;
         self.languages.get(id)
     }
-    
+
     /// Get all supported languages
     pub fn supported_languages(&self) -> Vec<&LanguageInfo> {
         self.languages.values().collect()
     }
-    
+
     /// Get languages that support RCA analysis
     pub fn rca_supported_languages(&self) -> Vec<&LanguageInfo> {
-        self.languages.values().filter(|lang| lang.rca_supported).collect()
+        self.languages
+            .values()
+            .filter(|lang| lang.rca_supported)
+            .collect()
     }
-    
+
     /// Get languages that support AST-Grep
     pub fn ast_grep_supported_languages(&self) -> Vec<&LanguageInfo> {
-        self.languages.values().filter(|lang| lang.ast_grep_supported).collect()
+        self.languages
+            .values()
+            .filter(|lang| lang.ast_grep_supported)
+            .collect()
     }
-    
+
     /// Get languages by family
     pub fn languages_by_family(&self, family: &str) -> Vec<&LanguageInfo> {
-        self.languages.values()
+        self.languages
+            .values()
             .filter(|lang| lang.family.as_ref().map_or(false, |f| f == family))
             .collect()
     }
-    
+
     /// Get all language IDs
     pub fn language_ids(&self) -> Vec<&String> {
         self.languages.keys().collect()
     }
-    
+
     /// Get all file extensions
     pub fn all_extensions(&self) -> Vec<&String> {
         self.extension_map.keys().collect()
     }
-    
+
     /// Check if language is supported
     pub fn is_supported(&self, id: &str) -> bool {
         self.languages.contains_key(id)
     }
-    
+
     /// Check if file extension is supported
     pub fn is_extension_supported(&self, extension: &str) -> bool {
         self.extension_map.contains_key(extension)
     }
-    
+
     /// Get language count
     pub fn language_count(&self) -> usize {
         self.languages.len()
@@ -618,8 +684,11 @@ mod tests {
     #[test]
     fn test_ast_grep_supported_languages() {
         let ast_grep_languages = ast_grep_supported_languages();
-        let ast_grep_ids: Vec<&str> = ast_grep_languages.iter().map(|lang| lang.id.as_str()).collect();
-        
+        let ast_grep_ids: Vec<&str> = ast_grep_languages
+            .iter()
+            .map(|lang| lang.id.as_str())
+            .collect();
+
         // AST-Grep should support all languages
         assert!(ast_grep_ids.contains(&"elixir"));
         assert!(ast_grep_ids.contains(&"rust"));
@@ -634,7 +703,7 @@ mod tests {
     fn test_language_families() {
         let beam_languages = LANGUAGE_REGISTRY.languages_by_family("BEAM");
         let beam_ids: Vec<&str> = beam_languages.iter().map(|lang| lang.id.as_str()).collect();
-        
+
         assert!(beam_ids.contains(&"elixir"));
         assert!(beam_ids.contains(&"erlang"));
         assert!(beam_ids.contains(&"gleam"));

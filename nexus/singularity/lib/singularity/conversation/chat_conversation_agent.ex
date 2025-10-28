@@ -202,7 +202,9 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     # Send approval request and get response queue
     case send_to_channel_with_response(channel, :ask_approval, conversation) do
       {:ok, response_queue} ->
-        Logger.info("Approval request sent for #{conversation_id}, polling queue: #{response_queue}")
+        Logger.info(
+          "Approval request sent for #{conversation_id}, polling queue: #{response_queue}"
+        )
 
         # Spawn task to poll for response
         spawn_response_polling_task(
@@ -215,7 +217,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
         new_state = %{
           state
-          | active_conversations: Map.put(state.active_conversations, conversation_id, conversation)
+          | active_conversations:
+              Map.put(state.active_conversations, conversation_id, conversation)
         }
 
         # Return immediately - response will come via GenServer.reply in polling task
@@ -721,17 +724,17 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         #     |> Task.changeset(%{status: status, updated_at: DateTime.utc_now()})
         #     |> Repo.update()
         # end
-        
+
         # For now, simulate successful update
         updated_task = %{
           id: task_id,
           status: status,
           updated_at: DateTime.utc_now()
         }
-        
+
         Logger.info("Updated task #{task_id} status to #{inspect(status)}")
         {:ok, updated_task}
-        
+
       false ->
         {:error, :task_not_found}
     end
@@ -1104,7 +1107,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
                    {:ok, message_id} ->
                      # Also store goal in local database for tracking
                      store_goal_locally(goal_id, goal, message_id)
-                     
+
                      Logger.info(
                        "Enqueued goal #{goal_id} with priority #{goal.priority} (pgmq msg_id: #{message_id})"
                      )
@@ -1141,7 +1144,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       is_nil(goal.description) or goal.description == "" ->
         {:error, :missing_description}
 
-      is_nil(goal.priority) or not is_integer(goal.priority) or goal.priority < 1 or goal.priority > 10 ->
+      is_nil(goal.priority) or not is_integer(goal.priority) or goal.priority < 1 or
+          goal.priority > 10 ->
         {:error, :invalid_priority}
 
       is_nil(goal.type) ->
@@ -1168,10 +1172,13 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
       # Send notification to all configured chat channels with proper error handling
       notification_result = send_goal_notification(goal_id, goal, message)
-      
+
       case notification_result do
         {:ok, channels_notified} ->
-          Logger.debug("Goal enqueue notification sent to #{channels_notified} channels for #{goal_id}")
+          Logger.debug(
+            "Goal enqueue notification sent to #{channels_notified} channels for #{goal_id}"
+          )
+
           {:ok, %{id: goal_id, notification_sent: true, channels: channels_notified}}
 
         {:error, reason} ->
@@ -1191,32 +1198,34 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp send_goal_notification(goal_id, goal, message) do
     # Get all configured notification channels
     channels = get_notification_channels()
-    
-    # Send to each channel and collect results
-    results = Enum.map(channels, fn channel ->
-      case send_to_channel(channel, :goal_notification, %{
-        goal_id: goal_id,
-        message: message,
-        goal: goal,
-        timestamp: DateTime.utc_now()
-      }) do
-        {:ok, response} ->
-          Logger.debug("Notification sent to #{channel} for goal #{goal_id}")
-          {:ok, channel}
 
-        {:error, reason} ->
-          Logger.warning("Failed to send notification to #{channel}: #{inspect(reason)}")
-          {:error, {channel, reason}}
-      end
-    end)
+    # Send to each channel and collect results
+    results =
+      Enum.map(channels, fn channel ->
+        case send_to_channel(channel, :goal_notification, %{
+               goal_id: goal_id,
+               message: message,
+               goal: goal,
+               timestamp: DateTime.utc_now()
+             }) do
+          {:ok, response} ->
+            Logger.debug("Notification sent to #{channel} for goal #{goal_id}")
+            {:ok, channel}
+
+          {:error, reason} ->
+            Logger.warning("Failed to send notification to #{channel}: #{inspect(reason)}")
+            {:error, {channel, reason}}
+        end
+      end)
 
     # Count successful notifications
-    successful_channels = results
-    |> Enum.filter(fn
-      {:ok, _} -> true
-      {:error, _} -> false
-    end)
-    |> Enum.map(fn {:ok, channel} -> channel end)
+    successful_channels =
+      results
+      |> Enum.filter(fn
+        {:ok, _} -> true
+        {:error, _} -> false
+      end)
+      |> Enum.map(fn {:ok, channel} -> channel end)
 
     if length(successful_channels) > 0 do
       {:ok, successful_channels}
@@ -1370,14 +1379,18 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   # Helper: Parse approval response from pgmq message
   defp parse_approval_response(response) when is_map(response) do
-    decision = response
-    |> Map.get("decision") || Map.get(:decision) || "unknown"
-    |> to_string()
-    |> String.downcase()
+    decision =
+      response
+      |> Map.get("decision") || Map.get(:decision) ||
+        "unknown"
+        |> to_string()
+        |> String.downcase()
 
-    reason = response
-    |> Map.get("decision_reason") || Map.get(:decision_reason) || ""
-    |> to_string()
+    reason =
+      response
+      |> Map.get("decision_reason") || Map.get(:decision_reason) ||
+        ""
+        |> to_string()
 
     case decision do
       "approved" -> {:approved, reason}

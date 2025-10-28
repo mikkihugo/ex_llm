@@ -6,7 +6,10 @@ use anyhow::Result;
 use std::collections::HashSet;
 
 use crate::graph::{CodeDependencyGraph, GraphNode};
-use petgraph::{Direction, visit::{Dfs, EdgeRef}};
+use petgraph::{
+    visit::{Dfs, EdgeRef},
+    Direction,
+};
 
 /// Control Flow Graph - extends existing graph infrastructure
 pub struct ControlFlowGraph {
@@ -63,18 +66,18 @@ impl ControlFlowGraph {
 
     /// Find entry points (nodes with no incoming edges)
     fn find_entry_nodes(graph: &CodeDependencyGraph) -> Vec<String> {
-        graph.graph
+        graph
+            .graph
             .node_indices()
-            .filter(|&idx| {
-                graph.graph.edges_directed(idx, Direction::Incoming).count() == 0
-            })
+            .filter(|&idx| graph.graph.edges_directed(idx, Direction::Incoming).count() == 0)
             .map(|idx| graph.graph[idx].id.clone())
             .collect()
     }
 
     /// Find exit points (return statements, final expressions)
     fn find_exit_nodes(graph: &CodeDependencyGraph) -> Vec<String> {
-        graph.graph
+        graph
+            .graph
             .node_indices()
             .filter(|&idx| {
                 let node = &graph.graph[idx];
@@ -96,7 +99,9 @@ impl ControlFlowGraph {
                 continue;
             }
 
-            let outgoing_edges: Vec<_> = self.graph.graph
+            let outgoing_edges: Vec<_> = self
+                .graph
+                .graph
                 .edges_directed(node_idx, Direction::Outgoing)
                 .collect();
 
@@ -210,7 +215,11 @@ impl ControlFlowGraph {
         complete
     }
 
-    fn count_paths_from(&self, node_idx: petgraph::graph::NodeIndex, visited: &mut HashSet<String>) -> usize {
+    fn count_paths_from(
+        &self,
+        node_idx: petgraph::graph::NodeIndex,
+        visited: &mut HashSet<String>,
+    ) -> usize {
         let node = &self.graph.graph[node_idx];
 
         // Prevent infinite loops
@@ -219,7 +228,9 @@ impl ControlFlowGraph {
         }
         visited.insert(node.id.clone());
 
-        let outgoing: Vec<_> = self.graph.graph
+        let outgoing: Vec<_> = self
+            .graph
+            .graph
             .edges_directed(node_idx, Direction::Outgoing)
             .collect();
 
@@ -238,7 +249,11 @@ impl ControlFlowGraph {
         total
     }
 
-    fn count_complete_paths_from(&self, node_idx: petgraph::graph::NodeIndex, visited: &mut HashSet<String>) -> usize {
+    fn count_complete_paths_from(
+        &self,
+        node_idx: petgraph::graph::NodeIndex,
+        visited: &mut HashSet<String>,
+    ) -> usize {
         let node = &self.graph.graph[node_idx];
 
         if visited.contains(&node.id) {
@@ -252,7 +267,9 @@ impl ControlFlowGraph {
             return 1;
         }
 
-        let outgoing: Vec<_> = self.graph.graph
+        let outgoing: Vec<_> = self
+            .graph
+            .graph
             .edges_directed(node_idx, Direction::Outgoing)
             .collect();
 
@@ -284,7 +301,8 @@ pub fn analyze_function_flow(graph: CodeDependencyGraph) -> Result<ControlFlowAn
     let dead_ends = cfg.find_dead_ends();
     let unreachable = cfg.find_unreachable_code();
     let completeness = cfg.calculate_completeness();
-    let has_issues = !dead_ends.is_empty() || !unreachable.is_empty() || completeness.completeness_score < 1.0;
+    let has_issues =
+        !dead_ends.is_empty() || !unreachable.is_empty() || completeness.completeness_score < 1.0;
 
     Ok(ControlFlowAnalysis {
         dead_ends,
@@ -336,13 +354,15 @@ mod tests {
         graph.add_node(call.clone());
 
         // Add edge from entry to call
-        graph.add_edge(GraphEdge {
-            from: "entry".to_string(),
-            to: "validate".to_string(),
-            edge_type: "calls".to_string(),
-            weight: 1.0,
-            metadata: Default::default(),
-        }).unwrap();
+        graph
+            .add_edge(GraphEdge {
+                from: "entry".to_string(),
+                to: "validate".to_string(),
+                edge_type: "calls".to_string(),
+                weight: 1.0,
+                metadata: Default::default(),
+            })
+            .unwrap();
 
         // Analyze
         let cfg = ControlFlowGraph::from_dependency_graph(graph);

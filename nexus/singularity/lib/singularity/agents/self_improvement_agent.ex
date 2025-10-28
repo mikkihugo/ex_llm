@@ -22,24 +22,28 @@ defmodule Singularity.Agents.SelfImprovementAgent do
     GenServer.call(__MODULE__, {:suggest_edit, path, content, opts}, 30_000)
   end
 
-  @doc "Request an approval token for a planned edit. Returns a short-lived token." 
+  @doc "Request an approval token for a planned edit. Returns a short-lived token."
   def request_approval(reason \\ "manual_review", opts \\ []) do
     GenServer.call(__MODULE__, {:request_approval, reason, opts}, 5_000)
   end
 
-  @doc "Request a workflow approval for an HTDAG-style workflow map. Returns token." 
+  @doc "Request a workflow approval for an HTDAG-style workflow map. Returns token."
   def request_workflow_approval(workflow_map, opts \\ []) when is_map(workflow_map) do
     GenServer.call(__MODULE__, {:request_workflow_approval, workflow_map, opts}, 5_000)
   end
 
-  @doc "Apply a persisted workflow using an approval token. This will ask the Arbiter to authorize." 
+  @doc "Apply a persisted workflow using an approval token. This will ask the Arbiter to authorize."
   def apply_workflow_with_approval(workflow_token, opts \\ []) do
     GenServer.call(__MODULE__, {:apply_workflow_with_approval, workflow_token, opts}, 60_000)
   end
 
-  @doc "Apply an edit using an approval token issued by the Arbiter. Approval tokens are consumed on use." 
+  @doc "Apply an edit using an approval token issued by the Arbiter. Approval tokens are consumed on use."
   def apply_edit_with_approval(path, content, approval_token, opts \\ []) do
-    GenServer.call(__MODULE__, {:apply_edit_with_approval, path, content, approval_token, opts}, 30_000)
+    GenServer.call(
+      __MODULE__,
+      {:apply_edit_with_approval, path, content, approval_token, opts},
+      30_000
+    )
   end
 
   def trigger_compile(opts \\ []) do
@@ -55,6 +59,7 @@ defmodule Singularity.Agents.SelfImprovementAgent do
   def handle_call({:suggest_edit, path, content, opts}, _from, state) do
     opts = Keyword.merge(state.opts[:default] || [], opts)
     result = Toolkit.write_file(path, content, opts)
+
     case result do
       {:ok, info} ->
         Logger.info("Applied edit (dry_run=#{inspect(opts[:dry_run])}) to #{path}")
@@ -68,7 +73,9 @@ defmodule Singularity.Agents.SelfImprovementAgent do
 
   def handle_call({:request_approval, reason, opts}, _from, state) do
     # Delegate to Arbiter to issue a token
-    token = Singularity.Agents.Arbiter.issue_approval(%{reason: reason, requester: __MODULE__}, opts)
+    token =
+      Singularity.Agents.Arbiter.issue_approval(%{reason: reason, requester: __MODULE__}, opts)
+
     {:reply, {:ok, token}, state}
   end
 
@@ -92,10 +99,15 @@ defmodule Singularity.Agents.SelfImprovementAgent do
   end
 
   def handle_call({:apply_edit_with_approval, path, content, approval_token, opts}, _from, state) do
-    case Singularity.Agents.Arbiter.authorize_edit(approval_token, %{path: path, content: content, requester: __MODULE__}) do
+    case Singularity.Agents.Arbiter.authorize_edit(approval_token, %{
+           path: path,
+           content: content,
+           requester: __MODULE__
+         }) do
       :ok ->
         opts = Keyword.merge(state.opts[:default] || [], opts)
         result = Toolkit.write_file(path, content, opts)
+
         case result do
           {:ok, info} ->
             Logger.info("Applied approved edit (dry_run=#{inspect(opts[:dry_run])}) to #{path}")

@@ -226,11 +226,7 @@ impl NpmAdvisoryCollector {
         return Ok(vec![]);
       }
 
-      anyhow::bail!(
-        "GitHub GraphQL API error: {} - {}",
-        status,
-        body
-      );
+      anyhow::bail!("GitHub GraphQL API error: {} - {}", status, body);
     }
 
     let advisory_response = response
@@ -276,11 +272,8 @@ impl NpmAdvisoryCollector {
       .collect();
 
     // Extract reference URLs
-    let references: Vec<String> = advisory
-      .references
-      .into_iter()
-      .map(|r| r.url)
-      .collect();
+    let references: Vec<String> =
+      advisory.references.into_iter().map(|r| r.url).collect();
 
     // Parse vulnerable and patched versions
     let affected_versions = vec![vuln.vulnerable_version_range.clone()];

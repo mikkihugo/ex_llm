@@ -3,10 +3,10 @@
 //! Comprehensive dependency health analysis with CentralCloud integration.
 //! Queries CVE database, package health metrics, and license data from CentralCloud.
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, extract_data, publish_detection};
 
 /// Dependency health analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -256,7 +256,11 @@ impl DependencyHealthAnalyzer {
     }
 
     /// Analyze dependency health with CentralCloud integration
-    pub async fn analyze(&self, content: &str, file_path: &str) -> Result<DependencyHealthAnalysis> {
+    pub async fn analyze(
+        &self,
+        content: &str,
+        file_path: &str,
+    ) -> Result<DependencyHealthAnalysis> {
         let start_time = std::time::Instant::now();
 
         // Extract dependencies from content (use content parameter!)
@@ -278,7 +282,8 @@ impl DependencyHealthAnalyzer {
         let vuln_count = vulnerabilities.len();
 
         // Publish stats to CentralCloud for collective learning
-        self.publish_analysis_stats(&dependencies, &vulnerabilities).await;
+        self.publish_analysis_stats(&dependencies, &vulnerabilities)
+            .await;
 
         Ok(DependencyHealthAnalysis {
             dependencies,
@@ -298,7 +303,11 @@ impl DependencyHealthAnalyzer {
     }
 
     /// Extract dependencies from file content
-    async fn extract_dependencies(&self, content: &str, file_path: &str) -> Result<Vec<Dependency>> {
+    async fn extract_dependencies(
+        &self,
+        content: &str,
+        file_path: &str,
+    ) -> Result<Vec<Dependency>> {
         let mut dependencies = Vec::new();
 
         // Detect package manager from file path
@@ -315,7 +324,7 @@ impl DependencyHealthAnalyzer {
                         }
                     }
                 }
-            },
+            }
             DependencySource::NPM => {
                 // Parse package.json (JSON parsing would be better)
                 if content.contains("\"dependencies\"") {
@@ -332,7 +341,7 @@ impl DependencyHealthAnalyzer {
                         impact: DependencyImpact::default(),
                     });
                 }
-            },
+            }
             _ => {}
         }
 
@@ -383,7 +392,10 @@ impl DependencyHealthAnalyzer {
     }
 
     /// Query CentralCloud for dependency health data
-    async fn query_dependency_health(&self, dependencies: &[Dependency]) -> Result<Vec<serde_json::Value>> {
+    async fn query_dependency_health(
+        &self,
+        dependencies: &[Dependency],
+    ) -> Result<Vec<serde_json::Value>> {
         if dependencies.is_empty() {
             return Ok(vec![]);
         }
@@ -398,17 +410,17 @@ impl DependencyHealthAnalyzer {
             "include_vulnerabilities": false  // Separate query for vulns
         });
 
-        let response = query_centralcloud(
-            "intelligence_hub.dependency_health.query",
-            &request,
-            5000
-        )?;
+        let response =
+            query_centralcloud("intelligence_hub.dependency_health.query", &request, 5000)?;
 
         Ok(extract_data(&response, "health_data"))
     }
 
     /// Check vulnerabilities via CentralCloud CVE database
-    async fn check_vulnerabilities(&self, dependencies: &[Dependency]) -> Result<Vec<DependencyVulnerability>> {
+    async fn check_vulnerabilities(
+        &self,
+        dependencies: &[Dependency],
+    ) -> Result<Vec<DependencyVulnerability>> {
         if dependencies.is_empty() {
             return Ok(vec![]);
         }
@@ -423,11 +435,7 @@ impl DependencyHealthAnalyzer {
             "include_fixed": true
         });
 
-        let response = query_centralcloud(
-            "intelligence_hub.vulnerability.query",
-            &request,
-            5000
-        )?;
+        let response = query_centralcloud("intelligence_hub.vulnerability.query", &request, 5000)?;
 
         Ok(extract_data(&response, "vulnerabilities"))
     }
@@ -471,11 +479,11 @@ impl DependencyHealthAnalyzer {
             vulnerable_dependencies: vulnerable,
             unknown_dependencies: unknown,
             health_score,
-            freshness_score: 0.8,  // Placeholder
+            freshness_score: 0.8, // Placeholder
             security_score: if vulnerable == 0 { 1.0 } else { 0.5 },
-            maintenance_score: 0.8,  // Placeholder
-            popularity_score: 0.7,  // Placeholder
-            license_compliance_score: 1.0,  // Placeholder
+            maintenance_score: 0.8,        // Placeholder
+            popularity_score: 0.7,         // Placeholder
+            license_compliance_score: 1.0, // Placeholder
         }
     }
 
@@ -483,16 +491,18 @@ impl DependencyHealthAnalyzer {
     fn generate_recommendations(
         &self,
         dependencies: &[Dependency],
-        vulnerabilities: &[DependencyVulnerability]
+        vulnerabilities: &[DependencyVulnerability],
     ) -> Vec<DependencyRecommendation> {
         let mut recommendations = Vec::new();
 
         // Recommend security patches for vulnerable dependencies
         for vuln in vulnerabilities {
-            if vuln.severity == VulnerabilitySeverity::Critical || vuln.severity == VulnerabilitySeverity::High {
+            if vuln.severity == VulnerabilitySeverity::Critical
+                || vuln.severity == VulnerabilitySeverity::High
+            {
                 if let Some(fixed_version) = &vuln.fixed_version {
                     recommendations.push(DependencyRecommendation {
-                        dependency_name: vuln.cve_id.clone(),  // Would extract package name
+                        dependency_name: vuln.cve_id.clone(), // Would extract package name
                         recommendation_type: RecommendationType::SecurityPatch,
                         priority: Priority::Critical,
                         reason: format!("{}: {}", vuln.cve_id, vuln.description),
@@ -521,7 +531,11 @@ impl DependencyHealthAnalyzer {
     }
 
     /// Publish analysis stats to CentralCloud for collective learning
-    async fn publish_analysis_stats(&self, dependencies: &[Dependency], vulnerabilities: &[DependencyVulnerability]) {
+    async fn publish_analysis_stats(
+        &self,
+        dependencies: &[Dependency],
+        vulnerabilities: &[DependencyVulnerability],
+    ) {
         let stats = json!({
             "event": "dependency_health_analysis",
             "timestamp": chrono::Utc::now().to_rfc3339(),
@@ -544,7 +558,8 @@ impl DependencyHealthAnalyzer {
             DependencySource::NuGet => "nuget",
             DependencySource::RubyGems => "rubygems",
             _ => "unknown",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -599,9 +614,12 @@ impl PartialEq for VulnerabilitySeverity {
         matches!(
             (self, other),
             (VulnerabilitySeverity::Low, VulnerabilitySeverity::Low)
-            | (VulnerabilitySeverity::Medium, VulnerabilitySeverity::Medium)
-            | (VulnerabilitySeverity::High, VulnerabilitySeverity::High)
-            | (VulnerabilitySeverity::Critical, VulnerabilitySeverity::Critical)
+                | (VulnerabilitySeverity::Medium, VulnerabilitySeverity::Medium)
+                | (VulnerabilitySeverity::High, VulnerabilitySeverity::High)
+                | (
+                    VulnerabilitySeverity::Critical,
+                    VulnerabilitySeverity::Critical
+                )
         )
     }
 }
@@ -619,7 +637,10 @@ serde = "1.0"
 tokio = { version = "1.35", features = ["full"] }
         "#;
 
-        let deps = analyzer.extract_dependencies(content, "Cargo.toml").await.unwrap();
+        let deps = analyzer
+            .extract_dependencies(content, "Cargo.toml")
+            .await
+            .unwrap();
         assert!(!deps.is_empty());
     }
 

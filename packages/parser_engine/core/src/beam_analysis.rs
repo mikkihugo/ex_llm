@@ -246,7 +246,7 @@ pub struct AgentInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EtsTableInfo {
     pub name: String,
-    pub r#type: String, // :set, :ordered_set, :bag, :duplicate_bag
+    pub r#type: String,     // :set, :ordered_set, :bag, :duplicate_bag
     pub protection: String, // :public, :protected, :private
     pub line: u32,
 }

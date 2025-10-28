@@ -68,7 +68,8 @@ defmodule Singularity.SharedQueueConsumer do
     schedule_poll()
     schedule_llm_poll()
 
-    {:ok, %{poll_interval: poll_interval, llm_poll_interval: llm_poll_interval, batch_size: batch_size}}
+    {:ok,
+     %{poll_interval: poll_interval, llm_poll_interval: llm_poll_interval, batch_size: batch_size}}
   end
 
   @impl true

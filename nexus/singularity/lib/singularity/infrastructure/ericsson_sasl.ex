@@ -123,7 +123,8 @@ defmodule Singularity.Infrastructure.EricssonSasl do
   - `{:ok, context}` - Verification successful
   - `{:error, reason}` - Verification failed
   """
-  @spec verify_response(binary(), binary(), sasl_mechanism(), keyword()) :: authentication_result()
+  @spec verify_response(binary(), binary(), sasl_mechanism(), keyword()) ::
+          authentication_result()
   def verify_response(challenge, response, mechanism, opts \\ []) do
     case get_mechanism_implementation(mechanism) do
       {:ok, mechanism_impl} -> mechanism_impl.verify_response(challenge, response, opts)

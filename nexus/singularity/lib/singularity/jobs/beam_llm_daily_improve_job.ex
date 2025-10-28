@@ -140,11 +140,12 @@ defmodule Singularity.Jobs.BeamLLMDailyImproveJob do
 
     try do
       # Generate fresh training pairs from current codebase
-      {:ok, pairs} = BeamCodeDataGenerator.generate_pairs(
-        count: pair_count,
-        context_window: 1024,
-        min_tokens: 50
-      )
+      {:ok, pairs} =
+        BeamCodeDataGenerator.generate_pairs(
+          count: pair_count,
+          context_window: 1024,
+          min_tokens: 50
+        )
 
       Logger.info("✅ Generated #{length(pairs)} training pairs")
       {:ok, pairs}

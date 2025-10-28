@@ -7,11 +7,12 @@ defmodule Singularity.Test.MockHITL do
   """
 
   def create_approval(attrs) do
-    {:ok, Map.merge(attrs, %{
-      id: System.unique_integer([:positive]),
-      status: :pending,
-      inserted_at: DateTime.utc_now()
-    })}
+    {:ok,
+     Map.merge(attrs, %{
+       id: System.unique_integer([:positive]),
+       status: :pending,
+       inserted_at: DateTime.utc_now()
+     })}
   end
 
   def approve(approval, _attrs) do
@@ -25,6 +26,7 @@ defmodule Singularity.Test.MockHITL do
   def publish_decision(updated) do
     request_id = Map.get(updated, :request_id)
     response_queue = Map.get(updated, :response_queue, "approval_response_#{request_id}")
+
     Singularity.Jobs.PgmqClient.send_message(response_queue, %{
       decision: "approved",
       decision_reason: "mock decision"

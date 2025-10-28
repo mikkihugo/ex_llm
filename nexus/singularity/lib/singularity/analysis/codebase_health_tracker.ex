@@ -106,7 +106,7 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
   """
   def snapshot_codebase(codebase_path, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
-    
+
     # Extract options with defaults
     include_tests = Keyword.get(opts, :include_tests, true)
     include_docs = Keyword.get(opts, :include_docs, true)

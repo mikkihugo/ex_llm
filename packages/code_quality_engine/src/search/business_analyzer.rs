@@ -2,8 +2,9 @@
 //!
 //! PSEUDO CODE: Business domain and pattern analysis for semantic search.
 
-use serde::{Deserialize, Serialize};
+use super::semantic_search::{BusinessContext, VectorMatch};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Business analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,7 +74,7 @@ pub enum BusinessPatternType {
     Invoicing,
     Refunds,
     Chargebacks,
-    
+
     // User Management Patterns
     UserRegistration,
     Authentication,
@@ -81,7 +82,7 @@ pub enum BusinessPatternType {
     ProfileManagement,
     UserOnboarding,
     UserDeactivation,
-    
+
     // Order Management Patterns
     OrderProcessing,
     OrderFulfillment,
@@ -89,7 +90,7 @@ pub enum BusinessPatternType {
     OrderCancellation,
     OrderModification,
     OrderHistory,
-    
+
     // Inventory Patterns
     InventoryManagement,
     StockTracking,
@@ -97,7 +98,7 @@ pub enum BusinessPatternType {
     Pricing,
     Discounts,
     Promotions,
-    
+
     // Notification Patterns
     EmailNotifications,
     SMSNotifications,
@@ -105,7 +106,7 @@ pub enum BusinessPatternType {
     InAppNotifications,
     WebhookNotifications,
     EventNotifications,
-    
+
     // Analytics Patterns
     BusinessAnalytics,
     Reporting,
@@ -113,7 +114,7 @@ pub enum BusinessPatternType {
     KPIs,
     Metrics,
     Insights,
-    
+
     // Audit Patterns
     AuditTrail,
     Compliance,
@@ -121,7 +122,7 @@ pub enum BusinessPatternType {
     Monitoring,
     Alerting,
     IncidentManagement,
-    
+
     // Integration Patterns
     APIIntegration,
     ThirdPartyIntegration,
@@ -153,56 +154,56 @@ pub enum EntityType {
     Employee,
     Supplier,
     Vendor,
-    
+
     // Product Entities
     Product,
     Service,
     Category,
     Brand,
     Manufacturer,
-    
+
     // Order Entities
     Order,
     OrderItem,
     Cart,
     Wishlist,
     Quote,
-    
+
     // Payment Entities
     Payment,
     Invoice,
     Receipt,
     Transaction,
     Refund,
-    
+
     // Location Entities
     Address,
     Location,
     Warehouse,
     Store,
     Office,
-    
+
     // Communication Entities
     Message,
     Notification,
     Email,
     SMS,
     Call,
-    
+
     // Document Entities
     Document,
     Contract,
     Agreement,
     Policy,
     Procedure,
-    
+
     // Financial Entities
     Account,
     Ledger,
     Budget,
     Expense,
     Revenue,
-    
+
     // System Entities
     Configuration,
     Setting,
@@ -326,44 +327,44 @@ pub enum WorkflowType {
     PaymentVerification,
     PaymentRefund,
     PaymentDispute,
-    
+
     // User Workflows
     UserRegistration,
     UserOnboarding,
     UserVerification,
     UserDeactivation,
     PasswordReset,
-    
+
     // Order Workflows
     OrderProcessing,
     OrderFulfillment,
     OrderCancellation,
     OrderModification,
     OrderTracking,
-    
+
     // Inventory Workflows
     InventoryUpdate,
     StockReplenishment,
     ProductDiscontinuation,
     PriceUpdate,
-    
+
     // Customer Support Workflows
     TicketCreation,
     TicketAssignment,
     TicketResolution,
     Escalation,
-    
+
     // Compliance Workflows
     ComplianceCheck,
     AuditTrail,
     RegulatoryReporting,
     RiskAssessment,
-    
+
     // Notification Workflows
     NotificationDelivery,
     NotificationRetry,
     NotificationEscalation,
-    
+
     // Integration Workflows
     DataSynchronization,
     APIIntegration,
@@ -538,7 +539,7 @@ impl BusinessAnalyzer {
             workflow_detectors: Vec::new(),
         }
     }
-    
+
     /// Initialize with fact-system integration
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
@@ -548,25 +549,29 @@ impl BusinessAnalyzer {
         let pattern_matchers = self.fact_system_interface.load_business_pattern_matchers().await?;
         let entity_extractors = self.fact_system_interface.load_business_entity_extractors().await?;
         let workflow_detectors = self.fact_system_interface.load_business_workflow_detectors().await?;
-        
+
         self.domain_patterns.extend(domain_patterns);
         self.pattern_matchers.extend(pattern_matchers);
         self.entity_extractors.extend(entity_extractors);
         self.workflow_detectors.extend(workflow_detectors);
         */
-        
+
         Ok(())
     }
-    
+
     /// Analyze business context
-    pub async fn analyze_business_context(&self, query: &str, vector_matches: &[VectorMatch]) -> Result<BusinessContext> {
+    pub async fn analyze_business_context(
+        &self,
+        query: &str,
+        vector_matches: &[VectorMatch],
+    ) -> Result<BusinessContext> {
         // PSEUDO CODE:
         /*
         let mut domains = Vec::new();
         let mut patterns = Vec::new();
         let mut entities = Vec::new();
         let mut workflows = Vec::new();
-        
+
         // Analyze query for business domains
         for domain_pattern in &self.domain_patterns {
             let domain_confidence = self.calculate_domain_confidence(query, domain_pattern);
@@ -583,7 +588,7 @@ impl BusinessAnalyzer {
                 });
             }
         }
-        
+
         // Analyze vector matches for business patterns
         for vector_match in vector_matches {
             for pattern_matcher in &self.pattern_matchers {
@@ -603,7 +608,7 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Analyze vector matches for business entities
         for vector_match in vector_matches {
             for entity_extractor in &self.entity_extractors {
@@ -622,7 +627,7 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Analyze vector matches for business workflows
         for vector_match in vector_matches {
             for workflow_detector in &self.workflow_detectors {
@@ -641,7 +646,7 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         Ok(BusinessContext {
             domains,
             patterns,
@@ -649,7 +654,7 @@ impl BusinessAnalyzer {
             workflows,
         })
         */
-        
+
         Ok(BusinessContext {
             domains: Vec::new(),
             patterns: Vec::new(),
@@ -657,21 +662,25 @@ impl BusinessAnalyzer {
             workflows: Vec::new(),
         })
     }
-    
+
     /// Calculate domain confidence
-    fn calculate_domain_confidence(&self, query: &str, domain_pattern: &BusinessDomainPattern) -> f64 {
+    fn calculate_domain_confidence(
+        &self,
+        query: &str,
+        domain_pattern: &BusinessDomainPattern,
+    ) -> f64 {
         // PSEUDO CODE:
         /*
         let mut confidence = 0.0;
         let query_lower = query.to_lowercase();
-        
+
         // Check keyword matches
         for keyword in &domain_pattern.keywords {
             if query_lower.contains(&keyword.to_lowercase()) {
                 confidence += 0.3;
             }
         }
-        
+
         // Check pattern matches
         for pattern in &domain_pattern.patterns {
             if let Ok(regex) = Regex::new(pattern) {
@@ -680,24 +689,28 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Check semantic similarity
         let semantic_similarity = self.calculate_semantic_similarity(query, &domain_pattern.description);
         confidence += semantic_similarity * 0.5;
-        
+
         confidence.min(1.0)
         */
-        
+
         0.0
     }
-    
+
     /// Calculate pattern confidence
-    fn calculate_pattern_confidence(&self, vector_match: &VectorMatch, pattern_matcher: &BusinessPatternMatcher) -> f64 {
+    fn calculate_pattern_confidence(
+        &self,
+        vector_match: &VectorMatch,
+        pattern_matcher: &BusinessPatternMatcher,
+    ) -> f64 {
         // PSEUDO CODE:
         /*
         let mut confidence = 0.0;
         let code_lower = vector_match.code_snippet.to_lowercase();
-        
+
         // Check detection patterns
         for pattern in &pattern_matcher.detection_patterns {
             if let Ok(regex) = Regex::new(pattern) {
@@ -706,24 +719,28 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Check semantic similarity
         let semantic_similarity = self.calculate_semantic_similarity(&vector_match.code_snippet, &pattern_matcher.description);
         confidence += semantic_similarity * 0.6;
-        
+
         confidence.min(1.0)
         */
-        
+
         0.0
     }
-    
+
     /// Calculate entity confidence
-    fn calculate_entity_confidence(&self, vector_match: &VectorMatch, entity_extractor: &BusinessEntityExtractor) -> f64 {
+    fn calculate_entity_confidence(
+        &self,
+        vector_match: &VectorMatch,
+        entity_extractor: &BusinessEntityExtractor,
+    ) -> f64 {
         // PSEUDO CODE:
         /*
         let mut confidence = 0.0;
         let code_lower = vector_match.code_snippet.to_lowercase();
-        
+
         // Check extraction patterns
         for pattern in &entity_extractor.extraction_patterns {
             if let Ok(regex) = Regex::new(pattern) {
@@ -732,34 +749,38 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Check attribute patterns
         for attribute in &entity_extractor.attributes {
             if code_lower.contains(&attribute.name.to_lowercase()) {
                 confidence += 0.1;
             }
         }
-        
+
         // Check relationship patterns
         for relationship in &entity_extractor.relationships {
             if code_lower.contains(&relationship.target_entity.to_lowercase()) {
                 confidence += 0.1;
             }
         }
-        
+
         confidence.min(1.0)
         */
-        
+
         0.0
     }
-    
+
     /// Calculate workflow confidence
-    fn calculate_workflow_confidence(&self, vector_match: &VectorMatch, workflow_detector: &BusinessWorkflowDetector) -> f64 {
+    fn calculate_workflow_confidence(
+        &self,
+        vector_match: &VectorMatch,
+        workflow_detector: &BusinessWorkflowDetector,
+    ) -> f64 {
         // PSEUDO CODE:
         /*
         let mut confidence = 0.0;
         let code_lower = vector_match.code_snippet.to_lowercase();
-        
+
         // Check detection patterns
         for pattern in &workflow_detector.detection_patterns {
             if let Ok(regex) = Regex::new(pattern) {
@@ -768,24 +789,24 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         // Check step patterns
         for step in &workflow_detector.steps {
             if code_lower.contains(&step.name.to_lowercase()) {
                 confidence += 0.1;
             }
         }
-        
+
         // Check trigger patterns
         for trigger in &workflow_detector.triggers {
             if code_lower.contains(&trigger.name.to_lowercase()) {
                 confidence += 0.1;
             }
         }
-        
+
         confidence.min(1.0)
         */
-        
+
         0.0
     }
 }
@@ -794,29 +815,29 @@ impl FactSystemInterface {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn load_business_domain_patterns(&self) -> Result<Vec<BusinessDomainPattern>> {
         // Query fact-system for business domain patterns
         // Return patterns for e-commerce, finance, healthcare, etc.
     }
-    
+
     pub async fn load_business_pattern_matchers(&self) -> Result<Vec<BusinessPatternMatcher>> {
         // Query fact-system for business pattern matchers
         // Return matchers for payment, checkout, user management, etc.
     }
-    
+
     pub async fn load_business_entity_extractors(&self) -> Result<Vec<BusinessEntityExtractor>> {
         // Query fact-system for business entity extractors
         // Return extractors for user, product, order, etc.
     }
-    
+
     pub async fn load_business_workflow_detectors(&self) -> Result<Vec<BusinessWorkflowDetector>> {
         // Query fact-system for business workflow detectors
         // Return detectors for payment processing, user registration, etc.
     }
-    
+
     pub async fn get_business_analysis_guidelines(&self, context: &str) -> Result<Vec<String>> {
         // Query fact-system for business analysis guidelines
     }

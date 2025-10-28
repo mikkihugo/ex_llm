@@ -2,8 +2,8 @@
 //!
 //! PSEUDO CODE: How parsers provide coverage data to analysis-suite.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Coverage data collection result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -262,7 +262,11 @@ pub struct FactSystemInterface {
 pub trait ParserCoverageCollector {
     fn get_parser_name(&self) -> &str;
     fn get_supported_languages(&self) -> Vec<String>;
-    fn collect_coverage(&self, file_path: &str, test_results: &TestResults) -> Result<ParserCoverageData>;
+    fn collect_coverage(
+        &self,
+        file_path: &str,
+        test_results: &TestResults,
+    ) -> Result<ParserCoverageData>;
     fn get_coverage_thresholds(&self) -> CoverageThresholds;
 }
 
@@ -279,7 +283,7 @@ pub struct CoverageThresholds {
 impl Default for CoverageThresholds {
     fn default() -> Self {
         Self {
-            line_coverage_minimum: 0.8,      // 80% line coverage
+            line_coverage_minimum: 0.8,       // 80% line coverage
             function_coverage_minimum: 0.9,   // 90% function coverage
             branch_coverage_minimum: 0.7,     // 70% branch coverage
             overall_coverage_minimum: 0.8,    // 80% overall coverage
@@ -295,7 +299,7 @@ impl CoverageDataCollector {
             fact_system_interface: FactSystemInterface::new(),
         }
     }
-    
+
     /// Initialize with all parser coverage collectors
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
@@ -314,27 +318,31 @@ impl CoverageDataCollector {
         self.parser_coverage_collectors.insert("elixir".to_string(), Box::new(ElixirCoverageCollector::new()));
         self.parser_coverage_collectors.insert("gleam".to_string(), Box::new(GleamCoverageCollector::new()));
         */
-        
+
         Ok(())
     }
-    
+
     /// Collect coverage data from all parsers
-    pub async fn collect_coverage(&self, file_paths: &[String], test_results: &TestResults) -> Result<CoverageCollectionResult> {
+    pub async fn collect_coverage(
+        &self,
+        file_paths: &[String],
+        test_results: &TestResults,
+    ) -> Result<CoverageCollectionResult> {
         // PSEUDO CODE:
         /*
         let mut parser_coverage_data = Vec::new();
         let mut language_coverage = std::collections::HashMap::new();
         let mut parser_coverage = std::collections::HashMap::new();
-        
+
         // Collect coverage data from each file
         for file_path in file_paths {
             let parser_name = self.determine_parser_for_file(file_path)?;
             let collector = self.parser_coverage_collectors.get(&parser_name)
                 .ok_or_else(|| anyhow::anyhow!("Parser collector not found: {}", parser_name))?;
-            
+
             let coverage_data = collector.collect_coverage(file_path, test_results)?;
             parser_coverage_data.push(coverage_data.clone());
-            
+
             // Update language coverage
             let language = coverage_data.language.clone();
             let lang_coverage = language_coverage.entry(language.clone()).or_insert(LanguageCoverage {
@@ -348,7 +356,7 @@ impl CoverageDataCollector {
                 covered_branches: 0,
                 coverage_percentage: 0.0,
             });
-            
+
             lang_coverage.file_count += 1;
             lang_coverage.total_lines += coverage_data.coverage_metrics.total_lines;
             lang_coverage.covered_lines += coverage_data.coverage_metrics.covered_lines;
@@ -356,7 +364,7 @@ impl CoverageDataCollector {
             lang_coverage.covered_functions += coverage_data.coverage_metrics.covered_functions;
             lang_coverage.total_branches += coverage_data.coverage_metrics.total_branches;
             lang_coverage.covered_branches += coverage_data.coverage_metrics.covered_branches;
-            
+
             // Update parser coverage
             let parser_coverage_summary = parser_coverage.entry(parser_name.clone()).or_insert(ParserCoverageSummary {
                 parser_name: parser_name.clone(),
@@ -369,7 +377,7 @@ impl CoverageDataCollector {
                 covered_branches: 0,
                 coverage_percentage: 0.0,
             });
-            
+
             parser_coverage_summary.file_count += 1;
             parser_coverage_summary.total_lines += coverage_data.coverage_metrics.total_lines;
             parser_coverage_summary.covered_lines += coverage_data.coverage_metrics.covered_lines;
@@ -378,7 +386,7 @@ impl CoverageDataCollector {
             parser_coverage_summary.total_branches += coverage_data.coverage_metrics.total_branches;
             parser_coverage_summary.covered_branches += coverage_data.coverage_metrics.covered_branches;
         }
-        
+
         // Calculate coverage percentages
         for lang_coverage in language_coverage.values_mut() {
             lang_coverage.coverage_percentage = if lang_coverage.total_lines > 0 {
@@ -387,7 +395,7 @@ impl CoverageDataCollector {
                 0.0
             };
         }
-        
+
         for parser_coverage_summary in parser_coverage.values_mut() {
             parser_coverage_summary.coverage_percentage = if parser_coverage_summary.total_lines > 0 {
                 parser_coverage_summary.covered_lines as f64 / parser_coverage_summary.total_lines as f64
@@ -395,7 +403,7 @@ impl CoverageDataCollector {
                 0.0
             };
         }
-        
+
         // Calculate aggregated coverage
         let total_files = file_paths.len() as u32;
         let total_lines = parser_coverage_data.iter().map(|d| d.coverage_metrics.total_lines).sum();
@@ -404,13 +412,13 @@ impl CoverageDataCollector {
         let covered_functions = parser_coverage_data.iter().map(|d| d.coverage_metrics.covered_functions).sum();
         let total_branches = parser_coverage_data.iter().map(|d| d.coverage_metrics.total_branches).sum();
         let covered_branches = parser_coverage_data.iter().map(|d| d.coverage_metrics.covered_branches).sum();
-        
+
         let overall_coverage_percentage = if total_lines > 0 {
             covered_lines as f64 / total_lines as f64
         } else {
             0.0
         };
-        
+
         let aggregated_coverage = AggregatedCoverage {
             total_files,
             total_lines,
@@ -423,7 +431,7 @@ impl CoverageDataCollector {
             language_coverage,
             parser_coverage,
         };
-        
+
         // Calculate coverage summary
         let coverage_summary = CoverageSummary {
             overall_coverage: overall_coverage_percentage,
@@ -437,10 +445,10 @@ impl CoverageDataCollector {
             total_functions: total_functions as usize,
             covered_functions: covered_functions as usize,
         };
-        
+
         // Generate recommendations
         let recommendations = self.generate_recommendations(&parser_coverage_data, &aggregated_coverage);
-        
+
         Ok(CoverageCollectionResult {
             parser_coverage_data,
             aggregated_coverage,
@@ -457,7 +465,7 @@ impl CoverageDataCollector {
             },
         })
         */
-        
+
         Ok(CoverageCollectionResult {
             parser_coverage_data: Vec::new(),
             aggregated_coverage: AggregatedCoverage {
@@ -496,14 +504,14 @@ impl CoverageDataCollector {
             },
         })
     }
-    
+
     /// Determine parser for file
     fn determine_parser_for_file(&self, file_path: &str) -> Result<String> {
         // PSEUDO CODE:
         /*
         let extension = file_path.split('.').last()
             .ok_or_else(|| anyhow::anyhow!("No file extension found"))?;
-        
+
         match extension {
             "rs" => Ok("rust".to_string()),
             "js" => Ok("javascript".to_string()),
@@ -520,16 +528,20 @@ impl CoverageDataCollector {
             _ => Err(anyhow::anyhow!("Unsupported file type: {}", extension)),
         }
         */
-        
+
         Ok("rust".to_string())
     }
-    
+
     /// Generate recommendations
-    fn generate_recommendations(&self, parser_coverage_data: &[ParserCoverageData], aggregated_coverage: &AggregatedCoverage) -> Vec<CoverageRecommendation> {
+    fn generate_recommendations(
+        &self,
+        parser_coverage_data: &[ParserCoverageData],
+        aggregated_coverage: &AggregatedCoverage,
+    ) -> Vec<CoverageRecommendation> {
         // PSEUDO CODE:
         /*
         let mut recommendations = Vec::new();
-        
+
         // Check overall coverage
         if aggregated_coverage.overall_coverage_percentage < 0.8 {
             recommendations.push(CoverageRecommendation {
@@ -542,7 +554,7 @@ impl CoverageDataCollector {
                 effort_required: EffortEstimate::Medium,
             });
         }
-        
+
         // Check language-specific coverage
         for (language, lang_coverage) in &aggregated_coverage.language_coverage {
             if lang_coverage.coverage_percentage < 0.8 {
@@ -557,7 +569,7 @@ impl CoverageDataCollector {
                 });
             }
         }
-        
+
         // Check parser-specific coverage
         for (parser_name, parser_coverage) in &aggregated_coverage.parser_coverage {
             if parser_coverage.coverage_percentage < 0.8 {
@@ -572,10 +584,10 @@ impl CoverageDataCollector {
                 });
             }
         }
-        
+
         return recommendations;
         */
-        
+
         Vec::new()
     }
 }
@@ -584,22 +596,22 @@ impl FactSystemInterface {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn load_coverage_collection_patterns(&self) -> Result<Vec<CoverageCollectionPattern>> {
         // Query fact-system for coverage collection patterns
         // Return patterns for coverage collection, etc.
     }
-    
+
     pub async fn get_coverage_collection_best_practices(&self, collection_type: &str) -> Result<Vec<String>> {
         // Query fact-system for best practices for specific collection types
     }
-    
+
     pub async fn get_coverage_collection_thresholds(&self, context: &str) -> Result<CoverageThresholds> {
         // Query fact-system for context-specific coverage thresholds
     }
-    
+
     pub async fn get_coverage_collection_guidelines(&self, context: &str) -> Result<Vec<String>> {
         // Query fact-system for coverage collection guidelines
     }

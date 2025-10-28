@@ -85,7 +85,8 @@ impl CodebaseAnalyzer {
             return 0.0;
         }
 
-        let dot_product: f32 = embedding1.iter()
+        let dot_product: f32 = embedding1
+            .iter()
             .zip(embedding2.iter())
             .map(|(a, b)| a * b)
             .sum();
@@ -105,7 +106,7 @@ impl CodebaseAnalyzer {
     /// Pure computation - sorts and limits results
     pub fn rank_by_similarity(
         &self,
-        mut results: Vec<(String, f32)>,  // (path, similarity)
+        mut results: Vec<(String, f32)>, // (path, similarity)
         limit: usize,
     ) -> Vec<(String, f32)> {
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -127,8 +128,8 @@ impl CodebaseAnalyzer {
 /// with code that used the old `crate::storage::graph` path.
 pub mod graph {
     // Re-export graph types from codebase module
-    pub use crate::codebase::{CodeGraph as Graph, GraphNode, GraphEdge, GraphMetrics};
-    pub use crate::codebase::{FileDAG, DAGStats};
+    pub use crate::codebase::{CodeGraph as Graph, GraphEdge, GraphMetrics, GraphNode};
+    pub use crate::codebase::{DAGStats, FileDAG};
 
     // Re-export ComplexityMetrics from domain module
     pub use crate::domain::ComplexityMetrics;

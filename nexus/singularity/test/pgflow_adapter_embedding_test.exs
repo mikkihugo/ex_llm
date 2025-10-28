@@ -13,12 +13,21 @@ defmodule Singularity.PgflowAdapterEmbeddingTest do
   setup do
     # Mock PGFlow workflow and Repo for integration test
     {:ok, workflow_pid} = start_supervised({Agent, fn -> [] end})
-    Mox.expect(Repo, :all, fn _query -> [%{id: 1, data: %{artifact_id: "test"}, metadata: %{}}] end)
+
+    Mox.expect(Repo, :all, fn _query ->
+      [%{id: 1, data: %{artifact_id: "test"}, metadata: %{}}]
+    end)
+
     Mox.expect(Repo, :update_all, fn _query, _ -> {1, []} end)
 
     # Mock NxService for embedding generation
-    Mox.defmock(Singularity.Embedding.NxServiceMock, for: Singularity.Embedding.NxService.Behaviour)
-    Mox.expect(Singularity.Embedding.NxServiceMock, :embed, fn _text, device: :cpu -> {:ok, Nx.tensor([1.0])} end)
+    Mox.defmock(Singularity.Embedding.NxServiceMock,
+      for: Singularity.Embedding.NxService.Behaviour
+    )
+
+    Mox.expect(Singularity.Embedding.NxServiceMock, :embed, fn _text, device: :cpu ->
+      {:ok, Nx.tensor([1.0])}
+    end)
 
     %{workflow_pid: workflow_pid}
   end
@@ -29,7 +38,8 @@ defmodule Singularity.PgflowAdapterEmbeddingTest do
       Repo.insert_all("embedding_jobs", [%{data: %{artifact_id: "test"}, status: "pending"}])
 
       opts = [
-        artifacts: [],  # PGFlowProducer fetches independently
+        # PGFlowProducer fetches independently
+        artifacts: [],
         device: :cpu,
         workers: 1,
         batch_size: 1,
@@ -37,13 +47,14 @@ defmodule Singularity.PgflowAdapterEmbeddingTest do
       ]
 
       # Start pipeline with PGFlowProducer
-      {:ok, _pid} = BroadwayEmbeddingPipeline.start_pipeline(
-        [],
-        :cpu,
-        1,
-        1,
-        false
-      )
+      {:ok, _pid} =
+        BroadwayEmbeddingPipeline.start_pipeline(
+          [],
+          :cpu,
+          1,
+          1,
+          false
+        )
 
       # Simulate demand and workflow yield
       expect(Workflow, :enqueue, fn _, :fetch, %{demand: 1} ->
@@ -54,6 +65,7 @@ defmodule Singularity.PgflowAdapterEmbeddingTest do
             acknowledger: {Broadway.PgflowProducer.Workflow, 1}
           }
         ]
+
         send(self(), {:workflow_yield, messages})
         :ok
       end)
@@ -67,9 +79,9 @@ defmodule Singularity.PgflowAdapterEmbeddingTest do
 
       # Capture logs for verification
       assert capture_log(fn ->
-        # Simulate ack
-        Broadway.PgflowProducer.Workflow.handle_update(:ack, %{id: 1}, %{})
-      end) =~ "Acked job 1"
+               # Simulate ack
+               Broadway.PgflowProducer.Workflow.handle_update(:ack, %{id: 1}, %{})
+             end) =~ "Acked job 1"
     end
   end
 end

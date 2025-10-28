@@ -16,7 +16,7 @@ All core tools come as precompiled binaries from nixpkgs:
 
 The flake.nix includes only essential Rust tools that are actually used:
 - `rustc`, `cargo` - Core Rust compiler and build tool
-- `rust-analyzer` - LSP server for IDE support
+- `Singularity Code Analyzer` (rust-analyzer) - LSP server for IDE support
 - `cargo-watch` - File watcher (used in justfile)
 
 **30+ specialized cargo tools were removed** to speed up setup. These tools (cargo-nextest, cargo-audit, cargo-llvm-cov, etc.) often need to be built from source and added significant setup time.
@@ -164,7 +164,7 @@ If setup is still too slow, consider:
 1. **Use devcontainers**: Pre-built Docker images with everything installed
 2. **Binary cache on S3**: Faster than public cachix for large teams
 3. **Nix flake lock**: Pin exact versions to ensure reproducible builds
-4. **Lazy shell hooks**: Defer PostgreSQL/NATS startup until first use
+4. **Lazy shell hooks**: Defer PostgreSQL/PGFlow services until first use
 
 ## Questions?
 

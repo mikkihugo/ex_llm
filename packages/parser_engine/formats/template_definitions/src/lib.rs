@@ -1,5 +1,5 @@
 use anyhow::Result;
-use parser_core::{LanguageParser, AST, LanguageMetrics, Function, Import, Comment, ParseError};
+use parser_core::{Comment, Function, Import, LanguageMetrics, LanguageParser, ParseError, AST};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,8 +42,9 @@ impl TemplateMetaParser {
         // Create a simple AST for now - TODO: implement proper JSON parsing
         use tree_sitter::Parser;
         let mut parser = Parser::new();
-        let tree = parser.parse(content, None)
-            .ok_or_else(|| parser_core::ParseError::TreeSitterError("Failed to parse JSON".to_string()))?;
+        let tree = parser.parse(content, None).ok_or_else(|| {
+            parser_core::ParseError::TreeSitterError("Failed to parse JSON".to_string())
+        })?;
         Ok(AST::new(tree, content.to_string()))
     }
 

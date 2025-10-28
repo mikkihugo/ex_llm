@@ -82,7 +82,10 @@ async fn main() -> Result<()> {
     .with_line_number(false)
     .try_init(); // Use try_init to avoid panic if already initialized
 
-  info!("🚀 Starting Package Registry Scanner v{}", env!("CARGO_PKG_VERSION"));
+  info!(
+    "🚀 Starting Package Registry Scanner v{}",
+    env!("CARGO_PKG_VERSION")
+  );
 
   let cli = Cli::parse();
 
@@ -124,7 +127,7 @@ async fn scan_command(
   limit: usize,
 ) -> Result<()> {
   info!("Scanning {} registry", registry);
-  
+
   let result = serde_json::json!({
     "registry": registry,
     "package": package,
@@ -152,7 +155,7 @@ async fn index_command(
   limit: usize,
 ) -> Result<()> {
   info!("Indexing {} registry", registry);
-  
+
   let result = serde_json::json!({
     "registry": registry,
     "package": package,
@@ -167,7 +170,7 @@ async fn index_command(
 
 fn list_command(detailed: bool) -> Result<()> {
   info!("Listing available registries");
-  
+
   let registries = vec!["npm", "cargo", "hex", "pypi"];
   let result = serde_json::json!({
     "registries": registries,

@@ -129,7 +129,10 @@ defmodule Singularity.Validation.EffectivenessTracker do
         filtered_scores = filter_checks_with_minimum_data(effectiveness_scores, time_range)
 
         if map_size(filtered_scores) == 0 do
-          Logger.debug("EffectivenessTracker: No checks have minimum data points (#{@min_data_points})")
+          Logger.debug(
+            "EffectivenessTracker: No checks have minimum data points (#{@min_data_points})"
+          )
+
           %{}
         else
           # Normalize scores to create weights
@@ -374,7 +377,8 @@ defmodule Singularity.Validation.EffectivenessTracker do
       :ok
     rescue
       error ->
-        SASL.execution_failure(:effectiveness_recalculation_failure,
+        SASL.execution_failure(
+          :effectiveness_recalculation_failure,
           "Effectiveness tracker failed to recalculate weights",
           error: error
         )
@@ -386,7 +390,9 @@ defmodule Singularity.Validation.EffectivenessTracker do
   # Private Helpers
 
   defp filter_checks_with_minimum_data(effectiveness_scores, time_range) do
-    Logger.debug("EffectivenessTracker: Filtering checks with minimum data points (>= #{@min_data_points}) for time_range: #{time_range}")
+    Logger.debug(
+      "EffectivenessTracker: Filtering checks with minimum data points (>= #{@min_data_points}) for time_range: #{time_range}"
+    )
 
     effectiveness_scores
     |> Enum.filter(fn {check_id, _score} ->
@@ -395,10 +401,16 @@ defmodule Singularity.Validation.EffectivenessTracker do
       data_points = length(metrics)
 
       if data_points >= @min_data_points do
-        Logger.debug("EffectivenessTracker: Check #{check_id} has #{data_points} data points (>= #{@min_data_points}) - including in weights")
+        Logger.debug(
+          "EffectivenessTracker: Check #{check_id} has #{data_points} data points (>= #{@min_data_points}) - including in weights"
+        )
+
         true
       else
-        Logger.debug("EffectivenessTracker: Check #{check_id} has #{data_points} data points (< #{@min_data_points}) - excluding from weights")
+        Logger.debug(
+          "EffectivenessTracker: Check #{check_id} has #{data_points} data points (< #{@min_data_points}) - excluding from weights"
+        )
+
         false
       end
     end)

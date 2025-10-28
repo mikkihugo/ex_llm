@@ -228,7 +228,8 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
           {:ok, stats}
 
         {:error, reason} ->
-          SASL.critical_failure(:pagerank_calculation_failure,
+          SASL.critical_failure(
+            :pagerank_calculation_failure,
             "PageRank calculation failed catastrophically",
             codebase_id: codebase_id,
             reason: reason

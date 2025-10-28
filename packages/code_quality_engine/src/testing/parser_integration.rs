@@ -2,8 +2,8 @@
 //!
 //! PSEUDO CODE: How parsers provide coverage data to analysis-suite.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Parser coverage data
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -119,7 +119,11 @@ pub struct FactSystemInterface {
 pub trait ParserCoverageProvider {
     fn get_parser_name(&self) -> &str;
     fn get_parser_type(&self) -> ParserType;
-    fn collect_coverage(&self, file_path: &str, test_results: &TestResults) -> Result<ParserCoverageData>;
+    fn collect_coverage(
+        &self,
+        file_path: &str,
+        test_results: &TestResults,
+    ) -> Result<ParserCoverageData>;
     fn get_coverage_thresholds(&self) -> ParserCoverageThresholds;
 }
 
@@ -192,7 +196,7 @@ pub struct ParserCoverageThresholds {
 impl Default for ParserCoverageThresholds {
     fn default() -> Self {
         Self {
-            line_coverage_minimum: 0.8,      // 80% line coverage
+            line_coverage_minimum: 0.8,       // 80% line coverage
             function_coverage_minimum: 0.9,   // 90% function coverage
             branch_coverage_minimum: 0.7,     // 70% branch coverage
             overall_coverage_minimum: 0.8,    // 80% overall coverage
@@ -208,7 +212,7 @@ impl ParserCoverageCollector {
             fact_system_interface: FactSystemInterface::new(),
         }
     }
-    
+
     /// Initialize with all parsers
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
@@ -227,28 +231,32 @@ impl ParserCoverageCollector {
         self.parsers.insert("elixir".to_string(), Box::new(ElixirParserCoverageProvider::new()));
         self.parsers.insert("gleam".to_string(), Box::new(GleamParserCoverageProvider::new()));
         */
-        
+
         Ok(())
     }
-    
+
     /// Collect coverage data from parsers
-    pub async fn collect_coverage(&self, file_path: &str, test_results: &TestResults) -> Result<ParserCoverageData> {
+    pub async fn collect_coverage(
+        &self,
+        file_path: &str,
+        test_results: &TestResults,
+    ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*
         // Determine parser type from file extension
         let parser_type = self.determine_parser_type(file_path)?;
         let parser_name = self.get_parser_name_for_type(parser_type);
-        
+
         // Get parser coverage provider
         let parser = self.parsers.get(&parser_name)
             .ok_or_else(|| anyhow::anyhow!("Parser not found: {}", parser_name))?;
-        
+
         // Collect coverage data from parser
         let coverage_data = parser.collect_coverage(file_path, test_results)?;
-        
+
         Ok(coverage_data)
         */
-        
+
         Ok(ParserCoverageData {
             parser_name: "unknown".to_string(),
             file_path: file_path.to_string(),
@@ -277,14 +285,14 @@ impl ParserCoverageCollector {
             },
         })
     }
-    
+
     /// Determine parser type from file path
     fn determine_parser_type(&self, file_path: &str) -> Result<ParserType> {
         // PSEUDO CODE:
         /*
         let extension = file_path.split('.').last()
             .ok_or_else(|| anyhow::anyhow!("No file extension found"))?;
-        
+
         match extension {
             "rs" => Ok(ParserType::Rust),
             "js" => Ok(ParserType::JavaScript),
@@ -301,10 +309,10 @@ impl ParserCoverageCollector {
             _ => Err(anyhow::anyhow!("Unsupported file type: {}", extension)),
         }
         */
-        
+
         Ok(ParserType::Rust)
     }
-    
+
     /// Get parser name for type
     fn get_parser_name_for_type(&self, parser_type: ParserType) -> String {
         match parser_type {
@@ -337,12 +345,16 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
     fn get_parser_name(&self) -> &str {
         "rust"
     }
-    
+
     fn get_parser_type(&self) -> ParserType {
         ParserType::Rust
     }
-    
-    fn collect_coverage(&self, file_path: &str, test_results: &TestResults) -> Result<ParserCoverageData> {
+
+    fn collect_coverage(
+        &self,
+        file_path: &str,
+        test_results: &TestResults,
+    ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*
         // Parse Rust file with tree-sitter
@@ -350,14 +362,14 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(tree_sitter_rust::language())?;
         let tree = parser.parse(&content, None).unwrap();
-        
+
         // Walk AST and collect coverage data
         let mut function_coverage = Vec::new();
         let mut line_coverage = Vec::new();
         let mut branch_coverage = Vec::new();
-        
+
         self.walk_ast(&tree, &content, &mut function_coverage, &mut line_coverage, &mut branch_coverage);
-        
+
         // Calculate coverage metrics
         let total_lines = content.lines().count() as u32;
         let covered_lines = line_coverage.iter().filter(|l| l.covered).count() as u32;
@@ -365,12 +377,12 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
         let covered_functions = function_coverage.iter().filter(|f| f.covered).count() as u32;
         let total_branches = branch_coverage.len() as u32;
         let covered_branches = branch_coverage.iter().filter(|b| b.covered).count() as u32;
-        
+
         let line_coverage_percentage = if total_lines > 0 { covered_lines as f64 / total_lines as f64 } else { 0.0 };
         let function_coverage_percentage = if total_functions > 0 { covered_functions as f64 / total_functions as f64 } else { 0.0 };
         let branch_coverage_percentage = if total_branches > 0 { covered_branches as f64 / total_branches as f64 } else { 0.0 };
         let overall_coverage_percentage = (line_coverage_percentage + function_coverage_percentage + branch_coverage_percentage) / 3.0;
-        
+
         Ok(ParserCoverageData {
             parser_name: "rust".to_string(),
             file_path: file_path.to_string(),
@@ -399,7 +411,7 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
             },
         })
         */
-        
+
         Ok(ParserCoverageData {
             parser_name: "rust".to_string(),
             file_path: file_path.to_string(),
@@ -428,7 +440,7 @@ impl ParserCoverageProvider for RustParserCoverageProvider {
             },
         })
     }
-    
+
     fn get_coverage_thresholds(&self) -> ParserCoverageThresholds {
         ParserCoverageThresholds::default()
     }
@@ -447,12 +459,16 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
     fn get_parser_name(&self) -> &str {
         "javascript"
     }
-    
+
     fn get_parser_type(&self) -> ParserType {
         ParserType::JavaScript
     }
-    
-    fn collect_coverage(&self, file_path: &str, test_results: &TestResults) -> Result<ParserCoverageData> {
+
+    fn collect_coverage(
+        &self,
+        file_path: &str,
+        test_results: &TestResults,
+    ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*
         // Parse JavaScript file with tree-sitter
@@ -460,14 +476,14 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
         let mut parser = tree_sitter::Parser::new();
         parser.set_language(tree_sitter_javascript::language())?;
         let tree = parser.parse(&content, None).unwrap();
-        
+
         // Walk AST and collect coverage data
         let mut function_coverage = Vec::new();
         let mut line_coverage = Vec::new();
         let mut branch_coverage = Vec::new();
-        
+
         self.walk_ast(&tree, &content, &mut function_coverage, &mut line_coverage, &mut branch_coverage);
-        
+
         // Calculate coverage metrics
         let total_lines = content.lines().count() as u32;
         let covered_lines = line_coverage.iter().filter(|l| l.covered).count() as u32;
@@ -475,12 +491,12 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
         let covered_functions = function_coverage.iter().filter(|f| f.covered).count() as u32;
         let total_branches = branch_coverage.len() as u32;
         let covered_branches = branch_coverage.iter().filter(|b| b.covered).count() as u32;
-        
+
         let line_coverage_percentage = if total_lines > 0 { covered_lines as f64 / total_lines as f64 } else { 0.0 };
         let function_coverage_percentage = if total_functions > 0 { covered_functions as f64 / total_functions as f64 } else { 0.0 };
         let branch_coverage_percentage = if total_branches > 0 { covered_branches as f64 / total_branches as f64 } else { 0.0 };
         let overall_coverage_percentage = (line_coverage_percentage + function_coverage_percentage + branch_coverage_percentage) / 3.0;
-        
+
         Ok(ParserCoverageData {
             parser_name: "javascript".to_string(),
             file_path: file_path.to_string(),
@@ -509,7 +525,7 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
             },
         })
         */
-        
+
         Ok(ParserCoverageData {
             parser_name: "javascript".to_string(),
             file_path: file_path.to_string(),
@@ -538,7 +554,7 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
             },
         })
     }
-    
+
     fn get_coverage_thresholds(&self) -> ParserCoverageThresholds {
         ParserCoverageThresholds::default()
     }
@@ -548,22 +564,22 @@ impl FactSystemInterface {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn load_parser_coverage_patterns(&self) -> Result<Vec<ParserCoveragePattern>> {
         // Query fact-system for parser coverage patterns
         // Return patterns for coverage analysis, etc.
     }
-    
+
     pub async fn get_parser_coverage_best_practices(&self, parser_type: &str) -> Result<Vec<String>> {
         // Query fact-system for best practices for specific parser types
     }
-    
+
     pub async fn get_parser_coverage_thresholds(&self, parser_type: &str) -> Result<ParserCoverageThresholds> {
         // Query fact-system for parser-specific coverage thresholds
     }
-    
+
     pub async fn get_parser_coverage_guidelines(&self, context: &str) -> Result<Vec<String>> {
         // Query fact-system for parser coverage guidelines
     }

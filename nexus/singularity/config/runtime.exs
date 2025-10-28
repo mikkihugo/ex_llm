@@ -86,31 +86,31 @@ end
 # GPU-accelerated ML/AI configuration
 if config_env() != :test do
   # Platform detection for XLA configuration
-  # Detects CUDA availability first, then Metal (macOS), then falls back to CPU
-  # Priority: 1) Explicit XLA_TARGET env var, 2) nvidia-smi (CUDA), 3) Metal (macOS), 4) CPU
-  # Note: Metal NOT supported by EXLA itself, but XLA_TARGET=metal allows other frameworks
-  #       (CoreML, MLX, etc) to use Metal GPU while EXLA stays on CPU
+  # Development: Metal (macOS laptops) | Production: CUDA (RTX 4080)
+  # Priority: 1) Explicit XLA_TARGET env var, 2) Auto-detect environment, 3) CPU fallback
   platform =
     case System.get_env("XLA_TARGET") do
       nil ->
-        # Auto-detect based on available GPU
-        if System.find_executable("nvidia-smi") do
-          # CUDA available (RTX 4080 on Linux, or any NVIDIA GPU)
-          :linux
-        else
-          case :os.type() do
-            # macOS with Metal GPU (other frameworks can use it)
-            {:unix, :darwin} -> :metal
-            # Linux without CUDA (CPU fallback)
-            _ -> :linux
-          end
+        # Auto-detect based on environment
+        cond do
+          # Production: RTX 4080 machine with CUDA
+          System.find_executable("nvidia-smi") ->
+            :cuda
+
+          # Development: macOS laptops with Metal
+          match?({:unix, :darwin}, :os.type()) ->
+            :metal
+
+          # Fallback: CPU
+          true ->
+            :cpu
         end
 
-      # Any explicit CUDA variant → use CUDA
+      # Any explicit CUDA variant → CUDA (production)
       "cuda" <> _ ->
-        :linux
+        :cuda
 
-      # Metal: CPU for EXLA, Metal available for CoreML/MLX
+      # Metal: Development on macOS laptops
       "metal" ->
         :metal
 
@@ -130,9 +130,9 @@ if config_env() != :test do
     config :exla,
       default_client:
         (case platform do
-           # RTX 4080 with CUDA
-           :linux -> :cuda
-           # macOS with Metal: EXLA uses CPU, Metal available for other frameworks
+           # Production: RTX 4080 with CUDA
+           :cuda -> :cuda
+           # Development: macOS laptops with Metal (EXLA uses CPU, Metal for other frameworks)
            :metal -> :host
            # CPU fallback
            :cpu -> :host
@@ -147,9 +147,9 @@ if config_env() != :test do
     # Configure Bumblebee with EXLA if available
     bumblebee_client =
       case platform do
-        # CUDA for Linux
-        :linux -> :cuda
-        # macOS with Metal: Bumblebee uses CPU, Metal available via CoreML/MLX
+        # Production: RTX 4080 with CUDA
+        :cuda -> :cuda
+        # Development: macOS laptops with Metal (Bumblebee uses CPU, Metal via CoreML/MLX)
         :metal -> :host
         # CPU fallback
         :cpu -> :host

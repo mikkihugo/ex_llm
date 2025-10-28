@@ -201,6 +201,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
       description: description,
       context: context
     }
+
     execute(goal)
   end
 

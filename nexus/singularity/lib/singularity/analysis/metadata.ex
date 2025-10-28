@@ -1,7 +1,7 @@
 defmodule Singularity.Analysis.Metadata do
   @moduledoc """
   Pure Elixir representation of the Rust `CodebaseMetadata` structure from the
-  analysis-suite.  The struct mirrors the fields emitted by the Rust analyzer so
+  analysis-suite.  The struct mirrors the fields emitted by the Singularity Code Analyzer so
   that ingestion jobs can persist results to Postgres and make them available to
   BEAM services.
 
@@ -177,7 +177,7 @@ defmodule Singularity.Analysis.Metadata do
 
   @doc """
   Build a new metadata struct from a map. Accepts camelCase, snake_case, or
-  string keys produced by the Rust analyzer.
+  string keys produced by the Singularity Code Analyzer.
   """
   @spec new(map() | keyword()) :: t()
   def new(attrs \\ %{}) do

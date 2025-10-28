@@ -131,7 +131,13 @@ defmodule Singularity.Embedding.PolyglotTripletGenerator do
 
       beam_triplets = generate_beam_triplets(beam_snippets, beam_count)
       cpp_triplets = generate_cpp_triplets(cpp_snippets, cpp_count)
-      cross_triplets = generate_cross_language_triplets(beam_snippets, cpp_snippets, trunc(count * cross_language_ratio))
+
+      cross_triplets =
+        generate_cross_language_triplets(
+          beam_snippets,
+          cpp_snippets,
+          trunc(count * cross_language_ratio)
+        )
 
       all_triplets = beam_triplets ++ cpp_triplets ++ cross_triplets
       shuffled = Enum.shuffle(all_triplets) |> Enum.take(count)
@@ -196,7 +202,7 @@ defmodule Singularity.Embedding.PolyglotTripletGenerator do
       # Split by function definitions
       String.split(content, ~r/^  def |^  defp /m)
       |> Enum.map(&String.slice(&1, 0..200))
-      |> Enum.filter(&String.length(&1) > 20)
+      |> Enum.filter(&(String.length(&1) > 20))
     rescue
       _ -> []
     end
@@ -209,7 +215,7 @@ defmodule Singularity.Embedding.PolyglotTripletGenerator do
       # Match function definitions: return_type name() { ... }
       Regex.scan(~r/\w+\s+\w+\s*\([^)]*\)\s*\{[^}]*\}/s, content)
       |> Enum.map(fn [match] -> String.slice(match, 0..200) end)
-      |> Enum.filter(&String.length(&1) > 20)
+      |> Enum.filter(&(String.length(&1) > 20))
     rescue
       _ -> []
     end

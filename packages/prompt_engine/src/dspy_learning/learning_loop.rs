@@ -10,8 +10,8 @@ use crate::{
     dspy::optimizer::{SPARCCoordinator, COPRO},
     dspy_learning::{ConfidenceScorer, ExecutionTracker},
     prompt_tracking::{
-        ABTestResultEntry, EvolutionType, PromptTrackingQuery, PromptTrackingStorage, PromptEvolutionEntry,
-        PromptExecutionData, TestVariant,
+        ABTestResultEntry, EvolutionType, PromptEvolutionEntry, PromptExecutionData,
+        PromptTrackingQuery, PromptTrackingStorage, TestVariant,
     },
 };
 
@@ -197,18 +197,20 @@ impl ContinuousLearningLoop {
 
                 // Store the optimized prompt using available method
                 self.fact_store
-                    .store(crate::prompt_tracking::PromptExecutionData::PromptExecution(
-                        crate::prompt_tracking::PromptExecutionEntry {
-                            prompt_id: prompt_id.clone(),
-                            execution_time_ms: 100,
-                            success: true,
-                            confidence_score: candidate.score as f64,
-                            context_signature: "optimized".to_string(),
-                            timestamp: chrono::Utc::now(),
-                            response_length: candidate.instruction.len(),
-                            metadata: std::collections::HashMap::new(),
-                        },
-                    ))
+                    .store(
+                        crate::prompt_tracking::PromptExecutionData::PromptExecution(
+                            crate::prompt_tracking::PromptExecutionEntry {
+                                prompt_id: prompt_id.clone(),
+                                execution_time_ms: 100,
+                                success: true,
+                                confidence_score: candidate.score as f64,
+                                context_signature: "optimized".to_string(),
+                                timestamp: chrono::Utc::now(),
+                                response_length: candidate.instruction.len(),
+                                metadata: std::collections::HashMap::new(),
+                            },
+                        ),
+                    )
                     .await?;
             }
         }
@@ -304,7 +306,9 @@ impl ContinuousLearningLoop {
         // 6. Get evolved prompt executions (if any exist)
         let evolved_executions = self
             .fact_store
-            .query(PromptTrackingQuery::PromptExecutions(evolved_prompt_id.clone()))
+            .query(PromptTrackingQuery::PromptExecutions(
+                evolved_prompt_id.clone(),
+            ))
             .await
             .unwrap_or_default();
 

@@ -49,7 +49,12 @@ defmodule Singularity.Execution.RefactorAssimilateSwarmCoordinator do
   end
 
   def handle_call(:get_status, _from, state) do
-    {:reply, %{active_workers: map_size(state.active_workers), completed: state.completed, failed: state.failed}, state}
+    {:reply,
+     %{
+       active_workers: map_size(state.active_workers),
+       completed: state.completed,
+       failed: state.failed
+     }, state}
   end
 
   def handle_call({:spawn_refactor_swarm, task_spec, opts}, _from, state) do
@@ -60,13 +65,17 @@ defmodule Singularity.Execution.RefactorAssimilateSwarmCoordinator do
       # Spawn workers up to max
       spawn_count = min(state.max_workers, Map.get(task_spec, :parallel, state.max_workers))
 
-      workers = 1..spawn_count
-      |> Enum.map(fn i ->
-        {:ok, pid} = start_refactor_worker(task_spec, i)
-        pid
-      end)
+      workers =
+        1..spawn_count
+        |> Enum.map(fn i ->
+          {:ok, pid} = start_refactor_worker(task_spec, i)
+          pid
+        end)
 
-      new_active = Enum.reduce(workers, state.active_workers, fn pid, acc -> Map.put(acc, pid, %{started_at: DateTime.utc_now()}) end)
+      new_active =
+        Enum.reduce(workers, state.active_workers, fn pid, acc ->
+          Map.put(acc, pid, %{started_at: DateTime.utc_now()})
+        end)
 
       new_state = %{state | active_workers: new_active}
 
@@ -81,7 +90,11 @@ defmodule Singularity.Execution.RefactorAssimilateSwarmCoordinator do
   end
 
   def handle_info({:worker_failed, pid, reason}, state) do
-    SASL.execution_failure(:refactor_worker_failed, "Refactor worker failed", pid: pid, reason: reason)
+    SASL.execution_failure(:refactor_worker_failed, "Refactor worker failed",
+      pid: pid,
+      reason: reason
+    )
+
     new_active = Map.delete(state.active_workers, pid)
     new_failed = Map.put(state.failed, pid, %{reason: reason, at: DateTime.utc_now()})
     {:noreply, %{state | active_workers: new_active, failed: new_failed}}
@@ -93,9 +106,11 @@ defmodule Singularity.Execution.RefactorAssimilateSwarmCoordinator do
     # At this scaffold stage we spawn a simple Task process that executes the worker module
     Task.start(fn ->
       pid = self()
+
       case Singularity.Execution.RefactorWorker.run(task_spec, index) do
         {:ok, result} ->
           send(__MODULE__, {:worker_completed, pid, result})
+
         {:error, reason} ->
           send(__MODULE__, {:worker_failed, pid, reason})
       end

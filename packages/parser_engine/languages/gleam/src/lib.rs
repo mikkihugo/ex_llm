@@ -1,13 +1,13 @@
 //! Gleam parser implemented with tree-sitter.
 
 use parser_core::{
-    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
     beam_analysis::{
-        BeamAnalysisResult, OtpPatterns, GenServerInfo, SupervisorInfo, ApplicationInfo,
-        ActorAnalysis, ProcessSpawningAnalysis, MessagePassingAnalysis, ConcurrencyPatterns,
-        FaultToleranceAnalysis, BeamMetrics, LanguageFeatures, GleamFeatures,
-        TypeAnalysis, FunctionalAnalysis, BeamIntegration, ModernFeatures, WebPatterns,
+        ActorAnalysis, ApplicationInfo, BeamAnalysisResult, BeamIntegration, BeamMetrics,
+        ConcurrencyPatterns, FaultToleranceAnalysis, FunctionalAnalysis, GenServerInfo,
+        GleamFeatures, LanguageFeatures, MessagePassingAnalysis, ModernFeatures, OtpPatterns,
+        ProcessSpawningAnalysis, SupervisorInfo, TypeAnalysis, WebPatterns,
     },
+    Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
@@ -51,8 +51,13 @@ impl LanguageParser for GleamParser {
 
         // Use RCA for real complexity and accurate LOC metrics
         let (complexity_score, _sloc, ploc, cloc, blank_lines) =
-            parser_core::calculate_rca_complexity(&ast.content, "gleam")
-                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+            parser_core::calculate_rca_complexity(&ast.content, "gleam").unwrap_or((
+                1.0,
+                ast.content.lines().count() as u64,
+                ast.content.lines().count() as u64,
+                comments.len() as u64,
+                0,
+            ));
 
         Ok(LanguageMetrics {
             lines_of_code: ploc.saturating_sub(blank_lines + cloc),
@@ -254,13 +259,14 @@ impl GleamParser {
         let mut genservers = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // module name
+                if capture.index == 0 {
+                    // module name
                     let module_name = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if module_name.contains("gleam_otp") || module_name.contains("gen_server") {
                         let line = capture.node.start_position().row + 1;
                         genservers.push(GenServerInfo {
@@ -306,13 +312,14 @@ impl GleamParser {
         let mut supervisors = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // module name
+                if capture.index == 0 {
+                    // module name
                     let module_name = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if module_name.contains("gleam_otp") || module_name.contains("supervisor") {
                         let line = capture.node.start_position().row + 1;
                         supervisors.push(SupervisorInfo {
@@ -350,13 +357,14 @@ impl GleamParser {
         let mut applications = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                if capture.index == 0 { // module name
+                if capture.index == 0 {
+                    // module name
                     let module_name = capture
                         .node
                         .utf8_text(ast.content.as_bytes())
                         .unwrap_or_default()
                         .to_owned();
-                    
+
                     if module_name.contains("gleam_otp") || module_name.contains("application") {
                         let line = capture.node.start_position().row + 1;
                         applications.push(ApplicationInfo {
@@ -420,21 +428,21 @@ impl GleamParser {
         otp_patterns: &OtpPatterns,
         actor_analysis: &ActorAnalysis,
     ) -> Result<BeamMetrics, ParseError> {
-        let estimated_process_count = otp_patterns.genservers.len() as u32 + 
-                                    otp_patterns.supervisors.len() as u32 +
-                                    otp_patterns.applications.len() as u32;
-        
-        let supervision_complexity = otp_patterns.supervisors.len() as f64 * 2.0 +
-                                   otp_patterns.genservers.len() as f64 * 1.5;
-        
-        let actor_complexity = actor_analysis.process_spawning.spawn_calls.len() as f64 +
-                             actor_analysis.message_passing.send_calls.len() as f64;
+        let estimated_process_count = otp_patterns.genservers.len() as u32
+            + otp_patterns.supervisors.len() as u32
+            + otp_patterns.applications.len() as u32;
+
+        let supervision_complexity = otp_patterns.supervisors.len() as f64 * 2.0
+            + otp_patterns.genservers.len() as f64 * 1.5;
+
+        let actor_complexity = actor_analysis.process_spawning.spawn_calls.len() as f64
+            + actor_analysis.message_passing.send_calls.len() as f64;
 
         Ok(BeamMetrics {
             estimated_process_count,
             estimated_message_queue_size: 0, // TODO: implement queue size estimation
-            estimated_memory_usage: 0, // TODO: implement memory usage estimation
-            gc_pressure: 0.0, // TODO: implement GC pressure calculation
+            estimated_memory_usage: 0,       // TODO: implement memory usage estimation
+            gc_pressure: 0.0,                // TODO: implement GC pressure calculation
             supervision_complexity,
             actor_complexity,
             fault_tolerance_score: 0.0, // TODO: implement fault tolerance scoring
@@ -450,14 +458,14 @@ impl GleamParser {
         };
 
         let functional_analysis = FunctionalAnalysis {
-            immutability_score: 100.0, // Gleam is always immutable
+            immutability_score: 100.0,     // Gleam is always immutable
             pattern_match_complexity: 0.0, // TODO: implement pattern matching analysis
             functional_features: std::collections::HashMap::new(),
         };
 
         let beam_integration = BeamIntegration {
             interop_patterns: Vec::new(), // TODO: implement BEAM interop detection
-            otp_usage: Vec::new(), // TODO: implement OTP usage detection
+            otp_usage: Vec::new(),        // TODO: implement OTP usage detection
         };
 
         let modern_features = ModernFeatures {
@@ -465,7 +473,7 @@ impl GleamParser {
         };
 
         let web_patterns = WebPatterns {
-            http_patterns: Vec::new(), // TODO: implement HTTP pattern detection
+            http_patterns: Vec::new(),       // TODO: implement HTTP pattern detection
             web_safety_features: Vec::new(), // TODO: implement web safety detection
         };
 

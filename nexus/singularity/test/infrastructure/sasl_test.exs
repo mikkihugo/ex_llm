@@ -150,12 +150,16 @@ defmodule Singularity.Infrastructure.SaslTest do
         permissions: ["read", "write"]
       }
 
-      assert {:ok, updated_context} = Sasl.validate_context(context, :read_operation, "test_resource")
+      assert {:ok, updated_context} =
+               Sasl.validate_context(context, :read_operation, "test_resource")
+
       assert updated_context == context
     end
 
     test "fails validation with expired session" do
-      expired_time = DateTime.add(DateTime.utc_now(), -3600, :second)  # 1 hour ago
+      # 1 hour ago
+      expired_time = DateTime.add(DateTime.utc_now(), -3600, :second)
+
       context = %{
         user_id: "admin",
         mechanism: :diameter,
@@ -194,7 +198,9 @@ defmodule Singularity.Infrastructure.SaslTest do
       """
 
       # The security validator should catch SASL-related violations
-      assert {:error, violations} = Singularity.Validators.SecurityValidator.validate(code_with_violation)
+      assert {:error, violations} =
+               Singularity.Validators.SecurityValidator.validate(code_with_violation)
+
       assert Enum.any?(violations, &String.contains?(&1, "SASL Security"))
     end
   end

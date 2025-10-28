@@ -349,10 +349,11 @@ defmodule Broadway.PgflowProducer.Workflow do
   defp acquire_hint(state, resource_key, opts \\ []) do
     state = init_state(state)
     key_str = to_string(resource_key)
+    current_holder = inspect(state.workflow_pid || self())
 
     # If already held by this workflow, return existing token
     case Map.get(state.resource_hints, key_str) do
-      %{holder: holder} = hint when holder == inspect(state.workflow_pid || self()) ->
+      %{holder: holder} = hint when holder == current_holder ->
         {:ok, hint.token, state}
 
       _ ->
@@ -418,15 +419,18 @@ defmodule Broadway.PgflowProducer.Workflow do
 
     ids = Enum.map(jobs, & &1.id)
 
-    updates =
-      [set: [status: status, updated_at: fragment("NOW()")]] ++
-      if reason, do: [set: [failure_reason: ^reason]], else: []
-
     query =
-      from(j in dynamic_table_name(),
-        where: j.id in ^ids,
-        update: updates
-      )
+      if reason do
+        from(j in dynamic_table_name(),
+          where: j.id in ^ids,
+          update: [set: [status: ^status, updated_at: fragment("NOW()"), failure_reason: ^reason]]
+        )
+      else
+        from(j in dynamic_table_name(),
+          where: j.id in ^ids,
+          update: [set: [status: ^status, updated_at: fragment("NOW()")]]
+        )
+      end
 
     repo().update_all(query, [])
   end

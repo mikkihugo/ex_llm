@@ -27,7 +27,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
 
   require Logger
 
-  @sccp_user_sap 3    # SCCP user SAP for authentication
+  # SCCP user SAP for authentication
+  @sccp_user_sap 3
   @tcap_dialogue_id_range 1..65535
 
   @impl Singularity.Infrastructure.Sasl.Mechanism
@@ -38,13 +39,14 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
          {:ok, sccp_context} <- validate_sccp_context(credentials, opts),
          {:ok, tcap_auth} <- perform_tcap_authentication(credentials, user_record, sccp_context),
          {:ok, context} <- verify_ss7_integrity(tcap_auth, opts) do
-      context = Mechanism.create_security_context(credentials, :ss7, %{
-        ss7_session_id: generate_ss7_session_id(),
-        sccp_info: sccp_context,
-        tcap_dialogue: tcap_auth,
-        global_title: Map.get(credentials, :global_title),
-        point_code: Map.get(credentials, :point_code)
-      })
+      context =
+        Mechanism.create_security_context(credentials, :ss7, %{
+          ss7_session_id: generate_ss7_session_id(),
+          sccp_info: sccp_context,
+          tcap_dialogue: tcap_auth,
+          global_title: Map.get(credentials, :global_title),
+          point_code: Map.get(credentials, :point_code)
+        })
 
       {:ok, context}
     else
@@ -124,22 +126,24 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
     # In a real implementation, this would query the SS7 user database
     case username do
       "ss7_admin" ->
-        {:ok, %{
-          username: "ss7_admin",
-          password_hash: generate_mock_hash("ss7_secret"),
-          salt: generate_mock_salt(),
-          permissions: ["ss7_admin", "sccp_access", "tcap_access"],
-          telecom_context: %{node_type: "stp", protocol: "ss7"}
-        }}
+        {:ok,
+         %{
+           username: "ss7_admin",
+           password_hash: generate_mock_hash("ss7_secret"),
+           salt: generate_mock_salt(),
+           permissions: ["ss7_admin", "sccp_access", "tcap_access"],
+           telecom_context: %{node_type: "stp", protocol: "ss7"}
+         }}
 
       "switch_user" ->
-        {:ok, %{
-          username: "switch_user",
-          password_hash: generate_mock_hash("switch_password"),
-          salt: generate_mock_salt(),
-          permissions: ["sccp_access"],
-          telecom_context: %{node_type: "msc", protocol: "ss7"}
-        }}
+        {:ok,
+         %{
+           username: "switch_user",
+           password_hash: generate_mock_hash("switch_password"),
+           salt: generate_mock_salt(),
+           permissions: ["sccp_access"],
+           telecom_context: %{node_type: "msc", protocol: "ss7"}
+         }}
 
       _ ->
         {:error, "SS7 user not found: #{username}"}
@@ -205,8 +209,10 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
     case context do
       %{protocol_class: pc} when pc in 0..3 ->
         :ok
+
       %{protocol_class: pc} ->
         {:error, "Invalid protocol class: #{pc}"}
+
       _ ->
         {:error, "Missing required SCCP parameters"}
     end
@@ -217,8 +223,10 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
     case auth_data do
       %{dialogue_id: id} when id in @tcap_dialogue_id_range ->
         :ok
+
       %{dialogue_id: id} ->
         {:error, "Invalid dialogue ID: #{id}"}
+
       _ ->
         {:error, "Missing TCAP authentication data"}
     end
@@ -252,7 +260,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SS7 do
 
   defp validate_ss7_response(challenge, response) do
     # Validate SS7 response format
-    min_size = 8  # Minimum response size
+    # Minimum response size
+    min_size = 8
 
     if byte_size(response) >= min_size do
       :ok

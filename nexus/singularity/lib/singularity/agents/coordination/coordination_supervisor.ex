@@ -23,7 +23,10 @@ defmodule Singularity.Agents.Coordination.CoordinationSupervisor do
     max_seconds = Keyword.get(opts, :max_seconds, 5)
 
     Logger.info("[CoordinationSupervisor] Starting Agent Coordination infrastructure")
-    Logger.info("[CoordinationSupervisor] Max restarts: #{max_restarts}, Max seconds: #{max_seconds}")
+
+    Logger.info(
+      "[CoordinationSupervisor] Max restarts: #{max_restarts}, Max seconds: #{max_seconds}"
+    )
 
     children = [
       # CapabilityRegistry - track what agents can do

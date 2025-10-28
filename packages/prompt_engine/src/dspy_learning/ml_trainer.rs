@@ -8,7 +8,7 @@ use anyhow::Result;
 use crate::dspy_learning::ConfidencePredictor;
 use crate::{
     dspy_learning::{PromptFeatures, TrainingConfig, TrainingMetrics},
-    prompt_tracking::{PromptTrackingQuery, PromptTrackingStorage, PromptExecutionData},
+    prompt_tracking::{PromptExecutionData, PromptTrackingQuery, PromptTrackingStorage},
 };
 
 /// ML training orchestrator that pulls data from FACT storage
@@ -193,7 +193,10 @@ impl MLTrainer {
     }
 
     /// Calculate recency score (newer = higher score)
-    fn calculate_recency(&self, executions: &[crate::prompt_tracking::PromptExecutionEntry]) -> f64 {
+    fn calculate_recency(
+        &self,
+        executions: &[crate::prompt_tracking::PromptExecutionEntry],
+    ) -> f64 {
         if executions.is_empty() {
             return 0.5;
         }
@@ -213,9 +216,9 @@ impl MLTrainer {
     pub async fn suggest_training_config(&self) -> Result<TrainingConfig> {
         let all_executions = self
             .fact_store
-            .query(PromptTrackingQuery::RecentFeedback(std::time::Duration::from_secs(
-                365 * 24 * 3600,
-            )))
+            .query(PromptTrackingQuery::RecentFeedback(
+                std::time::Duration::from_secs(365 * 24 * 3600),
+            ))
             .await?;
 
         let data_size = all_executions.len();

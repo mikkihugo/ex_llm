@@ -8,10 +8,10 @@
 //! - Publishes optimizations to "intelligence_hub.performance_issue.detected"
 //! - No local pattern databases - all patterns from CentralCloud
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Performance optimization result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -147,7 +147,9 @@ impl PerformanceOptimizer {
         let patterns = self.query_optimization_patterns(file_path).await?;
 
         // 2. Detect optimization opportunities (use content!)
-        let optimizations = self.detect_optimizations(content, file_path, &patterns).await?;
+        let optimizations = self
+            .detect_optimizations(content, file_path, &patterns)
+            .await?;
 
         // 3. Calculate performance gain (use optimizations!)
         let performance_gain = self.calculate_performance_gain(&optimizations);
@@ -174,7 +176,10 @@ impl PerformanceOptimizer {
     }
 
     /// Query CentralCloud for performance optimization patterns
-    async fn query_optimization_patterns(&self, file_path: &str) -> Result<Vec<OptimizationPattern>> {
+    async fn query_optimization_patterns(
+        &self,
+        file_path: &str,
+    ) -> Result<Vec<OptimizationPattern>> {
         let language = Self::detect_language(file_path);
 
         let request = json!({
@@ -186,7 +191,7 @@ impl PerformanceOptimizer {
         let response = query_centralcloud(
             "intelligence_hub.performance_patterns.query",
             &request,
-            3000
+            3000,
         )?;
 
         Ok(extract_data(&response, "patterns"))
@@ -269,7 +274,8 @@ impl PerformanceOptimizer {
         }
 
         // Sum potential improvements
-        let total_gain: f64 = optimizations.iter()
+        let total_gain: f64 = optimizations
+            .iter()
             .map(|opt| opt.potential_improvement)
             .sum();
 
@@ -278,13 +284,19 @@ impl PerformanceOptimizer {
     }
 
     /// Generate recommendations from optimizations
-    fn generate_recommendations(&self, optimizations: &[Optimization]) -> Vec<OptimizationRecommendation> {
+    fn generate_recommendations(
+        &self,
+        optimizations: &[Optimization],
+    ) -> Vec<OptimizationRecommendation> {
         let mut recommendations = Vec::new();
 
         for optimization in optimizations {
             // Prioritize based on improvement vs effort
             let priority = if optimization.potential_improvement > 0.5
-                && matches!(optimization.implementation_effort, ImplementationEffort::Low | ImplementationEffort::Medium) {
+                && matches!(
+                    optimization.implementation_effort,
+                    ImplementationEffort::Low | ImplementationEffort::Medium
+                ) {
                 PerformanceRecommendationPriority::High
             } else if optimization.potential_improvement > 0.3 {
                 PerformanceRecommendationPriority::Medium
@@ -295,7 +307,9 @@ impl PerformanceOptimizer {
             let category = match optimization.optimization_type {
                 OptimizationType::AlgorithmOptimization => OptimizationCategory::Algorithm,
                 OptimizationType::DataStructureOptimization => OptimizationCategory::Memory,
-                OptimizationType::Caching | OptimizationType::Memoization => OptimizationCategory::Caching,
+                OptimizationType::Caching | OptimizationType::Memoization => {
+                    OptimizationCategory::Caching
+                }
                 OptimizationType::Parallelization => OptimizationCategory::Concurrency,
                 OptimizationType::LazyLoading => OptimizationCategory::Memory,
                 OptimizationType::ConnectionPooling => OptimizationCategory::Network,

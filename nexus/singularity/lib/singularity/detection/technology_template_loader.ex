@@ -170,12 +170,17 @@ defmodule Singularity.TechnologyTemplateLoader do
   defp persist_template(identifier, %{} = template, source, opts) do
     if Keyword.get(opts, :persist, true) do
       try do
-        template_data = Map.merge(template, %{
-          source: to_string(source),
-          metadata: %{persisted_at: DateTime.utc_now()}
-        })
+        template_data =
+          Map.merge(template, %{
+            source: to_string(source),
+            metadata: %{persisted_at: DateTime.utc_now()}
+          })
 
-        case Singularity.Knowledge.TemplateService.store_template("technology", identifier, template_data) do
+        case Singularity.Knowledge.TemplateService.store_template(
+               "technology",
+               identifier,
+               template_data
+             ) do
           {:ok, _record} ->
             :ok
 
@@ -284,7 +289,11 @@ defmodule Singularity.TechnologyTemplateLoader do
         "updated_at" => DateTime.utc_now()
       })
 
-    case Singularity.Knowledge.TemplateService.store_template("technology", identifier, template_data) do
+    case Singularity.Knowledge.TemplateService.store_template(
+           "technology",
+           identifier,
+           template_data
+         ) do
       {:ok, created_template} ->
         Logger.info("Created new technology template",
           identifier: identifier,
@@ -295,7 +304,8 @@ defmodule Singularity.TechnologyTemplateLoader do
         {:ok, created_template}
 
       {:error, reason} ->
-        SASL.database_failure(:technology_template_creation_failure,
+        SASL.database_failure(
+          :technology_template_creation_failure,
           "Failed to create technology template",
           identifier: identifier,
           reason: reason
@@ -314,7 +324,11 @@ defmodule Singularity.TechnologyTemplateLoader do
         "updated_at" => DateTime.utc_now()
       })
 
-    case Singularity.Knowledge.TemplateService.store_template("technology", identifier, update_data) do
+    case Singularity.Knowledge.TemplateService.store_template(
+           "technology",
+           identifier,
+           update_data
+         ) do
       {:ok, updated_template} ->
         Logger.info("Updated technology template",
           identifier: identifier,
@@ -325,7 +339,8 @@ defmodule Singularity.TechnologyTemplateLoader do
         {:ok, updated_template}
 
       {:error, reason} ->
-        SASL.database_failure(:technology_template_update_failure,
+        SASL.database_failure(
+          :technology_template_update_failure,
           "Failed to update technology template",
           identifier: identifier,
           reason: reason

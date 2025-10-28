@@ -35,19 +35,20 @@ defmodule Singularity.HotReload.ModuleReloader do
   def enqueue_file_reload(file_path, agent_id \\ "htdag-file-reload", metadata \\ %{}) do
     # Auto-detect codebase
     codebase_id = CodebaseDetector.detect(format: :full)
-    
+
     # Create HTDAG payload
     htdag_payload = %{
       file_path: file_path,
       codebase_id: codebase_id,
       priority: :realtime,
-      metadata: Map.merge(metadata, %{
-        agent_id: agent_id,
-        reload_type: :htdag,
-        timestamp: DateTime.utc_now()
-      })
+      metadata:
+        Map.merge(metadata, %{
+          agent_id: agent_id,
+          reload_type: :htdag,
+          timestamp: DateTime.utc_now()
+        })
     }
-    
+
     GenServer.call(__MODULE__, {:enqueue_htdag, agent_id, htdag_payload})
   end
 
@@ -97,12 +98,12 @@ defmodule Singularity.HotReload.ModuleReloader do
       # Start HTDAG workflow immediately
       case AutoCodeIngestionDAG.start_dag(htdag_payload) do
         {:ok, dag_id} ->
-          Logger.info("HTDAG hot reload started", 
+          Logger.info("HTDAG hot reload started",
             file_path: htdag_payload.file_path,
             dag_id: dag_id,
             agent_id: agent_id
           )
-          
+
           # Also enqueue for tracking
           entry = %{
             id: make_ref(),
@@ -110,18 +111,19 @@ defmodule Singularity.HotReload.ModuleReloader do
             payload: Map.put(htdag_payload, :dag_id, dag_id),
             inserted_at: System.system_time(:millisecond)
           }
-          
+
           new_queue = :queue.in(entry, state.queue)
           new_state = %{state | queue: new_queue}
-          
+
           {:reply, {:ok, dag_id}, new_state}
-          
+
         {:error, reason} ->
-          Logger.error("HTDAG hot reload failed", 
+          Logger.error("HTDAG hot reload failed",
             file_path: htdag_payload.file_path,
             reason: reason,
             agent_id: agent_id
           )
+
           {:reply, {:error, reason}, state}
       end
     end

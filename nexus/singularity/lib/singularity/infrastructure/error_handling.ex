@@ -30,6 +30,7 @@ defmodule Singularity.Infrastructure.ErrorHandling do
   """
 
   require Logger
+  alias Singularity.Infrastructure.ErrorClassification
 
   @type error_context :: %{
           optional(:operation) => atom(),
@@ -423,32 +424,36 @@ defmodule Singularity.Infrastructure.ErrorHandling do
   defp handle_error(error, stacktrace, context, start_time) do
     duration = System.monotonic_time(:millisecond) - start_time
 
-    error_details = %{
-      type: error.__struct__,
-      message: Exception.message(error),
-      stacktrace: Exception.format_stacktrace(stacktrace),
-      duration_ms: duration
-    }
+    formatted_stacktrace = Exception.format_stacktrace(stacktrace)
+    operation = Map.get(context, :operation, :unknown)
 
-    Logger.error(
-      "Operation raised exception",
-      Map.merge(context, error_details)
-    )
+    context_with_details =
+      context
+      |> Map.put(:duration_ms, duration)
+      |> Map.put(:stacktrace, formatted_stacktrace)
 
     # Track error rate
-    track_error_rate(Map.get(context, :operation, :unknown), error)
+    track_error_rate(operation, error)
 
     # Report to external error tracker (Sentry/Honeybadger)
     report_to_error_tracker(error, stacktrace, context)
 
-    wrapped_error = %{
-      type: :exception,
-      error: error,
-      stacktrace: stacktrace,
-      context: context
-    }
+    error_type = ErrorClassification.classify_exception(error)
 
-    {:error, wrapped_error}
+    {:error, classified} =
+      ErrorClassification.error_response(
+        error_type,
+        operation,
+        context_with_details,
+        error
+      )
+
+    enhanced =
+      classified
+      |> Map.put(:exception, error)
+      |> Map.put(:stacktrace, stacktrace)
+
+    {:error, enhanced}
   end
 
   defp handle_exit(reason, context, start_time) do

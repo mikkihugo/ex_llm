@@ -27,7 +27,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
 
   require Logger
 
-  @default_timeout 30_000  # 30 seconds
+  # 30 seconds
+  @default_timeout 30_000
   @max_challenge_attempts 3
 
   @impl Singularity.Infrastructure.Sasl.Mechanism
@@ -37,11 +38,12 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
     with {:ok, user_record} <- lookup_user(credentials.username),
          {:ok, auth_method} <- determine_auth_method(credentials, opts),
          {:ok, context} <- perform_radius_auth(credentials, user_record, auth_method, opts) do
-      context = Mechanism.create_security_context(credentials, :radius, %{
-        radius_session_id: generate_session_id(),
-        attributes: extract_radius_attributes(credentials),
-        framed_info: Map.get(credentials, :framed_info, %{})
-      })
+      context =
+        Mechanism.create_security_context(credentials, :radius, %{
+          radius_session_id: generate_session_id(),
+          attributes: extract_radius_attributes(credentials),
+          framed_info: Map.get(credentials, :framed_info, %{})
+        })
 
       {:ok, context}
     else
@@ -57,7 +59,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
     challenge_size = Keyword.get(opts, :challenge_size, 16)
     challenge = Mechanism.generate_secure_challenge(challenge_size)
 
-    identifier = :rand.uniform(255)  # RADIUS identifier (1-255)
+    # RADIUS identifier (1-255)
+    identifier = :rand.uniform(255)
 
     # Format: identifier (1 byte) + challenge
     full_challenge = <<identifier>> <> challenge
@@ -118,22 +121,24 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
     # In a real implementation, this would query the RADIUS user database
     case username do
       "radius_admin" ->
-        {:ok, %{
-          username: "radius_admin",
-          password_hash: generate_mock_hash("radius_secret"),
-          salt: generate_mock_salt(),
-          permissions: ["radius_admin", "network_access"],
-          telecom_context: %{node_type: "nas", protocol: "radius"}
-        }}
+        {:ok,
+         %{
+           username: "radius_admin",
+           password_hash: generate_mock_hash("radius_secret"),
+           salt: generate_mock_salt(),
+           permissions: ["radius_admin", "network_access"],
+           telecom_context: %{node_type: "nas", protocol: "radius"}
+         }}
 
       "network_user" ->
-        {:ok, %{
-          username: "network_user",
-          password_hash: generate_mock_hash("user_password"),
-          salt: generate_mock_salt(),
-          permissions: ["network_access"],
-          telecom_context: %{node_type: "client", protocol: "ppp"}
-        }}
+        {:ok,
+         %{
+           username: "network_user",
+           password_hash: generate_mock_hash("user_password"),
+           salt: generate_mock_salt(),
+           permissions: ["network_access"],
+           telecom_context: %{node_type: "client", protocol: "ppp"}
+         }}
 
       _ ->
         {:error, "RADIUS user not found: #{username}"}
@@ -220,7 +225,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
 
   defp compute_chap_response(challenge, credentials, user_record) do
     # CHAP response: MD5(identifier + password + challenge)
-    identifier = 1  # Default identifier
+    # Default identifier
+    identifier = 1
     password = Map.get(credentials, :password, "")
 
     try do
@@ -254,7 +260,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Radius do
 
   defp validate_radius_response(challenge, response) do
     # Validate RADIUS response format
-    min_size = 16  # Minimum response size
+    # Minimum response size
+    min_size = 16
 
     if byte_size(response) >= min_size do
       :ok

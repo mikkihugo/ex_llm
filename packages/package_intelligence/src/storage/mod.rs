@@ -16,10 +16,15 @@ pub mod semver;
 #[async_trait::async_trait]
 pub trait PackageStorage: Send + Sync {
   /// Store FACT data for a tool
-  async fn store_fact(&self, key: &PackageKey, data: &PackageMetadata) -> Result<()>;
+  async fn store_fact(
+    &self,
+    key: &PackageKey,
+    data: &PackageMetadata,
+  ) -> Result<()>;
 
   /// Retrieve FACT data for a tool
-  async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>>;
+  async fn get_fact(&self, key: &PackageKey)
+    -> Result<Option<PackageMetadata>>;
 
   /// Check if FACT data exists for a tool
   async fn exists(&self, key: &PackageKey) -> Result<bool>;
@@ -105,8 +110,8 @@ pub struct PackageMetadata {
   pub version: String,
   pub ecosystem: String,
   pub documentation: String,
-  pub snippets: Vec<CodeSnippet>,  // Parsed from package source (via source code parser)
-  pub examples: Vec<PackageExample>,  // Examples from README/docs
+  pub snippets: Vec<CodeSnippet>, // Parsed from package source (via source code parser)
+  pub examples: Vec<PackageExample>, // Examples from README/docs
   pub best_practices: Vec<PackageBestPractice>,
   pub troubleshooting: Vec<PackageTroubleshooting>,
   pub github_sources: Vec<GitHubSource>,
@@ -247,7 +252,7 @@ pub struct CodeSnippet {
   pub code: String,
   pub language: String,
   pub description: String,
-  pub file_path: String,    // Relative path within package
+  pub file_path: String, // Relative path within package
   pub line_number: u32,
 }
 
@@ -255,7 +260,7 @@ pub struct CodeSnippet {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageExample {
   pub title: String,
-  pub code: String,         // Example code from docs (as text)
+  pub code: String, // Example code from docs (as text)
   pub explanation: String,
   pub tags: Vec<String>,
 }
@@ -328,7 +333,8 @@ impl Default for StorageConfig {
 pub async fn create_storage(
   config: StorageConfig,
 ) -> Result<Box<dyn PackageStorage>> {
-  let storage = filesystem_storage::FilesystemPackageStorage::new(config).await?;
+  let storage =
+    filesystem_storage::FilesystemPackageStorage::new(config).await?;
   Ok(Box::new(storage))
 }
 
@@ -337,7 +343,8 @@ pub async fn create_storage(
 /// # Errors
 /// Returns an error if the storage cannot be initialized
 pub async fn create_versioned_storage() -> Result<Box<dyn PackageStorage>> {
-  let storage = versioned_storage::VersionedPackageStorage::new_global().await?;
+  let storage =
+    versioned_storage::VersionedPackageStorage::new_global().await?;
   Ok(Box::new(storage))
 }
 
@@ -362,7 +369,10 @@ mod filesystem_storage {
     pub async fn new(config: StorageConfig) -> Result<Self> {
       let root = PathBuf::from(&config.global_facts_dir);
       fs::create_dir_all(&root)?;
-      Ok(Self { root, cache: AsyncRwLock::new(HashMap::new()) })
+      Ok(Self {
+        root,
+        cache: AsyncRwLock::new(HashMap::new()),
+      })
     }
 
     fn path_for(&self, key: &PackageKey) -> PathBuf {
@@ -372,19 +382,37 @@ mod filesystem_storage {
 
   #[async_trait::async_trait]
   impl PackageStorage for FilesystemPackageStorage {
-    async fn store_fact(&self, key: &PackageKey, data: &PackageMetadata) -> Result<()> {
+    async fn store_fact(
+      &self,
+      key: &PackageKey,
+      data: &PackageMetadata,
+    ) -> Result<()> {
       let path = self.path_for(key);
-      if let Some(parent) = path.parent() { fs::create_dir_all(parent)?; }
+      if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+      }
       let json = serde_json::to_string_pretty(data)?;
       tokio::fs::write(path, json).await?;
-      self.cache.write().await.insert(key.storage_key(), data.clone());
+      self
+        .cache
+        .write()
+        .await
+        .insert(key.storage_key(), data.clone());
       Ok(())
     }
 
-    async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>> {
-      if let Some(v) = self.cache.read().await.get(&key.storage_key()).cloned() { return Ok(Some(v)); }
+    async fn get_fact(
+      &self,
+      key: &PackageKey,
+    ) -> Result<Option<PackageMetadata>> {
+      if let Some(v) = self.cache.read().await.get(&key.storage_key()).cloned()
+      {
+        return Ok(Some(v));
+      }
       let path = self.path_for(key);
-      if !path.exists() { return Ok(None); }
+      if !path.exists() {
+        return Ok(None);
+      }
       let bytes = tokio::fs::read(path).await?;
       let data: PackageMetadata = serde_json::from_slice(&bytes)?;
       Ok(Some(data))
@@ -405,27 +433,53 @@ mod filesystem_storage {
     async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> {
       // Simple best-effort scan
       let mut out = Vec::new();
-      if !self.root.exists() { return Ok(out); }
-      for entry in fs::read_dir(&self.root)? { let entry = entry?; if entry.file_type()?.is_file() {
-        let name = entry.file_name().to_string_lossy().to_string();
-        if let Some(stripped) = name.strip_suffix(".json") {
-          if let Ok(key) = PackageKey::from_storage_key(stripped) { out.push(key); }
+      if !self.root.exists() {
+        return Ok(out);
+      }
+      for entry in fs::read_dir(&self.root)? {
+        let entry = entry?;
+        if entry.file_type()?.is_file() {
+          let name = entry.file_name().to_string_lossy().to_string();
+          if let Some(stripped) = name.strip_suffix(".json") {
+            if let Ok(key) = PackageKey::from_storage_key(stripped) {
+              out.push(key);
+            }
+          }
         }
-      }}
+      }
       Ok(out)
     }
 
     async fn search_tools(&self, prefix: &str) -> Result<Vec<PackageKey>> {
       let all = self.list_tools("").await?;
-      Ok(all.into_iter().filter(|k| k.tool.starts_with(prefix)).collect())
+      Ok(
+        all
+          .into_iter()
+          .filter(|k| k.tool.starts_with(prefix))
+          .collect(),
+      )
     }
 
     async fn stats(&self) -> Result<StorageStats> {
-      Ok(StorageStats { total_entries: self.list_tools("").await?.len() as u64, total_size_bytes: 0, ecosystems: Default::default(), last_compaction: None })
+      Ok(StorageStats {
+        total_entries: self.list_tools("").await?.len() as u64,
+        total_size_bytes: 0,
+        ecosystems: Default::default(),
+        last_compaction: None,
+      })
     }
 
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> { Ok(vec![]) }
-    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> { Ok(vec![]) }
+    async fn search_by_tags(
+      &self,
+      _tags: &[String],
+    ) -> Result<Vec<PackageKey>> {
+      Ok(vec![])
+    }
+    async fn get_all_facts(
+      &self,
+    ) -> Result<Vec<(PackageKey, PackageMetadata)>> {
+      Ok(vec![])
+    }
   }
 }
 
@@ -435,20 +489,57 @@ mod versioned_storage {
   pub struct VersionedPackageStorage;
 
   impl VersionedPackageStorage {
-    pub async fn new_global() -> Result<Self> { Ok(Self) }
+    pub async fn new_global() -> Result<Self> {
+      Ok(Self)
+    }
   }
 
   #[async_trait::async_trait]
   impl PackageStorage for VersionedPackageStorage {
-    async fn store_fact(&self, _key: &PackageKey, _data: &PackageMetadata) -> Result<()> { Ok(()) }
-    async fn get_fact(&self, _key: &PackageKey) -> Result<Option<PackageMetadata>> { Ok(None) }
-    async fn exists(&self, _key: &PackageKey) -> Result<bool> { Ok(false) }
-    async fn delete_fact(&self, _key: &PackageKey) -> Result<()> { Ok(()) }
-    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> { Ok(vec![]) }
-    async fn search_tools(&self, _prefix: &str) -> Result<Vec<PackageKey>> { Ok(vec![]) }
-    async fn stats(&self) -> Result<StorageStats> { Ok(StorageStats { total_entries: 0, total_size_bytes: 0, ecosystems: Default::default(), last_compaction: None }) }
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> { Ok(vec![]) }
-    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> { Ok(vec![]) }
+    async fn store_fact(
+      &self,
+      _key: &PackageKey,
+      _data: &PackageMetadata,
+    ) -> Result<()> {
+      Ok(())
+    }
+    async fn get_fact(
+      &self,
+      _key: &PackageKey,
+    ) -> Result<Option<PackageMetadata>> {
+      Ok(None)
+    }
+    async fn exists(&self, _key: &PackageKey) -> Result<bool> {
+      Ok(false)
+    }
+    async fn delete_fact(&self, _key: &PackageKey) -> Result<()> {
+      Ok(())
+    }
+    async fn list_tools(&self, _ecosystem: &str) -> Result<Vec<PackageKey>> {
+      Ok(vec![])
+    }
+    async fn search_tools(&self, _prefix: &str) -> Result<Vec<PackageKey>> {
+      Ok(vec![])
+    }
+    async fn stats(&self) -> Result<StorageStats> {
+      Ok(StorageStats {
+        total_entries: 0,
+        total_size_bytes: 0,
+        ecosystems: Default::default(),
+        last_compaction: None,
+      })
+    }
+    async fn search_by_tags(
+      &self,
+      _tags: &[String],
+    ) -> Result<Vec<PackageKey>> {
+      Ok(vec![])
+    }
+    async fn get_all_facts(
+      &self,
+    ) -> Result<Vec<(PackageKey, PackageMetadata)>> {
+      Ok(vec![])
+    }
   }
 }
 
@@ -461,7 +552,10 @@ mod versioned_storage {
 /// DEPRECATED: Removed from PackageMetadata. Code analysis should be done by analysis-suite.
 /// fact-system only stores extracted snippets in CodeSnippet format.
 /// This struct may be removed in future versions.
-#[deprecated(since = "1.2.0", note = "Use analysis-suite for code analysis instead")]
+#[deprecated(
+  since = "1.2.0",
+  note = "Use analysis-suite for code analysis instead"
+)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodeIndex {
   pub files: Vec<IndexedFile>,

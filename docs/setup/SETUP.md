@@ -407,7 +407,7 @@ mix dialyzer
 ### Analyze Codebase
 
 ```bash
-# Run Rust analyzer (if available)
+# Run Singularity Code Analyzer (rust-analyzer) if available
 analysis-suite analyze ./singularity
 
 # View analysis in Elixir

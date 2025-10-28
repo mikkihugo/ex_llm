@@ -3,10 +3,13 @@
 //! This module provides NIF-based integration between the Rust analysis-suite and Elixir.
 //! It contains pure computation functions that can be called directly from Elixir.
 
+use crate::analysis::multilang::{LanguageRuleType, RuleViolation};
+use crate::analyzer::CodebaseAnalyzer;
+use rustler::{Error, NifResult};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use rustler::NifResult;
-use crate::codebase::storage::CodebaseAnalyzer;
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::path::Path;
 
 /// Code analysis result structure
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
@@ -39,6 +42,97 @@ pub struct Asset {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
+fn map_extension_to_language(ext: &str) -> Option<&'static str> {
+    match ext {
+        "ex" | "exs" => Some("elixir"),
+        "erl" => Some("erlang"),
+        "gleam" => Some("gleam"),
+        "rs" => Some("rust"),
+        "ts" | "tsx" => Some("typescript"),
+        "js" | "jsx" => Some("javascript"),
+        "py" => Some("python"),
+        "go" => Some("go"),
+        "java" => Some("java"),
+        "cpp" | "cc" | "cxx" => Some("cpp"),
+        "c" => Some("c"),
+        "cs" => Some("csharp"),
+        "rb" => Some("ruby"),
+        "php" => Some("php"),
+        "swift" => Some("swift"),
+        "kt" => Some("kotlin"),
+        "scala" => Some("scala"),
+        "json" => Some("json"),
+        "yaml" | "yml" => Some("yaml"),
+        "toml" => Some("toml"),
+        "xml" => Some("xml"),
+        "html" | "htm" => Some("html"),
+        "css" => Some("css"),
+        "sh" | "bash" => Some("bash"),
+        "sql" => Some("sql"),
+        "md" | "markdown" => Some("markdown"),
+        "dockerfile" => Some("dockerfile"),
+        _ => None,
+    }
+}
+
+fn load_code_input(code_or_path: &str) -> std::io::Result<String> {
+    let candidate = Path::new(code_or_path);
+    if candidate.exists() && candidate.is_file() {
+        fs::read_to_string(candidate)
+    } else {
+        Ok(code_or_path.to_string())
+    }
+}
+
+fn dedup_preserve_order(messages: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut deduped = Vec::with_capacity(messages.len());
+    for message in messages {
+        if seen.insert(message.clone()) {
+            deduped.push(message);
+        }
+    }
+    deduped
+}
+
+fn format_violation_message(violation: &RuleViolation) -> String {
+    let severity = format!("{:?}", violation.rule.severity);
+    match &violation.rule.suggested_fix {
+        Some(fix) if !fix.is_empty() => format!(
+            "{} [{}] at {}: {} — fix: {}",
+            violation.rule.name, severity, violation.location, violation.details, fix
+        ),
+        _ => format!(
+            "{} [{}] at {}: {}",
+            violation.rule.name, severity, violation.location, violation.details
+        ),
+    }
+}
+
+fn classify_rule_violations(
+    violations: &[RuleViolation],
+) -> (Vec<String>, Vec<String>, Vec<String>) {
+    let mut security = Vec::new();
+    let mut performance = Vec::new();
+    let mut refactoring = Vec::new();
+
+    for violation in violations {
+        let message = format_violation_message(violation);
+        match violation.rule.rule_type {
+            LanguageRuleType::SecurityRule => security.push(message.clone()),
+            LanguageRuleType::PerformanceRule => performance.push(message.clone()),
+            _ => {}
+        }
+        refactoring.push(message);
+    }
+
+    (
+        dedup_preserve_order(security),
+        dedup_preserve_order(performance),
+        dedup_preserve_order(refactoring),
+    )
+}
+
 /// NIF: Analyze code using existing analysis-suite (pure computation)
 ///
 /// This performs code analysis on structured data passed from Elixir.
@@ -47,31 +141,125 @@ pub struct Asset {
 ///
 /// Returns structured analysis results that Elixir can use.
 #[rustler::nif(schedule = "DirtyCpu")]
-pub fn analyze_code_nif(_codebase_path: String, language: String) -> NifResult<CodeAnalysisResult> {
-    // NOTE: codebase_path is for reference/logging only
-    // In the NIF architecture, Elixir reads the file and passes structured data
-    // This function would receive FileAnalysis struct from Elixir instead
+pub fn analyze_code_nif(
+    code_or_path: String,
+    language_hint: String,
+) -> NifResult<CodeAnalysisResult> {
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| Error::Term(Box::new(format!("Failed to create analyzer: {e}"))))?;
 
-    // Language-specific analysis heuristics
-    let (complexity_base, security_checks) = match language.as_str() {
-        "elixir" => (0.70, vec!["Check for unsafe :erlang.binary_to_term calls"]),
-        "rust" => (0.75, vec!["Check for unsafe blocks without documentation"]),
-        "javascript" | "typescript" => (0.60, vec!["Check for eval() usage", "Validate user inputs"]),
-        "python" => (0.65, vec!["Check for pickle usage", "SQL injection risks"]),
-        _ => (0.65, vec!["Review input validation"]),
-    };
+    let code = load_code_input(&code_or_path)
+        .map_err(|e| Error::Term(Box::new(format!("Failed to load code input: {e}"))))?;
+
+    let mut effective_language = language_hint.trim().to_string();
+    if effective_language.is_empty() {
+        if let Some(ext) = Path::new(&code_or_path)
+            .extension()
+            .and_then(|ext| ext.to_str())
+        {
+            if let Some(mapped) = map_extension_to_language(&ext.to_lowercase()) {
+                effective_language = mapped.to_string();
+            }
+        }
+    }
+
+    if effective_language.is_empty() {
+        return Err(Error::Term(Box::new(
+            "Language hint required for legacy analyze_code_nif/2",
+        )));
+    }
+
+    if !analyzer.is_language_supported(&effective_language) {
+        return Err(Error::Term(Box::new(format!(
+            "Unsupported language: {effective_language}"
+        ))));
+    }
+
+    let language_analysis = analyzer
+        .analyze_language(&code, &effective_language)
+        .ok_or_else(|| {
+            Error::Term(Box::new(format!(
+                "Failed to analyze language: {effective_language}"
+            )))
+        })?;
+
+    let rule_violations = analyzer.check_language_rules(&code, &effective_language);
+    let (mut security_issues, mut performance_issues, mut refactoring_suggestions) =
+        classify_rule_violations(&rule_violations);
+
+    if language_analysis.complexity_score > 0.75 {
+        refactoring_suggestions.push(format!(
+            "Complexity score {:.2} is high; split large functions or reduce branching.",
+            language_analysis.complexity_score
+        ));
+    }
+
+    if language_analysis.quality_score < 0.65 {
+        refactoring_suggestions.push(format!(
+            "Quality score {:.2} suggests maintainability risk; increase tests/documentation.",
+            language_analysis.quality_score
+        ));
+    }
+
+    if security_issues.is_empty() {
+        match language_analysis.language_id.as_str() {
+            "rust" => security_issues
+                .push("Validate unsafe blocks and document safety invariants.".to_string()),
+            "javascript" | "typescript" => security_issues
+                .push("Ensure user inputs are validated and avoid dynamic eval usage.".to_string()),
+            "python" => security_issues.push(
+                "Validate inputs and guard against SQL injection or unsafe deserialization."
+                    .to_string(),
+            ),
+            "elixir" => security_issues
+                .push("Use pattern matching and guards to validate external inputs.".to_string()),
+            _ => {}
+        }
+    }
+
+    if performance_issues.is_empty() && language_analysis.total_lines > 500 {
+        performance_issues.push(format!(
+            "File has {} lines; consider extracting modules to keep compilation fast.",
+            language_analysis.total_lines
+        ));
+    }
+
+    let mut maintainability_score = language_analysis.quality_score;
+    if analyzer.has_rca_support(&language_analysis.language_id) {
+        if let Ok(rca) = analyzer.get_rca_metrics(&code, &language_analysis.language_id) {
+            if rca.maintainability_index > 0.0 {
+                maintainability_score = (rca.maintainability_index / 100.0).clamp(0.0, 1.0);
+            }
+
+            if rca.cyclomatic_complexity > 15.0 {
+                performance_issues.push(format!(
+                    "Cyclomatic complexity {:.1} exceeds recommended threshold; refactor to reduce branching.",
+                    rca.cyclomatic_complexity
+                ));
+            }
+        }
+    }
+
+    if performance_issues.is_empty() {
+        performance_issues.push(format!(
+            "Profile {} hotspots to confirm there are no bottlenecks.",
+            language_analysis.language_name
+        ));
+    }
+
+    if refactoring_suggestions.is_empty() {
+        refactoring_suggestions.push(
+            "Consider extracting reusable helpers and adding module-level documentation."
+                .to_string(),
+        );
+    }
 
     let analysis = CodeAnalysisResult {
-        complexity_score: complexity_base,
-        maintainability_score: 0.80,
-        security_issues: security_checks.iter().map(|s| s.to_string()).collect(),
-        performance_issues: vec![
-            format!("Profile {} code for bottlenecks", language),
-        ],
-        refactoring_suggestions: vec![
-            format!("Apply {} idioms for better readability", language),
-            "Consider extracting complex logic into separate functions".to_string(),
-        ],
+        complexity_score: language_analysis.complexity_score,
+        maintainability_score,
+        security_issues: dedup_preserve_order(security_issues),
+        performance_issues: dedup_preserve_order(performance_issues),
+        refactoring_suggestions: dedup_preserve_order(refactoring_suggestions),
     };
 
     Ok(analysis)
@@ -82,68 +270,82 @@ pub fn analyze_code_nif(_codebase_path: String, language: String) -> NifResult<C
 /// Calculates quality metrics using the CodebaseAnalyzer pure computation functions.
 /// Takes structured code data from Elixir and returns computed metrics.
 #[rustler::nif(schedule = "DirtyCpu")]
-pub fn calculate_quality_metrics_nif(code: Option<String>, language: String) -> NifResult<QualityMetrics> {
-    let analyzer = CodebaseAnalyzer::new();
+pub fn calculate_quality_metrics_nif(
+    code: Option<String>,
+    language: String,
+) -> NifResult<QualityMetrics> {
+    let analyzer = CodebaseAnalyzer::new()
+        .map_err(|e| Error::Term(Box::new(format!("Failed to create analyzer: {e}"))))?;
 
-    // Parse code to get basic metrics
-    let (lines, functions, classes) = if let Some(ref code_str) = code {
-        let line_count = code_str.lines().count();
+    let code_str = code.unwrap_or_default();
 
-        // Simple function counting (language-agnostic heuristics)
-        let fn_count = match language.as_str() {
-            "elixir" => code_str.matches("def ").count() + code_str.matches("defp ").count(),
-            "rust" => code_str.matches("fn ").count(),
-            "javascript" | "typescript" => code_str.matches("function ").count() + code_str.matches("=> ").count(),
-            "python" => code_str.matches("def ").count(),
-            _ => code_str.matches("fn ").count() + code_str.matches("def ").count(),
-        };
-
-        // Simple class counting
-        let class_count = match language.as_str() {
-            "elixir" => code_str.matches("defmodule ").count(),
-            "rust" => code_str.matches("struct ").count() + code_str.matches("enum ").count(),
-            "javascript" | "typescript" => code_str.matches("class ").count(),
-            "python" => code_str.matches("class ").count(),
-            _ => 0,
-        };
-
-        (line_count, fn_count, class_count)
-    } else {
-        (0, 0, 0)
+    let line_count = code_str.lines().count();
+    let function_count = match language.as_str() {
+        "elixir" => code_str.matches("def ").count() + code_str.matches("defp ").count(),
+        "rust" => code_str.matches("fn ").count(),
+        "javascript" | "typescript" => {
+            code_str.matches("function ").count() + code_str.matches("=> ").count()
+        }
+        "python" => code_str.matches("def ").count(),
+        "go" => code_str.matches("func ").count(),
+        "java" | "csharp" => {
+            code_str.matches(" void ").count() + code_str.matches(" class ").count()
+        }
+        _ => code_str.matches("fn ").count() + code_str.matches("def ").count(),
     };
 
-    // Use analyzer to calculate complexity
+    let class_count = match language.as_str() {
+        "elixir" => code_str.matches("defmodule ").count(),
+        "rust" => code_str.matches("struct ").count() + code_str.matches("enum ").count(),
+        "javascript" | "typescript" => code_str.matches("class ").count(),
+        "python" => code_str.matches("class ").count(),
+        "java" | "csharp" => code_str.matches("class ").count(),
+        _ => 0,
+    };
+
     let complexity_metrics = analyzer
-        .calculate_complexity_metrics(functions, classes, lines)
-        .map_err(|e| rustler::Error::Term(Box::new(format!("Complexity calculation failed: {}", e))))?;
+        .calculate_complexity_metrics(function_count, class_count, line_count)
+        .map_err(|e| Error::Term(Box::new(format!("Complexity calculation failed: {e}"))))?;
 
-    let cyclomatic = complexity_metrics.get("cyclomatic_complexity").unwrap_or(&0.0);
+    let mut cyclomatic = *complexity_metrics
+        .get("cyclomatic_complexity")
+        .unwrap_or(&0.0);
+    let mut lines_of_code = line_count as u32;
 
-    // Calculate test coverage and doc coverage (would come from Elixir in real impl)
-    let test_coverage = 0.0; // Elixir would calculate this from ExUnit
-    let doc_coverage = if let Some(ref code_str) = code {
-        // Simple heuristic: count doc comments
+    if !code_str.is_empty() && analyzer.has_rca_support(&language) {
+        if let Ok(rca) = analyzer.get_rca_metrics(&code_str, &language) {
+            if rca.cyclomatic_complexity > 0.0 {
+                cyclomatic = rca.cyclomatic_complexity;
+            }
+            if rca.source_lines_of_code > 0 {
+                lines_of_code = rca.source_lines_of_code as u32;
+            }
+        }
+    }
+
+    let doc_coverage = if code_str.is_empty() {
+        0.0
+    } else {
         let doc_lines = match language.as_str() {
             "elixir" => code_str.matches("@doc").count() + code_str.matches("@moduledoc").count(),
             "rust" => code_str.matches("///").count() + code_str.matches("//!").count(),
             "javascript" | "typescript" => code_str.matches("/**").count(),
-            "python" => code_str.matches("\"\"\"").count() / 2, // Opening and closing
+            "python" => code_str.matches("\"\"\"").count() / 2,
+            "go" => code_str.matches("///").count(),
             _ => 0,
         };
-        let total_defs = functions + classes;
+        let total_defs = function_count + class_count;
         if total_defs > 0 {
             (doc_lines as f64 / total_defs as f64).min(1.0)
         } else {
             0.0
         }
-    } else {
-        0.0
     };
 
     let metrics = QualityMetrics {
-        cyclomatic_complexity: *cyclomatic as u32,
-        lines_of_code: lines as u32,
-        test_coverage,
+        cyclomatic_complexity: cyclomatic as u32,
+        lines_of_code,
+        test_coverage: 0.0,
         documentation_coverage: doc_coverage,
     };
 
@@ -245,7 +447,9 @@ pub fn parse_file_nif(file_path: String) -> NifResult<ParsedFileResult> {
 
     // Extract symbols from tree-sitter analysis
     let (symbols, imports, exports) = if let Some(ref ts) = analysis_result.tree_sitter_analysis {
-        let symbols = ts.functions.iter()
+        let symbols = ts
+            .functions
+            .iter()
             .map(|f| f.name.clone())
             .chain(ts.classes.iter().map(|c| c.name.clone()))
             .collect();
@@ -257,8 +461,7 @@ pub fn parse_file_nif(file_path: String) -> NifResult<ParsedFileResult> {
     Ok(ParsedFileResult {
         file_path: file_path.clone(),
         language: analysis_result.language.clone(),
-        ast_json: serde_json::to_string(&analysis_result)
-            .unwrap_or_else(|_| "{}".to_string()),
+        ast_json: serde_json::to_string(&analysis_result).unwrap_or_else(|_| "{}".to_string()),
         symbols,
         imports,
         exports,
@@ -268,13 +471,12 @@ pub fn parse_file_nif(file_path: String) -> NifResult<ParsedFileResult> {
 /// NIF: Get list of supported languages
 #[rustler::nif]
 pub fn supported_languages_nif() -> NifResult<Vec<String>> {
-    // Return languages that parser-code actually supports (from lib.rs)
-    let languages = vec![
-        "elixir", "erlang", "gleam", "rust", "javascript", "typescript",
-        "python", "json", "yaml", "bash",
-    ];
-
-    Ok(languages.into_iter().map(String::from).collect())
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => Ok(analyzer.supported_languages()),
+        Err(e) => Err(Error::Term(Box::new(format!(
+            "Failed to create analyzer: {e}"
+        )))),
+    }
 }
 
 /// Language detection result
@@ -299,48 +501,37 @@ pub struct LanguageDetectionResult {
 /// * `Err(error)` - Language could not be detected
 #[rustler::nif]
 pub fn detect_language_by_extension_nif(file_path: String) -> NifResult<LanguageDetectionResult> {
-    use std::path::Path;
-
     let path = Path::new(&file_path);
 
     // Detect language by file extension using the language registry
-    let ext = path.extension()
+    let ext = path
+        .extension()
         .and_then(|e| e.to_str())
-        .unwrap_or("");
+        .map(|ext| ext.to_lowercase());
 
-    let (language, confidence) = match ext.to_lowercase().as_str() {
-        "ex" | "exs" => ("elixir", 0.99),
-        "erl" => ("erlang", 0.99),
-        "gleam" => ("gleam", 0.99),
-        "rs" => ("rust", 0.99),
-        "ts" | "tsx" => ("typescript", 0.99),
-        "js" | "jsx" => ("javascript", 0.99),
-        "py" => ("python", 0.99),
-        "go" => ("go", 0.99),
-        "java" => ("java", 0.99),
-        "cpp" | "cc" | "cxx" => ("cpp", 0.99),
-        "c" => ("c", 0.99),
-        "cs" => ("csharp", 0.99),
-        "rb" => ("ruby", 0.99),
-        "php" => ("php", 0.99),
-        "swift" => ("swift", 0.99),
-        "kt" => ("kotlin", 0.99),
-        "scala" => ("scala", 0.99),
-        "json" => ("json", 0.99),
-        "yaml" | "yml" => ("yaml", 0.99),
-        "toml" => ("toml", 0.99),
-        "xml" => ("xml", 0.99),
-        "html" | "htm" => ("html", 0.99),
-        "css" => ("css", 0.99),
-        "sh" | "bash" => ("bash", 0.99),
-        "sql" => ("sql", 0.99),
-        _ => ("unknown", 0.0),
+    let mut detection_method = "extension".to_string();
+    let (language, confidence) = if let Some(ext) = ext {
+        if let Some(lang) = map_extension_to_language(&ext) {
+            (lang.to_string(), 0.99)
+        } else {
+            ("unknown".to_string(), 0.0)
+        }
+    } else if path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.eq_ignore_ascii_case("dockerfile"))
+        .unwrap_or(false)
+    {
+        detection_method = "filename".to_string();
+        ("dockerfile".to_string(), 0.95)
+    } else {
+        ("unknown".to_string(), 0.0)
     };
 
     Ok(LanguageDetectionResult {
-        language: language.to_string(),
+        language,
         confidence,
-        detection_method: "extension".to_string(),
+        detection_method,
     })
 }
 
@@ -363,24 +554,28 @@ pub fn detect_language_by_extension_nif(file_path: String) -> NifResult<Language
 /// * `Ok(LanguageDetectionResult)` - Primary language with high confidence
 /// * `Err(error)` - Could not determine from manifest
 #[rustler::nif]
-pub fn detect_language_by_manifest_nif(manifest_path: String) -> NifResult<LanguageDetectionResult> {
+pub fn detect_language_by_manifest_nif(
+    manifest_path: String,
+) -> NifResult<LanguageDetectionResult> {
     use std::path::Path;
 
     let path = Path::new(&manifest_path);
-    let file_name = path.file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
     let (language, confidence, method) = match file_name {
         "Cargo.toml" => ("rust", 0.95, "manifest"),
         "package.json" => {
             // Check for tsconfig.json to distinguish TypeScript from JavaScript
-            if path.parent().map(|p| p.join("tsconfig.json").exists()).unwrap_or(false) {
+            if path
+                .parent()
+                .map(|p| p.join("tsconfig.json").exists())
+                .unwrap_or(false)
+            {
                 ("typescript", 0.95, "manifest+tsconfig")
             } else {
                 ("javascript", 0.90, "manifest")
             }
-        },
+        }
         "go.mod" => ("go", 0.95, "manifest"),
         "mix.exs" => ("elixir", 0.99, "manifest"),
         "rebar.config" | "rebar3.config" => ("erlang", 0.95, "manifest"),

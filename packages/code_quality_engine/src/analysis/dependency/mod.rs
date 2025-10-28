@@ -16,9 +16,7 @@ pub use detector::{
 };
 
 // Circular dependencies
-pub use detector::{
-    CircularDependency, CircularDependencyImpact, CircularDependencySeverity,
-};
+pub use detector::{CircularDependency, CircularDependencyImpact, CircularDependencySeverity};
 
 // Graph structures and analysis
 pub use graph::{
@@ -26,6 +24,4 @@ pub use graph::{
 };
 
 // Health analysis
-pub use health::{
-    CostLevel, CriticalityLevel, DependencyHealthAnalysis, DependencyHealthAnalyzer,
-};
+pub use health::{CostLevel, CriticalityLevel, DependencyHealthAnalysis, DependencyHealthAnalyzer};

@@ -282,9 +282,14 @@ defmodule Singularity.Autonomy.RuleEngine do
 
   defp classify_decision(confidence, result) do
     {:escalated,
-     Map.update(result, :reasoning, "Low confidence (#{format_confidence(confidence)})", fn reasoning ->
-       "#{reasoning} | Low confidence (#{format_confidence(confidence)})"
-     end)}
+     Map.update(
+       result,
+       :reasoning,
+       "Low confidence (#{format_confidence(confidence)})",
+       fn reasoning ->
+         "#{reasoning} | Low confidence (#{format_confidence(confidence)})"
+       end
+     )}
   end
 
   defp get_required_fields(category) do

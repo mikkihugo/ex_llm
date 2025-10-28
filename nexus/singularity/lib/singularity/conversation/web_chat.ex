@@ -79,6 +79,7 @@ defmodule Singularity.Conversation.WebChat do
 
       # Store in message history (non-blocking, graceful degradation on failure)
       conversation_id = Map.get(metadata, :conversation_id, "global_notifications")
+
       try do
         MessageHistory.add_message(conversation_id, %{
           sender: :agent,
@@ -87,22 +88,24 @@ defmodule Singularity.Conversation.WebChat do
           metadata: metadata
         })
       rescue
-        _ -> :ok  # Ignore message history failures, don't crash notification
+        # Ignore message history failures, don't crash notification
+        _ -> :ok
       end
 
       # Send via PostgreSQL NOTIFY for real-time delivery (no persistence needed)
       case Notifications.notify_only(
-        @notifications_queue,
-        Jason.encode!(payload),
-        Singularity.Repo
-      ) do
+             @notifications_queue,
+             Jason.encode!(payload),
+             Singularity.Repo
+           ) do
         :ok ->
           Logger.debug("Notification sent to Observer: #{message}")
           {:ok, "notification_sent"}
 
         {:error, reason} ->
           Logger.error("Failed to send notification: #{inspect(reason)}")
-          {:ok, "notification_queued"}  # Best-effort, don't fail the calling agent
+          # Best-effort, don't fail the calling agent
+          {:ok, "notification_queued"}
       end
     rescue
       error ->
@@ -171,7 +174,8 @@ defmodule Singularity.Conversation.WebChat do
               }
             })
           rescue
-            _ -> :ok  # Ignore message history failures
+            # Ignore message history failures
+            _ -> :ok
           end
 
           # Send approval event via PGMQ + NOTIFY for real-time web UI update
@@ -181,9 +185,14 @@ defmodule Singularity.Conversation.WebChat do
             timestamp: DateTime.utc_now()
           }
 
-          case Pgflow.Notifications.send_with_notify(@approvals_queue, approval_payload, Singularity.Repo) do
+          case Pgflow.Notifications.send_with_notify(
+                 @approvals_queue,
+                 approval_payload,
+                 Singularity.Repo
+               ) do
             {:ok, message_id} ->
               Logger.debug("Approval event sent to Observer: #{request_id}")
+
             {:error, reason} ->
               Logger.error("Failed to send approval event: #{inspect(reason)}")
           end
@@ -253,7 +262,8 @@ defmodule Singularity.Conversation.WebChat do
               }
             })
           rescue
-            _ -> :ok  # Ignore message history failures
+            # Ignore message history failures
+            _ -> :ok
           end
 
           # Publish notification
@@ -379,10 +389,10 @@ defmodule Singularity.Conversation.WebChat do
       }
 
       case Notifications.send_with_notify(
-        response_queue,
-        Jason.encode!(payload),
-        Singularity.Repo
-      ) do
+             response_queue,
+             Jason.encode!(payload),
+             Singularity.Repo
+           ) do
         {:ok, _msg_id} ->
           Logger.info("Decision published for #{request_id}: #{status}")
           :ok
@@ -457,10 +467,14 @@ defmodule Singularity.Conversation.WebChat do
   @spec health_check() :: {:ok, map()} | {:error, term()}
   def health_check do
     try do
-      case Notifications.send_with_notify("health_check", Jason.encode!(%{
-        timestamp: DateTime.utc_now(),
-        source: "chat_conversation_agent"
-      }), Singularity.Repo) do
+      case Notifications.send_with_notify(
+             "health_check",
+             Jason.encode!(%{
+               timestamp: DateTime.utc_now(),
+               source: "chat_conversation_agent"
+             }),
+             Singularity.Repo
+           ) do
         {:ok, _msg_id} ->
           {:ok, %{status: "healthy", observer: "connected"}}
 
@@ -502,12 +516,13 @@ defmodule Singularity.Conversation.WebChat do
         ""
       end
 
-    emoji = case status do
-      :started -> "🚀"
-      :completed -> "✅"
-      :failed -> "❌"
-      _ -> "📦"
-    end
+    emoji =
+      case status do
+        :started -> "🚀"
+        :completed -> "✅"
+        :failed -> "❌"
+        _ -> "📦"
+      end
 
     """
     #{emoji} Deployment #{status}
@@ -535,5 +550,4 @@ defmodule Singularity.Conversation.WebChat do
     Policy: #{policy_name}#{details_text}
     """
   end
-
 end

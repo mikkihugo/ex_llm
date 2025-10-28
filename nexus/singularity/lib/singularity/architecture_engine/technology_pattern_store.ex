@@ -117,6 +117,7 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
 
   require Logger
   alias Singularity.Repo
+  alias Singularity.Knowledge.Requests, as: KnowledgeRequests
 
   @doc """
   Get technology pattern by name
@@ -354,6 +355,7 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
 
         if unknown != [] do
           Logger.info("Discovered #{length(unknown)} potential new technology patterns")
+          enqueue_pattern_requests(repo_path, unknown)
           {:ok, unknown}
         else
           {:ok, []}
@@ -361,6 +363,77 @@ defmodule Singularity.ArchitectureEngine.TechnologyPatternStore do
 
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  defp enqueue_pattern_requests(repo_path, patterns) do
+    Enum.each(patterns, fn
+      %{extension: nil} ->
+        :ok
+
+      %{extension: extension, file_count: count} ->
+        external_key = "pattern:technology:#{extension}"
+
+        payload = %{
+          "pattern_type" => "technology",
+          "extension" => extension,
+          "file_count" => count,
+          "repo_path" => repo_path,
+          "ecosystem" => infer_ecosystem(extension)
+        }
+
+        case KnowledgeRequests.enqueue(%{
+               request_type: :pattern,
+               external_key: external_key,
+               payload: payload,
+               source: "Singularity.ArchitectureEngine.TechnologyPatternStore",
+               source_reference: repo_path,
+               metadata: %{"pattern_type" => "technology"}
+             }) do
+          {:ok, _request} ->
+            :ok
+
+          {:error, changeset} ->
+            Logger.error("Failed to enqueue technology knowledge request",
+              external_key: external_key,
+              errors: changeset.errors
+            )
+        end
+    end)
+  end
+
+  defp infer_ecosystem(nil), do: nil
+
+  defp infer_ecosystem(extension) do
+    case String.trim_leading(extension, ".") |> String.downcase() do
+      "ex" -> "elixir"
+      "exs" -> "elixir"
+      "py" -> "python"
+      "rb" -> "ruby"
+      "ts" -> "typescript"
+      "tsx" -> "typescript"
+      "js" -> "javascript"
+      "jsx" -> "javascript"
+      "rs" -> "rust"
+      "go" -> "go"
+      "java" -> "java"
+      "kt" -> "kotlin"
+      "cs" -> "csharp"
+      "c" -> "c"
+      "h" -> "c"
+      "hpp" -> "cpp"
+      "hh" -> "cpp"
+      "cc" -> "cpp"
+      "cpp" -> "cpp"
+      "cxx" -> "cpp"
+      "swift" -> "swift"
+      "php" -> "php"
+      "scala" -> "scala"
+      "hs" -> "haskell"
+      "lua" -> "lua"
+      "groovy" -> "groovy"
+      "dart" -> "dart"
+      _ -> nil
     end
   end
 

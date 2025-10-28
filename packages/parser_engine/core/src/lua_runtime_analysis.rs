@@ -614,46 +614,61 @@ pub fn analyze_luerl_usage(elixir_source: &str) -> LuerlAnalysisResult {
 
     // Basic pattern detection using string matching (tree-sitter parsing would be more robust)
     if elixir_source.contains("Lua.new()") || elixir_source.contains(":luerl.init") {
-        result.runtime_patterns.state_creations.push(StateCreationInfo {
-            location: "unknown".to_string(),
-            line: 0,
-            state_variable: "lua_state".to_string(),
-            initialization_chain: vec!["Lua.new()".to_string()],
-        });
+        result
+            .runtime_patterns
+            .state_creations
+            .push(StateCreationInfo {
+                location: "unknown".to_string(),
+                line: 0,
+                state_variable: "lua_state".to_string(),
+                initialization_chain: vec!["Lua.new()".to_string()],
+            });
     }
 
     if elixir_source.contains("Lua.eval!") || elixir_source.contains(":luerl.eval") {
-        result.runtime_patterns.script_executions.push(ScriptExecutionInfo {
-            location: "unknown".to_string(),
-            line: 0,
-            script_source: ScriptSource::Embedded { content: "inline".to_string() },
-            has_error_handling: elixir_source.contains("rescue") || elixir_source.contains("with "),
-            has_timeout: elixir_source.contains("timeout"),
-            execution_context: None,
-        });
+        result
+            .runtime_patterns
+            .script_executions
+            .push(ScriptExecutionInfo {
+                location: "unknown".to_string(),
+                line: 0,
+                script_source: ScriptSource::Embedded {
+                    content: "inline".to_string(),
+                },
+                has_error_handling: elixir_source.contains("rescue")
+                    || elixir_source.contains("with "),
+                has_timeout: elixir_source.contains("timeout"),
+                execution_context: None,
+            });
     }
 
     if elixir_source.contains("Lua.set!") || elixir_source.contains(":luerl.set_table") {
-        result.runtime_patterns.context_injections.push(ContextInjectionInfo {
-            location: "unknown".to_string(),
-            line: 0,
-            key: "unknown".to_string(),
-            value_type: "dynamic".to_string(),
-            is_safe: !elixir_source.contains("SECRET"),
-        });
+        result
+            .runtime_patterns
+            .context_injections
+            .push(ContextInjectionInfo {
+                location: "unknown".to_string(),
+                line: 0,
+                key: "unknown".to_string(),
+                value_type: "dynamic".to_string(),
+                is_safe: !elixir_source.contains("SECRET"),
+            });
     }
 
     // Detect embedded Lua scripts via sigils or heredocs
     if elixir_source.contains("~LUA") || elixir_source.contains("@lua") {
-        result.script_analysis.embedded_scripts.push(EmbeddedScriptInfo {
-            location: "sigil".to_string(),
-            line_start: 0,
-            line_end: 0,
-            script_type: EmbeddedScriptType::CustomLogic,
-            complexity: 1.0,
-            safety_score: 80.0,
-            has_documentation: false,
-        });
+        result
+            .script_analysis
+            .embedded_scripts
+            .push(EmbeddedScriptInfo {
+                location: "sigil".to_string(),
+                line_start: 0,
+                line_end: 0,
+                script_type: EmbeddedScriptType::CustomLogic,
+                complexity: 1.0,
+                safety_score: 80.0,
+                has_documentation: false,
+            });
 
         result.script_analysis.script_metrics.push(ScriptMetrics {
             script_id: "embedded".to_string(),
@@ -670,26 +685,40 @@ pub fn analyze_luerl_usage(elixir_source: &str) -> LuerlAnalysisResult {
 
     // Detect LuaRunner usage
     if elixir_source.contains("LuaRunner.execute") {
-        result.runtime_patterns.script_executions.push(ScriptExecutionInfo {
-            location: "LuaRunner".to_string(),
-            line: 0,
-            script_source: ScriptSource::Variable { name: "runner_script".to_string() },
-            has_error_handling: elixir_source.contains("rescue") || elixir_source.contains("with "),
-            has_timeout: elixir_source.contains("timeout"),
-            execution_context: Some("LuaRunner.execute".to_string()),
-        });
+        result
+            .runtime_patterns
+            .script_executions
+            .push(ScriptExecutionInfo {
+                location: "LuaRunner".to_string(),
+                line: 0,
+                script_source: ScriptSource::Variable {
+                    name: "runner_script".to_string(),
+                },
+                has_error_handling: elixir_source.contains("rescue")
+                    || elixir_source.contains("with "),
+                has_timeout: elixir_source.contains("timeout"),
+                execution_context: Some("LuaRunner.execute".to_string()),
+            });
     }
 
     // Update summary statistics
-    result.runtime_patterns.pattern_stats.total_lua_states = result.runtime_patterns.state_creations.len() as u32;
-    result.runtime_patterns.pattern_stats.total_executions = result.runtime_patterns.script_executions.len() as u32;
-    result.runtime_patterns.pattern_stats.executions_with_error_handling = result
+    result.runtime_patterns.pattern_stats.total_lua_states =
+        result.runtime_patterns.state_creations.len() as u32;
+    result.runtime_patterns.pattern_stats.total_executions =
+        result.runtime_patterns.script_executions.len() as u32;
+    result
+        .runtime_patterns
+        .pattern_stats
+        .executions_with_error_handling = result
         .runtime_patterns
         .script_executions
         .iter()
         .filter(|exec| exec.has_error_handling)
         .count() as u32;
-    result.runtime_patterns.pattern_stats.executions_with_timeout = result
+    result
+        .runtime_patterns
+        .pattern_stats
+        .executions_with_timeout = result
         .runtime_patterns
         .script_executions
         .iter()
@@ -739,7 +768,8 @@ pub fn analyze_lua_script(lua_source: &str) -> ScriptMetrics {
     };
 
     // Calculate function count
-    let function_count = lines.iter()
+    let function_count = lines
+        .iter()
         .filter(|line| line.contains("function "))
         .count() as u32;
 
@@ -787,13 +817,15 @@ pub fn calculate_safety_score(analysis: &LuerlAnalysisResult) -> f64 {
     let timeout_score = if analysis.runtime_patterns.pattern_stats.total_executions == 0 {
         0.0
     } else {
-        (analysis.runtime_patterns.pattern_stats.executions_with_timeout as f64
+        (analysis
+            .runtime_patterns
+            .pattern_stats
+            .executions_with_timeout as f64
             / analysis.runtime_patterns.pattern_stats.total_executions as f64)
             * 30.0
     };
 
-    let error_handling_score =
-        analysis.safety_analysis.error_handling.coverage_percentage * 0.30;
+    let error_handling_score = analysis.safety_analysis.error_handling.coverage_percentage * 0.30;
 
     let risk_penalty = analysis.safety_analysis.security_risks.len() as f64 * 5.0;
 

@@ -23,7 +23,7 @@ defmodule BroadwayPgflow.MixProject do
   defp deps do
     [
       {:broadway, "~> 1.0"},
-      {:ex_pgflow, git: "https://github.com/mikkihugo/ex_pgflow.git", branch: "main", override: true},
+            {:ex_pgflow, path: "../ex_pgflow"},
       {:ecto_sql, "~> 3.10"}
     ]
   end

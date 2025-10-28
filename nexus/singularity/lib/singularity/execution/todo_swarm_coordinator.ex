@@ -670,7 +670,8 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
     # Handle worker crash
     case find_worker_by_pid(state.active_workers, pid) do
       {worker_id, worker} ->
-        SASL.execution_failure(:todo_worker_crash,
+        SASL.execution_failure(
+          :todo_worker_crash,
           "Todo swarm worker process crashed",
           worker_id: worker_id,
           todo_id: worker.todo_id,
@@ -771,7 +772,8 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         end
 
       {:error, reason} ->
-        SASL.database_failure(:todo_fetch_failure,
+        SASL.database_failure(
+          :todo_fetch_failure,
           "Failed to fetch ready todos after notification",
           notify_message_id: message_id,
           reason: reason
@@ -813,7 +815,8 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         {worker_id, worker_info}
 
       {:error, reason} ->
-        SASL.execution_failure(:todo_worker_spawn_failure,
+        SASL.execution_failure(
+          :todo_worker_spawn_failure,
           "Failed to spawn worker for todo task",
           todo_id: todo.id,
           reason: reason
@@ -867,7 +870,11 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         case Singularity.Planner.RefactorPlanner.detect_smells(todo.codebase_id) do
           {:ok, issues} when length(issues) > 0 ->
             # Produce HTDAG via planner
-            {:ok, %{tasks: tasks}} = Singularity.Planner.RefactorPlanner.plan(%{codebase_id: todo.codebase_id, issues: issues})
+            {:ok, %{tasks: tasks}} =
+              Singularity.Planner.RefactorPlanner.plan(%{
+                codebase_id: todo.codebase_id,
+                issues: issues
+              })
 
             workflow = %{
               workflow_id: "refactor_#{todo.codebase_id}_#{:erlang.unique_integer([:positive])}",
@@ -878,7 +885,8 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
             }
 
             # Persist to Workflows (unified system) and mark as a workflow record
-            {:ok, wf_id} = Singularity.Workflows.create_workflow(Map.put(workflow, :type, :workflow))
+            {:ok, wf_id} =
+              Singularity.Workflows.create_workflow(Map.put(workflow, :type, :workflow))
 
             # Schedule a dry-run HTDAG execution for visibility (executor will pause on approvals)
             Task.start(fn ->
@@ -926,10 +934,12 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
         {:ok, pid}
 
       {:error, reason} ->
-        SASL.infrastructure_failure(:notification_subscription_failure,
+        SASL.infrastructure_failure(
+          :notification_subscription_failure,
           "Failed to subscribe to todo_ready notifications",
           reason: reason
         )
+
         {:error, reason}
     end
   end

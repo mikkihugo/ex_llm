@@ -39,7 +39,8 @@ defmodule Singularity.HTDAG.LoadBalancer do
 
   # Rate limiting
   @rate_limit_per_minute @config[:rate_limit_per_minute] || 30
-  @rate_limit_window_ms 60_000 # 1 minute
+  # 1 minute
+  @rate_limit_window_ms 60_000
 
   # System thresholds
   @cpu_threshold @config[:cpu_threshold] || 0.7
@@ -139,12 +140,13 @@ defmodule Singularity.HTDAG.LoadBalancer do
     case check_processing_allowed(state) do
       {:ok, updated_state} ->
         {:reply, {:ok, :allowed}, updated_state}
-        
+
       {:error, reason} ->
-        Logger.debug("File processing denied", 
+        Logger.debug("File processing denied",
           file_path: file_path,
           reason: reason
         )
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -158,54 +160,54 @@ defmodule Singularity.HTDAG.LoadBalancer do
       current_concurrency: state.current_concurrency,
       max_concurrency: state.max_concurrency,
       paused_reason: state.paused_reason,
-      load_history: Enum.take(state.load_history, 10) # Last 10 measurements
+      # Last 10 measurements
+      load_history: Enum.take(state.load_history, 10)
     }
-    
+
     {:reply, status, state}
   end
 
   @impl true
   def handle_cast({:file_processed, _file_path}, state) do
     # Consume a rate limit token
-    updated_state = %{state | 
-      rate_limit_tokens: max(0, state.rate_limit_tokens - 1),
-      current_concurrency: max(0, state.current_concurrency - 1)
+    updated_state = %{
+      state
+      | rate_limit_tokens: max(0, state.rate_limit_tokens - 1),
+        current_concurrency: max(0, state.current_concurrency - 1)
     }
-    
+
     {:noreply, updated_state}
   end
 
   @impl true
   def handle_cast({:pause, reason}, state) do
     Logger.info("HTDAG Load Balancer paused", reason: reason)
-    
-    updated_state = %{state | 
-      paused_reason: reason,
-      cooldown_until: System.monotonic_time(:millisecond) + @cooldown_period_ms
+
+    updated_state = %{
+      state
+      | paused_reason: reason,
+        cooldown_until: System.monotonic_time(:millisecond) + @cooldown_period_ms
     }
-    
+
     {:noreply, updated_state}
   end
 
   @impl true
   def handle_cast(:resume, state) do
     Logger.info("HTDAG Load Balancer resumed")
-    
-    updated_state = %{state | 
-      paused_reason: nil,
-      cooldown_until: nil
-    }
-    
+
+    updated_state = %{state | paused_reason: nil, cooldown_until: nil}
+
     {:noreply, updated_state}
   end
 
   @impl true
   def handle_info(:check_system_load, state) do
     updated_state = check_and_update_system_load(state)
-    
+
     # Schedule next check
     Process.send_after(self(), :check_system_load, @check_interval_ms)
-    
+
     {:noreply, updated_state}
   end
 
@@ -244,14 +246,11 @@ defmodule Singularity.HTDAG.LoadBalancer do
     # Refill tokens if needed
     now = System.monotonic_time(:millisecond)
     time_since_refill = now - state.last_token_refill
-    
+
     if time_since_refill >= @rate_limit_window_ms do
       # Refill tokens
-      updated_state = %{state | 
-        rate_limit_tokens: @rate_limit_per_minute,
-        last_token_refill: now
-      }
-      
+      updated_state = %{state | rate_limit_tokens: @rate_limit_per_minute, last_token_refill: now}
+
       if updated_state.rate_limit_tokens > 0 do
         {:ok, updated_state}
       else
@@ -287,33 +286,36 @@ defmodule Singularity.HTDAG.LoadBalancer do
       # Get system metrics
       cpu_usage = get_cpu_usage()
       memory_usage = get_memory_usage()
-      
+
       # Update load history
       load_measurement = %{
         timestamp: System.monotonic_time(:millisecond),
         cpu_usage: cpu_usage,
         memory_usage: memory_usage
       }
-      
+
       updated_load_history = [load_measurement | state.load_history] |> Enum.take(100)
-      
+
       # Determine system load state
       system_load_state = determine_load_state(cpu_usage, memory_usage)
-      
+
       # Update concurrency if adaptive scaling is enabled
-      updated_concurrency = if @adaptive_scaling do
-        calculate_adaptive_concurrency(system_load_state, state.max_concurrency)
-      else
-        state.max_concurrency
-      end
-      
+      updated_concurrency =
+        if @adaptive_scaling do
+          calculate_adaptive_concurrency(system_load_state, state.max_concurrency)
+        else
+          state.max_concurrency
+        end
+
       # Handle state transitions
-      updated_state = handle_load_state_transition(state, system_load_state, cpu_usage, memory_usage)
-      
-      %{updated_state | 
-        system_load_state: system_load_state,
-        load_history: updated_load_history,
-        max_concurrency: updated_concurrency
+      updated_state =
+        handle_load_state_transition(state, system_load_state, cpu_usage, memory_usage)
+
+      %{
+        updated_state
+        | system_load_state: system_load_state,
+          load_history: updated_load_history,
+          max_concurrency: updated_concurrency
       }
     else
       state
@@ -334,7 +336,7 @@ defmodule Singularity.HTDAG.LoadBalancer do
           |> Kernel./(100.0)
           |> min(1.0)
           |> max(0.0)
-          
+
         _ ->
           # Fallback to random value for testing
           :rand.uniform() * 0.5
@@ -353,14 +355,15 @@ defmodule Singularity.HTDAG.LoadBalancer do
       # Use :os.cmd to get memory usage (Linux/macOS)
       case :os.cmd('top -l 1 | grep "PhysMem" | awk \'{print $2}\' | sed \'s/M used,//\'') do
         result when is_binary(result) ->
-          used_mb = result
-          |> String.trim()
-          |> String.to_integer()
-          
+          used_mb =
+            result
+            |> String.trim()
+            |> String.to_integer()
+
           # Assume 8GB total memory (simplified)
           total_mb = 8192
           (used_mb / total_mb) |> min(1.0) |> max(0.0)
-          
+
         _ ->
           # Fallback to random value for testing
           :rand.uniform() * 0.6
@@ -391,34 +394,35 @@ defmodule Singularity.HTDAG.LoadBalancer do
   defp handle_load_state_transition(state, new_state, cpu_usage, memory_usage) do
     case {state.system_load_state, new_state} do
       {:normal, :high_cpu} ->
-        Logger.warning("High CPU usage detected, pausing processing", 
+        Logger.warning("High CPU usage detected, pausing processing",
           cpu_usage: cpu_usage,
           threshold: @cpu_threshold
         )
+
         pause(:high_cpu)
         state
-        
+
       {:normal, :high_memory} ->
-        Logger.warning("High memory usage detected, pausing processing", 
+        Logger.warning("High memory usage detected, pausing processing",
           memory_usage: memory_usage,
           threshold: @memory_threshold
         )
+
         pause(:high_memory)
         state
-        
+
       {:high_cpu, :normal} ->
         Logger.info("CPU usage normalized, resuming processing")
         resume()
         state
-        
+
       {:high_memory, :normal} ->
         Logger.info("Memory usage normalized, resuming processing")
         resume()
         state
-        
+
       _ ->
         state
     end
   end
-
 end

@@ -106,7 +106,7 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
   """
   def execute(opts \\ []) do
     Logger.info("DeduplicationWorkflow: Starting comprehensive deduplication workflow")
-    
+
     try do
       codebase_path = Keyword.get(opts, :codebase_path, ".")
       threshold = Keyword.get(opts, :consolidation_threshold, 0.85)
@@ -119,20 +119,22 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
       code_results = analyze_code_duplicates(codebase_path, threshold, dry_run)
 
       # Step 2: Pattern consolidation
-      pattern_results = if include_patterns do
-        Logger.info("DeduplicationWorkflow: Analyzing pattern duplicates...")
-        analyze_pattern_duplicates(threshold, dry_run)
-      else
-        %{consolidated: 0, duplicates_found: 0}
-      end
+      pattern_results =
+        if include_patterns do
+          Logger.info("DeduplicationWorkflow: Analyzing pattern duplicates...")
+          analyze_pattern_duplicates(threshold, dry_run)
+        else
+          %{consolidated: 0, duplicates_found: 0}
+        end
 
       # Step 3: Service consolidation
-      service_results = if include_services do
-        Logger.info("DeduplicationWorkflow: Analyzing service duplicates...")
-        analyze_service_duplicates(dry_run)
-      else
-        %{consolidated: 0, duplicates_found: 0}
-      end
+      service_results =
+        if include_services do
+          Logger.info("DeduplicationWorkflow: Analyzing service duplicates...")
+          analyze_service_duplicates(dry_run)
+        else
+          %{consolidated: 0, duplicates_found: 0}
+        end
 
       # Step 4: Generate comprehensive report
       results = %{
@@ -144,14 +146,14 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
         code_deduplication: code_results,
         pattern_consolidation: pattern_results,
         service_consolidation: service_results,
-        total_duplicates_found: 
+        total_duplicates_found:
           Map.get(code_results, :duplicates_found, 0) +
-          Map.get(pattern_results, :duplicates_found, 0) +
-          Map.get(service_results, :duplicates_found, 0),
+            Map.get(pattern_results, :duplicates_found, 0) +
+            Map.get(service_results, :duplicates_found, 0),
         total_consolidated:
           Map.get(code_results, :consolidated, 0) +
-          Map.get(pattern_results, :consolidated, 0) +
-          Map.get(service_results, :consolidated, 0)
+            Map.get(pattern_results, :consolidated, 0) +
+            Map.get(service_results, :consolidated, 0)
       }
 
       Logger.info("DeduplicationWorkflow: Workflow completed successfully")
@@ -169,11 +171,13 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
       case CodeDeduplicator.find_similar(codebase_path, threshold: threshold) do
         {:ok, duplicates} ->
           consolidated = if dry_run, do: 0, else: consolidate_code_duplicates(duplicates)
+
           %{
             duplicates_found: length(duplicates),
             consolidated: consolidated,
             duplicates: duplicates
           }
+
         {:error, reason} ->
           Logger.warning("Code deduplication failed: #{inspect(reason)}")
           %{duplicates_found: 0, consolidated: 0, error: reason}
@@ -191,11 +195,13 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
       case PatternConsolidator.deduplicate_similar(threshold: threshold) do
         {:ok, results} ->
           consolidated = if dry_run, do: 0, else: Map.get(results, :consolidated_count, 0)
+
           %{
             duplicates_found: Map.get(results, :duplicates_found, 0),
             consolidated: consolidated,
             consolidation_ratio: Map.get(results, :consolidation_ratio, 0.0)
           }
+
         {:error, reason} ->
           Logger.warning("Pattern consolidation failed: #{inspect(reason)}")
           %{duplicates_found: 0, consolidated: 0, error: reason}
@@ -213,11 +219,13 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
       case ConsolidationEngine.identify_duplicate_services() do
         {:ok, results} ->
           consolidated = if dry_run, do: 0, else: Map.get(results, :estimated_reduction, 0)
+
           %{
             duplicates_found: Map.get(results, :total_services, 0),
             consolidated: consolidated,
             duplicate_groups: Map.get(results, :duplicate_groups, [])
           }
+
         {:error, reason} ->
           Logger.warning("Service consolidation failed: #{inspect(reason)}")
           %{duplicates_found: 0, consolidated: 0, error: reason}

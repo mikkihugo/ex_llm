@@ -133,6 +133,7 @@ defmodule Singularity.Architecture.PatternStore do
   require Logger
   alias Singularity.{Repo, EmbeddingGenerator}
   alias Singularity.Shared.SemanticSearch
+  alias Singularity.Knowledge.Requests, as: KnowledgeRequests
 
   @type pattern_type :: :framework | :technology
   @type result :: {:ok, map()} | {:error, atom()}
@@ -246,11 +247,12 @@ defmodule Singularity.Architecture.PatternStore do
       usage_count = COALESCE(usage_count, 0) + 1,
       updated_at = NOW()
     WHERE #{name_col} = $1
-    RETURNING confidence
+    RETURNING confidence, usage_count
     """
 
     case Repo.query(query, [name, success_value]) do
-      {:ok, %{rows: [[confidence | _] | _]}} ->
+      {:ok, %{rows: [[confidence, usage_count]]}} ->
+        maybe_enqueue_false_positive(pattern_type, name, success?, confidence, usage_count)
         {:ok, confidence}
 
       {:ok, %{rows: []}} ->
@@ -291,6 +293,7 @@ defmodule Singularity.Architecture.PatternStore do
 
         if Enum.any?(unknown) do
           Logger.info("Discovered #{length(unknown)} potential new #{pattern_type} patterns")
+          enqueue_pattern_requests(pattern_type, repo_path, unknown)
           {:ok, unknown}
         else
           {:ok, []}
@@ -299,6 +302,145 @@ defmodule Singularity.Architecture.PatternStore do
       {:error, reason} ->
         Logger.error("Failed to discover patterns", reason: inspect(reason))
         {:error, :discovery_failed}
+    end
+  end
+
+  defp enqueue_pattern_requests(pattern_type, repo_path, patterns) do
+    Enum.each(patterns, fn
+      %{extension: nil} ->
+        :ok
+
+      %{extension: extension, file_count: count} ->
+        external_key = "pattern:#{pattern_type}:#{extension}"
+
+        payload = %{
+          "pattern_type" => Atom.to_string(pattern_type),
+          "extension" => extension,
+          "file_count" => count,
+          "repo_path" => repo_path,
+          "ecosystem" => infer_ecosystem(pattern_type, extension)
+        }
+
+        case KnowledgeRequests.enqueue(%{
+               request_type: :pattern,
+               external_key: external_key,
+               payload: payload,
+               source: "Singularity.Architecture.PatternStore",
+               source_reference: repo_path,
+               metadata: %{"pattern_type" => Atom.to_string(pattern_type)}
+             }) do
+          {:ok, _request} ->
+            :ok
+
+          {:error, changeset} ->
+            Logger.error("Failed to enqueue knowledge request for pattern",
+              external_key: external_key,
+              errors: changeset.errors
+            )
+        end
+    end)
+  end
+
+  defp maybe_enqueue_false_positive(_pattern_type, _name, true, _confidence, _usage_count), do: :ok
+
+  defp maybe_enqueue_false_positive(pattern_type, name, false, confidence, usage_count) do
+    threshold =
+      Application.get_env(:singularity, :pattern_store, %{})[:false_positive_threshold] || 0.35
+
+    min_failures =
+      Application.get_env(:singularity, :pattern_store, %{})[:false_positive_min_failures] || 3
+
+    if confidence < threshold and usage_count >= min_failures do
+      external_key = "anti_pattern:" <> Atom.to_string(pattern_type) <> ":" <> slugify_name(name)
+
+      payload = %{
+        "pattern_type" => Atom.to_string(pattern_type),
+        "pattern_name" => name,
+        "confidence" => confidence,
+        "usage_count" => usage_count,
+        "trigger" => "low_confidence"
+      }
+
+      attrs = %{
+        request_type: :anti_pattern,
+        external_key: external_key,
+        payload: payload,
+        source: Atom.to_string(__MODULE__),
+        source_reference: name,
+        metadata: %{
+          "pattern_type" => Atom.to_string(pattern_type),
+          "confidence" => confidence,
+          "usage_count" => usage_count,
+          "reason" => "low_confidence"
+        }
+      }
+
+      case KnowledgeRequests.enqueue(attrs) do
+        {:ok, _req} ->
+          Logger.warning("Enqueued anti-pattern review",
+            pattern_type: pattern_type,
+            pattern_name: name,
+            confidence: confidence,
+            usage_count: usage_count
+          )
+
+        {:error, changeset} ->
+          Logger.error("Failed to enqueue anti-pattern request",
+            pattern_type: pattern_type,
+            pattern_name: name,
+            errors: changeset.errors
+          )
+      end
+    end
+  end
+
+  defp maybe_enqueue_false_positive(_pattern_type, _name, _success, _confidence, _usage_count), do: :ok
+
+  defp slugify_name(nil), do: "unknown"
+
+  defp slugify_name(name) when is_binary(name) do
+    name
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/, "_")
+    |> String.trim("_")
+  end
+
+  defp infer_ecosystem(:technology, extension), do: infer_language(extension)
+  defp infer_ecosystem(:framework, extension), do: infer_language(extension)
+
+  defp infer_language(nil), do: nil
+
+  defp infer_language(extension) do
+    case String.trim_leading(extension, ".") |> String.downcase() do
+      "ex" -> "elixir"
+      "exs" -> "elixir"
+      "py" -> "python"
+      "rb" -> "ruby"
+      "ts" -> "typescript"
+      "tsx" -> "typescript"
+      "js" -> "javascript"
+      "jsx" -> "javascript"
+      "rs" -> "rust"
+      "go" -> "go"
+      "java" -> "java"
+      "kt" -> "kotlin"
+      "cs" -> "csharp"
+      "c" -> "c"
+      "h" -> "c"
+      "hpp" -> "cpp"
+      "hh" -> "cpp"
+      "cc" -> "cpp"
+      "cpp" -> "cpp"
+      "cxx" -> "cpp"
+      "m" -> "objective-c"
+      "swift" -> "swift"
+      "php" -> "php"
+      "scala" -> "scala"
+      "hs" -> "haskell"
+      "lua" -> "lua"
+      "groovy" -> "groovy"
+      "dart" -> "dart"
+      _ -> nil
     end
   end
 

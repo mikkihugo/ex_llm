@@ -131,7 +131,11 @@ impl PromptBitDSPyOptimizer {
 
         // Variant 3: More actionable
         let actionable = self.make_actionable(&task.original_content);
-        variants.push(self.create_variant(3, &actionable, "Made more actionable with explicit steps"));
+        variants.push(self.create_variant(
+            3,
+            &actionable,
+            "Made more actionable with explicit steps",
+        ));
 
         // Variant 4: DSPy-generated based on training examples
         if !task.training_examples.is_empty() {

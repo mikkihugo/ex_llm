@@ -209,7 +209,8 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
     # Handle worker crash
     case find_worker_by_pid(state.active_workers, pid) do
       {worker_id, worker} ->
-        SASL.execution_failure(:worker_process_crash,
+        SASL.execution_failure(
+          :worker_process_crash,
           "Worker process crashed during task execution",
           worker_id: worker_id,
           todo_id: worker.todo_id,
@@ -318,7 +319,8 @@ defmodule Singularity.Execution.TaskGraph.WorkerPool do
         {worker_id, worker_info}
 
       {:error, reason} ->
-        SASL.execution_failure(:worker_spawn_failure,
+        SASL.execution_failure(
+          :worker_spawn_failure,
           "Failed to spawn worker process for task",
           todo_id: todo.id,
           reason: reason

@@ -2,8 +2,8 @@
 //!
 //! Detects dependencies, analyzes dependency health, and identifies issues.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Dependency analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -258,7 +258,10 @@ pub struct DependencyMetadata {
 /// Dependency detector trait
 pub trait DependencyDetectorTrait {
     fn detect_dependencies(&self, content: &str, file_path: &str) -> Result<Vec<Dependency>>;
-    fn detect_circular_dependencies(&self, dependencies: &[Dependency]) -> Result<Vec<CircularDependency>>;
+    fn detect_circular_dependencies(
+        &self,
+        dependencies: &[Dependency],
+    ) -> Result<Vec<CircularDependency>>;
     fn build_dependency_graph(&self, dependencies: &[Dependency]) -> Result<DependencyGraph>;
     fn get_name(&self) -> &str;
     fn get_version(&self) -> &str;
@@ -296,20 +299,20 @@ impl DependencyPatternRegistry {
             license_database: LicenseDatabase::new(),
         }
     }
-    
+
     /// Initialize with fact-system integration
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
         /*
         // Load dependency patterns from fact-system
         let patterns = self.fact_system_client.get_dependency_patterns().await?;
-        
+
         // Load vulnerability data
         self.vulnerability_database.load_vulnerabilities().await?;
-        
+
         // Load license data
         self.license_database.load_licenses().await?;
-        
+
         // Register built-in detectors
         self.register_detector(Box::new(NPMDependencyDetector::new()));
         self.register_detector(Box::new(PyPIDependencyDetector::new()));
@@ -317,15 +320,15 @@ impl DependencyPatternRegistry {
         self.register_detector(Box::new(CargoDependencyDetector::new()));
         self.register_detector(Box::new(HexDependencyDetector::new()));
         */
-        
+
         Ok(())
     }
-    
+
     /// Register a custom dependency detector
     pub fn register_detector(&mut self, detector: Box<dyn DependencyDetectorTrait>) {
         self.detectors.push(detector);
     }
-    
+
     /// Analyze dependencies
     pub async fn analyze(&self, content: &str, file_path: &str) -> Result<DependencyAnalysis> {
         // PSEUDO CODE:
@@ -333,30 +336,30 @@ impl DependencyPatternRegistry {
         let mut all_dependencies = Vec::new();
         let mut all_circular_dependencies = Vec::new();
         let mut dependency_graph = DependencyGraph::default();
-        
+
         // Detect dependencies using all detectors
         for detector in &self.detectors {
             let dependencies = detector.detect_dependencies(content, file_path)?;
             all_dependencies.extend(dependencies);
         }
-        
+
         // Detect circular dependencies
         for detector in &self.detectors {
             let circular_deps = detector.detect_circular_dependencies(&all_dependencies)?;
             all_circular_dependencies.extend(circular_deps);
         }
-        
+
         // Build dependency graph
         if let Some(detector) = self.detectors.first() {
             dependency_graph = detector.build_dependency_graph(&all_dependencies)?;
         }
-        
+
         // Analyze dependency health
         let health_metrics = self.analyze_dependency_health(&all_dependencies).await?;
-        
+
         // Generate recommendations
         let recommendations = self.generate_recommendations(&all_dependencies, &all_circular_dependencies, &health_metrics);
-        
+
         Ok(DependencyAnalysis {
             dependencies: all_dependencies,
             circular_dependencies: all_circular_dependencies,
@@ -373,7 +376,7 @@ impl DependencyPatternRegistry {
             },
         })
         */
-        
+
         Ok(DependencyAnalysis {
             dependencies: Vec::new(),
             circular_dependencies: Vec::new(),
@@ -417,44 +420,47 @@ impl DependencyPatternRegistry {
             },
         })
     }
-    
+
     /// Analyze dependency health
-    async fn analyze_dependency_health(&self, dependencies: &[Dependency]) -> Result<DependencyHealthMetrics> {
+    async fn analyze_dependency_health(
+        &self,
+        dependencies: &[Dependency],
+    ) -> Result<DependencyHealthMetrics> {
         // PSEUDO CODE:
         /*
         let mut vulnerable_count = 0;
         let mut outdated_count = 0;
         let mut deprecated_count = 0;
         let mut unmaintained_count = 0;
-        
+
         for dependency in dependencies {
             // Check vulnerabilities
             if !dependency.vulnerabilities.is_empty() {
                 vulnerable_count += 1;
             }
-            
+
             // Check if outdated
             if self.is_dependency_outdated(dependency).await? {
                 outdated_count += 1;
             }
-            
+
             // Check if deprecated
             if self.is_dependency_deprecated(dependency).await? {
                 deprecated_count += 1;
             }
-            
+
             // Check if unmaintained
             if self.is_dependency_unmaintained(dependency).await? {
                 unmaintained_count += 1;
             }
         }
-        
+
         let total = dependencies.len();
         let health_score = self.calculate_health_score(vulnerable_count, outdated_count, deprecated_count, unmaintained_count, total);
         let security_score = self.calculate_security_score(vulnerable_count, total);
         let freshness_score = self.calculate_freshness_score(outdated_count, total);
         let license_compliance_score = self.calculate_license_compliance_score(dependencies);
-        
+
         Ok(DependencyHealthMetrics {
             total_dependencies: total,
             vulnerable_dependencies: vulnerable_count,
@@ -467,7 +473,7 @@ impl DependencyPatternRegistry {
             license_compliance_score,
         })
         */
-        
+
         Ok(DependencyHealthMetrics {
             total_dependencies: 0,
             vulnerable_dependencies: 0,
@@ -480,7 +486,7 @@ impl DependencyPatternRegistry {
             license_compliance_score: 1.0,
         })
     }
-    
+
     /// Generate recommendations
     fn generate_recommendations(
         &self,
@@ -491,7 +497,7 @@ impl DependencyPatternRegistry {
         // PSEUDO CODE:
         /*
         let mut recommendations = Vec::new();
-        
+
         // Generate security recommendations
         for dependency in dependencies {
             if !dependency.vulnerabilities.is_empty() {
@@ -506,7 +512,7 @@ impl DependencyPatternRegistry {
                 });
             }
         }
-        
+
         // Generate circular dependency recommendations
         for circular_dep in circular_deps {
             recommendations.push(DependencyRecommendation {
@@ -519,7 +525,7 @@ impl DependencyPatternRegistry {
                 effort_required: EffortEstimate::Medium,
             });
         }
-        
+
         // Generate freshness recommendations
         if health_metrics.freshness_score < 0.7 {
             recommendations.push(DependencyRecommendation {
@@ -532,10 +538,10 @@ impl DependencyPatternRegistry {
                 effort_required: EffortEstimate::Medium,
             });
         }
-        
+
         return recommendations;
         */
-        
+
         Vec::new()
     }
 }
@@ -544,28 +550,28 @@ impl FactSystemClient {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     pub fn get_version(&self) -> String {
         "1.0.0".to_string()
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn get_dependency_patterns(&self) -> Result<Vec<DependencyPatternDefinition>> {
         // Query fact-system for dependency patterns
         // Return patterns for different package managers
     }
-    
+
     pub async fn get_vulnerability_data(&self, package_name: &str) -> Result<Vec<DependencyVulnerability>> {
         // Query fact-system for vulnerability data
         // Return known vulnerabilities for package
     }
-    
+
     pub async fn get_license_data(&self, package_name: &str) -> Result<LicenseInfo> {
         // Query fact-system for license information
         // Return license details and compliance info
     }
-    
+
     pub async fn get_dependency_health(&self, package_name: &str) -> Result<DependencyHealthStatus> {
         // Query fact-system for dependency health
         // Return maintenance status and health metrics
@@ -577,13 +583,13 @@ impl VulnerabilityDatabase {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: Integration with vulnerability databases
     /*
     pub async fn load_vulnerabilities(&mut self) -> Result<()> {
         // Load vulnerability data from NVD, Snyk, etc.
     }
-    
+
     pub async fn check_vulnerabilities(&self, package_name: &str, version: &str) -> Result<Vec<DependencyVulnerability>> {
         // Check for vulnerabilities in specific package version
     }
@@ -594,13 +600,13 @@ impl LicenseDatabase {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: Integration with license databases
     /*
     pub async fn load_licenses(&mut self) -> Result<()> {
         // Load license data from SPDX, etc.
     }
-    
+
     pub async fn check_license(&self, package_name: &str) -> Result<LicenseInfo> {
         // Check license information for package
     }

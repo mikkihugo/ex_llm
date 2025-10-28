@@ -108,12 +108,14 @@ defmodule Singularity.Workflows.KnowledgeMigration do
           path: full_path,
           exists: true
         )
+
         {:ok, state}
 
       false ->
         Logger.error("KnowledgeMigration workflow: Path does not exist",
           path: full_path
         )
+
         {:error, {:invalid_path, full_path}}
     end
   end
@@ -154,6 +156,7 @@ defmodule Singularity.Workflows.KnowledgeMigration do
         count: length(artifact_ids),
         skip_embedding: skip_embedding
       )
+
       {:ok, Map.put(state, :embedding_jobs_started, 0)}
     else
       Logger.info("KnowledgeMigration workflow: Starting embedding generation",
@@ -205,5 +208,4 @@ defmodule Singularity.Workflows.KnowledgeMigration do
 
     {:ok, summary}
   end
-
 end

@@ -2,8 +2,8 @@
 //!
 //! PSEUDO CODE: Comprehensive test coverage tracking and reporting.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Test coverage analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -258,13 +258,13 @@ pub struct CoverageThresholds {
 impl Default for CoverageThresholds {
     fn default() -> Self {
         Self {
-            overall_minimum: 0.8,      // 80% overall coverage
-            line_minimum: 0.8,         // 80% line coverage
-            branch_minimum: 0.7,       // 70% branch coverage
-            function_minimum: 0.9,     // 90% function coverage
+            overall_minimum: 0.8,           // 80% overall coverage
+            line_minimum: 0.8,              // 80% line coverage
+            branch_minimum: 0.7,            // 70% branch coverage
+            function_minimum: 0.9,          // 90% function coverage
             critical_modules_minimum: 0.95, // 95% for critical modules
-            warning_threshold: 0.7,    // 70% warning threshold
-            critical_threshold: 0.5,   // 50% critical threshold
+            warning_threshold: 0.7,         // 70% warning threshold
+            critical_threshold: 0.5,        // 50% critical threshold
         }
     }
 }
@@ -277,23 +277,23 @@ impl CoverageAnalyzer {
             coverage_thresholds: CoverageThresholds::default(),
         }
     }
-    
+
     /// Initialize with fact-system integration
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
         /*
         // Load coverage patterns from fact-system
         let patterns = self.fact_system_interface.load_coverage_patterns().await?;
-        
+
         // Initialize coverage collectors
         self.coverage_collectors.push(Box::new(LineCoverageCollector::new()));
         self.coverage_collectors.push(Box::new(BranchCoverageCollector::new()));
         self.coverage_collectors.push(Box::new(FunctionCoverageCollector::new()));
         */
-        
+
         Ok(())
     }
-    
+
     /// Analyze test coverage
     pub async fn analyze(&self, test_results: &TestResults) -> Result<CoverageAnalysis> {
         // PSEUDO CODE:
@@ -304,31 +304,31 @@ impl CoverageAnalyzer {
             let coverage_data = collector.collect_coverage(test_results)?;
             all_coverage_data.push(coverage_data);
         }
-        
+
         // Merge coverage data
         let merged_coverage = self.merge_coverage_data(&all_coverage_data);
-        
+
         // Calculate module coverage
         let module_coverage = self.calculate_module_coverage(&merged_coverage);
-        
+
         // Calculate function coverage
         let function_coverage = self.calculate_function_coverage(&merged_coverage);
-        
+
         // Calculate line coverage
         let line_coverage = self.calculate_line_coverage(&merged_coverage);
-        
+
         // Calculate branch coverage
         let branch_coverage = self.calculate_branch_coverage(&merged_coverage);
-        
+
         // Calculate overall coverage
         let overall_coverage = self.calculate_overall_coverage(&module_coverage);
-        
+
         // Calculate coverage trends
         let coverage_trends = self.calculate_coverage_trends().await?;
-        
+
         // Generate recommendations
         let recommendations = self.generate_recommendations(&module_coverage, &function_coverage, &branch_coverage);
-        
+
         Ok(CoverageAnalysis {
             overall_coverage,
             module_coverage,
@@ -350,7 +350,7 @@ impl CoverageAnalyzer {
             },
         })
         */
-        
+
         Ok(CoverageAnalysis {
             overall_coverage: 0.0,
             module_coverage: Vec::new(),
@@ -378,7 +378,7 @@ impl CoverageAnalyzer {
             },
         })
     }
-    
+
     /// Generate coverage report
     pub async fn generate_report(&self, analysis: &CoverageAnalysis) -> Result<CoverageReport> {
         // PSEUDO CODE:
@@ -404,10 +404,10 @@ impl CoverageAnalyzer {
             recommendations: analysis.recommendations.clone(),
             metadata: analysis.metadata.clone(),
         };
-        
+
         Ok(report)
         */
-        
+
         Ok(CoverageReport {
             summary: CoverageSummary {
                 overall_coverage: 0.0,
@@ -480,22 +480,22 @@ impl FactSystemInterface {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn load_coverage_patterns(&self) -> Result<Vec<CoveragePattern>> {
         // Query fact-system for coverage patterns
         // Return patterns for coverage analysis, etc.
     }
-    
+
     pub async fn get_coverage_best_practices(&self, coverage_type: &str) -> Result<Vec<String>> {
         // Query fact-system for best practices for specific coverage types
     }
-    
+
     pub async fn get_coverage_thresholds(&self, project_type: &str) -> Result<CoverageThresholds> {
         // Query fact-system for project-specific coverage thresholds
     }
-    
+
     pub async fn get_coverage_guidelines(&self, context: &str) -> Result<Vec<String>> {
         // Query fact-system for coverage guidelines
     }

@@ -289,11 +289,7 @@ impl GitHubAdvisoryCollector {
         return Ok(vec![]);
       }
 
-      anyhow::bail!(
-        "GitHub GraphQL API error: {} - {}",
-        status,
-        body
-      );
+      anyhow::bail!("GitHub GraphQL API error: {} - {}", status, body);
     }
 
     let advisory_response = response
@@ -340,11 +336,8 @@ impl GitHubAdvisoryCollector {
       .collect();
 
     // Extract reference URLs
-    let references: Vec<String> = advisory
-      .references
-      .into_iter()
-      .map(|r| r.url)
-      .collect();
+    let references: Vec<String> =
+      advisory.references.into_iter().map(|r| r.url).collect();
 
     // Parse vulnerable and patched versions
     let affected_versions = vec![vuln.vulnerable_version_range.clone()];
@@ -357,7 +350,8 @@ impl GitHubAdvisoryCollector {
     let cvss_score = advisory.cvss.map(|cvss| cvss.score);
 
     // Determine vulnerability type based on ecosystem
-    let vuln_type = format!("github-{}", ecosystem.as_graphql_value().to_lowercase());
+    let vuln_type =
+      format!("github-{}", ecosystem.as_graphql_value().to_lowercase());
 
     SecurityVulnerability {
       id,
@@ -431,10 +425,7 @@ mod tests {
 
     // Test with a package that likely has no vulnerabilities
     let advisories = collector
-      .collect_advisories(
-        GitHubEcosystem::Npm,
-        "nonexistent-package-xyz-12345",
-      )
+      .collect_advisories(GitHubEcosystem::Npm, "nonexistent-package-xyz-12345")
       .await
       .expect("Failed to collect advisories");
 

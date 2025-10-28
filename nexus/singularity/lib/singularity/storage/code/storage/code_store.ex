@@ -2287,6 +2287,7 @@ defmodule Singularity.CodeStore do
   defp extract_elixir_functions(content) do
     # Simple regex to extract function definitions
     regex = ~r/def\s+\w+.*?(?=^\s*(def|@|defmodule|end)\s|\z)/ms
+
     Regex.scan(regex, content)
     |> Enum.map(&List.first/1)
     |> Enum.map(&String.trim/1)

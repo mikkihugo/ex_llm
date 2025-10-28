@@ -39,7 +39,8 @@ defmodule Singularity.Knowledge.Supervisor do
     children = [
       Singularity.Knowledge.TemplateService,
       Singularity.Quality.TemplateTracker,
-      Singularity.CodeStore
+      Singularity.CodeStore,
+      Singularity.Knowledge.RequestListener
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

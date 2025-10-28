@@ -166,7 +166,10 @@ impl RustSecAdvisoryCollector {
       request = request.bearer_auth(token);
     }
 
-    let response = request.send().await.context("Failed to fetch RustSec directory")?;
+    let response = request
+      .send()
+      .await
+      .context("Failed to fetch RustSec directory")?;
 
     if !response.status().is_success() {
       // If 404, crate has no advisories
@@ -177,11 +180,7 @@ impl RustSecAdvisoryCollector {
 
       let status = response.status();
       let body = response.text().await.unwrap_or_default();
-      anyhow::bail!(
-        "GitHub API error for RustSec: {} - {}",
-        status,
-        body
-      );
+      anyhow::bail!("GitHub API error for RustSec: {} - {}", status, body);
     }
 
     // Parse directory listing
@@ -256,9 +255,15 @@ impl RustSecAdvisoryCollector {
       .and_then(|cvss_str| self.parse_cvss_score(cvss_str));
 
     // Determine severity based on categories
-    let severity = if metadata.categories.contains(&"denial-of-service".to_string()) {
+    let severity = if metadata
+      .categories
+      .contains(&"denial-of-service".to_string())
+    {
       "MODERATE"
-    } else if metadata.categories.contains(&"memory-corruption".to_string()) {
+    } else if metadata
+      .categories
+      .contains(&"memory-corruption".to_string())
+    {
       "HIGH"
     } else if metadata.categories.contains(&"code-execution".to_string()) {
       "CRITICAL"
@@ -267,14 +272,15 @@ impl RustSecAdvisoryCollector {
     };
 
     // Extract affected and patched versions
-    let (affected_versions, patched_versions) = if let Some(versions) = advisory.versions {
-      (
-        vec!["*".to_string()], // RustSec doesn't specify exact affected ranges in simple format
-        versions.patched,
-      )
-    } else {
-      (vec![], vec![])
-    };
+    let (affected_versions, patched_versions) =
+      if let Some(versions) = advisory.versions {
+        (
+          vec!["*".to_string()], // RustSec doesn't specify exact affected ranges in simple format
+          versions.patched,
+        )
+      } else {
+        (vec![], vec![])
+      };
 
     // Build references
     let mut references = Vec::new();
@@ -285,10 +291,7 @@ impl RustSecAdvisoryCollector {
       if alias.starts_with("CVE-") {
         references.push(format!("https://nvd.nist.gov/vuln/detail/{}", alias));
       } else if alias.starts_with("GHSA-") {
-        references.push(format!(
-          "https://github.com/advisories/{}",
-          alias
-        ));
+        references.push(format!("https://github.com/advisories/{}", alias));
       }
     }
 
@@ -400,7 +403,8 @@ mod tests {
 
     // Test CVSS vector (not implemented yet)
     assert_eq!(
-      collector.parse_cvss_score("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
+      collector
+        .parse_cvss_score("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
       None
     );
   }

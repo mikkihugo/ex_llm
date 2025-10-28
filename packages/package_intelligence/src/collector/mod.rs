@@ -6,7 +6,7 @@
 //! 3. Registry Metadata - README + API metadata
 //! 4. LLM Generated - AI-generated examples (last resort)
 
-use crate::storage::{PackageMetadata, CodeSnippet};
+use crate::storage::{CodeSnippet, PackageMetadata};
 use anyhow::Result;
 
 #[cfg(feature = "cargo-collector")]
@@ -40,7 +40,11 @@ pub trait PackageCollector: Send + Sync {
   ///
   /// # Returns
   /// Complete PackageMetadata with source code analysis
-  async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata>;
+  async fn collect(
+    &self,
+    package: &str,
+    version: &str,
+  ) -> Result<PackageMetadata>;
 
   /// Check if package exists in registry
   async fn exists(&self, package: &str, version: &str) -> Result<bool>;

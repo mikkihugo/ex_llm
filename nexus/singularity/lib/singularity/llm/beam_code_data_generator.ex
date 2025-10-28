@@ -182,9 +182,12 @@ defmodule Singularity.LLM.BeamCodeDataGenerator do
 
       # Extract function/macro definitions
       patterns = [
-        ~r/def\s+\w+[^d]*?(?:do\n|do$)/m,  # def functions
-        ~r/defp\s+\w+[^d]*?(?:do\n|do$)/m,  # defp private functions
-        ~r/defmacro\s+\w+[^d]*?(?:do\n|do$)/m  # macros
+        # def functions
+        ~r/def\s+\w+[^d]*?(?:do\n|do$)/m,
+        # defp private functions
+        ~r/defp\s+\w+[^d]*?(?:do\n|do$)/m,
+        # macros
+        ~r/defmacro\s+\w+[^d]*?(?:do\n|do$)/m
       ]
 
       functions =
@@ -244,6 +247,7 @@ defmodule Singularity.LLM.BeamCodeDataGenerator do
         else
           # Fallback: use first 50% as input, rest as target
           mid = div(String.length(snippet), 2)
+
           %{
             "input" => String.slice(snippet, 0..mid),
             "target" => String.slice(snippet, (mid + 1)..-1)
@@ -253,6 +257,7 @@ defmodule Singularity.LLM.BeamCodeDataGenerator do
       _ ->
         # No natural split, use first part as input
         mid = div(String.length(snippet), 2)
+
         %{
           "input" => String.slice(snippet, 0..mid),
           "target" => String.slice(snippet, (mid + 1)..-1)

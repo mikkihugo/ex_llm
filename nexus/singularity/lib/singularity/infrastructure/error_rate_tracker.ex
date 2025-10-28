@@ -203,14 +203,14 @@ defmodule Singularity.Infrastructure.ErrorRateTracker do
     rate_info = get_rate(operation)
 
     if rate_info.total_count >= 10 && rate_info.error_rate >= @alert_threshold do
-      SASL.critical_failure(:high_error_rate_alert,
+      SASL.critical_failure(
+        :high_error_rate_alert,
         "High error rate detected for operation",
         operation: operation,
         error_rate: Float.round(rate_info.error_rate * 100, 2),
         error_count: rate_info.error_count,
         total_count: rate_info.total_count
       )
-      
 
       # Send alert to Google Chat webhook
       send_alert(operation, rate_info)

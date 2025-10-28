@@ -20,14 +20,15 @@ defmodule Singularity.Execution.RefactorWorker do
 
     # In dry-run, return inspection summary
     if dry do
-      {:ok, %{
-        action: :analyze,
-        issue: issue[:short],
-        severity: issue[:severity],
-        path: issue[:path],
-        description: issue[:description],
-        status: :analyzed
-      }}
+      {:ok,
+       %{
+         action: :analyze,
+         issue: issue[:short],
+         severity: issue[:severity],
+         path: issue[:path],
+         description: issue[:description],
+         status: :analyzed
+       }}
     else
       # Real analyze would inspect actual files
       {:ok, %{action: :analyze, status: :analyzed, details: "File inspection complete"}}
@@ -41,13 +42,14 @@ defmodule Singularity.Execution.RefactorWorker do
     Logger.info("RefactorWorker.transform: applying patch to #{path} (dry_run=#{dry})")
 
     if dry do
-      {:ok, %{
-        action: :transform,
-        path: path,
-        issue: issue[:short],
-        status: :dry_run,
-        description: "Would apply refactoring patch"
-      }}
+      {:ok,
+       %{
+         action: :transform,
+         path: path,
+         issue: issue[:short],
+         status: :dry_run,
+         description: "Would apply refactoring patch"
+       }}
     else
       # Real transform would:
       # 1. Create a git branch
@@ -67,13 +69,14 @@ defmodule Singularity.Execution.RefactorWorker do
     Logger.info("RefactorWorker.validate: running tests for #{path} (dry_run=#{dry})")
 
     if dry do
-      {:ok, %{
-        action: :validate,
-        path: path,
-        status: :dry_run,
-        description: "Would run tests and validate",
-        tests_passed: true
-      }}
+      {:ok,
+       %{
+         action: :validate,
+         path: path,
+         status: :dry_run,
+         description: "Would run tests and validate",
+         tests_passed: true
+       }}
     else
       # Real validate would run tests
       case run_tests(path) do
@@ -91,12 +94,13 @@ defmodule Singularity.Execution.RefactorWorker do
     # - Apply the refactoring transformation
     # - Write to a branch
     # - Return details
-    {:ok, %{
-      path: path,
-      patch_applied: true,
-      status: :transformed,
-      lines_changed: 5
-    }}
+    {:ok,
+     %{
+       path: path,
+       patch_applied: true,
+       status: :transformed,
+       lines_changed: 5
+     }}
   end
 
   defp run_tests(_path) do
@@ -104,11 +108,12 @@ defmodule Singularity.Execution.RefactorWorker do
     # - Run the test suite
     # - Check for regressions
     # - Return pass/fail status
-    {:ok, %{
-      tests_run: 10,
-      tests_passed: 10,
-      status: :validated,
-      coverage_change: "+2%"
-    }}
+    {:ok,
+     %{
+       tests_run: 10,
+       tests_passed: 10,
+       status: :validated,
+       coverage_change: "+2%"
+     }}
   end
 end

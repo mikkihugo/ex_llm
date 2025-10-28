@@ -133,7 +133,7 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-      {:ex_pgflow, path: "../ex_pgflow", from_umbrella: true, env: Mix.env()},
+            {:ex_pgflow, path: "../../packages/ex_pgflow", from_umbrella: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},
@@ -149,7 +149,7 @@ defmodule Singularity.MixProject do
       # Event Processing
       # Data pipelines
       {:broadway, "~> 1.0"},
-      {:broadway_pgflow, path: "../packages/broadway_pgflow"},
+      {:broadway_pgflow, path: "../../packages/broadway_pgflow"},
       {:off_broadway_pgmq, "~> 0.2"},
       # Producer-consumer
       {:gen_stage, "~> 1.2"},

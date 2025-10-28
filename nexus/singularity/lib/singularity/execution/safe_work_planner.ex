@@ -377,13 +377,14 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   def prioritize_tasks(tasks, criteria) when is_list(tasks) do
     try do
       # Apply WSJF scoring if not already present
-      scored_tasks = Enum.map(tasks, fn task ->
-        wsjf_score = calculate_wsjf_score(task, criteria)
-        Map.put(task, :wsjf_score, wsjf_score)
-      end)
+      scored_tasks =
+        Enum.map(tasks, fn task ->
+          wsjf_score = calculate_wsjf_score(task, criteria)
+          Map.put(task, :wsjf_score, wsjf_score)
+        end)
 
       # Sort by WSJF score descending
-      prioritized = Enum.sort_by(scored_tasks, &(&1.wsjf_score), :desc)
+      prioritized = Enum.sort_by(scored_tasks, & &1.wsjf_score, :desc)
 
       {:ok, prioritized}
     rescue
@@ -739,7 +740,10 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   defp calculate_wsjf_score(task, criteria) do
     # WSJF = (Business Value + Time Criticality) / (Job Size + Risk Reduction)
     business_value = Map.get(task, :business_value, Map.get(criteria, :default_business_value, 5))
-    time_criticality = Map.get(task, :time_criticality, Map.get(criteria, :default_time_criticality, 3))
+
+    time_criticality =
+      Map.get(task, :time_criticality, Map.get(criteria, :default_time_criticality, 3))
+
     job_size = Map.get(task, :job_size, Map.get(criteria, :default_job_size, 5))
     risk_reduction = Map.get(task, :risk_reduction, Map.get(criteria, :default_risk_reduction, 2))
 
@@ -755,10 +759,11 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
   defp build_dependency_graph(tasks, include_external) do
     # Build a simple dependency graph
-    dependencies = Enum.reduce(tasks, %{}, fn task, acc ->
-      task_deps = Map.get(task, :dependencies, [])
-      Map.put(acc, task.id, task_deps)
-    end)
+    dependencies =
+      Enum.reduce(tasks, %{}, fn task, acc ->
+        task_deps = Map.get(task, :dependencies, [])
+        Map.put(acc, task.id, task_deps)
+      end)
 
     # Calculate critical path (simplified)
     critical_path = calculate_critical_path(dependencies)
@@ -787,6 +792,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
     # Check for tasks with too many dependencies
     high_dependency_tasks = Enum.filter(dependencies, fn {_, deps} -> length(deps) > 5 end)
+
     if Enum.any?(high_dependency_tasks) do
       risks = ["Tasks with high dependency count (>5)" | risks]
     end
@@ -795,6 +801,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     all_task_ids = Map.keys(dependencies)
     referenced_tasks = dependencies |> Map.values() |> List.flatten() |> Enum.uniq()
     orphaned = all_task_ids -- referenced_tasks
+
     if Enum.any?(orphaned) do
       risks = ["Orphaned tasks detected" | risks]
     end
@@ -805,7 +812,8 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   defp has_circular_dependencies?(dependencies) do
     # Simple cycle detection (not comprehensive)
     # In a real implementation, use topological sort
-    false  # Placeholder
+    # Placeholder
+    false
   end
 
   defp generate_dependency_recommendations(tasks, dependencies, critical_path) do
@@ -818,6 +826,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
     # Recommend breaking down high-dependency tasks
     high_dep_tasks = Enum.filter(dependencies, fn {_, deps} -> length(deps) > 3 end)
+
     if Enum.any?(high_dep_tasks) do
       recommendations = ["Break down tasks with many dependencies" | recommendations]
     end
@@ -1230,19 +1239,20 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     time_criticality = Map.get(criteria, :time_criticality, 1)
     risk_reduction = Map.get(criteria, :risk_reduction, 1)
     job_size = Map.get(criteria, :job_size, 1)
-    
+
     (business_value + time_criticality + risk_reduction) / job_size
   end
 
   defp build_dependency_graph(tasks, include_external) do
     dependencies = %{}
     critical_path = []
-    
+
     # Simple dependency mapping
-    task_deps = Enum.map(tasks, fn task ->
-      {task.id, Map.get(task, :depends_on, [])}
-    end)
-    
+    task_deps =
+      Enum.map(tasks, fn task ->
+        {task.id, Map.get(task, :depends_on, [])}
+      end)
+
     {Enum.into(task_deps, %{}), critical_path}
   end
 
@@ -1259,11 +1269,14 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     # Simple recommendations based on dependencies
     Enum.map(tasks, fn task ->
       deps = Map.get(dependencies, task.id, [])
-      recommendation = if length(deps) > 2 do
-        "Consider breaking down this task due to high dependency count"
-      else
-        "Task has manageable dependencies"
-      end
+
+      recommendation =
+        if length(deps) > 2 do
+          "Consider breaking down this task due to high dependency count"
+        else
+          "Task has manageable dependencies"
+        end
+
       {task.id, recommendation}
     end)
     |> Enum.into(%{})

@@ -96,11 +96,13 @@ defmodule Singularity.CodeGraph.AGEQueries do
         {:ok, %{graph: "code_graph", status: "already_exists"}}
 
       {:error, reason} ->
-        SASL.infrastructure_failure(:age_graph_initialization_failure,
+        SASL.infrastructure_failure(
+          :age_graph_initialization_failure,
           "Failed to initialize AGE graph database",
           graph_name: "code_graph",
           reason: reason
         )
+
         {:error, reason}
     end
   end
@@ -137,11 +139,13 @@ defmodule Singularity.CodeGraph.AGEQueries do
       {:ok, rows}
     rescue
       e ->
-        SASL.database_failure(:cypher_execution_failure,
+        SASL.database_failure(
+          :cypher_execution_failure,
           "Cypher query execution failed in AGE graph",
           graph_name: "code_graph",
           error: e
         )
+
         {:error, "Cypher query failed: #{Exception.message(e)}"}
     end
   end

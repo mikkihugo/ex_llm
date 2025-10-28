@@ -109,9 +109,7 @@ defmodule Singularity.Agents.DocumentationPipelineGitIntegration do
       else
         pending = status[:pending_merge_count] || 0
 
-        Logger.warning(
-          "[GitIntegration] Epic not ready for merge - #{pending} PRs still pending"
-        )
+        Logger.warning("[GitIntegration] Epic not ready for merge - #{pending} PRs still pending")
 
         {:error, :not_ready_for_merge}
       end
@@ -138,7 +136,10 @@ defmodule Singularity.Agents.DocumentationPipelineGitIntegration do
   @spec run_with_git_coordination([{atom(), module()}]) :: {:ok, map()} | {:error, term()}
   def run_with_git_coordination(agents) do
     correlation_id = Correlation.current()
-    Logger.info("[GitIntegration] Starting pipeline with git coordination", correlation_id: correlation_id)
+
+    Logger.info("[GitIntegration] Starting pipeline with git coordination",
+      correlation_id: correlation_id
+    )
 
     # Process each agent with git coordination
     results =

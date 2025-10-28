@@ -111,7 +111,8 @@ defmodule Singularity.Evolution.GenesisPublisher do
       iex> {Map.has_key?(summary, :published_count), is_list(results)}
       {true, true}
   """
-  @spec publish_rules(keyword()) :: {:ok, %{summary: map(), results: [publication_result()]}} | {:error, term()}
+  @spec publish_rules(keyword()) ::
+          {:ok, %{summary: map(), results: [publication_result()]}} | {:error, term()}
   def publish_rules(opts \\ []) do
     Logger.info("GenesisPublisher: Publishing rules via Pgflow workflow", opts: opts)
 

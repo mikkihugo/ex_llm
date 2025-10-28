@@ -59,7 +59,8 @@ defmodule Singularity.Evolution.SelfEvolutionIntegrationTest do
     end
 
     test "publish_confident_rules publishes only high-confidence rules" do
-      {:ok, summary} = RuleEvolutionSystem.publish_confident_rules(min_confidence: 0.85, limit: 10)
+      {:ok, summary} =
+        RuleEvolutionSystem.publish_confident_rules(min_confidence: 0.85, limit: 10)
 
       assert is_map(summary)
       published = Map.get(summary, :published_count) || Map.get(summary, "published_count")
@@ -448,7 +449,9 @@ defmodule Singularity.Evolution.SelfEvolutionIntegrationTest do
 
       # Phase 3: Publish to Genesis if confident rules exist
       if confident_count > 0 do
-        {:ok, %{summary: summary, results: results}} = GenesisPublisher.publish_rules(min_confidence: 0.85)
+        {:ok, %{summary: summary, results: results}} =
+          GenesisPublisher.publish_rules(min_confidence: 0.85)
+
         assert is_map(summary)
         assert is_list(results)
       end

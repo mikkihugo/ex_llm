@@ -245,9 +245,9 @@ defmodule Singularity.LLM.BeamLLMService do
         """
 
 
-      # Test Code
-      Write ExUnit tests for the above code:
-      """
+        # Test Code
+        Write ExUnit tests for the above code:
+        """
     else
       base
     end

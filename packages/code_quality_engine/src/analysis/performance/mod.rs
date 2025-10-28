@@ -9,23 +9,23 @@ pub mod profiler;
 
 // Core performance analysis (from detector)
 pub use detector::{
-    PerformanceAnalysis, PerformanceBottleneck, BottleneckType, PerformanceSeverity,
-    BottleneckLocation, PerformanceImpact, ScalabilityImpact, OptimizationOpportunity,
-    OptimizationType, ImplementationEffort, ResourceUsage, MemoryUsage, MemoryLeak,
-    CPUUsage, CPUIntensiveFunction, NetworkUsage, SlowRequest, NetworkBottleneck,
-    NetworkBottleneckType, DiskUsage, SlowIOOperation, IOOperationType,
-    PerformanceRecommendation, PerformanceRecommendationPriority, PerformanceCategory,
-    PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
+    BottleneckLocation, BottleneckType, CPUIntensiveFunction, CPUUsage, DiskUsage, IOOperationType,
+    ImplementationEffort, MemoryLeak, MemoryUsage, NetworkBottleneck, NetworkBottleneckType,
+    NetworkUsage, OptimizationOpportunity, OptimizationType, PerformanceAnalysis,
+    PerformanceBottleneck, PerformanceCategory, PerformanceDetectorTrait, PerformanceImpact,
+    PerformanceMetadata, PerformancePattern, PerformancePatternRegistry, PerformanceRecommendation,
+    PerformanceRecommendationPriority, PerformanceSeverity, ResourceUsage, ScalabilityImpact,
+    SlowIOOperation, SlowRequest,
 };
 
 // Optimization-specific types (from optimizer, excluding duplicates)
 pub use optimizer::{
-    OptimizationAnalysis, Optimization, OptimizationLocation,
-    OptimizationRecommendation, OptimizationCategory as OptimizerCategory,
-    OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
+    Optimization, OptimizationAnalysis, OptimizationCategory as OptimizerCategory,
+    OptimizationLocation, OptimizationMetadata, OptimizationPattern, OptimizationRecommendation,
+    PerformanceOptimizer,
 };
 
 // Profiling-specific types (from profiler, excluding duplicates)
 pub use profiler::{
-    ProfilingAnalysis, PerformanceMetrics, ProfilingMetadata, ProfilingPattern, PerformanceProfiler,
+    PerformanceMetrics, PerformanceProfiler, ProfilingAnalysis, ProfilingMetadata, ProfilingPattern,
 };

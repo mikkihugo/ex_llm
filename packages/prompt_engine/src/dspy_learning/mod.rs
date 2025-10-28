@@ -118,9 +118,11 @@ impl LearningSystem {
         // 1. Get execution history for training data
         let executions = self
             .fact_store
-            .query(crate::prompt_tracking::PromptTrackingQuery::PromptExecutions(
-                prompt_id.to_string(),
-            ))
+            .query(
+                crate::prompt_tracking::PromptTrackingQuery::PromptExecutions(
+                    prompt_id.to_string(),
+                ),
+            )
             .await?;
 
         if executions.len() < 5 {
@@ -180,9 +182,7 @@ impl LearningSystem {
         };
 
         self.fact_store
-            .store(crate::prompt_tracking::PromptExecutionData::PromptEvolution(
-                evolution_fact,
-            ))
+            .store(crate::prompt_tracking::PromptExecutionData::PromptEvolution(evolution_fact))
             .await?;
 
         tracing::info!("Reoptimization queued for prompt: {}", prompt_id);

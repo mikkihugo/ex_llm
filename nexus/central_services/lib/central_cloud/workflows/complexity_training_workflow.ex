@@ -13,7 +13,7 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
   5. Model Deployment - Save and deploy trained model
   """
 
-  use PGFlow.Workflow
+  use Pgflow.Workflow
 
   alias CentralCloud.Models.{MLComplexityTrainer, TrainingDataCollector, ModelCache}
   alias CentralCloud.Repo
@@ -29,10 +29,17 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
 
       # Workflow-level configuration
       config: %{
-        timeout_ms: Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:timeout_ms] || 300_000,
-        retries: Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:retries] || 3,
-        retry_delay_ms: Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:retry_delay_ms] || 5000,
-        concurrency: Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:concurrency] || 1
+        timeout_ms:
+          Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:timeout_ms] ||
+            300_000,
+        retries:
+          Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:retries] || 3,
+        retry_delay_ms:
+          Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:retry_delay_ms] ||
+            5000,
+        concurrency:
+          Application.get_env(:centralcloud, :complexity_training_workflow, %{})[:concurrency] ||
+            1
       },
 
       # Define workflow steps
@@ -50,7 +57,6 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
           },
           next: [:feature_engineering]
         },
-
         %{
           id: :feature_engineering,
           name: "Feature Engineering",
@@ -65,7 +71,6 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
           depends_on: [:data_collection],
           next: [:model_training]
         },
-
         %{
           id: :model_training,
           name: "Model Training",
@@ -74,14 +79,14 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
           module: __MODULE__,
           function: :train_complexity_model,
           config: %{
-            concurrency: 1,  # Single worker for GPU training
+            # Single worker for GPU training
+            concurrency: 1,
             timeout_ms: 180_000,
             resource_requirements: %{gpu: true}
           },
           depends_on: [:feature_engineering],
           next: [:model_evaluation]
         },
-
         %{
           id: :model_evaluation,
           name: "Model Evaluation",
@@ -96,7 +101,6 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
           depends_on: [:model_training],
           next: [:model_deployment]
         },
-
         %{
           id: :model_deployment,
           name: "Model Deployment",
@@ -164,52 +168,62 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
 
     training_data = context[:data_collection].result
 
-    # Extract and engineer features for ML training
-    task_executions = training_data.task_executions
+    run_with_resilience(
+      fn ->
+        task_executions = training_data.task_executions
 
-    # Create feature vectors for each training sample
-    features = Enum.map(task_executions, fn execution ->
-      %{
-        # Model features
-        context_length: get_in(execution, [:model_specs, :context_length]) || 0,
-        parameter_count: get_in(execution, [:model_specs, :parameter_count]) || 0,
-        input_price: get_in(execution, [:model_pricing, :input]) || 0.0,
-        output_price: get_in(execution, [:model_pricing, :output]) || 0.0,
+        features =
+          Enum.map(task_executions, fn execution ->
+            %{
+              context_length: get_in(execution, [:model_specs, :context_length]) || 0,
+              parameter_count: get_in(execution, [:model_specs, :parameter_count]) || 0,
+              input_price: get_in(execution, [:model_pricing, :input]) || 0.0,
+              output_price: get_in(execution, [:model_pricing, :output]) || 0.0,
+              task_type: execution.task_type,
+              task_complexity: execution.task_complexity || 0.5,
+              task_length: execution.task_length || 0,
+              success: if(execution.success, do: 1, else: 0),
+              response_time: execution.response_time || 0,
+              quality_score: execution.quality_score || 0.0,
+              user_satisfaction: execution.user_satisfaction || 0.0,
+              has_vision: if(get_in(execution, [:model_capabilities, :vision]), do: 1, else: 0),
+              has_function_calling:
+                if(get_in(execution, [:model_capabilities, :function_calling]), do: 1, else: 0),
+              has_code_generation:
+                if(get_in(execution, [:model_capabilities, :code_generation]), do: 1, else: 0),
+              has_reasoning:
+                if(get_in(execution, [:model_capabilities, :reasoning]), do: 1, else: 0),
+              actual_complexity: execution.actual_complexity || 0.5
+            }
+          end)
 
-        # Task features
-        task_type: execution.task_type,
-        task_complexity: execution.task_complexity || 0.5,
-        task_length: execution.task_length || 0,
-
-        # Performance features
-        success: if(execution.success, do: 1, else: 0),
-        response_time: execution.response_time || 0,
-        quality_score: execution.quality_score || 0.0,
-        user_satisfaction: execution.user_satisfaction || 0.0,
-
-        # Context features
-        has_vision: if(get_in(execution, [:model_capabilities, :vision]), do: 1, else: 0),
-        has_function_calling: if(get_in(execution, [:model_capabilities, :function_calling]), do: 1, else: 0),
-        has_code_generation: if(get_in(execution, [:model_capabilities, :code_generation]), do: 1, else: 0),
-        has_reasoning: if(get_in(execution, [:model_capabilities, :reasoning]), do: 1, else: 0),
-
-        # Target variable (complexity score)
-        actual_complexity: execution.actual_complexity || 0.5
-      }
-    end)
-
-    engineered_features = %{
-      features: features,
-      feature_names: [
-        :context_length, :parameter_count, :input_price, :output_price,
-        :task_type, :task_complexity, :task_length,
-        :success, :response_time, :quality_score, :user_satisfaction,
-        :has_vision, :has_function_calling, :has_code_generation, :has_reasoning
-      ],
-      target: :actual_complexity
-    }
-
-    {:ok, engineered_features}
+        {:ok,
+         %{
+           features: features,
+           feature_names: [
+             :context_length,
+             :parameter_count,
+             :input_price,
+             :output_price,
+             :task_type,
+             :task_complexity,
+             :task_length,
+             :success,
+             :response_time,
+             :quality_score,
+             :user_satisfaction,
+             :has_vision,
+             :has_function_calling,
+             :has_code_generation,
+             :has_reasoning
+           ],
+           target: :actual_complexity
+         }}
+      end,
+      timeout_ms: 45_000,
+      retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
+      operation: :complexity_feature_engineering
+    )
   end
 
   @doc """
@@ -220,13 +234,20 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
 
     features = context[:feature_engineering].result
 
-    case MLComplexityTrainer.train_complexity_model(features) do
-      {:ok, trained_model, metrics} ->
-        {:ok, %{trained_model: trained_model, training_metrics: metrics}}
+    run_with_resilience(
+      fn ->
+        case MLComplexityTrainer.train_complexity_model(features) do
+          {:ok, trained_model, metrics} ->
+            {:ok, %{trained_model: trained_model, training_metrics: metrics}}
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+          {:error, reason} ->
+            raise "complexity model training failed: #{inspect(reason)}"
+        end
+      end,
+      timeout_ms: 180_000,
+      retry_opts: [max_retries: 3, base_delay_ms: 1_000, max_delay_ms: 20_000],
+      operation: :complexity_model_training
+    )
   end
 
   @doc """
@@ -238,15 +259,22 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     features = context[:feature_engineering].result
 
-    # Evaluate model performance
-    evaluation_metrics = %{
-      accuracy: 0.85 + :rand.uniform() * 0.1,  # Simulate evaluation
-      mse: 0.05 + :rand.uniform() * 0.02,
-      r2_score: 0.80 + :rand.uniform() * 0.15,
-      evaluated_at: DateTime.utc_now()
-    }
+    run_with_resilience(
+      fn ->
+        evaluation_metrics = %{
+          accuracy: 0.85 + :rand.uniform() * 0.1,
+          mse: 0.05 + :rand.uniform() * 0.02,
+          r2_score: 0.80 + :rand.uniform() * 0.15,
+          evaluated_at: DateTime.utc_now(),
+          features_preview: Enum.take(features.features, 5)
+        }
 
-    {:ok, evaluation_metrics}
+        {:ok, evaluation_metrics}
+      end,
+      timeout_ms: 30_000,
+      retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
+      operation: :complexity_model_evaluation
+    )
   end
 
   @doc """
@@ -258,28 +286,31 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     evaluation_metrics = context[:model_evaluation].result
 
-    # Save model and update complexity scores
-    model_path = Path.join([
-      System.user_home!(),
-      ".cache/centralcloud/models",
-      "complexity_model_#{DateTime.utc_now() |> DateTime.to_unix()}"
-    ])
+    run_with_resilience(
+      fn ->
+        model_path =
+          Path.join([
+            System.user_home!(),
+            ".cache/centralcloud/models",
+            "complexity_model_#{DateTime.utc_now() |> DateTime.to_unix()}"
+          ])
 
-    File.mkdir_p!(Path.dirname(model_path))
+        File.mkdir_p!(Path.dirname(model_path))
+        :ok = File.write!(model_path, :erlang.term_to_binary(trained_model))
 
-    # Save model
-    :ok = File.write!(model_path, :erlang.term_to_binary(trained_model))
+        update_all_model_complexity_scores(trained_model)
 
-    # Update all model complexity scores
-    update_all_model_complexity_scores(trained_model)
-
-    deployment_info = %{
-      model_path: model_path,
-      evaluation_metrics: evaluation_metrics,
-      deployed_at: DateTime.utc_now()
-    }
-
-    {:ok, deployment_info}
+        {:ok,
+         %{
+           model_path: model_path,
+           evaluation_metrics: evaluation_metrics,
+           deployed_at: DateTime.utc_now()
+         }}
+      end,
+      timeout_ms: 60_000,
+      retry_opts: [max_retries: 2, base_delay_ms: 1_000, max_delay_ms: 10_000],
+      operation: :complexity_model_deployment
+    )
   end
 
   # Private helper functions

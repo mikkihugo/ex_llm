@@ -156,9 +156,7 @@ fn extract_module_path(file_path: &Path) -> String {
         let without_ext = after_src.strip_suffix(".rs").unwrap_or(after_src);
 
         // Convert path to module path
-        let module = without_ext
-            .replace("/", "::")
-            .replace("-", "_");
+        let module = without_ext.replace("/", "::").replace("-", "_");
 
         return module;
     }

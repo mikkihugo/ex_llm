@@ -363,11 +363,11 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
     case URI.parse(url) do
       %URI{scheme: scheme} when scheme in ["http", "https"] ->
         case Req.request(
-          method: :get,
-          url: url,
-          headers: headers,
-          receive_timeout: 10_000
-        ) do
+               method: :get,
+               url: url,
+               headers: headers,
+               receive_timeout: 10_000
+             ) do
           {:ok, %Req.Response{status: status, headers: resp_headers, body: body}} ->
             {:ok,
              %{
@@ -407,12 +407,12 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
         ]
 
         case Req.request(
-          method: :post,
-          url: "https://api.github.com/graphql",
-          headers: headers,
-          json: payload,
-          receive_timeout: 10_000
-        ) do
+               method: :post,
+               url: "https://api.github.com/graphql",
+               headers: headers,
+               json: payload,
+               receive_timeout: 10_000
+             ) do
           {:ok, %Req.Response{status: status, body: body}} when status in 200..299 ->
             {:ok, %{status: status, data: body["data"], errors: body["errors"]}}
 

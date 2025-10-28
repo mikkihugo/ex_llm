@@ -1,7 +1,7 @@
 //! Vector index for semantic search over FACT storage
 
 use crate::embedding::EmbeddingGenerator;
-use crate::storage::{PackageMetadata, PackageKey, PackageStorage};
+use crate::storage::{PackageKey, PackageMetadata, PackageStorage};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -99,7 +99,9 @@ impl VectorIndex {
         .into_iter()
         .take(limit)
         .filter_map(|(id, score)| {
-          PackageKey::from_storage_key(&id).ok().map(|key| (key, score))
+          PackageKey::from_storage_key(&id)
+            .ok()
+            .map(|key| (key, score))
         })
         .collect(),
     )
@@ -136,7 +138,9 @@ impl VectorIndex {
         .into_iter()
         .take(limit)
         .filter_map(|(id, score)| {
-          PackageKey::from_storage_key(&id).ok().map(|key| (key, score))
+          PackageKey::from_storage_key(&id)
+            .ok()
+            .map(|key| (key, score))
         })
         .collect(),
     )
@@ -211,7 +215,7 @@ pub struct IndexStats {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::storage::{PackageMetadata, PackageExample, UsageStats};
+  use crate::storage::{PackageExample, PackageMetadata, UsageStats};
   use std::time::SystemTime;
 
   // Mock storage for testing
@@ -221,11 +225,18 @@ mod tests {
 
   #[async_trait::async_trait]
   impl PackageStorage for MockStorage {
-    async fn store_fact(&self, _key: &PackageKey, _data: &PackageMetadata) -> Result<()> {
+    async fn store_fact(
+      &self,
+      _key: &PackageKey,
+      _data: &PackageMetadata,
+    ) -> Result<()> {
       Ok(())
     }
 
-    async fn get_fact(&self, key: &PackageKey) -> Result<Option<PackageMetadata>> {
+    async fn get_fact(
+      &self,
+      key: &PackageKey,
+    ) -> Result<Option<PackageMetadata>> {
       Ok(self.facts.get(&key.storage_key()).cloned())
     }
 
@@ -254,11 +265,16 @@ mod tests {
       })
     }
 
-    async fn search_by_tags(&self, _tags: &[String]) -> Result<Vec<PackageKey>> {
+    async fn search_by_tags(
+      &self,
+      _tags: &[String],
+    ) -> Result<Vec<PackageKey>> {
       Ok(vec![])
     }
 
-    async fn get_all_facts(&self) -> Result<Vec<(PackageKey, PackageMetadata)>> {
+    async fn get_all_facts(
+      &self,
+    ) -> Result<Vec<(PackageKey, PackageMetadata)>> {
       Ok(
         self
           .facts

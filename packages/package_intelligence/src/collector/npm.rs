@@ -4,8 +4,8 @@
 //! Extracts: public API, functions, classes, interfaces, types, examples
 
 use super::{CollectionStats, DataSourcePriority, PackageCollector};
-use crate::extractor::{SourceCodeExtractor, create_extractor};
-use crate::storage::{PackageMetadata, CodeSnippet};
+use crate::extractor::{create_extractor, SourceCodeExtractor};
+use crate::storage::{CodeSnippet, PackageMetadata};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -49,7 +49,7 @@ struct NpmVersionMetadata {
   name: String,
   version: String,
   description: Option<String>,
-  license: Option<String>,  // SPDX license identifier
+  license: Option<String>, // SPDX license identifier
   dist: NpmDist,
   dependencies: Option<std::collections::HashMap<String, String>>,
   #[serde(rename = "devDependencies")]
@@ -71,34 +71,68 @@ impl NpmCollector {
     // Determine license type and properties based on SPDX identifier
     match license_lower.as_str() {
       // Permissive licenses
-      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache" |
-      "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" => {
-        ("permissive".to_string(), license_id.to_string(), true, true, false)
-      },
+      "mit" | "bsd-2-clause" | "bsd-3-clause" | "apache-2.0" | "apache"
+      | "mpl-2.0" | "isc" | "wtfpl" | "0bsd" | "zlib" => (
+        "permissive".to_string(),
+        license_id.to_string(),
+        true,
+        true,
+        false,
+      ),
       // Copyleft licenses
-      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" |
-      "gpl-2.0" | "gpl-2.0-or-later" | "gpl-2.0-only" |
-      "agpl-3.0" | "agpl-3.0-or-later" | "agpl-3.0-only" => {
-        ("copyleft".to_string(), license_id.to_string(), false, true, true)
-      },
+      "gpl-3.0" | "gpl-3.0-or-later" | "gpl-3.0-only" | "gpl-2.0"
+      | "gpl-2.0-or-later" | "gpl-2.0-only" | "agpl-3.0"
+      | "agpl-3.0-or-later" | "agpl-3.0-only" => (
+        "copyleft".to_string(),
+        license_id.to_string(),
+        false,
+        true,
+        true,
+      ),
       // Weak copyleft
-      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" |
-      "lgpl-2.1" | "lgpl-2.1-or-later" | "lgpl-2.1-only" => {
-        ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
-      },
+      "lgpl-3.0" | "lgpl-3.0-or-later" | "lgpl-3.0-only" | "lgpl-2.1"
+      | "lgpl-2.1-or-later" | "lgpl-2.1-only" => (
+        "weak-copyleft".to_string(),
+        license_id.to_string(),
+        true,
+        true,
+        true,
+      ),
       // Proprietary
-      "proprietary" | "unlicense" => {
-        ("proprietary".to_string(), license_id.to_string(), false, false, false)
-      },
+      "proprietary" | "unlicense" => (
+        "proprietary".to_string(),
+        license_id.to_string(),
+        false,
+        false,
+        false,
+      ),
       // Unknown or other
       _ => {
         // Default: assume permissive if not in exclusion list
         if license_lower.contains("gpl") || license_lower.contains("agpl") {
-          ("copyleft".to_string(), license_id.to_string(), false, true, true)
+          (
+            "copyleft".to_string(),
+            license_id.to_string(),
+            false,
+            true,
+            true,
+          )
         } else if license_lower.contains("lgpl") {
-          ("weak-copyleft".to_string(), license_id.to_string(), true, true, true)
+          (
+            "weak-copyleft".to_string(),
+            license_id.to_string(),
+            true,
+            true,
+            true,
+          )
         } else {
-          ("unknown".to_string(), license_id.to_string(), true, false, false)
+          (
+            "unknown".to_string(),
+            license_id.to_string(),
+            true,
+            false,
+            false,
+          )
         }
       }
     }
@@ -266,7 +300,11 @@ impl PackageCollector for NpmCollector {
     "npm"
   }
 
-  async fn collect(&self, package: &str, version: &str) -> Result<PackageMetadata> {
+  async fn collect(
+    &self,
+    package: &str,
+    version: &str,
+  ) -> Result<PackageMetadata> {
     let start_time = std::time::Instant::now();
 
     log::info!("Collecting npm package: {} v{}", package, version);
@@ -280,8 +318,13 @@ impl PackageCollector for NpmCollector {
 
     // Extract license information
     let license_info = if let Some(license_str) = &version_meta.license {
-      let (license_type, license_id, commercial_use, requires_attribution, is_copyleft) =
-        Self::classify_license(license_str);
+      let (
+        license_type,
+        license_id,
+        commercial_use,
+        requires_attribution,
+        is_copyleft,
+      ) = Self::classify_license(license_str);
 
       Some(crate::storage::LicenseInfo {
         license: license_id,

@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     dspy_learning::PromptEmbedder,
     prompt_bits::database::StoredPromptBit as PromptBit,
-    prompt_tracking::{ContextSignatureEntry, PromptTrackingQuery, PromptTrackingStorage, PromptExecutionData},
+    prompt_tracking::{
+        ContextSignatureEntry, PromptExecutionData, PromptTrackingQuery, PromptTrackingStorage,
+    },
 };
 
 /// Selected prompt with confidence and reasoning

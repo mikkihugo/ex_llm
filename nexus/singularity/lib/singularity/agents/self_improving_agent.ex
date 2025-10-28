@@ -1673,8 +1673,10 @@ defmodule Singularity.SelfImprovingAgent do
             {:ok, changes} ->
               file_paths = Enum.map(changes, & &1.file_path)
               Singularity.Agents.DocumentationPipeline.run_incremental_pipeline(file_paths)
+
             {:error, _} ->
-              :ok  # Skip if no changes detected
+              # Skip if no changes detected
+              :ok
           end
 
         :analysis ->

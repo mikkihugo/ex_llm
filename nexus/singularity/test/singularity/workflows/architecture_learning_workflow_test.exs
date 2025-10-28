@@ -25,7 +25,14 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflowTest do
       # Check steps
       assert length(definition.steps) == 5
       step_ids = Enum.map(definition.steps, & &1.id)
-      assert step_ids == [:pattern_discovery, :pattern_analysis, :model_training, :model_validation, :model_deployment]
+
+      assert step_ids == [
+               :pattern_discovery,
+               :pattern_analysis,
+               :model_training,
+               :model_validation,
+               :model_deployment
+             ]
 
       # Check error handlers
       assert length(definition.error_handlers) == 1

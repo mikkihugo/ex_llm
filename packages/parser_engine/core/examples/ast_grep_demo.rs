@@ -73,12 +73,19 @@ fn demo_structural_search(code: &str) -> Result<(), Box<dyn std::error::Error>> 
 
     if results.is_empty() {
         println!("⚠️  No matches found (ast-grep-core implementation pending)");
-        println!("   When implemented, this will find {} console.log statements",
-                 code.matches("console.log").count());
+        println!(
+            "   When implemented, this will find {} console.log statements",
+            code.matches("console.log").count()
+        );
     } else {
         println!("✅ Found {} console.log statements:", results.len());
         for (i, result) in results.iter().enumerate() {
-            println!("   {}. Line {}: {}", i + 1, result.start.0, result.text.trim());
+            println!(
+                "   {}. Line {}: {}",
+                i + 1,
+                result.start.0,
+                result.text.trim()
+            );
         }
     }
 
@@ -98,7 +105,6 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_severity(Severity::Warning)
         .with_fix(Pattern::new("logger.debug($$$ARGS)")),
-
         LintRule::new(
             "no-var",
             "Use 'let' or 'const' instead of 'var'",
@@ -106,7 +112,6 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_severity(Severity::Error)
         .with_fix(Pattern::new("const $VAR = $VALUE")),
-
         LintRule::new(
             "prefer-for-of",
             "Use 'for...of' instead of traditional for loop",
@@ -123,8 +128,10 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
     if violations.is_empty() {
         println!("⚠️  No violations found (ast-grep-core implementation pending)");
         println!("   When implemented, this will detect:");
-        println!("   - {} console.log statements (rule: no-console)",
-                 code.matches("console.log").count());
+        println!(
+            "   - {} console.log statements (rule: no-console)",
+            code.matches("console.log").count()
+        );
         println!("   - 0 var declarations (rule: no-var)");
         println!("   - 1 traditional for loop (rule: prefer-for-of)");
     } else {
@@ -135,11 +142,10 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
                 Severity::Warning => "⚠️",
                 Severity::Info => "ℹ️",
             };
-            println!("   {} [{}] Line {}: {}",
-                     severity_icon,
-                     violation.rule_id,
-                     violation.location.0,
-                     violation.message);
+            println!(
+                "   {} [{}] Line {}: {}",
+                severity_icon, violation.rule_id, violation.location.0, violation.message
+            );
             if let Some(fix) = violation.fix {
                 println!("      Fix: {}", fix);
             }
@@ -165,7 +171,10 @@ fn demo_transformation(code: &str) -> Result<(), Box<dyn std::error::Error>> {
         println!("⚠️  No transformation applied (ast-grep-core implementation pending)");
         println!("   When implemented, this will transform:");
         println!("   - console.log(...) → logger.debug(...)");
-        println!("   - {} replacements total", code.matches("console.log").count());
+        println!(
+            "   - {} replacements total",
+            code.matches("console.log").count()
+        );
     } else {
         println!("✅ Transformation complete!");
         println!("\nBefore:");

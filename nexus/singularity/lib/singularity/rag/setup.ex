@@ -58,24 +58,24 @@ defmodule Singularity.RAG.Setup do
   """
   def run do
     Logger.info("RAG Setup: Starting initialization...")
-    
+
     try do
       # Step 1: Sync templates to knowledge artifacts
       Logger.info("RAG Setup: Syncing templates...")
       templates_result = sync_templates()
-      
+
       # Step 2: Parse codebase for semantic search
       Logger.info("RAG Setup: Parsing codebase...")
       codebase_result = parse_codebase()
-      
+
       # Step 3: Generate embeddings
       Logger.info("RAG Setup: Generating embeddings...")
       embeddings_result = generate_embeddings()
-      
+
       # Step 4: Validate system
       Logger.info("RAG Setup: Validating system...")
       validation_result = validate_system()
-      
+
       # Combine results
       results = %{
         status: "ready",
@@ -85,7 +85,7 @@ defmodule Singularity.RAG.Setup do
         validation_passed: Map.get(validation_result, :success, false),
         timestamp: DateTime.utc_now()
       }
-      
+
       Logger.info("RAG Setup: Initialization completed successfully")
       {:ok, results}
     rescue
@@ -140,10 +140,12 @@ defmodule Singularity.RAG.Setup do
     try do
       # Test basic search functionality
       test_query = "test search functionality"
+
       case Singularity.CodeSearch.search(test_query, ".", limit: 1) do
         {:ok, _results} ->
           Logger.debug("RAG Setup: System validation passed")
           %{success: true}
+
         {:error, reason} ->
           Logger.warning("RAG Setup: System validation failed: #{inspect(reason)}")
           %{success: false, error: reason}

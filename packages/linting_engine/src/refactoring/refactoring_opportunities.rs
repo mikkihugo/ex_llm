@@ -57,10 +57,10 @@ impl RefactoringOpportunitiesAnalyzer {
     pub fn analyze(&self, code: &str, file_path: &str) -> Vec<RefactoringOpportunity> {
         let mut opportunities = Vec::new();
         let lines: Vec<&str> = code.lines().collect();
-        
+
         for (line_num, line) in lines.iter().enumerate() {
             let line = line.trim();
-            
+
             // Check for long methods (extract method opportunity)
             if self.is_long_method(code, line_num) {
                 opportunities.push(RefactoringOpportunity {
@@ -72,7 +72,7 @@ impl RefactoringOpportunitiesAnalyzer {
                     line_number: Some(line_num + 1),
                 });
             }
-            
+
             // Check for magic numbers (extract constant opportunity)
             if self.has_magic_numbers(line) {
                 opportunities.push(RefactoringOpportunity {
@@ -84,7 +84,7 @@ impl RefactoringOpportunitiesAnalyzer {
                     line_number: Some(line_num + 1),
                 });
             }
-            
+
             // Check for complex conditions (simplify condition opportunity)
             if self.has_complex_condition(line) {
                 opportunities.push(RefactoringOpportunity {
@@ -96,7 +96,7 @@ impl RefactoringOpportunitiesAnalyzer {
                     line_number: Some(line_num + 1),
                 });
             }
-            
+
             // Check for unused variables (remove dead code opportunity)
             if self.has_unused_variable(line) {
                 opportunities.push(RefactoringOpportunity {
@@ -108,7 +108,7 @@ impl RefactoringOpportunitiesAnalyzer {
                     line_number: Some(line_num + 1),
                 });
             }
-            
+
             // Check for poor variable names (rename variable opportunity)
             if self.has_poor_variable_name(line) {
                 opportunities.push(RefactoringOpportunity {
@@ -121,7 +121,7 @@ impl RefactoringOpportunitiesAnalyzer {
                 });
             }
         }
-        
+
         // Check for large classes (extract class opportunity)
         if self.is_large_class(code) {
             opportunities.push(RefactoringOpportunity {
@@ -133,36 +133,36 @@ impl RefactoringOpportunitiesAnalyzer {
                 line_number: None,
             });
         }
-        
+
         opportunities
     }
-    
+
     /// Check if method is too long (more than 20 lines)
     fn is_long_method(&self, code: &str, start_line: usize) -> bool {
         let lines: Vec<&str> = code.lines().collect();
         if start_line >= lines.len() {
             return false;
         }
-        
+
         let line = lines[start_line].trim();
         if !line.contains("fn ") && !line.contains("def ") && !line.contains("function ") {
             return false;
         }
-        
+
         let mut brace_count = 0;
         let mut in_method = false;
         let mut method_lines = 0;
-        
+
         for (_i, line) in lines.iter().enumerate().skip(start_line) {
             let line = line.trim();
-            
+
             if line.contains("fn ") || line.contains("def ") || line.contains("function ") {
                 in_method = true;
             }
-            
+
             if in_method {
                 method_lines += 1;
-                
+
                 // Count braces to detect method end
                 for ch in line.chars() {
                     match ch {
@@ -171,17 +171,17 @@ impl RefactoringOpportunitiesAnalyzer {
                         _ => {}
                     }
                 }
-                
+
                 // Method ended
                 if brace_count == 0 && method_lines > 1 {
                     break;
                 }
             }
         }
-        
+
         method_lines > 20
     }
-    
+
     /// Check if line has magic numbers
     fn has_magic_numbers(&self, line: &str) -> bool {
         // Look for standalone numbers that aren't 0, 1, or common patterns
@@ -195,24 +195,27 @@ impl RefactoringOpportunitiesAnalyzer {
         }
         false
     }
-    
+
     /// Check if line has complex condition
     fn has_complex_condition(&self, line: &str) -> bool {
         let and_count = line.matches("&&").count();
         let or_count = line.matches("||").count();
         let not_count = line.matches("!").count();
-        
+
         // Complex if more than 2 logical operators
         (and_count + or_count + not_count) > 2
     }
-    
+
     /// Check if line has unused variable (simple heuristic)
     fn has_unused_variable(&self, line: &str) -> bool {
         // Look for variable declarations that might be unused
-        (line.contains("let ") || line.contains("var ") || line.contains("const ")) &&
-        (line.contains("= ") && !line.contains("return") && !line.contains("println") && !line.contains("print"))
+        (line.contains("let ") || line.contains("var ") || line.contains("const "))
+            && (line.contains("= ")
+                && !line.contains("return")
+                && !line.contains("println")
+                && !line.contains("print"))
     }
-    
+
     /// Check if line has poor variable name
     fn has_poor_variable_name(&self, line: &str) -> bool {
         let words: Vec<&str> = line.split_whitespace().collect();
@@ -226,24 +229,24 @@ impl RefactoringOpportunitiesAnalyzer {
         }
         false
     }
-    
+
     /// Check if class is too large (more than 200 lines)
     fn is_large_class(&self, code: &str) -> bool {
         let lines: Vec<&str> = code.lines().collect();
         let mut in_class = false;
         let mut class_lines = 0;
-        
+
         for line in &lines {
             let line = line.trim();
-            
+
             if line.contains("class ") || line.contains("struct ") || line.contains("impl ") {
                 in_class = true;
                 class_lines = 0;
             }
-            
+
             if in_class {
                 class_lines += 1;
-                
+
                 // Simple heuristic: class ends at next class/struct or end of file
                 if line.contains("class ") || line.contains("struct ") || line.contains("impl ") {
                     if class_lines > 200 {
@@ -253,7 +256,7 @@ impl RefactoringOpportunitiesAnalyzer {
                 }
             }
         }
-        
+
         class_lines > 200
     }
 

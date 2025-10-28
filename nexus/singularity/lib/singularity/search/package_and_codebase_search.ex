@@ -236,10 +236,12 @@ defmodule Singularity.PackageAndCodebaseSearch do
       end
     rescue
       error ->
-        SASL.external_service_failure(:code_search_failure,
+        SASL.external_service_failure(
+          :code_search_failure,
           "Code search operation failed",
           error: error
         )
+
         []
     end
   end

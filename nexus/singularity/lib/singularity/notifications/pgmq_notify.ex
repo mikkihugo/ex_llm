@@ -99,12 +99,12 @@ defmodule Singularity.Notifications.PgmqNotify do
   @spec listen(String.t(), Ecto.Repo.t()) :: {:ok, pid()} | {:error, any()}
   def listen(queue_name, repo) do
     channel = "pgmq_#{queue_name}"
-    
+
     case Postgrex.Notifications.listen(repo, channel) do
       {:ok, pid} ->
         Logger.info("Listening for PGMQ notifications on channel: #{channel}")
         {:ok, pid}
-      
+
       {:error, reason} ->
         Logger.error("Failed to listen for notifications: #{inspect(reason)}")
         {:error, reason}
@@ -177,7 +177,7 @@ defmodule Singularity.Notifications.PgmqNotify do
   # Private: Trigger PostgreSQL NOTIFY after PGMQ send
   defp trigger_notify(queue_name, message_id, repo) do
     channel = "pgmq_#{queue_name}"
-    
+
     case repo.query("SELECT pg_notify($1, $2)", [channel, message_id]) do
       {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}

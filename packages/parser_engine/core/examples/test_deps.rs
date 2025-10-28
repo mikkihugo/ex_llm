@@ -13,15 +13,20 @@ fn main() {
     // Get a source file from the project
     // NOTE: The path must be inside the project root so its parent can find Cargo.toml
     let test_file = project_root.join("src/lib.rs");
-    
-    println!("Analyzing: {:?}", test_file.canonicalize().unwrap_or_else(|_| test_file.clone()));
-    
+
+    println!(
+        "Analyzing: {:?}",
+        test_file
+            .canonicalize()
+            .unwrap_or_else(|_| test_file.clone())
+    );
+
     match parser.analyze_file(&test_file) {
         Ok(result) => {
             println!("\n✅ Analysis successful!");
             println!("  File: {}", result.file_path);
             println!("  Language: {}", result.language);
-            
+
             if let Some(deps) = &result.dependency_analysis {
                 println!("\n📦 Dependency Analysis:");
                 println!("  Dependencies: {}", deps.dependencies.len());
@@ -33,15 +38,15 @@ fn main() {
                         println!("    ... and {} more", deps.dependencies.len() - 5);
                     }
                 }
-                
+
                 println!("  Dev Dependencies: {}", deps.dev_dependencies.len());
-                
+
                 println!("  Total: {}", deps.total_dependencies);
-                
+
                 if let Some(manifest) = &deps.manifest_file {
                     println!("  Manifest: {}", manifest);
                 }
-                
+
                 if let Some(frameworks) = &deps.frameworks {
                     if frameworks.len() > 0 {
                         println!("\n🎯 Frameworks detected: {}", frameworks.len());

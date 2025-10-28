@@ -39,11 +39,13 @@ defmodule Singularity.Execution.FileAnalysisWorker do
       result
     rescue
       error ->
-        SASL.analysis_failure(:file_analysis_failure,
+        SASL.analysis_failure(
+          :file_analysis_failure,
           "File analysis worker failed to analyze file",
           file_path: file_path,
           error: error
         )
+
         {:error, Exception.message(error)}
     end
   end
@@ -85,17 +87,21 @@ defmodule Singularity.Execution.FileAnalysisWorker do
     case BeamAnalysisEngine.analyze_beam_code(language, content, file_path) do
       {:ok, analysis} ->
         # Add worker metadata
-        enhanced_analysis = Map.put(analysis, :worker_metadata, %{
-          analyzed_by: "FileAnalysisWorker",
-          analysis_time: DateTime.utc_now(),
-          file_size: byte_size(content),
-          worker_opts: opts
-        })
+        enhanced_analysis =
+          Map.put(analysis, :worker_metadata, %{
+            analyzed_by: "FileAnalysisWorker",
+            analysis_time: DateTime.utc_now(),
+            file_size: byte_size(content),
+            worker_opts: opts
+          })
 
         {:ok, enhanced_analysis}
 
       {:error, reason} ->
-        Logger.warning("[FileAnalysisWorker] BeamAnalysisEngine failed for #{file_path}: #{reason}")
+        Logger.warning(
+          "[FileAnalysisWorker] BeamAnalysisEngine failed for #{file_path}: #{reason}"
+        )
+
         {:error, reason}
     end
   end

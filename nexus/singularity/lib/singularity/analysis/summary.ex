@@ -34,7 +34,7 @@ defmodule Singularity.Analysis.Summary do
             languages: %{},
             analyzed_at: 0
 
-  @doc "Build an analysis summary from a map produced by the Rust analyzer."
+  @doc "Build an analysis summary from a map produced by the Singularity Code Analyzer."
   @spec new(map() | keyword()) :: t()
   def new(attrs \\ %{}) do
     attrs = Map.new(attrs)

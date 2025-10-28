@@ -16,13 +16,14 @@ defmodule Singularity.SASL do
   """
   @spec error(atom(), String.t(), keyword()) :: :ok
   def error(tag, message, context \\ []) do
-    report = [
-      {:tag, tag},
-      {:message, message},
-      {:timestamp, DateTime.utc_now()},
-      {:node, node()},
-      {:pid, self()}
-    ] ++ context
+    report =
+      [
+        {:tag, tag},
+        {:message, message},
+        {:timestamp, DateTime.utc_now()},
+        {:node, node()},
+        {:pid, self()}
+      ] ++ context
 
     :error_logger.error_report(report)
   end

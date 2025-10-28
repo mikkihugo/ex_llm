@@ -100,7 +100,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: [],
       timeout: 30_000
     },
-    
+
     # Validation Layer
     file_validation: %{
       type: :validation,
@@ -108,14 +108,13 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: [:file_detection],
       timeout: 10_000
     },
-    
     content_validation: %{
       type: :validation,
       worker: {__MODULE__, :validate_content},
       dependencies: [:file_validation],
       timeout: 15_000
     },
-    
+
     # Parsing Layer
     language_detection: %{
       type: :parsing,
@@ -123,21 +122,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: [:content_validation],
       timeout: 5_000
     },
-    
     ast_parsing: %{
       type: :parsing,
       worker: {__MODULE__, :parse_ast},
       dependencies: [:language_detection],
       timeout: 30_000
     },
-    
     metadata_extraction: %{
       type: :parsing,
       worker: {__MODULE__, :extract_metadata},
       dependencies: [:ast_parsing],
       timeout: 20_000
     },
-    
+
     # Storage Layer
     database_storage: %{
       type: :storage,
@@ -145,21 +142,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: [:metadata_extraction],
       timeout: 60_000
     },
-    
     embedding_generation: %{
       type: :storage,
       worker: {__MODULE__, :generate_embeddings},
       dependencies: [:database_storage],
       timeout: 45_000
     },
-    
     relationship_mapping: %{
       type: :storage,
       worker: {__MODULE__, :map_relationships},
       dependencies: [:embedding_generation],
       timeout: 30_000
     },
-    
+
     # Indexing Layer
     vector_index_update: %{
       type: :indexing,
@@ -167,21 +162,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: [:relationship_mapping],
       timeout: 30_000
     },
-    
     search_index_rebuild: %{
       type: :indexing,
       worker: {__MODULE__, :rebuild_search_index},
       dependencies: [:vector_index_update],
       timeout: 60_000
     },
-    
     graph_update: %{
       type: :indexing,
       worker: {__MODULE__, :update_graph},
       dependencies: [:search_index_rebuild],
       timeout: 45_000
     },
-    
+
     # Notification Layer
     completion_notification: %{
       type: :notification,
@@ -223,30 +216,31 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   """
   def start_dag(attrs) do
     dag_id = generate_dag_id()
-    
+
     # Auto-detect codebase if not provided
     codebase_id = attrs[:codebase_id] || CodebaseDetector.detect(format: :full)
-    
+
     # Build HTDAG workflow
     workflow = build_htdag_workflow(dag_id, attrs[:file_path], codebase_id, attrs)
-    
+
     case Workflows.create_workflow(workflow) do
       {:ok, _workflow} ->
-        Logger.info("Started HTDAG auto code ingestion", 
+        Logger.info("Started HTDAG auto code ingestion",
           dag_id: dag_id,
           file_path: attrs[:file_path]
         )
-        
+
         # Start DAG execution asynchronously
         Task.start(fn -> execute_dag(dag_id) end)
-        
+
         {:ok, dag_id}
-        
+
       {:error, reason} ->
-        Logger.error("Failed to start HTDAG auto code ingestion", 
+        Logger.error("Failed to start HTDAG auto code ingestion",
           error: reason,
           file_path: attrs[:file_path]
         )
+
         {:error, reason}
     end
   end
@@ -273,24 +267,26 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     batch_size = Keyword.get(opts, :batch_size, 10)
     codebase_id = Keyword.get(opts, :codebase_id)
     dependency_aware = Keyword.get(opts, :dependency_aware, true)
-    
-    Logger.info("Starting bulk HTDAG code ingestion", 
+
+    Logger.info("Starting bulk HTDAG code ingestion",
       file_count: length(file_paths),
       max_concurrent: max_concurrent,
       dependency_aware: dependency_aware
     )
 
     # Analyze dependencies if enabled
-    file_groups = if dependency_aware do
-      analyze_file_dependencies(file_paths)
-    else
-      [file_paths]  # Single group
-    end
+    file_groups =
+      if dependency_aware do
+        analyze_file_dependencies(file_paths)
+      else
+        # Single group
+        [file_paths]
+      end
 
     # Process file groups sequentially to respect dependencies
     Enum.reduce_while(file_groups, {:ok, []}, fn file_group, {:ok, acc} ->
       # Process files in this group in parallel
-      group_results = 
+      group_results =
         file_group
         |> Task.async_stream(
           fn file_path ->
@@ -306,21 +302,25 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
         |> Enum.to_list()
 
       # Check for failures
-      failed = Enum.filter(group_results, fn
-        {:ok, _} -> false
-        {:error, _} -> true
-      end)
+      failed =
+        Enum.filter(group_results, fn
+          {:ok, _} -> false
+          {:error, _} -> true
+        end)
 
       if length(failed) > 0 do
-        Logger.warning("Some DAGs failed to start in group", 
+        Logger.warning("Some DAGs failed to start in group",
           failed_count: length(failed)
         )
       end
 
       # Collect successful DAG IDs
-      successful_ids = 
+      successful_ids =
         group_results
-        |> Enum.filter_map(fn {:ok, id} -> id end, fn {:ok, _} -> true; _ -> false end)
+        |> Enum.filter_map(fn {:ok, id} -> id end, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
 
       {:cont, {:ok, acc ++ successful_ids}}
     end)
@@ -341,15 +341,16 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   def get_dag_status(dag_id) do
     case Workflows.fetch_workflow(dag_id) do
       {:ok, workflow} ->
-        {:ok, %{
-          status: workflow.status,
-          current_node: workflow.payload.current_node,
-          completed_nodes: workflow.payload.completed_nodes,
-          failed_nodes: workflow.payload.failed_nodes,
-          progress: calculate_dag_progress(workflow.payload),
-          node_statuses: workflow.payload.node_statuses
-        }}
-        
+        {:ok,
+         %{
+           status: workflow.status,
+           current_node: workflow.payload.current_node,
+           completed_nodes: workflow.payload.completed_nodes,
+           failed_nodes: workflow.payload.failed_nodes,
+           progress: calculate_dag_progress(workflow.payload),
+           node_statuses: workflow.payload.node_statuses
+         }}
+
       :not_found ->
         {:error, :not_found}
     end
@@ -374,18 +375,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
         case workflow.status do
           "completed" ->
             {:ok, workflow.payload.results}
-            
+
           "failed" ->
-            {:ok, %{
-              status: :failed,
-              error: workflow.payload.results.error,
-              failed_nodes: workflow.payload.failed_nodes
-            }}
-            
+            {:ok,
+             %{
+               status: :failed,
+               error: workflow.payload.results.error,
+               failed_nodes: workflow.payload.failed_nodes
+             }}
+
           _ ->
             {:error, :not_completed}
         end
-        
+
       :not_found ->
         {:error, :not_found}
     end
@@ -395,18 +397,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
   def detect_file_changes(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Detecting file changes", file_path: file_path)
-    
+
     case File.stat(file_path) do
       {:ok, stat} ->
-        {:ok, %{
-          file_path: file_path,
-          size: stat.size,
-          mtime: stat.mtime,
-          detected_at: DateTime.utc_now()
-        }}
-        
+        {:ok,
+         %{
+           file_path: file_path,
+           size: stat.size,
+           mtime: stat.mtime,
+           detected_at: DateTime.utc_now()
+         }}
+
       {:error, reason} ->
         {:error, {:file_stat_failed, reason}}
     end
@@ -414,19 +417,19 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
   def validate_file(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Validating file", file_path: file_path)
-    
+
     cond do
       not File.exists?(file_path) ->
         {:error, :file_not_found}
-        
+
       not File.regular?(file_path) ->
         {:error, :not_a_file}
-        
+
       not is_source_file?(file_path) ->
         {:error, :unsupported_file_type}
-        
+
       true ->
         {:ok, %{file_path: file_path, valid: true}}
     end
@@ -434,9 +437,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
   def validate_content(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Validating content", file_path: file_path)
-    
+
     case File.read(file_path) do
       {:ok, content} ->
         if byte_size(content) > 0 do
@@ -444,7 +447,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
         else
           {:error, :empty_file}
         end
-        
+
       {:error, reason} ->
         {:error, {:read_failed, reason}}
     end
@@ -452,40 +455,42 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
   def detect_language(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Detecting language", file_path: file_path)
-    
-    language = case Path.extname(file_path) do
-      ".ex" -> :elixir
-      ".exs" -> :elixir
-      ".rs" -> :rust
-      ".ts" -> :typescript
-      ".tsx" -> :typescript
-      ".js" -> :javascript
-      ".jsx" -> :javascript
-      ".py" -> :python
-      ".go" -> :go
-      ".nix" -> :nix
-      _ -> :unknown
-    end
-    
+
+    language =
+      case Path.extname(file_path) do
+        ".ex" -> :elixir
+        ".exs" -> :elixir
+        ".rs" -> :rust
+        ".ts" -> :typescript
+        ".tsx" -> :typescript
+        ".js" -> :javascript
+        ".jsx" -> :javascript
+        ".py" -> :python
+        ".go" -> :go
+        ".nix" -> :nix
+        _ -> :unknown
+      end
+
     {:ok, %{file_path: file_path, language: language}}
   end
 
   def parse_ast(args, _opts) do
     file_path = args[:file_path]
     language = args[:language]
-    
+
     Logger.debug("Parsing AST", file_path: file_path, language: language)
-    
+
     case UnifiedIngestionService.ingest_file(file_path) do
       {:ok, results} ->
-        {:ok, %{
-          file_path: file_path,
-          language: language,
-          parse_results: results
-        }}
-        
+        {:ok,
+         %{
+           file_path: file_path,
+           language: language,
+           parse_results: results
+         }}
+
       {:error, reason} ->
         {:error, {:parse_failed, reason}}
     end
@@ -494,9 +499,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   def extract_metadata(args, _opts) do
     file_path = args[:file_path]
     parse_results = args[:parse_results]
-    
+
     Logger.debug("Extracting metadata", file_path: file_path)
-    
+
     # Extract metadata from parse results
     metadata = %{
       file_path: file_path,
@@ -505,16 +510,16 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependencies: extract_dependencies(parse_results),
       complexity: calculate_complexity(parse_results)
     }
-    
+
     {:ok, metadata}
   end
 
   def store_in_database(args, _opts) do
     file_path = args[:file_path]
     codebase_id = args[:codebase_id]
-    
+
     Logger.debug("Storing in database", file_path: file_path)
-    
+
     # This is already handled by UnifiedIngestionService in parse_ast
     # Just confirm storage was successful
     {:ok, %{file_path: file_path, stored: true}}
@@ -522,9 +527,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
   def generate_embeddings(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Generating embeddings", file_path: file_path)
-    
+
     # Generate embeddings for semantic search
     # This would typically involve calling the embedding service
     {:ok, %{file_path: file_path, embeddings_generated: true}}
@@ -533,9 +538,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   def map_relationships(args, _opts) do
     file_path = args[:file_path]
     metadata = args[:metadata]
-    
+
     Logger.debug("Mapping relationships", file_path: file_path)
-    
+
     # Map relationships to other files/modules
     relationships = %{
       file_path: file_path,
@@ -543,24 +548,24 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       dependents: find_dependents(file_path),
       relationships_mapped: true
     }
-    
+
     {:ok, relationships}
   end
 
   def update_vector_index(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Updating vector index", file_path: file_path)
-    
+
     # Update vector database for semantic search
     {:ok, %{file_path: file_path, vector_index_updated: true}}
   end
 
   def rebuild_search_index(args, _opts) do
     file_path = args[:file_path]
-    
+
     Logger.debug("Rebuilding search index", file_path: file_path)
-    
+
     # Rebuild search indexes
     {:ok, %{file_path: file_path, search_index_rebuilt: true}}
   end
@@ -568,9 +573,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   def update_graph(args, _opts) do
     file_path = args[:file_path]
     relationships = args[:relationships]
-    
+
     Logger.debug("Updating graph", file_path: file_path)
-    
+
     # Update code graph with relationships
     {:ok, %{file_path: file_path, graph_updated: true}}
   end
@@ -578,12 +583,12 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   def send_completion_notification(args, _opts) do
     file_path = args[:file_path]
     dag_id = args[:dag_id]
-    
-    Logger.info("Code ingestion DAG completed", 
+
+    Logger.info("Code ingestion DAG completed",
       dag_id: dag_id,
       file_path: file_path
     )
-    
+
     # Send completion notification
     {:ok, %{file_path: file_path, notification_sent: true}}
   end
@@ -614,7 +619,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     case Workflows.fetch_workflow(dag_id) do
       {:ok, workflow} ->
         execute_htdag_nodes(workflow)
-        
+
       :not_found ->
         Logger.error("DAG not found during execution", dag_id: dag_id)
     end
@@ -623,8 +628,8 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   defp execute_htdag_nodes(workflow) do
     payload = workflow.payload
     current_node = payload.current_node
-    
-    Logger.debug("Executing HTDAG node", 
+
+    Logger.debug("Executing HTDAG node",
       dag_id: workflow.workflow_id,
       node: current_node,
       progress: calculate_dag_progress(payload)
@@ -633,44 +638,45 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     # Check if all dependencies are completed
     node_config = @nodes[current_node]
     dependencies = node_config.dependencies
-    
+
     if all_dependencies_completed?(payload, dependencies) do
       # Execute the node
       case execute_node(current_node, payload) do
         {:ok, result} ->
           # Move to next node or complete
           next_node = get_next_node(current_node)
-          
+
           if next_node do
             # Update workflow with next node
-            updated_payload = %{payload | 
-              current_node: next_node,
-              completed_nodes: [current_node | payload.completed_nodes],
-              node_statuses: Map.put(payload.node_statuses, current_node, :completed),
-              results: Map.put(payload.results, current_node, result)
+            updated_payload = %{
+              payload
+              | current_node: next_node,
+                completed_nodes: [current_node | payload.completed_nodes],
+                node_statuses: Map.put(payload.node_statuses, current_node, :completed),
+                results: Map.put(payload.results, current_node, result)
             }
-            
+
             update_workflow_payload(workflow.workflow_id, updated_payload)
-            
+
             # Continue to next node
             execute_htdag_nodes(%{workflow | payload: updated_payload})
           else
             # DAG completed
             complete_dag(workflow.workflow_id, payload)
           end
-          
+
         {:error, reason} ->
           # Handle node failure
           handle_node_failure(workflow, current_node, reason)
       end
     else
       # Dependencies not ready, wait and retry
-      Logger.debug("Dependencies not ready, waiting", 
+      Logger.debug("Dependencies not ready, waiting",
         dag_id: workflow.workflow_id,
         node: current_node,
         dependencies: dependencies
       )
-      
+
       Process.send_after(self(), {:retry_node, workflow.workflow_id}, 1000)
     end
   end
@@ -679,32 +685,34 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     node_config = @nodes[node_name]
     worker = node_config.worker
     timeout = node_config.timeout
-    
+
     # Prepare arguments for the worker
-    args = Map.merge(payload, %{
-      dag_id: payload.workflow_id || "unknown"
-    })
-    
+    args =
+      Map.merge(payload, %{
+        dag_id: payload.workflow_id || "unknown"
+      })
+
     # Execute the worker function
     case apply(elem(worker, 0), elem(worker, 1), [args, []]) do
       {:ok, result} ->
         {:ok, result}
-        
+
       {:error, reason} ->
         {:error, reason}
     end
   rescue
     error ->
-      Logger.error("Node execution failed", 
+      Logger.error("Node execution failed",
         node: node_name,
         error: inspect(error)
       )
+
       {:error, {:execution_failed, error}}
   end
 
   defp all_dependencies_completed?(payload, dependencies) do
     completed_nodes = MapSet.new(payload.completed_nodes)
-    
+
     Enum.all?(dependencies, fn dep ->
       MapSet.member?(completed_nodes, dep)
     end)
@@ -725,19 +733,16 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   defp calculate_dag_progress(payload) do
     total_nodes = map_size(@nodes)
     completed_nodes = length(payload.completed_nodes)
-    
+
     (completed_nodes / total_nodes * 100) |> round()
   end
 
   defp complete_dag(dag_id, payload) do
-    final_payload = %{payload | 
-      status: :completed,
-      completed_at: DateTime.utc_now()
-    }
-    
+    final_payload = %{payload | status: :completed, completed_at: DateTime.utc_now()}
+
     update_workflow_payload(dag_id, final_payload)
     update_workflow_status(dag_id, "completed")
-    
+
     Logger.info("HTDAG completed successfully", dag_id: dag_id)
   end
 
@@ -745,38 +750,40 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     retry_policy = workflow.payload.retry_policy
     max_retries = retry_policy[:max_retries] || 3
     current_retries = Map.get(workflow.payload.node_statuses, node, 0)
-    
+
     if current_retries < max_retries do
       # Retry the node
-      Logger.warning("Node failed, retrying", 
+      Logger.warning("Node failed, retrying",
         dag_id: workflow.workflow_id,
         node: node,
         reason: reason,
         retries_left: max_retries - current_retries - 1
       )
-      
-      updated_payload = %{workflow.payload | 
-        node_statuses: Map.put(workflow.payload.node_statuses, node, current_retries + 1)
+
+      updated_payload = %{
+        workflow.payload
+        | node_statuses: Map.put(workflow.payload.node_statuses, node, current_retries + 1)
       }
-      
+
       update_workflow_payload(workflow.workflow_id, updated_payload)
-      
+
       # Retry after a delay
       Process.send_after(self(), {:retry_node, workflow.workflow_id}, 1000)
     else
       # Max retries exceeded, fail the DAG
-      Logger.error("DAG failed after max retries", 
+      Logger.error("DAG failed after max retries",
         dag_id: workflow.workflow_id,
         node: node,
         reason: reason
       )
-      
-      failed_payload = %{workflow.payload | 
-        status: :failed,
-        failed_nodes: [node | workflow.payload.failed_nodes],
-        results: %{error: reason}
+
+      failed_payload = %{
+        workflow.payload
+        | status: :failed,
+          failed_nodes: [node | workflow.payload.failed_nodes],
+          results: %{error: reason}
       }
-      
+
       update_workflow_payload(workflow.workflow_id, failed_payload)
       update_workflow_status(workflow.workflow_id, "failed")
     end
@@ -786,7 +793,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     # Analyze file dependencies to determine execution order
     # This is a simplified implementation
     # In a real system, this would analyze import/require statements
-    
+
     # For now, just group by directory
     file_paths
     |> Enum.group_by(fn path ->
@@ -796,11 +803,27 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   end
 
   defp is_source_file?(file_path) do
-    extensions = @config[:include_extensions] || [
-      ".ex", ".exs", ".rs", ".ts", ".tsx", ".js", ".jsx", 
-      ".py", ".go", ".nix", ".sh", ".toml", ".json", ".yaml", ".yml", ".md"
-    ]
-    
+    extensions =
+      @config[:include_extensions] ||
+        [
+          ".ex",
+          ".exs",
+          ".rs",
+          ".ts",
+          ".tsx",
+          ".js",
+          ".jsx",
+          ".py",
+          ".go",
+          ".nix",
+          ".sh",
+          ".toml",
+          ".json",
+          ".yaml",
+          ".yml",
+          ".md"
+        ]
+
     Enum.any?(extensions, fn ext ->
       String.ends_with?(file_path, ext)
     end)
@@ -841,7 +864,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       {:ok, workflow} ->
         updated_workflow = %{workflow | payload: payload}
         Workflows.update_workflow_status(dag_id, updated_workflow.payload)
-        
+
       :not_found ->
         Logger.error("DAG not found for payload update", dag_id: dag_id)
     end
@@ -851,7 +874,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     case Workflows.fetch_workflow(dag_id) do
       {:ok, workflow} ->
         Workflows.update_workflow_status(dag_id, status)
-        
+
       :not_found ->
         Logger.error("DAG not found for status update", dag_id: dag_id)
     end

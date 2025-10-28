@@ -215,19 +215,28 @@ defmodule Singularity.Application do
           if bootstrap_config[:enabled] do
             delay_ms = bootstrap_config[:delay_ms] || 0
 
-            start_boot_task(fn ->
-              Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
-            end, delay_ms)
+            start_boot_task(
+              fn ->
+                Singularity.Startup.DocumentationBootstrap.bootstrap_documentation_system()
+              end,
+              delay_ms
+            )
 
             # Initialize PageRank calculation on startup
-            start_boot_task(fn ->
-              Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
-            end, delay_ms)
+            start_boot_task(
+              fn ->
+                Singularity.Bootstrap.PageRankBootstrap.ensure_initialized()
+              end,
+              delay_ms
+            )
 
             # Populate graph dependency arrays for fast queries (10-100x faster)
-            start_boot_task(fn ->
-              Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
-            end, delay_ms)
+            start_boot_task(
+              fn ->
+                Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
+              end,
+              delay_ms
+            )
           else
             Logger.info("Startup bootstrap tasks disabled via config")
           end
@@ -355,7 +364,7 @@ defmodule Singularity.Application do
 
       # Layer 5: Domain Supervisors - Domain-specific supervision trees
       Singularity.Git.Supervisor,
-      
+
       # HTDAG Auto Code Ingestion - Hierarchical task-based automatic code ingestion
       Singularity.HTDAG.Supervisor,
 
@@ -364,13 +373,17 @@ defmodule Singularity.Application do
       {PGFlow.WorkflowSupervisor,
        workflow: Singularity.Workflows.ArchitectureLearningWorkflow,
        name: ArchitectureLearningWorkflowSupervisor,
-       enabled: Application.get_env(:singularity, :architecture_learning_pipeline, %{})[:pgflow_enabled] || false},
+       enabled:
+         Application.get_env(:singularity, :architecture_learning_pipeline, %{})[:pgflow_enabled] ||
+           false},
 
       # Embedding Training Workflow - PGFlow orchestration for embedding model training
       {PGFlow.WorkflowSupervisor,
        workflow: Singularity.Workflows.EmbeddingTrainingWorkflow,
        name: EmbeddingTrainingWorkflowSupervisor,
-       enabled: Application.get_env(:singularity, :embedding_training_pipeline, %{})[:pgflow_enabled] || false}
+       enabled:
+         Application.get_env(:singularity, :embedding_training_pipeline, %{})[:pgflow_enabled] ||
+           false}
     ]
   end
 end

@@ -238,7 +238,13 @@ defmodule Mix.Tasks.Knowledge.Migrate do
     Mix.shell().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     total = length(results)
-    success = Enum.count(results, fn {:ok, value} -> not is_atom(value); _other -> false end)
+
+    success =
+      Enum.count(results, fn
+        {:ok, value} -> not is_atom(value)
+        _other -> false
+      end)
+
     skipped = Enum.count(results, &match?({:ok, :skipped}, &1))
     dry_runs = Enum.count(results, &match?({:ok, :dry_run}, &1))
     errors = Enum.count(results, &match?({:error, _}, &1))
@@ -260,7 +266,11 @@ defmodule Mix.Tasks.Knowledge.Migrate do
       Mix.shell().info("")
       Mix.shell().info("Idempotency:")
       Mix.shell().info("  • Skipped files won't be re-ingested (content unchanged)")
-      Mix.shell().info("  • Force re-ingest: mix knowledge.migrate --path ../../templates_data --force")
+
+      Mix.shell().info(
+        "  • Force re-ingest: mix knowledge.migrate --path ../../templates_data --force"
+      )
+
       Mix.shell().info("")
     end
   end

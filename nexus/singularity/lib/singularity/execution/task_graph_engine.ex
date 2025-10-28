@@ -684,6 +684,7 @@ defmodule Singularity.Execution.TaskGraphEngine do
         case parse_decomposition_response(response) do
           {:ok, subtasks_data} ->
             create_subtasks_from_llm_response(dag, task, subtasks_data)
+
           {:error, reason} ->
             Logger.error("Failed to parse LLM decomposition response: #{inspect(reason)}")
             {:error, :parse_failed}
@@ -700,7 +701,8 @@ defmodule Singularity.Execution.TaskGraphEngine do
 
   Actually performs LLM-based decomposition instead of just marking as blocked.
   """
-  @spec decompose_if_needed(task_graph(), task(), non_neg_integer()) :: {:ok, task_graph()} | {:error, term()} | task_graph()
+  @spec decompose_if_needed(task_graph(), task(), non_neg_integer()) ::
+          {:ok, task_graph()} | {:error, term()} | task_graph()
   def decompose_if_needed(dag, task, max_depth) do
     cond do
       is_atomic(task) ->
@@ -711,7 +713,9 @@ defmodule Singularity.Execution.TaskGraphEngine do
 
       true ->
         # Task needs decomposition - actually decompose it
-        Logger.info("Task #{task.id} needs decomposition (complexity: #{task.estimated_complexity}, depth: #{task.depth})")
+        Logger.info(
+          "Task #{task.id} needs decomposition (complexity: #{task.estimated_complexity}, depth: #{task.depth})"
+        )
 
         case decompose_task(dag, task) do
           {:ok, decomposed_dag} ->
@@ -736,8 +740,10 @@ defmodule Singularity.Execution.TaskGraphEngine do
     case Jason.decode(response) do
       {:ok, %{"subtasks" => subtasks}} when is_list(subtasks) ->
         {:ok, subtasks}
+
       {:ok, _other} ->
         {:error, :invalid_response_structure}
+
       {:error, reason} ->
         {:error, {:json_parse_error, reason}}
     end
@@ -774,7 +780,11 @@ defmodule Singularity.Execution.TaskGraphEngine do
 
         # Update parent task to include this child
         parent_with_child = %{parent_task | children: [subtask.id | parent_task.children]}
-        final_dag = %{updated_dag | tasks: Map.put(updated_dag.tasks, parent_task.id, parent_with_child)}
+
+        final_dag = %{
+          updated_dag
+          | tasks: Map.put(updated_dag.tasks, parent_task.id, parent_with_child)
+        }
 
         {final_dag, [subtask.id | created_ids]}
       end)

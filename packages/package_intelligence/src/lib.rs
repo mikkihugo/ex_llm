@@ -50,9 +50,9 @@ use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
 
-pub mod package_file_watcher;
 pub mod cache;
 pub mod engine;
+pub mod package_file_watcher;
 pub mod processor;
 pub mod template;
 
@@ -110,8 +110,8 @@ pub use package_file_watcher::{PackageFileWatcher, PackageFileWatcherConfig};
 // Storage - package metadata storage
 // Export storage traits and key types
 pub use storage::{
-  create_storage, PackageStorage, StorageConfig,
-  PackageKey, PackageMetadata, CodeSnippet, PackageExample, DependencyCatalogStorage
+  create_storage, CodeSnippet, DependencyCatalogStorage, PackageExample,
+  PackageKey, PackageMetadata, PackageStorage, StorageConfig,
 };
 
 // NEW: Embeddings and search
@@ -121,8 +121,8 @@ pub use search::{IndexStats, VectorIndex};
 // Re-export tech_detector types for convenience
 #[cfg(feature = "detection")]
 pub use tech_detector::{
-  TechDetector, DetectionResults, FrameworkDetection, LanguageDetection,
-  DatabaseDetection, DetectionMethod,
+  DatabaseDetection, DetectionMethod, DetectionResults, FrameworkDetection,
+  LanguageDetection, TechDetector,
 };
 
 /// Result type for FACT operations

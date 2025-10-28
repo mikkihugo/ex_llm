@@ -42,29 +42,27 @@ pub use graph::*;
 
 // Dependency analysis (excluding conflicts with security)
 pub use dependency::{
-    Dependency, DependencyAnalysis, DependencyHealthMetrics, DependencyNode, DependencyNodeType,
+    CentralityMetrics as DependencyCentralityMetrics, CircularDependency, CircularDependencyImpact,
+    CircularDependencySeverity, CostLevel, CriticalityLevel, Dependency, DependencyAnalysis,
+    DependencyEdge, DependencyEdgeType, DependencyGraph, DependencyHealthAnalysis,
+    DependencyHealthAnalyzer, DependencyHealthMetrics, DependencyNode, DependencyNodeType,
     DependencyRecommendation, DependencySource, DependencyType, DependencyVulnerability,
-    CircularDependency, CircularDependencyImpact, CircularDependencySeverity,
-    CentralityMetrics as DependencyCentralityMetrics, DependencyEdge, DependencyEdgeType,
-    DependencyGraph, GraphMetrics as DependencyGraphMetrics,
-    CostLevel, CriticalityLevel, DependencyHealthAnalysis, DependencyHealthAnalyzer,
+    GraphMetrics as DependencyGraphMetrics,
 };
 
 // Code metrics and analysis (exclude conflicting names)
 pub use metrics::*;
 pub use multilang::*;
 pub use performance::{
-    PerformanceAnalysis, PerformanceBottleneck, BottleneckType, PerformanceSeverity,
-    BottleneckLocation, PerformanceImpact, ScalabilityImpact, OptimizationOpportunity,
-    OptimizationType, ImplementationEffort, ResourceUsage, MemoryUsage, MemoryLeak,
-    CPUUsage, CPUIntensiveFunction, NetworkUsage, SlowRequest, NetworkBottleneck,
-    NetworkBottleneckType, DiskUsage, SlowIOOperation, IOOperationType,
-    PerformanceRecommendation, PerformanceRecommendationPriority, PerformanceCategory,
-    PerformanceMetadata, PerformanceDetectorTrait, PerformancePatternRegistry, PerformancePattern,
-    OptimizationAnalysis, Optimization, OptimizationLocation,
-    OptimizationRecommendation,
-    OptimizationMetadata, OptimizationPattern, PerformanceOptimizer,
-    ProfilingAnalysis, PerformanceMetrics, ProfilingMetadata, ProfilingPattern, PerformanceProfiler,
+    BottleneckLocation, BottleneckType, CPUIntensiveFunction, CPUUsage, DiskUsage, IOOperationType,
+    ImplementationEffort, MemoryLeak, MemoryUsage, NetworkBottleneck, NetworkBottleneckType,
+    NetworkUsage, Optimization, OptimizationAnalysis, OptimizationLocation, OptimizationMetadata,
+    OptimizationOpportunity, OptimizationPattern, OptimizationRecommendation, OptimizationType,
+    PerformanceAnalysis, PerformanceBottleneck, PerformanceCategory, PerformanceDetectorTrait,
+    PerformanceImpact, PerformanceMetadata, PerformanceMetrics, PerformanceOptimizer,
+    PerformancePattern, PerformancePatternRegistry, PerformanceProfiler, PerformanceRecommendation,
+    PerformanceRecommendationPriority, PerformanceSeverity, ProfilingAnalysis, ProfilingMetadata,
+    ProfilingPattern, ResourceUsage, ScalabilityImpact, SlowIOOperation, SlowRequest,
 };
 pub use refactoring_suggestions::*;
 pub use results::*;

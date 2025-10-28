@@ -26,7 +26,11 @@ impl Pattern {
         &self.pattern
     }
 
-    pub fn with_constraint(mut self, metavar: impl Into<String>, constraint: impl Into<String>) -> Self {
+    pub fn with_constraint(
+        mut self,
+        metavar: impl Into<String>,
+        constraint: impl Into<String>,
+    ) -> Self {
         self.constraints.insert(metavar.into(), constraint.into());
         self
     }
@@ -38,7 +42,9 @@ impl Pattern {
 
     pub fn validate(&self) -> Result<(), AstGrepError> {
         if self.pattern.trim().is_empty() {
-            return Err(AstGrepError::UnsupportedFlag("pattern cannot be empty".into()));
+            return Err(AstGrepError::UnsupportedFlag(
+                "pattern cannot be empty".into(),
+            ));
         }
 
         if self.flags.whole_word {
@@ -64,14 +70,18 @@ impl Pattern {
                 '}' => {
                     depth -= 1;
                     if depth < 0 {
-                        return Err(AstGrepError::UnsupportedFlag("unbalanced pattern braces".into()));
+                        return Err(AstGrepError::UnsupportedFlag(
+                            "unbalanced pattern braces".into(),
+                        ));
                     }
                 }
                 _ => {}
             }
         }
         if depth != 0 {
-            return Err(AstGrepError::UnsupportedFlag("unbalanced pattern braces".into()));
+            return Err(AstGrepError::UnsupportedFlag(
+                "unbalanced pattern braces".into(),
+            ));
         }
 
         Ok(())

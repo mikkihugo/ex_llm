@@ -125,9 +125,10 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
     Logger.info("[FileAnalysisSwarm] Found #{length(file_paths)} files to analyze")
 
     # Queue files for analysis
-    new_state = Enum.reduce(file_paths, state, fn file_path, acc ->
-      queue_file_for_analysis(acc, file_path, analysis_opts)
-    end)
+    new_state =
+      Enum.reduce(file_paths, state, fn file_path, acc ->
+        queue_file_for_analysis(acc, file_path, analysis_opts)
+      end)
 
     updated_state = %{new_state | total_files_discovered: length(file_paths)}
 
@@ -140,9 +141,10 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
 
     analysis_opts = Keyword.merge(state.default_opts, opts)
 
-    new_state = Enum.reduce(file_paths, state, fn file_path, acc ->
-      queue_file_for_analysis(acc, file_path, analysis_opts)
-    end)
+    new_state =
+      Enum.reduce(file_paths, state, fn file_path, acc ->
+        queue_file_for_analysis(acc, file_path, analysis_opts)
+      end)
 
     {:reply, {:ok, length(file_paths)}, new_state}
   end
@@ -216,9 +218,9 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
     store_analysis_result(file_path, result)
 
     new_state = %{
-      state |
-      active_workers: new_active_workers,
-      completed_analyses: state.completed_analyses + 1
+      state
+      | active_workers: new_active_workers,
+        completed_analyses: state.completed_analyses + 1
     }
 
     {:noreply, new_state}
@@ -226,7 +228,8 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
 
   @impl true
   def handle_info({:analysis_failed, worker_id, file_path, error}, state) do
-    SASL.execution_failure(:swarm_analysis_failure,
+    SASL.execution_failure(
+      :swarm_analysis_failure,
       "File analysis swarm worker failed",
       worker_id: worker_id,
       file_path: file_path,
@@ -237,9 +240,9 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
     new_active_workers = Map.delete(state.active_workers, worker_id)
 
     new_state = %{
-      state |
-      active_workers: new_active_workers,
-      failed_analyses: state.failed_analyses + 1
+      state
+      | active_workers: new_active_workers,
+        failed_analyses: state.failed_analyses + 1
     }
 
     {:noreply, new_state}
@@ -248,7 +251,9 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
   # Private Functions
 
   defp discover_files(directory, opts) do
-    file_extensions = Keyword.get(opts, :file_extensions, [".ex", ".exs", ".erl", ".hrl", ".gleam"])
+    file_extensions =
+      Keyword.get(opts, :file_extensions, [".ex", ".exs", ".erl", ".hrl", ".gleam"])
+
     exclude_patterns = Keyword.get(opts, :exclude_patterns, ["_build", "deps", ".git"])
 
     # Simple file discovery (could be enhanced with more sophisticated filtering)
@@ -259,9 +264,10 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
       has_correct_ext = ext in file_extensions
 
       # Check exclusions
-      not_excluded = not Enum.any?(exclude_patterns, fn pattern ->
-        String.contains?(path, pattern)
-      end)
+      not_excluded =
+        not Enum.any?(exclude_patterns, fn pattern ->
+          String.contains?(path, pattern)
+        end)
 
       has_correct_ext and not_excluded and File.regular?(path)
     end)
@@ -278,9 +284,12 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
   defp calculate_analysis_priority(file_path, _opts) do
     # Simple priority calculation (could be enhanced)
     cond do
-      String.contains?(file_path, "lib/") -> 1  # Core library files
-      String.contains?(file_path, "test/") -> 2 # Test files
-      String.contains?(file_path, "config/") -> 0 # Config files (lowest priority)
+      # Core library files
+      String.contains?(file_path, "lib/") -> 1
+      # Test files
+      String.contains?(file_path, "test/") -> 2
+      # Config files (lowest priority)
+      String.contains?(file_path, "config/") -> 0
       true -> 1
     end
   end
@@ -311,12 +320,13 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
         case BeamAnalysisEngine.analyze_beam_code(language, content, file_path) do
           {:ok, analysis} ->
             # Add metadata
-            analysis_with_meta = Map.put(analysis, :metadata, %{
-              analyzed_at: DateTime.utc_now(),
-              file_size: byte_size(content),
-              language: language,
-              analysis_version: "1.0"
-            })
+            analysis_with_meta =
+              Map.put(analysis, :metadata, %{
+                analyzed_at: DateTime.utc_now(),
+                file_size: byte_size(content),
+                language: language,
+                analysis_version: "1.0"
+              })
 
             {:ok, analysis_with_meta}
 
@@ -346,6 +356,7 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
     case result do
       {:ok, analysis} ->
         Logger.info("[FileAnalysisSwarm] Stored analysis for #{file_path}: #{analysis.language}")
+
       {:error, _reason} ->
         Logger.warning("[FileAnalysisSwarm] Failed to analyze #{file_path}")
     end

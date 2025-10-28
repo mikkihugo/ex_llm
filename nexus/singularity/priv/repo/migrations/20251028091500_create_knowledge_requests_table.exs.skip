@@ -1,0 +1,60 @@
+defmodule Singularity.Repo.Migrations.CreateKnowledgeRequestsTable do
+  @moduledoc """
+  TODO: Enable this migration once logical replication for approved patterns is live.
+  Creates the `knowledge_requests` table used for generic request tickets.
+  """
+
+  use Ecto.Migration
+
+  def change do
+    create table(:knowledge_requests, primary_key: false) do
+      add :id, :uuid, primary_key: true, default: fragment("uuid_generate_v7()")
+      add :request_type, :string, null: false
+      add :status, :string, null: false, default: "pending"
+      add :external_key, :string, null: false
+      add :payload, :map, null: false
+      add :source, :string, null: false
+      add :source_reference, :string
+      add :retry_at, :utc_datetime_usec
+      add :last_error, :text
+      add :resolution_payload, :map
+      add :metadata, :map, default: %{}
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:knowledge_requests, [:external_key],
+      name: "knowledge_requests_external_key_index"
+    )
+
+    create index(:knowledge_requests, [:status, :retry_at])
+    create index(:knowledge_requests, [:request_type, :status])
+
+    execute("""
+    CREATE OR REPLACE FUNCTION notify_knowledge_request_update() RETURNS trigger AS $$
+    DECLARE
+      payload jsonb;
+    BEGIN
+      payload := jsonb_build_object(
+        'id', NEW.id,
+        'status', NEW.status,
+        'request_type', NEW.request_type,
+        'external_key', NEW.external_key,
+        'source', NEW.source,
+        'source_reference', NEW.source_reference,
+        'changed_at', NOW()
+      );
+
+      PERFORM pg_notify('knowledge_requests', payload::text);
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    """)
+
+    execute("""
+    CREATE TRIGGER knowledge_requests_notify_trg
+    AFTER UPDATE OF status ON knowledge_requests
+    FOR EACH ROW EXECUTE FUNCTION notify_knowledge_request_update();
+    """)
+  end
+end

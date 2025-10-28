@@ -241,11 +241,13 @@ defmodule Singularity.CodeGraph.Queries do
         {:ok, result}
 
       error ->
-        SASL.database_failure(:graph_query_failure,
+        SASL.database_failure(
+          :graph_query_failure,
           "Forward dependencies graph query failed",
           query_type: :forward_dependencies,
           error: error
         )
+
         error
     end
   end

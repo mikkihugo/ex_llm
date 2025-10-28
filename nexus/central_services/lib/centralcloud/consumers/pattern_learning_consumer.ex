@@ -42,6 +42,7 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
   """
 
   require Logger
+  alias Singularity.Knowledge.Requests, as: KnowledgeRequests
 
   @doc """
   Handle incoming pattern message from queue.
@@ -161,6 +162,12 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
         """, [name, ecosystem, frequency, confidence]) do
         {:ok, _} ->
           Logger.debug("[PatternLearning] ✓ Stored pattern #{name}")
+          resolve_requests(pattern, :technology, %{
+            "pattern_name" => name,
+            "ecosystem" => ecosystem,
+            "confidence" => confidence,
+            "instance_id" => instance_id
+          })
 
           # Trigger real-time sync if confidence >= 0.85
           if confidence >= 0.85 do
@@ -210,6 +217,13 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
               usage_count: usage_count
             )
 
+            resolve_requests(artifact, :framework, %{
+              "pattern_name" => name,
+              "ecosystem" => ecosystem,
+              "success_rate" => success_rate,
+              "instance_id" => instance_id
+            })
+
             # Trigger immediate sync for high-quality patterns
             trigger_realtime_sync(:learned_artifact, name, ecosystem, success_rate)
 
@@ -235,4 +249,84 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
       CentralCloud.Consumers.UpdateBroadcaster.sync_single_pattern(name, ecosystem, pattern_type)
     end)
   end
+
+  defp resolve_requests(pattern, default_type, resolution_payload) do
+    try do
+      pattern_type = determine_pattern_type(pattern, default_type)
+      extension = extract_extension(pattern)
+      ecosystem = Map.get(pattern, "ecosystem")
+      source_reference =
+        Map.get(pattern, "repo_path") ||
+          Map.get(pattern, "source_reference") ||
+          Map.get(pattern, "codebase")
+
+      KnowledgeRequests.resolve_pattern(pattern_type, extension, resolution_payload)
+      KnowledgeRequests.resolve_pattern_by_ecosystem(pattern_type, ecosystem, resolution_payload)
+      KnowledgeRequests.resolve_by_source(:pattern, source_reference, resolution_payload)
+      KnowledgeRequests.resolve_by_source(:anti_pattern, pattern["name"], resolution_payload)
+    rescue
+      error ->
+        Logger.debug("[PatternLearning] Unable to resolve knowledge requests automatically",
+          reason: inspect(error),
+          pattern: pattern
+        )
+    end
+  end
+
+  defp determine_pattern_type(%{"pattern_type" => type}, _default) when is_binary(type) do
+    case String.downcase(type) do
+      "framework" -> :framework
+      "technology" -> :technology
+      _ -> :technology
+    end
+  end
+
+  defp determine_pattern_type(%{"pattern_type" => type}, _default) when is_atom(type) do
+    case type do
+      :framework -> :framework
+      :technology -> :technology
+      _ -> :technology
+    end
+  end
+
+  defp determine_pattern_type(_pattern, default), do: default
+
+  defp extract_extension(pattern) do
+    cond do
+      is_binary(pattern["extension"]) ->
+        pattern["extension"]
+
+      is_list(pattern["file_patterns"]) ->
+        pattern["file_patterns"]
+        |> Enum.find_value(&extension_from_pattern/1)
+
+      is_binary(pattern["file_pattern"]) ->
+        extension_from_pattern(pattern["file_pattern"])
+
+      true ->
+        nil
+    end
+  end
+
+  defp extension_from_pattern(pattern) when is_binary(pattern) do
+    pattern
+    |> String.split(".")
+    |> List.last()
+    |> case do
+      nil -> nil
+      fragment ->
+        fragment =
+          fragment
+          |> String.replace(~r/[^a-zA-Z0-9]/, "")
+          |> String.downcase()
+
+        if fragment == "" do
+          nil
+        else
+          ".#{fragment}"
+        end
+    end
+  end
+
+  defp extension_from_pattern(_), do: nil
 end

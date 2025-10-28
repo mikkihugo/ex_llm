@@ -8,10 +8,10 @@
 //! - Publishes violations to "intelligence_hub.security_pattern.detected"
 //! - No local framework databases - all rules from CentralCloud
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Compliance analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +116,9 @@ impl ComplianceAnalyzer {
         let frameworks = self.query_framework_rules(file_path).await?;
 
         // 2. Check compliance (use content!)
-        let violations = self.check_compliance(content, file_path, &frameworks).await?;
+        let violations = self
+            .check_compliance(content, file_path, &frameworks)
+            .await?;
 
         // 3. Generate recommendations (use violations!)
         let recommendations = self.generate_recommendations(&violations, &frameworks);
@@ -145,31 +147,56 @@ impl ComplianceAnalyzer {
             "include_remediation": true,
         });
 
-        let response = query_centralcloud(
-            "intelligence_hub.framework_rules.query",
-            &request,
-            3000
-        )?;
+        let response =
+            query_centralcloud("intelligence_hub.framework_rules.query", &request, 3000)?;
 
         let rules: Vec<serde_json::Value> = extract_data(&response, "rules");
 
         // Convert to frameworks
         let mut frameworks = Vec::new();
         for (idx, rule_set) in rules.iter().enumerate() {
-            let name = rule_set.get("framework").and_then(|v| v.as_str()).unwrap_or("unknown").to_string();
-            let version = rule_set.get("version").and_then(|v| v.as_str()).unwrap_or("1.0").to_string();
+            let name = rule_set
+                .get("framework")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown")
+                .to_string();
+            let version = rule_set
+                .get("version")
+                .and_then(|v| v.as_str())
+                .unwrap_or("1.0")
+                .to_string();
 
-            let requirements: Vec<ComplianceRequirement> = rule_set.get("requirements")
+            let requirements: Vec<ComplianceRequirement> = rule_set
+                .get("requirements")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().enumerate().map(|(req_idx, req)| {
-                    ComplianceRequirement {
-                        id: format!("REQ-{}-{}", idx, req_idx),
-                        title: req.get("title").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
-                        description: req.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                        pattern: req.get("pattern").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                        severity: req.get("severity").and_then(|v| v.as_str()).unwrap_or("medium").to_string(),
-                    }
-                }).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .enumerate()
+                        .map(|(req_idx, req)| ComplianceRequirement {
+                            id: format!("REQ-{}-{}", idx, req_idx),
+                            title: req
+                                .get("title")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown")
+                                .to_string(),
+                            description: req
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                            pattern: req
+                                .get("pattern")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                            severity: req
+                                .get("severity")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("medium")
+                                .to_string(),
+                        })
+                        .collect()
+                })
                 .unwrap_or_default();
 
             frameworks.push(ComplianceFramework {
@@ -241,7 +268,11 @@ impl ComplianceAnalyzer {
     }
 
     /// Generate recommendations from violations
-    fn generate_recommendations(&self, violations: &[ComplianceViolation], frameworks: &[ComplianceFramework]) -> Vec<ComplianceRecommendation> {
+    fn generate_recommendations(
+        &self,
+        violations: &[ComplianceViolation],
+        frameworks: &[ComplianceFramework],
+    ) -> Vec<ComplianceRecommendation> {
         let mut recommendations = Vec::new();
 
         // Create recommendations for each violation
@@ -271,8 +302,12 @@ impl ComplianceAnalyzer {
                     framework: framework.name.clone(),
                     requirement: "general".to_string(),
                     title: format!("Improve {} Compliance", framework.name),
-                    description: format!("Review all {} requirements for best practices", framework.name),
-                    implementation: "Conduct compliance audit and implement missing requirements".to_string(),
+                    description: format!(
+                        "Review all {} requirements for best practices",
+                        framework.name
+                    ),
+                    implementation: "Conduct compliance audit and implement missing requirements"
+                        .to_string(),
                 });
             }
         }
@@ -281,17 +316,20 @@ impl ComplianceAnalyzer {
     }
 
     /// Calculate compliance score from violations and frameworks
-    fn calculate_compliance_score(&self, violations: &[ComplianceViolation], frameworks: &[ComplianceFramework]) -> f64 {
-        let total_requirements: usize = frameworks.iter()
-            .map(|f| f.requirements.len())
-            .sum();
+    fn calculate_compliance_score(
+        &self,
+        violations: &[ComplianceViolation],
+        frameworks: &[ComplianceFramework],
+    ) -> f64 {
+        let total_requirements: usize = frameworks.iter().map(|f| f.requirements.len()).sum();
 
         if total_requirements == 0 {
             return 1.0;
         }
 
         // Calculate violation penalty
-        let violation_penalty: f64 = violations.iter()
+        let violation_penalty: f64 = violations
+            .iter()
             .map(|v| match v.severity {
                 ComplianceSeverity::Critical => 1.0,
                 ComplianceSeverity::High => 0.7,

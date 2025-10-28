@@ -1,8 +1,8 @@
 //! Python parser implemented with tree-sitter and the parser-framework traits.
 
 use parser_core::{
-    Class, Comment, Decorator, EnumVariant, FunctionInfo, Import, LanguageMetrics,
-    LanguageParser, ParseError, AST,
+    Class, Comment, Decorator, EnumVariant, FunctionInfo, Import, LanguageMetrics, LanguageParser,
+    ParseError, AST,
 };
 use std::sync::Mutex;
 use tree_sitter::{Node, Parser, StreamingIterator, Tree};
@@ -60,7 +60,7 @@ impl PythonParser {
                 line_start: (node.start_position().row + 1) as u32,
                 line_end: (node.end_position().row + 1) as u32,
                 methods: Vec::new(), // TODO: implement method extraction
-                fields: Vec::new(), // TODO: implement field extraction
+                fields: Vec::new(),  // TODO: implement field extraction
             };
 
             infos.push(ClassInfo {
@@ -97,8 +97,13 @@ impl LanguageParser for PythonParser {
 
         // Use RCA for real complexity and accurate LOC metrics
         let (complexity_score, _sloc, ploc, cloc, blank_lines) =
-            parser_core::calculate_rca_complexity(&ast.content, "python")
-                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+            parser_core::calculate_rca_complexity(&ast.content, "python").unwrap_or((
+                1.0,
+                ast.content.lines().count() as u64,
+                ast.content.lines().count() as u64,
+                comments.len() as u64,
+                0,
+            ));
 
         Ok(LanguageMetrics {
             lines_of_code: ploc.saturating_sub(blank_lines + cloc), // Physical - (blank + comments)
@@ -230,7 +235,7 @@ impl LanguageParser for PythonParser {
                 comments.push(Comment {
                     content: text.to_string(),
                     line: start as u32,
-                    column: 0, // TODO: implement column counting
+                    column: 0,                // TODO: implement column counting
                     kind: "line".to_string(), // Python comments are always line comments
                 });
             }
@@ -238,7 +243,6 @@ impl LanguageParser for PythonParser {
 
         Ok(comments)
     }
-
 
     fn get_language(&self) -> &str {
         "python"
@@ -350,7 +354,11 @@ fn collect_python_decorators(node: Node<'_>, source: &str) -> Vec<Decorator> {
                     if let Ok(text) = child.utf8_text(source.as_bytes()) {
                         let text = text.trim().trim_start_matches('@');
                         let (name, arguments) = parse_decorator_text(text);
-                        decorators.push(Decorator { name, line: 0, arguments });
+                        decorators.push(Decorator {
+                            name,
+                            line: 0,
+                            arguments,
+                        });
                     }
                 }
             }

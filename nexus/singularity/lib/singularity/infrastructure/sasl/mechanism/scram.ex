@@ -28,7 +28,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
 
   require Logger
 
-  @default_iterations 4096  # Minimum recommended for SCRAM
+  # Minimum recommended for SCRAM
+  @default_iterations 4096
   @min_iterations 4096
   @max_iterations 100_000
   @nonce_size 24
@@ -43,12 +44,13 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
          {:ok, server_first} <- generate_server_first(client_first, user_record, opts),
          {:ok, client_final} <- parse_client_final(credentials),
          {:ok, _context} <- verify_client_proof(client_final, server_first, user_record) do
-      context = Mechanism.create_security_context(credentials, :standard_scram, %{
-        scram_session_id: generate_scram_session_id(),
-        iterations: server_first.iterations,
-        salt: server_first.salt,
-        channel_binding: Map.get(credentials, :channel_binding, "tls-server-end-point")
-      })
+      context =
+        Mechanism.create_security_context(credentials, :standard_scram, %{
+          scram_session_id: generate_scram_session_id(),
+          iterations: server_first.iterations,
+          salt: server_first.salt,
+          channel_binding: Map.get(credentials, :channel_binding, "tls-server-end-point")
+        })
 
       {:ok, context}
     else
@@ -122,24 +124,26 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
     # In a real implementation, this would query the user database
     case username do
       "scram_admin" ->
-        {:ok, %{
-          username: "scram_admin",
-          password_hash: generate_scram_hash("admin_password", generate_mock_salt()),
-          salt: generate_mock_salt(),
-          iterations: @default_iterations,
-          permissions: ["scram_admin", "database_access"],
-          telecom_context: %{node_type: "database", protocol: "postgresql"}
-        }}
+        {:ok,
+         %{
+           username: "scram_admin",
+           password_hash: generate_scram_hash("admin_password", generate_mock_salt()),
+           salt: generate_mock_salt(),
+           iterations: @default_iterations,
+           permissions: ["scram_admin", "database_access"],
+           telecom_context: %{node_type: "database", protocol: "postgresql"}
+         }}
 
       "db_user" ->
-        {:ok, %{
-          username: "db_user",
-          password_hash: generate_scram_hash("user_password", generate_mock_salt()),
-          salt: generate_mock_salt(),
-          iterations: @default_iterations,
-          permissions: ["database_access"],
-          telecom_context: %{node_type: "client", protocol: "postgresql"}
-        }}
+        {:ok,
+         %{
+           username: "db_user",
+           password_hash: generate_scram_hash("user_password", generate_mock_salt()),
+           salt: generate_mock_salt(),
+           iterations: @default_iterations,
+           permissions: ["database_access"],
+           telecom_context: %{node_type: "client", protocol: "postgresql"}
+         }}
 
       _ ->
         {:error, "SCRAM user not found: #{username}"}
@@ -209,23 +213,25 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
       client_proof = Base.decode64!(client_final.client_proof)
 
       # Compute expected proof
-      expected_proof = compute_client_proof(
-        user_record.password_hash,
-        server_first.salt,
-        server_first.iterations,
-        server_first.combined_nonce,
-        client_final.channel_binding
-      )
-
-      if secure_compare(client_proof, expected_proof) do
-        # Generate server signature for mutual authentication
-        server_signature = compute_server_signature(
+      expected_proof =
+        compute_client_proof(
           user_record.password_hash,
           server_first.salt,
           server_first.iterations,
           server_first.combined_nonce,
           client_final.channel_binding
         )
+
+      if secure_compare(client_proof, expected_proof) do
+        # Generate server signature for mutual authentication
+        server_signature =
+          compute_server_signature(
+            user_record.password_hash,
+            server_first.salt,
+            server_first.iterations,
+            server_first.combined_nonce,
+            client_final.channel_binding
+          )
 
         context = %{
           client_proof_verified: true,
@@ -244,7 +250,10 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
 
   defp compute_client_proof(password_hash, salt, iterations, nonce, channel_binding) do
     # SCRAM client proof computation
-    auth_message = build_auth_message(%{combined_nonce: nonce, salt: salt, iterations: iterations}, %{channel_binding: channel_binding})
+    auth_message =
+      build_auth_message(%{combined_nonce: nonce, salt: salt, iterations: iterations}, %{
+        channel_binding: channel_binding
+      })
 
     salted_password = pbkdf2_hmac(password_hash, salt, iterations)
     client_key = hmac(salted_password, "Client Key")
@@ -257,7 +266,10 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
 
   defp compute_server_signature(password_hash, salt, iterations, nonce, channel_binding) do
     # SCRAM server signature computation
-    auth_message = build_auth_message(%{combined_nonce: nonce, salt: salt, iterations: iterations}, %{channel_binding: channel_binding})
+    auth_message =
+      build_auth_message(%{combined_nonce: nonce, salt: salt, iterations: iterations}, %{
+        channel_binding: channel_binding
+      })
 
     salted_password = pbkdf2_hmac(password_hash, salt, iterations)
     server_key = hmac(salted_password, "Server Key")
@@ -286,7 +298,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.SCRAM do
 
   defp validate_scram_response(_challenge, response) do
     # Validate SCRAM response format
-    min_size = 16  # Minimum response size
+    # Minimum response size
+    min_size = 16
 
     if byte_size(response) >= min_size do
       :ok

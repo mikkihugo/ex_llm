@@ -27,6 +27,9 @@ defmodule Singularity.Infrastructure.Supervisor do
     Logger.info("Starting Singularity Infrastructure Supervisor")
 
     children = [
+      # Overseer keeps runtime visibility centralised (PGFlow edition)
+      Singularity.Infrastructure.Overseer,
+
       # Circuit breaker registry for unique circuit names
       {Registry, keys: :unique, name: Singularity.Infrastructure.CircuitBreakerRegistry},
 
@@ -39,6 +42,7 @@ defmodule Singularity.Infrastructure.Supervisor do
 
       # Startup warmup (system initialization and health checks)
       Singularity.StartupWarmup,
+      # HealthAgent stays as a pure module (invoked on demand; no child spec)
 
       # Embedding model loader (ML model initialization)
       Singularity.EmbeddingModelLoader,

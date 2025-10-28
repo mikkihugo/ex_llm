@@ -8,6 +8,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
   describe "authenticate_protocol/4" do
     test "authenticates via diameter protocol successfully" do
       credentials = %{username: "admin", password: "admin_password"}
+
       diameter_message = %{
         avps: [
           {"User-Name", "admin"},
@@ -17,7 +18,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+
       assert context.user_id == "admin"
       assert context.mechanism == :diameter
       assert Map.has_key?(context, :diameter_session_id)
@@ -25,6 +28,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
 
     test "authenticates via radius protocol successfully" do
       credentials = %{username: "radius_admin", password: "radius_secret"}
+
       radius_message = %{
         code: "Access-Request",
         identifier: 1,
@@ -36,7 +40,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :radius, radius_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :radius, radius_message)
+
       assert context.user_id == "radius_admin"
       assert context.mechanism == :radius
       assert Map.has_key?(context, :radius_session_id)
@@ -44,6 +50,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
 
     test "authenticates via ss7 protocol successfully" do
       credentials = %{username: "ss7_admin", password: "ss7_secret"}
+
       ss7_message = %{
         message_type: "Connection-Request",
         calling_address: "1-234-5",
@@ -55,7 +62,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :ss7, ss7_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :ss7, ss7_message)
+
       assert context.user_id == "ss7_admin"
       assert context.mechanism == :ss7
       assert Map.has_key?(context, :ss7_session_id)
@@ -65,7 +74,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
       credentials = %{username: "invalid", password: "wrong"}
       diameter_message = %{avps: [{"User-Name", "invalid"}]}
 
-      assert {:error, reason} = ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+      assert {:error, reason} =
+               ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+
       assert String.contains?(reason, "Protocol authentication failed")
     end
 
@@ -73,7 +84,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
       credentials = %{username: "admin", password: "secret"}
       message = %{}
 
-      assert {:error, reason} = ProtocolAdapter.authenticate_protocol(credentials, :unsupported, message)
+      assert {:error, reason} =
+               ProtocolAdapter.authenticate_protocol(credentials, :unsupported, message)
+
       assert String.contains?(reason, "Protocol authentication failed")
     end
   end
@@ -108,7 +121,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
       challenge = "diameter_challenge_data"
       response = "diameter_response_data"
 
-      assert {:ok, context} = ProtocolAdapter.verify_protocol_response(:diameter, challenge, response)
+      assert {:ok, context} =
+               ProtocolAdapter.verify_protocol_response(:diameter, challenge, response)
+
       assert context.mechanism == :diameter
       assert context.challenge == challenge
       assert context.response == response
@@ -118,7 +133,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
       challenge = "radius_challenge_data"
       response = "radius_response_data"
 
-      assert {:ok, context} = ProtocolAdapter.verify_protocol_response(:radius, challenge, response)
+      assert {:ok, context} =
+               ProtocolAdapter.verify_protocol_response(:radius, challenge, response)
+
       assert context.mechanism == :radius
     end
 
@@ -126,7 +143,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
       challenge = "test_challenge"
       response = "test_response"
 
-      assert {:error, reason} = ProtocolAdapter.verify_protocol_response(:unsupported, challenge, response)
+      assert {:error, reason} =
+               ProtocolAdapter.verify_protocol_response(:unsupported, challenge, response)
+
       assert String.contains?(reason, "Unsupported SASL mechanism")
     end
   end
@@ -229,7 +248,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
 
       assert response.code == "Access-Accept"
       assert response.attributes |> Enum.find(fn {k, _} -> k == "User-Name" end)
-      assert response.attributes |> Enum.find(fn {k, v} -> k == "Session-Timeout" && v == 1800 end)
+
+      assert response.attributes
+             |> Enum.find(fn {k, v} -> k == "Session-Timeout" && v == 1800 end)
     end
 
     test "creates ss7 response for successful authentication" do
@@ -251,6 +272,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
   describe "protocol-specific features" do
     test "handles telecom-specific context in diameter" do
       credentials = %{username: "admin", password: "admin_password"}
+
       diameter_message = %{
         avps: [
           {"User-Name", "admin"},
@@ -259,13 +281,16 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :diameter, diameter_message)
+
       assert context.telecom_context.node_type == "hss"
       assert context.telecom_context.network == "core"
     end
 
     test "handles framed information in radius" do
       credentials = %{username: "radius_admin", password: "radius_secret"}
+
       radius_message = %{
         attributes: [
           {"User-Name", "radius_admin"},
@@ -274,12 +299,15 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :radius, radius_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :radius, radius_message)
+
       assert Map.has_key?(context, :framed_info)
     end
 
     test "handles global title routing in ss7" do
       credentials = %{username: "ss7_admin", password: "ss7_secret"}
+
       ss7_message = %{
         parameters: [
           {"Global-Title", "123456789"},
@@ -287,7 +315,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapterTest do
         ]
       }
 
-      assert {:ok, context} = ProtocolAdapter.authenticate_protocol(credentials, :ss7, ss7_message)
+      assert {:ok, context} =
+               ProtocolAdapter.authenticate_protocol(credentials, :ss7, ss7_message)
+
       assert context.global_title == "123456789"
       assert context.telecom_context.node_type == "stp"
     end

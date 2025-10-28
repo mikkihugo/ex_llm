@@ -449,7 +449,8 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
 
   defp normalize_analysis_inputs(criteria, opts) do
     cond do
-      Keyword.keyword?(criteria) and opts == [] and keyword_only_contains?(criteria, @analysis_option_keys) ->
+      Keyword.keyword?(criteria) and opts == [] and
+          keyword_only_contains?(criteria, @analysis_option_keys) ->
         {%{}, criteria}
 
       true ->

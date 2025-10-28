@@ -20,7 +20,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism do
   """
   @callback authenticate(credentials(), options()) :: {:ok, context()} | {:error, String.t()}
   @callback generate_challenge(options()) :: {:ok, challenge()} | {:error, String.t()}
-  @callback verify_response(challenge(), response(), options()) :: {:ok, context()} | {:error, String.t()}
+  @callback verify_response(challenge(), response(), options()) ::
+              {:ok, context()} | {:error, String.t()}
   @callback get_info() :: map()
 
   @doc """
@@ -53,7 +54,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism do
   - `{:ok, hash, salt}` - Hashed password with salt
   - `{:error, reason}` - Hashing failed
   """
-  @spec hash_password(String.t(), binary() | nil, pos_integer()) :: {:ok, binary(), binary()} | {:error, String.t()}
+  @spec hash_password(String.t(), binary() | nil, pos_integer()) ::
+          {:ok, binary(), binary()} | {:error, String.t()}
   def hash_password(password, salt \\ nil, iterations \\ 100_000) do
     salt = salt || generate_secure_challenge(32)
 
@@ -126,7 +128,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism do
   - `{:ok, context}` - Context is valid
   - `{:error, reason}` - Context is invalid or insufficient
   """
-  @spec validate_security_context(context(), [String.t()]) :: {:ok, context()} | {:error, String.t()}
+  @spec validate_security_context(context(), [String.t()]) ::
+          {:ok, context()} | {:error, String.t()}
   def validate_security_context(context, required_permissions \\ []) do
     Security.validate_context(context, :generic_operation, "system", required_permissions)
   end

@@ -50,6 +50,7 @@ defmodule Singularity.Code.Patterns.PatternMiner do
           patterns
           |> filter_relevant_patterns()
           |> rank_patterns_by_relevance(task_description)
+
         _ ->
           Logger.warning("No patterns found for task", task: task_description)
           []
@@ -75,7 +76,8 @@ defmodule Singularity.Code.Patterns.PatternMiner do
       Logger.info("Mining patterns from codebase", path: codebase_path)
 
       # Use the learning pattern miner
-      trial_dirs = [codebase_path]  # Treat as single trial
+      # Treat as single trial
+      trial_dirs = [codebase_path]
       patterns = LearningPatternMiner.mine_patterns_from_trials(trial_dirs)
 
       Logger.info("Mined patterns from codebase",
@@ -90,6 +92,7 @@ defmodule Singularity.Code.Patterns.PatternMiner do
           path: codebase_path,
           error: inspect(e)
         )
+
         []
     end
   end
@@ -113,6 +116,7 @@ defmodule Singularity.Code.Patterns.PatternMiner do
       case EmbeddingService.search_similar(pattern_features, limit: 10) do
         {:ok, similar} ->
           filter_by_codebase(similar, codebase_path)
+
         _ ->
           []
       end
@@ -136,14 +140,15 @@ defmodule Singularity.Code.Patterns.PatternMiner do
   def analyze_pattern_effectiveness(patterns, metrics) do
     try do
       # Calculate effectiveness scores
-      analyzed = Enum.map(patterns, fn pattern ->
-        effectiveness = calculate_effectiveness(pattern, metrics)
+      analyzed =
+        Enum.map(patterns, fn pattern ->
+          effectiveness = calculate_effectiveness(pattern, metrics)
 
-        Map.put(pattern, :effectiveness_score, effectiveness)
-      end)
+          Map.put(pattern, :effectiveness_score, effectiveness)
+        end)
 
       # Sort by effectiveness
-      Enum.sort_by(analyzed, &(&1.effectiveness_score), :desc)
+      Enum.sort_by(analyzed, & &1.effectiveness_score, :desc)
     rescue
       e ->
         Logger.error("Error analyzing pattern effectiveness", error: inspect(e))
@@ -166,17 +171,17 @@ defmodule Singularity.Code.Patterns.PatternMiner do
     # Filter patterns by relevance criteria
     Enum.filter(patterns, fn pattern ->
       # Check if pattern has required fields
-      has_required_fields?(pattern) &&
       # Check if pattern is not deprecated
-      not_deprecated?(pattern) &&
       # Check if pattern has good quality score
-      good_quality?(pattern)
+      has_required_fields?(pattern) &&
+        not_deprecated?(pattern) &&
+        good_quality?(pattern)
     end)
   end
 
   defp has_required_fields?(pattern) do
     Map.has_key?(pattern, :name) &&
-    (Map.has_key?(pattern, :description) || Map.has_key?(pattern, :code_example))
+      (Map.has_key?(pattern, :description) || Map.has_key?(pattern, :code_example))
   end
 
   defp not_deprecated?(pattern) do
@@ -185,7 +190,8 @@ defmodule Singularity.Code.Patterns.PatternMiner do
 
   defp good_quality?(pattern) do
     quality_score = Map.get(pattern, :quality_score, 0.5)
-    quality_score >= 0.3  # Minimum quality threshold
+    # Minimum quality threshold
+    quality_score >= 0.3
   end
 
   defp rank_patterns_by_relevance(patterns, task_description) do
@@ -194,14 +200,18 @@ defmodule Singularity.Code.Patterns.PatternMiner do
       relevance_score = calculate_relevance(pattern, task_description)
       Map.put(pattern, :relevance_score, relevance_score)
     end)
-    |> Enum.sort_by(&(&1.relevance_score), :desc)
+    |> Enum.sort_by(& &1.relevance_score, :desc)
   end
 
   defp calculate_relevance(pattern, task_description) do
     # Simple relevance calculation based on text similarity
     pattern_text = extract_pattern_text(pattern)
-    task_words = String.split(task_description, ~r/\s+/, trim: true) |> Enum.map(&String.downcase/1)
-    pattern_words = String.split(pattern_text, ~r/\s+/, trim: true) |> Enum.map(&String.downcase/1)
+
+    task_words =
+      String.split(task_description, ~r/\s+/, trim: true) |> Enum.map(&String.downcase/1)
+
+    pattern_words =
+      String.split(pattern_text, ~r/\s+/, trim: true) |> Enum.map(&String.downcase/1)
 
     # Calculate word overlap
     overlap = length(Enum.filter(task_words, fn word -> word in pattern_words end))
@@ -257,8 +267,9 @@ defmodule Singularity.Code.Patterns.PatternMiner do
     # Filter patterns that are relevant to the specific codebase
     Enum.filter(patterns, fn pattern ->
       codebase_match = Map.get(pattern, :codebase_path, "")
+      # Global patterns
       String.contains?(codebase_match, Path.basename(codebase_path)) ||
-      codebase_match == ""  # Global patterns
+        codebase_match == ""
     end)
   end
 
@@ -269,6 +280,6 @@ defmodule Singularity.Code.Patterns.PatternMiner do
     average_rating = Map.get(metrics, :average_rating, 3.0)
 
     # Weighted effectiveness score
-    (usage_count * 0.3 + success_rate * 0.4 + average_rating / 5.0 * 0.3)
+    usage_count * 0.3 + success_rate * 0.4 + average_rating / 5.0 * 0.3
   end
 end

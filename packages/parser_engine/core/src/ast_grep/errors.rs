@@ -7,10 +7,16 @@ pub enum AstGrepError {
     UnsupportedLanguage(String),
 
     #[error("pattern `{pattern}` failed to compile: {source}")]
-    PatternCompilation { pattern: String, source: PatternError },
+    PatternCompilation {
+        pattern: String,
+        source: PatternError,
+    },
 
     #[error("constraint on `{variable}` failed to compile: {source}")]
-    ConstraintCompilation { variable: String, source: PatternError },
+    ConstraintCompilation {
+        variable: String,
+        source: PatternError,
+    },
 
     #[error("failed to parse {language}: {details}")]
     ParseError { language: String, details: String },

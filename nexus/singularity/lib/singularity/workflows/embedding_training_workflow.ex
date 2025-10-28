@@ -13,10 +13,12 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
   5. Model Deployment - Save and deploy trained models
   """
 
-  use PGFlow.Workflow
+  use Pgflow.Workflow
 
   alias Singularity.Embedding.Trainer
   alias Singularity.CodeStore
+  alias Singularity.Infrastructure.Resilience
+  require Logger
 
   @doc """
   Define the embedding training workflow structure
@@ -29,10 +31,16 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
       # Workflow-level configuration
       config: %{
-        timeout_ms: Application.get_env(:singularity, :embedding_training_workflow, %{})[:timeout_ms] || 300_000,
-        retries: Application.get_env(:singularity, :embedding_training_workflow, %{})[:retries] || 3,
-        retry_delay_ms: Application.get_env(:singularity, :embedding_training_workflow, %{})[:retry_delay_ms] || 5000,
-        concurrency: Application.get_env(:singularity, :embedding_training_workflow, %{})[:concurrency] || 1
+        timeout_ms:
+          Application.get_env(:singularity, :embedding_training_workflow, %{})[:timeout_ms] ||
+            300_000,
+        retries:
+          Application.get_env(:singularity, :embedding_training_workflow, %{})[:retries] || 3,
+        retry_delay_ms:
+          Application.get_env(:singularity, :embedding_training_workflow, %{})[:retry_delay_ms] ||
+            5000,
+        concurrency:
+          Application.get_env(:singularity, :embedding_training_workflow, %{})[:concurrency] || 1
       },
 
       # Define workflow steps
@@ -50,7 +58,6 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
           },
           next: [:data_preparation]
         },
-
         %{
           id: :data_preparation,
           name: "Data Preparation",
@@ -65,7 +72,6 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
           depends_on: [:data_collection],
           next: [:model_training]
         },
-
         %{
           id: :model_training,
           name: "Model Training",
@@ -74,14 +80,14 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
           module: __MODULE__,
           function: :train_embedding_model,
           config: %{
-            concurrency: 1,  # Single worker for GPU training
+            # Single worker for GPU training
+            concurrency: 1,
             timeout_ms: 180_000,
             resource_requirements: %{gpu: true}
           },
           depends_on: [:data_preparation],
           next: [:model_validation]
         },
-
         %{
           id: :model_validation,
           name: "Model Validation",
@@ -96,7 +102,6 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
           depends_on: [:model_training],
           next: [:model_deployment]
         },
-
         %{
           id: :model_deployment,
           name: "Model Deployment",
@@ -140,10 +145,17 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
     task_data = context.input
 
-    # Extract training data from codebase
-    training_data = collect_training_data_impl(task_data)
+    retry_opts = [max_retries: 3, base_delay_ms: 500, max_delay_ms: 5_000]
 
-    {:ok, training_data}
+    case run_with_resilience(
+           fn -> {:ok, collect_training_data_impl(task_data)} end,
+           timeout_ms: 60_000,
+           retry_opts: retry_opts,
+           operation: :collect_training_data
+         ) do
+      {:ok, training_data} -> {:ok, training_data}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -155,10 +167,15 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     training_data = context[:data_collection].result
     task_data = context.input
 
-    # Prepare training data for specific model
-    prepared_data = prepare_training_data_impl(training_data, task_data.model_type)
-
-    {:ok, prepared_data}
+    case run_with_resilience(
+           fn -> {:ok, prepare_training_data_impl(training_data, task_data.model_type)} end,
+           timeout_ms: 45_000,
+           retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
+           operation: :prepare_training_data
+         ) do
+      {:ok, prepared_data} -> {:ok, prepared_data}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -170,13 +187,25 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     prepared_data = context[:data_preparation].result
     task_data = context.input
 
-    # Train the model using Axon
-    case train_model_impl(task_data.model_type, prepared_data) do
-      {:ok, trained_model, metrics} ->
-        {:ok, %{trained_model: trained_model, training_metrics: metrics}}
+    case run_with_resilience(
+           fn ->
+             case train_model_impl(task_data.model_type, prepared_data) do
+               {:ok, trained_model, metrics} ->
+                 {:ok, %{trained_model: trained_model, training_metrics: metrics}}
 
-      {:error, reason} ->
-        {:error, reason}
+               {:ok, trainers, metrics} ->
+                 {:ok, %{trained_model: trainers, training_metrics: metrics}}
+
+               {:error, reason} ->
+                 raise "embedding model training failed: #{inspect(reason)}"
+             end
+           end,
+           timeout_ms: 180_000,
+           retry_opts: [max_retries: 3, base_delay_ms: 1_000, max_delay_ms: 20_000],
+           operation: :train_embedding_model
+         ) do
+      {:ok, training_payload} -> {:ok, training_payload}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -189,10 +218,15 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     task_data = context.input
 
-    # Validate model performance
-    validation_metrics = validate_model_impl(trained_model, task_data.model_type)
-
-    {:ok, validation_metrics}
+    case run_with_resilience(
+           fn -> {:ok, validate_model_impl(trained_model, task_data.model_type)} end,
+           timeout_ms: 45_000,
+           retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
+           operation: :validate_embedding_model
+         ) do
+      {:ok, validation_metrics} -> {:ok, validation_metrics}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @doc """
@@ -204,13 +238,22 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     task_data = context.input
 
-    # Save and deploy the model
-    case deploy_model_impl(trained_model, task_data.model_type) do
-      {:ok, model_path} ->
-        {:ok, %{model_path: model_path, deployed_at: DateTime.utc_now()}}
+    case run_with_resilience(
+           fn ->
+             case deploy_model_impl(trained_model, task_data.model_type) do
+               {:ok, model_path} ->
+                 {:ok, %{model_path: model_path, deployed_at: DateTime.utc_now()}}
 
-      {:error, reason} ->
-        {:error, reason}
+               {:error, reason} ->
+                 raise "embedding model deployment failed: #{inspect(reason)}"
+             end
+           end,
+           timeout_ms: 60_000,
+           retry_opts: [max_retries: 2, base_delay_ms: 1_000, max_delay_ms: 10_000],
+           operation: :deploy_embedding_model
+         ) do
+      {:ok, deployment_info} -> {:ok, deployment_info}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -324,9 +367,13 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
     # Basic model validation - check if model structure is valid
     model_size = if is_map(trained_model), do: map_size(trained_model), else: 0
-    has_embeddings = Map.has_key?(trained_model, :embeddings) or Map.has_key?(trained_model, "embeddings")
 
-    Logger.debug("EmbeddingTrainingWorkflow: Model validation - size: #{model_size}, has_embeddings: #{has_embeddings}")
+    has_embeddings =
+      Map.has_key?(trained_model, :embeddings) or Map.has_key?(trained_model, "embeddings")
+
+    Logger.debug(
+      "EmbeddingTrainingWorkflow: Model validation - size: #{model_size}, has_embeddings: #{has_embeddings}"
+    )
 
     %{
       # Simulate validation with model-aware metrics
@@ -368,7 +415,9 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
   defp generate_negative_example(code) do
     # Generate a negative example (dissimilar code)
     # Use the input code to create a contrasting example
-    Logger.debug("EmbeddingTrainingWorkflow: Generating negative example from #{String.length(code)} chars of code")
+    Logger.debug(
+      "EmbeddingTrainingWorkflow: Generating negative example from #{String.length(code)} chars of code"
+    )
 
     # Create a negative example by modifying the input code structure
     if String.contains?(code, "def ") do
@@ -377,6 +426,39 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     else
       # Default negative example
       "def different_function() do\n  # Different code\nend"
+    end
+  end
+
+  defp run_with_resilience(fun, opts) when is_function(fun, 0) do
+    timeout_ms = Keyword.fetch!(opts, :timeout_ms)
+    retry_opts = Keyword.get(opts, :retry_opts, [])
+    operation = Keyword.get(opts, :operation, :workflow_step)
+
+    max_retries = Keyword.get(retry_opts, :max_retries, 3)
+    base_delay = Keyword.get(retry_opts, :base_delay_ms, 500)
+    max_delay = Keyword.get(retry_opts, :max_delay_ms, 5_000)
+
+    result =
+      Resilience.with_retry(
+        fn ->
+          case Resilience.with_timeout(fun, timeout_ms: timeout_ms) do
+            {:ok, value} ->
+              {:ok, value}
+
+            {:error, :timeout} ->
+              raise "operation #{operation} timed out after #{timeout_ms}ms"
+          end
+        end,
+        max_retries: max_retries,
+        base_delay_ms: base_delay,
+        max_delay_ms: max_delay
+      )
+
+    case result do
+      {:ok, {:ok, value}} -> {:ok, value}
+      {:ok, value} -> {:ok, value}
+      {:error, {:max_retries_exceeded, error}} -> {:error, error}
+      {:error, reason} -> {:error, reason}
     end
   end
 end

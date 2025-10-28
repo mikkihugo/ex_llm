@@ -15,8 +15,8 @@
 //! - **Shared learning** - All instances contribute and benefit
 //! - **Auto-updating** - CentralCloud syncs with external sources
 
+use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
-use anyhow::{Result, anyhow};
 
 /// Query CentralCloud via NATS with timeout
 ///
@@ -45,11 +45,7 @@ use anyhow::{Result, anyhow};
 ///     5000
 /// );
 /// ```
-pub fn query_centralcloud(
-    subject: &str,
-    request: &Value,
-    timeout_ms: u64
-) -> Result<Value> {
+pub fn query_centralcloud(subject: &str, request: &Value, timeout_ms: u64) -> Result<Value> {
     // Try NATS query
     match nats_request(subject, request, timeout_ms) {
         Ok(response) => Ok(response),
@@ -112,7 +108,10 @@ pub fn publish_detection(subject: &str, detection: &Value) -> Result<()> {
         Ok(_) => Ok(()),
         Err(e) => {
             // Don't fail on publish errors - just log
-            eprintln!("Warning: Failed to publish to CentralCloud ({}): {}", subject, e);
+            eprintln!(
+                "Warning: Failed to publish to CentralCloud ({}): {}",
+                subject, e
+            );
             Ok(())
         }
     }
@@ -142,8 +141,12 @@ where
     T: serde::de::DeserializeOwned,
 {
     // Check if degraded mode
-    if response.get("degraded_mode").and_then(|v| v.as_bool()).unwrap_or(false) {
-        return vec![];  // Empty in degraded mode
+    if response
+        .get("degraded_mode")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+    {
+        return vec![]; // Empty in degraded mode
     }
 
     // Extract data

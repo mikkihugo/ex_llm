@@ -7,18 +7,18 @@
 //! NOTE: NATS-based storage disabled (Phase 4 NATS removal)
 //! Use ex_pgflow/pgmq via Elixir for persistent storage
 
-use anyhow::Result;
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use crate::prompt_tracking::types::{PromptExecutionData, PromptTrackingQuery};
 use anyhow::Error;
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 // use async_nats::Client;  // DISABLED - NATS removed
 
 /// Placeholder for NATS client (disabled)
 type Client = ();
 
 /// Pure computation prompt tracking storage
-/// 
+///
 /// This struct holds tracking data in memory for the current computation.
 /// No persistent storage - data is passed in via NIF parameters.
 #[derive(Clone)]
@@ -82,7 +82,7 @@ impl PromptTrackingStorage {
             executions: HashMap::new(),
             feedback: HashMap::new(),
             context_signatures: HashMap::new(),
-            nats_client: None,  // NATS disabled
+            nats_client: None, // NATS disabled
         })
     }
 
@@ -107,7 +107,8 @@ impl PromptTrackingStorage {
 
     /// Store context signature in memory
     pub fn store_context_signature(&mut self, signature: ContextSignature) -> Result<()> {
-        self.context_signatures.insert(signature.id.clone(), signature);
+        self.context_signatures
+            .insert(signature.id.clone(), signature);
         Ok(())
     }
 
@@ -124,7 +125,10 @@ impl PromptTrackingStorage {
     /// Async query method for NIF compatibility
     /// NOTE: NATS-based storage disabled (Phase 4 NATS removal)
     /// Use ex_pgflow/pgmq via Elixir for persistent storage
-    pub async fn query(&self, _query: PromptTrackingQuery) -> Result<Vec<PromptExecutionData>, Error> {
+    pub async fn query(
+        &self,
+        _query: PromptTrackingQuery,
+    ) -> Result<Vec<PromptExecutionData>, Error> {
         // NATS-based storage disabled - return empty results with Elixir integration
         // For persistent queries, use ex_pgflow/pgmq via Elixir
         Ok(Vec::new())

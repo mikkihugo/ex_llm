@@ -29,8 +29,10 @@ defmodule Singularity.Infrastructure.Sasl.Security do
   @type resource :: String.t()
   @type permissions :: [String.t()]
 
-  @default_session_timeout 3600  # 1 hour in seconds
-  @max_session_timeout 86400     # 24 hours in seconds
+  # 1 hour in seconds
+  @default_session_timeout 3600
+  # 24 hours in seconds
+  @max_session_timeout 86400
 
   @doc """
   Validate security context for ongoing operations.
@@ -47,7 +49,8 @@ defmodule Singularity.Infrastructure.Sasl.Security do
   - `{:ok, updated_context}` - Validation successful
   - `{:error, reason}` - Validation failed
   """
-  @spec validate_context(context(), operation(), resource(), permissions()) :: {:ok, context()} | {:error, String.t()}
+  @spec validate_context(context(), operation(), resource(), permissions()) ::
+          {:ok, context()} | {:error, String.t()}
   def validate_context(context, operation, resource, required_permissions \\ []) do
     Logger.debug("Validating security context: operation=#{operation}, resource=#{resource}")
 
@@ -124,7 +127,8 @@ defmodule Singularity.Infrastructure.Sasl.Security do
 
       DateTime.compare(current_time, expires_at) == :gt
     else
-      true  # No authentication time means expired
+      # No authentication time means expired
+      true
     end
   end
 
@@ -187,7 +191,8 @@ defmodule Singularity.Infrastructure.Sasl.Security do
   - `{:ok, context}` - Access allowed
   - `{:error, reason}` - Access denied
   """
-  @spec validate_resource_access(context(), operation(), resource()) :: {:ok, context()} | {:error, String.t()}
+  @spec validate_resource_access(context(), operation(), resource()) ::
+          {:ok, context()} | {:error, String.t()}
   def validate_resource_access(context, operation, resource) do
     # Check resource-specific access policies
     case get_resource_policy(resource) do
@@ -270,7 +275,7 @@ defmodule Singularity.Infrastructure.Sasl.Security do
     max_timeout = Map.get(policy, :max_session_timeout, @max_session_timeout)
 
     has_permissions?(context, required_perms) and
-    Map.get(context, :session_timeout, @default_session_timeout) <= max_timeout
+      Map.get(context, :session_timeout, @default_session_timeout) <= max_timeout
   end
 
   defp audit_security_event(context, operation, resource, event_type, details) do

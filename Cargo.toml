@@ -7,6 +7,8 @@ members = [
     "packages/parser_engine/core",
     "packages/parser_engine/formats/dependency",
     "packages/parser_engine/formats/template_definitions",
+    # Singularity Code Analysis - standalone complexity analyzer
+    "packages/singularity-code-analysis",
     # Broken parsers (parser_core API mismatch) - excluded from workspace
     # "packages/parser_engine/languages/rust",
     # "packages/parser_engine/languages/elixir",

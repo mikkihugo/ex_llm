@@ -14,7 +14,7 @@ defmodule Singularity.Agents.ChangeTracker do
   ## The Solution
 
   **Everything SHA-based, event-driven:**
-  
+
   ```
   File Change → Calculate SHA → Compare with stored SHA → 
   If different → Trigger only affected systems → Update stored SHA
@@ -101,8 +101,10 @@ defmodule Singularity.Agents.ChangeTracker do
   @impl true
   def init(_opts) do
     state = %{
-      tracked_files: %{},  # file_path => %{sha: "abc123", last_checked: timestamp, systems: [:doc, :quality]}
-      pending_changes: [], # files that need processing
+      # file_path => %{sha: "abc123", last_checked: timestamp, systems: [:doc, :quality]}
+      tracked_files: %{},
+      # files that need processing
+      pending_changes: [],
       system_processors: %{
         documentation: &process_documentation_changes/1,
         quality: &process_quality_changes/1,
@@ -110,6 +112,7 @@ defmodule Singularity.Agents.ChangeTracker do
         code_generation: &process_code_generation_changes/1
       }
     }
+
     {:ok, state}
   end
 
@@ -119,19 +122,20 @@ defmodule Singularity.Agents.ChangeTracker do
       {:ok, content} ->
         sha = :crypto.hash(:sha256, content) |> Base.encode16(case: :lower)
         timestamp = System.system_time(:second)
-        
+
         # Determine which systems should track this file
         systems = determine_systems_for_file(file_path)
-        
-        new_tracked_files = Map.put(state.tracked_files, file_path, %{
-          sha: sha,
-          last_checked: timestamp,
-          systems: systems
-        })
-        
+
+        new_tracked_files =
+          Map.put(state.tracked_files, file_path, %{
+            sha: sha,
+            last_checked: timestamp,
+            systems: systems
+          })
+
         new_state = %{state | tracked_files: new_tracked_files}
         {:reply, :ok, new_state}
-        
+
       {:error, reason} ->
         Logger.warning("Failed to read file #{file_path}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -140,18 +144,20 @@ defmodule Singularity.Agents.ChangeTracker do
 
   @impl true
   def handle_call(:get_changes, _from, state) do
-    changes = 
+    changes =
       state.tracked_files
       |> Enum.filter(fn {file_path, file_info} ->
         case File.read(file_path) do
           {:ok, content} ->
             current_sha = :crypto.hash(:sha256, content) |> Base.encode16(case: :lower)
             current_sha != file_info.sha
+
           {:error, _} ->
-            false  # Skip files that can't be read
+            # Skip files that can't be read
+            false
         end
       end)
-      |> Enum.map(fn {file_path, file_info} -> 
+      |> Enum.map(fn {file_path, file_info} ->
         %{
           file_path: file_path,
           old_sha: file_info.sha,
@@ -159,23 +165,24 @@ defmodule Singularity.Agents.ChangeTracker do
           timestamp: System.system_time(:second)
         }
       end)
-    
+
     {:reply, {:ok, changes}, state}
   end
 
   @impl true
   def handle_call({:process_for_system, system, changes}, _from, state) do
     # Filter changes relevant to this system
-    relevant_changes = Enum.filter(changes, fn change ->
-      system in change.systems
-    end)
-    
+    relevant_changes =
+      Enum.filter(changes, fn change ->
+        system in change.systems
+      end)
+
     # Process changes for this system
     case Map.get(state.system_processors, system) do
       nil ->
         Logger.warning("Unknown system: #{system}")
         {:reply, {:error, :unknown_system}, state}
-      
+
       processor ->
         processor.(relevant_changes)
         {:reply, :ok, state}
@@ -187,7 +194,7 @@ defmodule Singularity.Agents.ChangeTracker do
     case Map.get(state.tracked_files, file_path) do
       nil ->
         {:reply, {:error, :file_not_tracked}, state}
-      
+
       file_info ->
         updated_file_info = %{file_info | sha: sha}
         new_tracked_files = Map.put(state.tracked_files, file_path, updated_file_info)
@@ -204,6 +211,7 @@ defmodule Singularity.Agents.ChangeTracker do
       tracked_files: Map.keys(state.tracked_files),
       systems: Map.keys(state.system_processors)
     }
+
     {:reply, status, state}
   end
 
@@ -213,18 +221,20 @@ defmodule Singularity.Agents.ChangeTracker do
     cond do
       String.ends_with?(file_path, [".ex", ".exs"]) ->
         [:documentation, :quality, :analysis, :code_generation]
-      
+
       String.ends_with?(file_path, [".rs"]) ->
         [:documentation, :quality, :analysis, :code_generation]
-      
+
       String.ends_with?(file_path, [".ts", ".tsx", ".js", ".jsx"]) ->
         [:documentation, :quality, :analysis, :code_generation]
-      
+
       String.ends_with?(file_path, [".json", ".yaml", ".yml"]) ->
-        [:analysis]  # Config files only need analysis
-      
+        # Config files only need analysis
+        [:analysis]
+
       true ->
-        [:analysis]  # Default to analysis only
+        # Default to analysis only
+        [:analysis]
     end
   end
 

@@ -23,9 +23,11 @@ defmodule Singularity.Autonomy.Correlation do
   end
 
   def start(context) when is_map(context) do
-    correlation_id = Map.get(context, :correlation_id) ||
-                     Map.get(context, :id) ||
-                     generate_correlation_id()
+    correlation_id =
+      Map.get(context, :correlation_id) ||
+        Map.get(context, :id) ||
+        generate_correlation_id()
+
     start(correlation_id)
   end
 
@@ -49,6 +51,7 @@ defmodule Singularity.Autonomy.Correlation do
   """
   def with_correlation(correlation_id, fun) when is_function(fun, 0) do
     old_metadata = Logger.metadata()
+
     try do
       Logger.metadata(correlation_id: correlation_id)
       fun.()

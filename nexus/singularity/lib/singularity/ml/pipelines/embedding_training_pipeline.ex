@@ -146,11 +146,13 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
         end)
 
       {:error, reason} ->
-        SASL.critical_failure(:ml_training_failure,
+        SASL.critical_failure(
+          :ml_training_failure,
           "Machine learning model training failed",
           model_type: message.data.model_type,
           reason: reason
         )
+
         Broadway.Message.failed(message, reason)
     end
   end
@@ -179,11 +181,13 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
         end)
 
       {:error, reason} ->
-        SASL.critical_failure(:ml_deployment_failure,
+        SASL.critical_failure(
+          :ml_deployment_failure,
           "Machine learning model deployment failed",
           model_type: message.data.model_type,
           reason: reason
         )
+
         Broadway.Message.failed(message, reason)
     end
   end
@@ -298,9 +302,13 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
 
     # Basic model validation - check if model structure is valid
     model_size = if is_map(trained_model), do: map_size(trained_model), else: 0
-    has_embeddings = Map.has_key?(trained_model, :embeddings) or Map.has_key?(trained_model, "embeddings")
 
-    Logger.debug("EmbeddingTrainingPipeline: Model validation - size: #{model_size}, has_embeddings: #{has_embeddings}")
+    has_embeddings =
+      Map.has_key?(trained_model, :embeddings) or Map.has_key?(trained_model, "embeddings")
+
+    Logger.debug(
+      "EmbeddingTrainingPipeline: Model validation - size: #{model_size}, has_embeddings: #{has_embeddings}"
+    )
 
     %{
       # Simulate validation with model-aware metrics
@@ -342,7 +350,9 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipeline do
   defp generate_negative_example(code) do
     # Generate a negative example (dissimilar code)
     # Use the input code to create a contrasting example
-    Logger.debug("EmbeddingTrainingPipeline: Generating negative example from #{String.length(code)} chars of code")
+    Logger.debug(
+      "EmbeddingTrainingPipeline: Generating negative example from #{String.length(code)} chars of code"
+    )
 
     # Create a negative example by modifying the input code structure
     if String.contains?(code, "def ") do

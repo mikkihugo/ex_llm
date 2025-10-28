@@ -2,8 +2,8 @@
 //!
 //! PSEUDO CODE: Visual representation of test coverage data.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Coverage visualization result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -531,7 +531,12 @@ pub trait MapGenerator {
 
 /// Dashboard generator trait
 pub trait DashboardGenerator {
-    fn generate_dashboard(&self, widgets: &[DashboardWidget], layout: &DashboardLayout, theme: &DashboardTheme) -> Result<CoverageDashboard>;
+    fn generate_dashboard(
+        &self,
+        widgets: &[DashboardWidget],
+        layout: &DashboardLayout,
+        theme: &DashboardTheme,
+    ) -> Result<CoverageDashboard>;
 }
 
 impl CoverageVisualizer {
@@ -543,32 +548,35 @@ impl CoverageVisualizer {
             dashboard_generator: Box::new(DefaultDashboardGenerator::new()),
         }
     }
-    
+
     /// Initialize with fact-system integration
     pub async fn initialize(&mut self) -> Result<()> {
         // PSEUDO CODE:
         /*
         // Load visualization patterns from fact-system
         let patterns = self.fact_system_interface.load_visualization_patterns().await?;
-        
+
         // Initialize chart generators
         self.chart_generators.push(Box::new(LineChartGenerator::new()));
         self.chart_generators.push(Box::new(BarChartGenerator::new()));
         self.chart_generators.push(Box::new(PieChartGenerator::new()));
         self.chart_generators.push(Box::new(HeatmapGenerator::new()));
-        
+
         // Initialize map generators
         self.map_generators.push(Box::new(FileTreeMapGenerator::new()));
         self.map_generators.push(Box::new(ModuleHierarchyMapGenerator::new()));
         self.map_generators.push(Box::new(FunctionCallGraphMapGenerator::new()));
         self.map_generators.push(Box::new(DependencyGraphMapGenerator::new()));
         */
-        
+
         Ok(())
     }
-    
+
     /// Generate coverage visualization
-    pub async fn generate_visualization(&self, coverage_analysis: &CoverageAnalysis) -> Result<CoverageVisualization> {
+    pub async fn generate_visualization(
+        &self,
+        coverage_analysis: &CoverageAnalysis,
+    ) -> Result<CoverageVisualization> {
         // PSEUDO CODE:
         /*
         // Generate charts
@@ -579,7 +587,7 @@ impl CoverageVisualizer {
             let chart = generator.generate_chart(&chart_data, &chart_options)?;
             coverage_charts.push(chart);
         }
-        
+
         // Generate maps
         let mut coverage_maps = Vec::new();
         for generator in &self.map_generators {
@@ -588,19 +596,19 @@ impl CoverageVisualizer {
             let map = generator.generate_map(&map_data, &map_options)?;
             coverage_maps.push(map);
         }
-        
+
         // Generate dashboard
         let dashboard_widgets = self.create_dashboard_widgets(coverage_analysis);
         let dashboard_layout = self.get_dashboard_layout();
         let dashboard_theme = self.get_dashboard_theme();
         let coverage_dashboard = self.dashboard_generator.generate_dashboard(&dashboard_widgets, &dashboard_layout, &dashboard_theme)?;
-        
+
         // Generate HTML report
         let html_report = self.generate_html_report(coverage_analysis, &coverage_charts, &coverage_maps, &coverage_dashboard);
-        
+
         // Generate JSON report
         let json_report = serde_json::to_string_pretty(coverage_analysis)?;
-        
+
         Ok(CoverageVisualization {
             html_report,
             json_report,
@@ -618,7 +626,7 @@ impl CoverageVisualizer {
             },
         })
         */
-        
+
         Ok(CoverageVisualization {
             html_report: String::new(),
             json_report: String::new(),
@@ -674,7 +682,12 @@ impl DefaultDashboardGenerator {
 }
 
 impl DashboardGenerator for DefaultDashboardGenerator {
-    fn generate_dashboard(&self, widgets: &[DashboardWidget], layout: &DashboardLayout, theme: &DashboardTheme) -> Result<CoverageDashboard> {
+    fn generate_dashboard(
+        &self,
+        widgets: &[DashboardWidget],
+        layout: &DashboardLayout,
+        theme: &DashboardTheme,
+    ) -> Result<CoverageDashboard> {
         // PSEUDO CODE: Generate default dashboard
         Ok(CoverageDashboard {
             title: "Coverage Dashboard".to_string(),
@@ -696,22 +709,22 @@ impl FactSystemInterface {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     // PSEUDO CODE: These methods would integrate with the actual fact-system
     /*
     pub async fn load_visualization_patterns(&self) -> Result<Vec<VisualizationPattern>> {
         // Query fact-system for visualization patterns
         // Return patterns for charts, maps, dashboards, etc.
     }
-    
+
     pub async fn get_visualization_best_practices(&self, visualization_type: &str) -> Result<Vec<String>> {
         // Query fact-system for best practices for specific visualization types
     }
-    
+
     pub async fn get_visualization_templates(&self, context: &str) -> Result<Vec<VisualizationTemplate>> {
         // Query fact-system for visualization templates
     }
-    
+
     pub async fn get_visualization_guidelines(&self, context: &str) -> Result<Vec<String>> {
         // Query fact-system for visualization guidelines
     }

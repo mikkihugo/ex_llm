@@ -38,11 +38,12 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Diameter do
          {:ok, challenge} <- generate_challenge(opts),
          {:ok, response} <- compute_response(challenge, credentials, user_record),
          {:ok, context} <- verify_response(challenge, response, opts) do
-      context = Mechanism.create_security_context(credentials, :diameter, %{
-        diameter_session_id: generate_session_id(),
-        avp_data: extract_avp_data(credentials),
-        network_context: Map.get(credentials, :network_context, %{})
-      })
+      context =
+        Mechanism.create_security_context(credentials, :diameter, %{
+          diameter_session_id: generate_session_id(),
+          avp_data: extract_avp_data(credentials),
+          network_context: Map.get(credentials, :network_context, %{})
+        })
 
       {:ok, context}
     else
@@ -119,22 +120,24 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Diameter do
     # For now, return a mock user record
     case username do
       "admin" ->
-        {:ok, %{
-          username: "admin",
-          password_hash: generate_mock_hash("admin_password"),
-          salt: generate_mock_salt(),
-          permissions: ["read", "write", "admin"],
-          telecom_context: %{node_type: "hss", network: "core"}
-        }}
+        {:ok,
+         %{
+           username: "admin",
+           password_hash: generate_mock_hash("admin_password"),
+           salt: generate_mock_salt(),
+           permissions: ["read", "write", "admin"],
+           telecom_context: %{node_type: "hss", network: "core"}
+         }}
 
       "operator" ->
-        {:ok, %{
-          username: "operator",
-          password_hash: generate_mock_hash("operator_password"),
-          salt: generate_mock_salt(),
-          permissions: ["read", "monitor"],
-          telecom_context: %{node_type: "mme", network: "access"}
-        }}
+        {:ok,
+         %{
+           username: "operator",
+           password_hash: generate_mock_hash("operator_password"),
+           salt: generate_mock_salt(),
+           permissions: ["read", "monitor"],
+           telecom_context: %{node_type: "mme", network: "access"}
+         }}
 
       _ ->
         {:error, "User not found: #{username}"}
@@ -162,7 +165,8 @@ defmodule Singularity.Infrastructure.Sasl.Mechanism.Diameter do
   end
 
   defp validate_response_format(response) do
-    min_size = @challenge_size + 8  # challenge + timestamp
+    # challenge + timestamp
+    min_size = @challenge_size + 8
 
     if byte_size(response) >= min_size do
       :ok

@@ -15,7 +15,7 @@ pub mod tokenizers;
 
 // Re-export main types
 pub use advanced::*;
-pub use embeddings::*;  // Primary SemanticVector definition
+pub use embeddings::*; // Primary SemanticVector definition
 pub use index::*;
 pub use tokenizers::*;
 

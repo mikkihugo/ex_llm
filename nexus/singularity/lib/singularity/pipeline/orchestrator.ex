@@ -421,7 +421,8 @@ defmodule Singularity.Pipeline.Orchestrator do
   ## Returns
   - `{:ok, rules}` - List of proposed rules with confidence scores
   """
-  @spec analyze_and_propose_rules(map() | keyword(), keyword()) :: {:ok, [map()]} | {:error, term()}
+  @spec analyze_and_propose_rules(map() | keyword(), keyword()) ::
+          {:ok, [map()]} | {:error, term()}
   def analyze_and_propose_rules(criteria \\ %{}, opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Analyzing patterns for rule evolution")
     RuleEvolutionSystem.analyze_and_propose_rules(criteria, opts)
@@ -452,7 +453,8 @@ defmodule Singularity.Pipeline.Orchestrator do
   ## Returns
   - `{:ok, %{summary: summary, results: results}}` - Workflow summary and per-rule results
   """
-  @spec publish_evolved_rules(keyword()) :: {:ok, %{summary: map(), results: [map()]}} | {:error, term()}
+  @spec publish_evolved_rules(keyword()) ::
+          {:ok, %{summary: map(), results: [map()]}} | {:error, term()}
   def publish_evolved_rules(opts \\ []) do
     Logger.info("Pipeline.Orchestrator: Publishing evolved rules to Genesis")
     GenesisPublisher.publish_rules(opts)

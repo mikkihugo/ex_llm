@@ -21,8 +21,8 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
 use tree_sitter::{Language, Parser};
@@ -33,7 +33,9 @@ use singularity_code_analysis as rca;
 // Module declarations
 mod dependency_analyzer;
 // mod dependencies; // Temporarily disabled due to import issues
-pub use dependency_analyzer::{Dependency, Framework, DependencyAnalyzer, DependencyAnalysisResult};
+pub use dependency_analyzer::{
+    Dependency, DependencyAnalysisResult, DependencyAnalyzer, Framework,
+};
 // pub use dependencies::UniversalDependencies;
 
 /// Universal parser framework configuration
@@ -225,24 +227,24 @@ impl PolyglotCodeParser {
     pub fn analyze_file(&mut self, file_path: &Path) -> Result<AnalysisResult> {
         let content = std::fs::read_to_string(file_path)?;
         let language = self.detect_language(file_path)?;
-        
+
         // Basic metrics
         let metrics = self.calculate_basic_metrics(&content)?;
-        
+
         // RCA (rust-code-analysis) metrics (if enabled)
         let rca_metrics = if self.config.enable_singularity_metrics {
             Some(self.calculate_rca_metrics(&content, &language)?)
         } else {
             None
         };
-        
+
         // Tree-sitter analysis
         let tree_sitter_analysis = if self.config.enable_tree_sitter {
             Some(self.analyze_with_tree_sitter(&content, &language)?)
         } else {
             None
         };
-        
+
         // Dependency analysis
         let dependency_analysis = if self.config.enable_dependency_analysis {
             Some(self.analyze_dependencies(file_path)?)
@@ -264,7 +266,7 @@ impl PolyglotCodeParser {
     /// Analyze multiple files concurrently
     pub fn analyze_files(&mut self, file_paths: &[&Path]) -> Result<Vec<AnalysisResult>> {
         let mut results = Vec::new();
-        
+
         for file_path in file_paths {
             match self.analyze_file(file_path) {
                 Ok(result) => results.push(result),
@@ -274,7 +276,7 @@ impl PolyglotCodeParser {
                 }
             }
         }
-        
+
         Ok(results)
     }
 
@@ -315,36 +317,91 @@ impl PolyglotCodeParser {
         // See: https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust
 
         // BEAM Languages - Functional, immutable, built on BEAM VM
-        self.language_cache.insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.clone().into());
-        self.language_cache.insert("erlang".to_string(), tree_sitter_erlang::LANGUAGE.clone().into());
-        self.language_cache.insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "elixir".to_string(),
+            tree_sitter_elixir::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "erlang".to_string(),
+            tree_sitter_erlang::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "gleam".to_string(),
+            tree_sitter_gleam::LANGUAGE.clone().into(),
+        );
 
         // Systems Programming Languages - For performance-critical code
-        self.language_cache.insert("rust".to_string(), tree_sitter_rust::LANGUAGE.clone().into());
-        self.language_cache.insert("c".to_string(), tree_sitter_c::LANGUAGE.clone().into());
-        self.language_cache.insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "rust".to_string(),
+            tree_sitter_rust::LANGUAGE.clone().into(),
+        );
+        self.language_cache
+            .insert("c".to_string(), tree_sitter_c::LANGUAGE.clone().into());
+        self.language_cache
+            .insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.clone().into());
 
         // Web Languages - Client & server-side JavaScript ecosystem
-        self.language_cache.insert("javascript".to_string(), tree_sitter_javascript::LANGUAGE.clone().into());
-        self.language_cache.insert("typescript".to_string(), tree_sitter_typescript::LANGUAGE_TYPESCRIPT.clone().into());
-        self.language_cache.insert("json".to_string(), tree_sitter_json::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "javascript".to_string(),
+            tree_sitter_javascript::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "typescript".to_string(),
+            tree_sitter_typescript::LANGUAGE_TYPESCRIPT.clone().into(),
+        );
+        self.language_cache.insert(
+            "json".to_string(),
+            tree_sitter_json::LANGUAGE.clone().into(),
+        );
 
         // Dynamic Languages - Interpreted, flexible, rapid prototyping
-        self.language_cache.insert("python".to_string(), tree_sitter_python::LANGUAGE.clone().into());
-        self.language_cache.insert("lua".to_string(), tree_sitter_lua::LANGUAGE.clone().into());
-        self.language_cache.insert("bash".to_string(), tree_sitter_bash::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "python".to_string(),
+            tree_sitter_python::LANGUAGE.clone().into(),
+        );
+        self.language_cache
+            .insert("lua".to_string(), tree_sitter_lua::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "bash".to_string(),
+            tree_sitter_bash::LANGUAGE.clone().into(),
+        );
 
         // Other Languages - Special purpose and ecosystem languages
-        self.language_cache.insert("go".to_string(), tree_sitter_go::LANGUAGE.clone().into());
-        self.language_cache.insert("java".to_string(), tree_sitter_java::LANGUAGE.clone().into());
-        self.language_cache.insert("csharp".to_string(), tree_sitter_c_sharp::LANGUAGE.clone().into());
-        self.language_cache.insert("yaml".to_string(), tree_sitter_yaml::LANGUAGE.clone().into());
-        self.language_cache.insert("sql".to_string(), tree_sitter_sequel::LANGUAGE.clone().into());
-        self.language_cache.insert("dockerfile".to_string(), tree_sitter_dockerfile_updated::language());
-        self.language_cache.insert("toml".to_string(), tree_sitter_toml_ng::LANGUAGE.clone().into());
-        self.language_cache.insert("markdown".to_string(), tree_sitter_md::LANGUAGE.clone().into());
+        self.language_cache
+            .insert("go".to_string(), tree_sitter_go::LANGUAGE.clone().into());
+        self.language_cache.insert(
+            "java".to_string(),
+            tree_sitter_java::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "csharp".to_string(),
+            tree_sitter_c_sharp::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "yaml".to_string(),
+            tree_sitter_yaml::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "sql".to_string(),
+            tree_sitter_sequel::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "dockerfile".to_string(),
+            tree_sitter_dockerfile_updated::language(),
+        );
+        self.language_cache.insert(
+            "toml".to_string(),
+            tree_sitter_toml_ng::LANGUAGE.clone().into(),
+        );
+        self.language_cache.insert(
+            "markdown".to_string(),
+            tree_sitter_md::LANGUAGE.clone().into(),
+        );
 
-        tracing::info!("Initialized {} tree-sitter language parsers", self.language_cache.len());
+        tracing::info!(
+            "Initialized {} tree-sitter language parsers",
+            self.language_cache.len()
+        );
         Ok(())
     }
 
@@ -373,16 +430,19 @@ impl PolyglotCodeParser {
         let blank_lines = content.lines().filter(|l| l.trim().is_empty()).count() as u64;
 
         // Estimate comment lines (covers most common styles)
-        let comment_lines = content.lines().filter(|line| {
-            let trimmed = line.trim();
-            trimmed.starts_with("//") ||  // C-style, Rust, JavaScript
+        let comment_lines = content
+            .lines()
+            .filter(|line| {
+                let trimmed = line.trim();
+                trimmed.starts_with("//") ||  // C-style, Rust, JavaScript
             trimmed.starts_with("#") ||   // Python, Ruby, Shell
             trimmed.starts_with("--") ||  // Lua, SQL, Haskell
             trimmed.starts_with("%") ||   // Erlang, LaTeX
             trimmed.starts_with("/*") ||  // C-style block start
             trimmed.starts_with("*") ||   // C-style block middle
-            trimmed.starts_with("<!--")   // HTML/XML
-        }).count() as u64;
+            trimmed.starts_with("<!--") // HTML/XML
+            })
+            .count() as u64;
 
         let lines_of_code = total_lines.saturating_sub(blank_lines + comment_lines);
 
@@ -393,11 +453,16 @@ impl PolyglotCodeParser {
             total_lines,
             functions: 0, // Will be populated by tree-sitter analysis
             classes: 0,   // Will be populated by tree-sitter analysis
-            complexity_score: if lines_of_code > 0 { lines_of_code as f64 } else { 1.0 },
+            complexity_score: if lines_of_code > 0 {
+                lines_of_code as f64
+            } else {
+                1.0
+            },
         };
 
         // Store in cache for future lookups
-        self.basic_metrics_cache.insert(content_hash, metrics.clone());
+        self.basic_metrics_cache
+            .insert(content_hash, metrics.clone());
 
         Ok(metrics)
     }
@@ -407,12 +472,12 @@ impl PolyglotCodeParser {
         // Use in-memory analysis with dummy path
         let dummy_path = std::path::Path::new("dummy");
         let code_bytes = content.as_bytes().to_vec();
-        
+
         // Analyze based on language with full RCA integration using registry
         use crate::language_registry::get_language_by_alias;
         let language_info = get_language_by_alias(&language.to_lowercase())
             .ok_or_else(|| anyhow::anyhow!("Unsupported language: {}", language))?;
-        
+
         let metrics = if language_info.rca_supported {
             match language_info.id.as_str() {
                 "rust" => self.analyze_rust_rca_in_memory(&code_bytes, dummy_path)?,
@@ -431,31 +496,23 @@ impl PolyglotCodeParser {
             // BEAM languages and others not supported by RCA
             self.analyze_basic_rca(content)?
         };
-        
+
         Ok(metrics)
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     /// Analyze with basic metrics for unsupported languages
     fn analyze_basic_rca(&self, content: &str) -> Result<RcaMetrics> {
         let lines: Vec<&str> = content.lines().collect();
         let total_lines = lines.len() as u64;
         let blank_lines = lines.iter().filter(|l| l.trim().is_empty()).count() as u64;
-        let comment_lines = lines.iter().filter(|l| {
-            let trimmed = l.trim();
-            trimmed.starts_with("//") || trimmed.starts_with("#") || trimmed.starts_with("/*")
-        }).count() as u64;
-        
+        let comment_lines = lines
+            .iter()
+            .filter(|l| {
+                let trimmed = l.trim();
+                trimmed.starts_with("//") || trimmed.starts_with("#") || trimmed.starts_with("/*")
+            })
+            .count() as u64;
+
         Ok(RcaMetrics {
             cyclomatic_complexity: "1".to_string(),
             halstead_metrics: "{}".to_string(),
@@ -469,7 +526,11 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze with tree-sitter
-    fn analyze_with_tree_sitter(&self, _content: &str, _language: &str) -> Result<TreeSitterAnalysis> {
+    fn analyze_with_tree_sitter(
+        &self,
+        _content: &str,
+        _language: &str,
+    ) -> Result<TreeSitterAnalysis> {
         // TODO: Implement tree-sitter AST analysis
         Ok(TreeSitterAnalysis {
             ast_nodes: 0,
@@ -483,9 +544,7 @@ impl PolyglotCodeParser {
     /// Analyze dependencies from manifest files (Cargo.toml, package.json, mix.exs, etc.)
     fn analyze_dependencies(&self, file_path: &Path) -> Result<DependencyAnalysis> {
         // Get the project root (parent directory of the file being analyzed)
-        let project_root = file_path
-            .parent()
-            .unwrap_or_else(|| Path::new("."));
+        let project_root = file_path.parent().unwrap_or_else(|| Path::new("."));
 
         // Use DependencyAnalyzer to extract dependencies and frameworks
         let analysis_result = DependencyAnalyzer::analyze(project_root)?;
@@ -534,9 +593,13 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze Rust code with RCA (in-memory)
-    fn analyze_rust_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+    fn analyze_rust_rca_in_memory(
+        &self,
+        code: &[u8],
+        path: &std::path::Path,
+    ) -> Result<RcaMetrics> {
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::RustParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -556,9 +619,13 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze Python code with RCA (in-memory)
-    fn analyze_python_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+    fn analyze_python_rca_in_memory(
+        &self,
+        code: &[u8],
+        path: &std::path::Path,
+    ) -> Result<RcaMetrics> {
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::PythonParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -578,9 +645,13 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze JavaScript code with RCA (in-memory)
-    fn analyze_javascript_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+    fn analyze_javascript_rca_in_memory(
+        &self,
+        code: &[u8],
+        path: &std::path::Path,
+    ) -> Result<RcaMetrics> {
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::JavascriptParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -600,9 +671,13 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze TypeScript code with RCA (in-memory)
-    fn analyze_typescript_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+    fn analyze_typescript_rca_in_memory(
+        &self,
+        code: &[u8],
+        path: &std::path::Path,
+    ) -> Result<RcaMetrics> {
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::TypescriptParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -622,9 +697,13 @@ impl PolyglotCodeParser {
     }
 
     /// Analyze Java code with RCA (in-memory)
-    fn analyze_java_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+    fn analyze_java_rca_in_memory(
+        &self,
+        code: &[u8],
+        path: &std::path::Path,
+    ) -> Result<RcaMetrics> {
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::JavaParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -645,8 +724,8 @@ impl PolyglotCodeParser {
 
     /// Analyze C++ code with RCA (in-memory)
     fn analyze_cpp_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::CppParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -667,8 +746,8 @@ impl PolyglotCodeParser {
 
     /// Analyze C code with RCA (in-memory)
     fn analyze_c_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{ParserTrait, metrics};
-        
+        use rca::{metrics, ParserTrait};
+
         let parser = rca::CcommentParser::new(code.to_vec(), path, None);
         if let Some(func_space) = metrics(&parser, path) {
             let m = &func_space.metrics;
@@ -830,19 +909,27 @@ pub trait SpecializedParser {
 pub type Function = FunctionInfo;
 
 // Module declarations for backwards compatibility
-pub mod traits { pub use crate::*; }
-pub mod ast { pub use crate::*; }
-pub mod metrics { pub use crate::*; }
-pub mod errors { pub use crate::*; }
+pub mod traits {
+    pub use crate::*;
+}
+pub mod ast {
+    pub use crate::*;
+}
+pub mod metrics {
+    pub use crate::*;
+}
+pub mod errors {
+    pub use crate::*;
+}
 
 // Language registry - centralized language management
-pub mod language_registry;           // Centralized language registry and detection
+pub mod language_registry; // Centralized language registry and detection
 
 // Language-specific analysis modules
-pub mod ast_grep;                    // AST-Grep integration for structural search, linting, and code transformation
-pub mod beam_analysis;               // BEAM languages (Elixir, Erlang, Gleam)
-pub mod rust_analysis;               // Rust language analysis
-pub mod lua_runtime_analysis;        // Lua runtime analysis
+pub mod ast_grep; // AST-Grep integration for structural search, linting, and code transformation
+pub mod beam_analysis; // BEAM languages (Elixir, Erlang, Gleam)
+pub mod lua_runtime_analysis;
+pub mod rust_analysis; // Rust language analysis // Lua runtime analysis
 
 /// Extract cyclomatic complexity and LOC metrics from RCA for a given language
 ///
@@ -873,7 +960,7 @@ pub fn calculate_rca_complexity(
     content: &str,
     language: &str,
 ) -> Result<(f64, u64, u64, u64, u64), ParseError> {
-    use rca::{ParserTrait, metrics};
+    use rca::{metrics, ParserTrait};
     use std::path::Path;
 
     let code_bytes = content.as_bytes().to_vec();
@@ -942,11 +1029,13 @@ pub fn calculate_rca_complexity(
         }
         _ => {
             // Unsupported language - return default values
-            return Ok((1.0,
-                       content.lines().count() as u64,
-                       content.lines().count() as u64,
-                       0,
-                       0));
+            return Ok((
+                1.0,
+                content.lines().count() as u64,
+                content.lines().count() as u64,
+                0,
+                0,
+            ));
         }
     };
 
@@ -963,11 +1052,13 @@ pub fn calculate_rca_complexity(
         Ok((complexity, sloc, ploc, cloc, blank))
     } else {
         // Failed to parse - return reasonable defaults
-        Ok((1.0,
+        Ok((
+            1.0,
             content.lines().count() as u64,
             content.lines().count() as u64,
             0,
-            0))
+            0,
+        ))
     }
 }
 
@@ -1278,9 +1369,12 @@ end
         let mut parser = PolyglotCodeParser::new();
         let mut code = String::new();
         for i in 0..100 {
-            code.push_str(&format!("fn function_{}() {{\n    println!(\"Function {}\");\n}}\n", i, i));
+            code.push_str(&format!(
+                "fn function_{}() {{\n    println!(\"Function {}\");\n}}\n",
+                i, i
+            ));
         }
-        
+
         let result = parser.analyze_code_metrics(&code, "rust").unwrap();
         assert!(result.basic_metrics.lines_of_code > 100);
         assert!(result.functions.len() >= 100);
@@ -1320,17 +1414,17 @@ fn main() {
     #[test]
     fn test_analyze_code_metrics_multiple_languages() {
         let mut parser = PolyglotCodeParser::new();
-        
+
         // Test Rust
         let rust_code = "fn main() { println!(\"Hello\"); }";
         let rust_result = parser.analyze_code_metrics(rust_code, "rust").unwrap();
         assert_eq!(rust_result.language, "Rust");
-        
+
         // Test Elixir
         let elixir_code = "defmodule Test do def main, do: IO.puts(\"Hello\") end";
         let elixir_result = parser.analyze_code_metrics(elixir_code, "elixir").unwrap();
         assert_eq!(elixir_result.language, "Elixir");
-        
+
         // Test JavaScript
         let js_code = "function main() { console.log('Hello'); }";
         let js_result = parser.analyze_code_metrics(js_code, "javascript").unwrap();
@@ -1340,11 +1434,11 @@ fn main() {
     #[test]
     fn test_analyze_code_metrics_error_handling() {
         let mut parser = PolyglotCodeParser::new();
-        
+
         // Test with invalid language
         let result = parser.analyze_code_metrics("code", "invalid_language");
         assert!(result.is_err());
-        
+
         // Test with empty language
         let result = parser.analyze_code_metrics("code", "");
         assert!(result.is_err());
@@ -1354,7 +1448,7 @@ fn main() {
     fn test_analyze_code_metrics_performance() {
         let mut parser = PolyglotCodeParser::new();
         let code = "fn main() { println!(\"Hello, world!\"); }";
-        
+
         // Test multiple calls to ensure no performance degradation
         for _ in 0..10 {
             let result = parser.analyze_code_metrics(code, "rust").unwrap();

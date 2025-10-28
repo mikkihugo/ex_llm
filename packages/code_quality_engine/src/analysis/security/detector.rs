@@ -2,8 +2,8 @@
 //!
 //! Extensible security pattern detection system.
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 /// Security analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,24 +140,24 @@ impl SecurityPatternRegistry {
             patterns: Vec::new(),
         }
     }
-    
+
     /// Register a security detector
     pub fn register_detector(&mut self, detector: Box<dyn SecurityDetectorTrait>) {
         self.detectors.push(detector);
     }
-    
+
     /// Register a security pattern
     pub fn register_pattern(&mut self, pattern: SecurityPattern) {
         self.patterns.push(pattern);
     }
-    
+
     /// Analyze code for security issues
     pub fn analyze(&self, content: &str, file_path: &str) -> Result<SecurityAnalysis> {
         // PSEUDO CODE:
         /*
         let mut vulnerabilities = Vec::new();
         let mut compliance_issues = Vec::new();
-        
+
         // Run pattern-based detection
         for pattern in &self.patterns {
             if let Ok(regex) = Regex::new(&pattern.pattern) {
@@ -181,22 +181,22 @@ impl SecurityPatternRegistry {
                 }
             }
         }
-        
+
         // Run custom detectors
         for detector in &self.detectors {
             let detector_vulns = detector.detect(content, file_path)?;
             vulnerabilities.extend(detector_vulns);
         }
-        
+
         // Calculate security score
         let security_score = calculate_security_score(&vulnerabilities);
-        
+
         // Generate recommendations
         let recommendations = generate_recommendations(&vulnerabilities);
-        
+
         // Check compliance
         let compliance_issues = check_compliance(content, file_path)?;
-        
+
         Ok(SecurityAnalysis {
             vulnerabilities,
             compliance_issues,
@@ -211,7 +211,7 @@ impl SecurityPatternRegistry {
             },
         })
         */
-        
+
         Ok(SecurityAnalysis {
             vulnerabilities: Vec::new(),
             compliance_issues: Vec::new(),

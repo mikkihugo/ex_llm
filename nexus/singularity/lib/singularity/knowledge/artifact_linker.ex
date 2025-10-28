@@ -119,7 +119,7 @@ defmodule Singularity.Knowledge.ArtifactLinker do
       from a in KnowledgeArtifact,
         where:
           fragment("content_raw ILIKE ?", ^"%#{artifact_id}%") or
-          fragment("content_raw ILIKE ?", ^"%#{String.replace(artifact_id, "-", "_")}%"),
+            fragment("content_raw ILIKE ?", ^"%#{String.replace(artifact_id, "-", "_")}%"),
         limit: ^limit,
         select: %{
           artifact_type: a.artifact_type,
@@ -140,8 +140,9 @@ defmodule Singularity.Knowledge.ArtifactLinker do
 
         query =
           from a in KnowledgeArtifact,
-            where: (ilike(a.artifact_type, ^"code_template_%") and
-                    fragment("content_raw ILIKE ?", ^"%#{framework_name}%")),
+            where:
+              ilike(a.artifact_type, ^"code_template_%") and
+                fragment("content_raw ILIKE ?", ^"%#{framework_name}%"),
             limit: ^limit,
             select: %{
               artifact_type: a.artifact_type,
@@ -170,7 +171,7 @@ defmodule Singularity.Knowledge.ArtifactLinker do
                 "code_template_api",
                 "code_template_cloud"
               ] and
-              fragment("content_raw ILIKE ?", ^"%#{artifact.artifact_id}%"),
+                fragment("content_raw ILIKE ?", ^"%#{artifact.artifact_id}%"),
             limit: ^limit,
             select: %{
               artifact_type: a.artifact_type,
@@ -192,7 +193,7 @@ defmodule Singularity.Knowledge.ArtifactLinker do
       from a in KnowledgeArtifact,
         where:
           a.artifact_type == "system_prompt" and
-          fragment("content_raw ILIKE ?", ^"%#{artifact.artifact_id}%"),
+            fragment("content_raw ILIKE ?", ^"%#{artifact.artifact_id}%"),
         limit: ^limit,
         select: %{
           artifact_type: a.artifact_type,
@@ -216,7 +217,7 @@ defmodule Singularity.Knowledge.ArtifactLinker do
             from a in KnowledgeArtifact,
               where:
                 a.artifact_type == "quality_template" and
-                fragment("content_raw ILIKE ?", ^"%#{language}%"),
+                  fragment("content_raw ILIKE ?", ^"%#{language}%"),
               limit: ^limit,
               select: %{
                 artifact_type: a.artifact_type,
@@ -270,9 +271,16 @@ defmodule Singularity.Knowledge.ArtifactLinker do
 
     nodes = []
     nodes = nodes ++ Enum.map(direct, fn a -> "        D#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
-    nodes = nodes ++ Enum.map(frameworks, fn a -> "        F#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
-    nodes = nodes ++ Enum.map(patterns, fn a -> "        P#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
-    nodes = nodes ++ Enum.map(prompts, fn a -> "        PR#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
+
+    nodes =
+      nodes ++ Enum.map(frameworks, fn a -> "        F#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
+
+    nodes =
+      nodes ++ Enum.map(patterns, fn a -> "        P#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
+
+    nodes =
+      nodes ++ Enum.map(prompts, fn a -> "        PR#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
+
     nodes = nodes ++ Enum.map(quality, fn a -> "        Q#{hash_id(a)}[\"#{a.artifact_id}\"]" end)
 
     Enum.join(nodes, "\n")

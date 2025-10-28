@@ -1023,6 +1023,7 @@ defmodule Singularity.BeamAnalysisEngine do
   end
 
   defp extract_module_calls({:defmodule, _, _}), do: []
+
   defp extract_module_calls(ast) when is_list(ast) do
     Enum.flat_map(ast, &extract_module_calls/1)
   end
@@ -1053,43 +1054,60 @@ defmodule Singularity.BeamAnalysisEngine do
   defp find_processes_in_ast({:spawn, _, _} = node, acc), do: [node | acc]
   defp find_processes_in_ast({:send, _, _} = node, acc), do: [node | acc]
   defp find_processes_in_ast({:receive, _, _} = node, acc), do: [node | acc]
+
   defp find_processes_in_ast(ast, acc) when is_list(ast) do
     Enum.flat_map(ast, &find_processes_in_ast(&1, [])) ++ acc
   end
+
   defp find_processes_in_ast(ast, acc) when is_tuple(ast) and tuple_size(ast) == 3 do
     find_processes_in_ast(elem(ast, 2), acc)
   end
+
   defp find_processes_in_ast(_, acc), do: acc
 
-  defp find_supervisors_in_ast({{:., _, [{:__aliases__, _, [:Supervisor]}, :start_link]}, _, _} = node, acc), do: [node | acc]
+  defp find_supervisors_in_ast(
+         {{:., _, [{:__aliases__, _, [:Supervisor]}, :start_link]}, _, _} = node,
+         acc
+       ), do: [node | acc]
+
   defp find_supervisors_in_ast(ast, acc) when is_list(ast) do
     Enum.flat_map(ast, &find_supervisors_in_ast(&1, [])) ++ acc
   end
+
   defp find_supervisors_in_ast(ast, acc) when is_tuple(ast) and tuple_size(ast) == 3 do
     find_supervisors_in_ast(elem(ast, 2), acc)
   end
+
   defp find_supervisors_in_ast(_, acc), do: acc
 
   defp find_gen_servers_in_ast({:def, _, [{:handle_call, _, _}, _]} = node, acc), do: [node | acc]
   defp find_gen_servers_in_ast({:def, _, [{:handle_cast, _, _}, _]} = node, acc), do: [node | acc]
   defp find_gen_servers_in_ast({:def, _, [{:handle_info, _, _}, _]} = node, acc), do: [node | acc]
-  defp find_gen_servers_in_ast({{:., _, [{:__aliases__, _, [:GenServer]}, _]}, _, _} = node, acc), do: [node | acc]
+
+  defp find_gen_servers_in_ast({{:., _, [{:__aliases__, _, [:GenServer]}, _]}, _, _} = node, acc),
+    do: [node | acc]
+
   defp find_gen_servers_in_ast(ast, acc) when is_list(ast) do
     Enum.flat_map(ast, &find_gen_servers_in_ast(&1, [])) ++ acc
   end
+
   defp find_gen_servers_in_ast(ast, acc) when is_tuple(ast) and tuple_size(ast) == 3 do
     find_gen_servers_in_ast(elem(ast, 2), acc)
   end
+
   defp find_gen_servers_in_ast(_, acc), do: acc
 
   defp find_messages_in_ast({:send, _, _} = node, acc), do: [node | acc]
   defp find_messages_in_ast({:receive, _, _} = node, acc), do: [node | acc]
+
   defp find_messages_in_ast(ast, acc) when is_list(ast) do
     Enum.flat_map(ast, &find_messages_in_ast(&1, [])) ++ acc
   end
+
   defp find_messages_in_ast(ast, acc) when is_tuple(ast) and tuple_size(ast) == 3 do
     find_messages_in_ast(elem(ast, 2), acc)
   end
+
   defp find_messages_in_ast(_, acc), do: acc
   defp find_port_usage(_functions, _calls), do: []
 

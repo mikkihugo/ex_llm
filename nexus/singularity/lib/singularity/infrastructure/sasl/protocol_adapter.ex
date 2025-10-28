@@ -56,7 +56,8 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
       iex> ProtocolAdapter.authenticate_radius(%{username: "user", password: "pass"}, radius_request)
       {:ok, %{user_id: "user", mechanism: :radius, attributes: %{...}}}
   """
-  @spec authenticate_protocol(map(), protocol_type(), protocol_message(), keyword()) :: adapter_result()
+  @spec authenticate_protocol(map(), protocol_type(), protocol_message(), keyword()) ::
+          adapter_result()
   def authenticate_protocol(credentials, protocol, message, opts \\ []) do
     Logger.debug("Protocol SASL authentication: protocol=#{protocol}")
 
@@ -108,7 +109,8 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
   - `{:ok, context}` - Response verified successfully
   - `{:error, reason}` - Response verification failed
   """
-  @spec verify_protocol_response(protocol_type(), binary(), binary(), keyword()) :: adapter_result()
+  @spec verify_protocol_response(protocol_type(), binary(), binary(), keyword()) ::
+          adapter_result()
   def verify_protocol_response(protocol, challenge, response, opts \\ []) do
     case get_protocol_mechanism(protocol) do
       {:ok, mechanism} -> Sasl.verify_response(challenge, response, mechanism, opts)
@@ -172,7 +174,8 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
       :diameter -> {:ok, :diameter}
       :radius -> {:ok, :radius}
       :ss7 -> {:ok, :ss7}
-      :sigtran -> {:ok, :diameter}  # SIGTRAN uses Diameter SASL
+      # SIGTRAN uses Diameter SASL
+      :sigtran -> {:ok, :diameter}
       _ -> {:error, "Unsupported protocol: #{protocol}"}
     end
   end
@@ -181,10 +184,11 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
     # Adapt generic credentials to protocol-specific format
     protocol_data = extract_protocol_data(protocol, message)
 
-    adapted_credentials = credentials
-    |> Map.merge(protocol_data)
-    |> Map.put(:protocol, protocol)
-    |> Map.put(:timestamp, DateTime.utc_now())
+    adapted_credentials =
+      credentials
+      |> Map.merge(protocol_data)
+      |> Map.put(:protocol, protocol)
+      |> Map.put(:timestamp, DateTime.utc_now())
 
     {:ok, adapted_credentials}
   end
@@ -366,6 +370,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
 
   defp get_avp_value(message, avp_name, default \\ nil) do
     avps = Map.get(message, :avps, [])
+
     case Enum.find(avps, fn {name, _value} -> name == avp_name end) do
       {_name, value} -> value
       nil -> default
@@ -374,6 +379,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
 
   defp get_radius_attribute(message, attribute_name, default \\ nil) do
     attributes = Map.get(message, :attributes, [])
+
     case Enum.find(attributes, fn {name, _value} -> name == attribute_name end) do
       {_name, value} -> value
       nil -> default
@@ -382,6 +388,7 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
 
   defp get_ss7_parameter(message, parameter_name, default \\ nil) do
     parameters = Map.get(message, :parameters, [])
+
     case Enum.find(parameters, fn {name, _value} -> name == parameter_name end) do
       {_name, value} -> value
       nil -> default

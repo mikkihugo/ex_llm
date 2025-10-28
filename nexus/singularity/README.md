@@ -208,7 +208,7 @@ The Nix dev shell now ships the language servers most editors expect:
 - `erlang_ls` for Erlang modules
 - `gleam lsp` via the `gleam` tool
 - `typescript-language-server` for TypeScript/Litellm utilities
-- `rust-analyzer` and the Rust CLI suite (cargo-* tooling)
+- `Singularity Code Analyzer` (rust-analyzer) and the Rust CLI suite (cargo-* tooling)
 
 Launch `nix develop` (or allow direnv) before starting your editor so it picks up the binaries on `$PATH`. These LSPs are for developer use only; agents do **not** call them directly—instead they query the structured data stored via `Singularity.Analysis` / `Singularity.Quality`.
 

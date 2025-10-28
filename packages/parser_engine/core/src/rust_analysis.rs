@@ -484,7 +484,7 @@ pub struct RustLanguageFeatures {
     pub uses_closures: bool,
 }
 
-/// Rust analyzer
+/// Singularity Code Analyzer (rust-analyzer)
 pub struct RustAnalyzer {
     /// Configuration
     config: RustAnalysisConfig,
@@ -521,7 +521,7 @@ impl Default for RustAnalysisConfig {
 }
 
 impl RustAnalyzer {
-    /// Create a new Rust analyzer
+    /// Create a new Singularity Code Analyzer (rust-analyzer)
     pub fn new(config: RustAnalysisConfig) -> Self {
         Self { config }
     }
@@ -614,7 +614,7 @@ impl RustAnalyzer {
             async_fn_count: content.matches("async fn").count() as u64,
             generic_fn_count: content.matches("fn ").count() as u64, // Simplified
             lifetime_count: content.matches("'").count() as u64 / 2, // Approximate
-            avg_function_complexity: 0.0, // TODO: Calculate from AST
+            avg_function_complexity: 0.0,                            // TODO: Calculate from AST
         }
     }
 
@@ -631,9 +631,12 @@ impl RustAnalyzer {
             uses_unsafe: content.contains("unsafe "),
             uses_error_handling: content.contains("Result<") || content.contains("Option<"),
             uses_pattern_matching: content.contains("match "),
-            uses_smart_pointers: content.contains("Box<") || content.contains("Rc<") || content.contains("Arc<"),
+            uses_smart_pointers: content.contains("Box<")
+                || content.contains("Rc<")
+                || content.contains("Arc<"),
             uses_iterators: content.contains(".iter()") || content.contains(".into_iter()"),
-            uses_closures: content.contains("|") && (content.contains("|{") || content.contains("| ")),
+            uses_closures: content.contains("|")
+                && (content.contains("|{") || content.contains("| ")),
         }
     }
 }

@@ -12,17 +12,17 @@ defmodule Singularity.Conversation.WebChatIntegrationTest do
     :ok
   end
 
-
   describe "WebChat Approval Requests" do
     test "ask_approval creates approval with mock HITL" do
       request_id = "test-approval-#{System.unique_integer([:positive])}"
 
-      {:ok, approval} = WebChat.ask_approval(%{
-        request_id: request_id,
-        title: "Deploy to staging?",
-        description: "New features ready for testing",
-        impact: "medium"
-      })
+      {:ok, approval} =
+        WebChat.ask_approval(%{
+          request_id: request_id,
+          title: "Deploy to staging?",
+          description: "New features ready for testing",
+          impact: "medium"
+        })
 
       assert is_map(approval)
       assert approval.request_id == request_id
@@ -33,11 +33,12 @@ defmodule Singularity.Conversation.WebChatIntegrationTest do
     test "ask_question creates question with mock HITL" do
       request_id = "test-question-#{System.unique_integer([:positive])}"
 
-      {:ok, question} = WebChat.ask_question(%{
-        request_id: request_id,
-        question: "Should I refactor this module?",
-        context: %{file: "lib/my_module.ex", lines: 150}
-      })
+      {:ok, question} =
+        WebChat.ask_question(%{
+          request_id: request_id,
+          question: "Should I refactor this module?",
+          context: %{file: "lib/my_module.ex", lines: 150}
+        })
 
       assert is_map(question)
       assert question.request_id == request_id
@@ -47,10 +48,11 @@ defmodule Singularity.Conversation.WebChatIntegrationTest do
     test "ask_confirmation creates confirmation request with mock HITL" do
       request_id = "test-confirm-#{System.unique_integer([:positive])}"
 
-      {:ok, confirmation} = WebChat.ask_confirmation(
-        "Proceed with the changes?",
-        %{request_id: request_id}
-      )
+      {:ok, confirmation} =
+        WebChat.ask_confirmation(
+          "Proceed with the changes?",
+          %{request_id: request_id}
+        )
 
       assert is_map(confirmation)
       assert confirmation.request_id == request_id
@@ -66,33 +68,36 @@ defmodule Singularity.Conversation.WebChatIntegrationTest do
     end
 
     test "daily_summary sends summary successfully" do
-      {:ok, result} = WebChat.daily_summary(%{
-        completed_tasks: 5,
-        failed_tasks: 1,
-        active_tasks: 2,
-        avg_confidence: 0.92
-      })
+      {:ok, result} =
+        WebChat.daily_summary(%{
+          completed_tasks: 5,
+          failed_tasks: 1,
+          active_tasks: 2,
+          avg_confidence: 0.92
+        })
 
       assert result in ["notification_sent", "notification_queued"]
     end
 
     test "deployment_notification sends notification successfully" do
-      {:ok, result} = WebChat.deployment_notification(%{
-        status: :completed,
-        service: "api-server",
-        version: "1.2.0",
-        duration_ms: 45000
-      })
+      {:ok, result} =
+        WebChat.deployment_notification(%{
+          status: :completed,
+          service: "api-server",
+          version: "1.2.0",
+          duration_ms: 45000
+        })
 
       assert result in ["notification_sent", "notification_queued"]
     end
 
     test "policy_change sends notification successfully" do
-      {:ok, result} = WebChat.policy_change(%{
-        policy: "Rate Limiting",
-        action: "updated",
-        details: "Increased limit to 1000/min"
-      })
+      {:ok, result} =
+        WebChat.policy_change(%{
+          policy: "Rate Limiting",
+          action: "updated",
+          details: "Increased limit to 1000/min"
+        })
 
       assert result in ["notification_sent", "notification_queued"]
     end

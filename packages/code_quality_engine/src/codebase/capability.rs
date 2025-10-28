@@ -295,11 +295,7 @@ impl CapabilityIndex {
     pub fn find_by_crate(&self, crate_name: &str) -> Vec<&CodeCapability> {
         self.by_crate
             .get(crate_name)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| self.by_id.get(id))
-                    .collect()
-            })
+            .map(|ids| ids.iter().filter_map(|id| self.by_id.get(id)).collect())
             .unwrap_or_default()
     }
 

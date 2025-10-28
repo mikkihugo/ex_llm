@@ -1,6 +1,6 @@
-defmodule Singularity.CodeAnalysis.Analyzer.Cache do
+defmodule Singularity.CodeAnalyzer.Cache do
   @moduledoc """
-  Analysis Result Caching Layer for CodeAnalysis.Analyzer
+  Analysis Result Caching Layer for Singularity.CodeAnalyzer
 
   Provides in-memory caching of code analysis results to avoid re-analyzing
   unchanged code. Uses ETS for fast lookups.
@@ -9,7 +9,7 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
 
   ```json
   {
-    "module_name": "Singularity.CodeAnalysis.Analyzer.Cache",
+    "module_name": "Singularity.CodeAnalyzer.Cache",
     "purpose": "Cache code analysis results to avoid redundant computation",
     "type": "GenServer with ETS-backed cache",
     "operates_on": "Analysis results keyed by content hash",
@@ -28,19 +28,19 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
 
   ```elixir
   # Start the cache
-  {:ok, _pid} = CodeAnalysis.Analyzer.Cache.start_link(max_size: 1000, ttl: 3600)
+  {:ok, _pid} = CodeAnalyzer.Cache.start_link(max_size: 1000, ttl: 3600)
 
   # Get cached result or analyze
-  {:ok, analysis} = CodeAnalysis.Analyzer.Cache.get_or_analyze(code, "elixir", fn ->
-    CodeAnalysis.Analyzer.analyze_language(code, "elixir")
+  {:ok, analysis} = CodeAnalyzer.Cache.get_or_analyze(code, "elixir", fn ->
+    CodeAnalyzer.analyze_language(code, "elixir")
   end)
 
   # Check cache stats
-  stats = CodeAnalysis.Analyzer.Cache.stats()
+  stats = CodeAnalyzer.Cache.stats()
   # => %{hits: 150, misses: 50, hit_rate: 0.75, size: 200}
 
   # Clear cache
-  :ok = CodeAnalysis.Analyzer.Cache.clear()
+  :ok = CodeAnalyzer.Cache.clear()
   ```
 
   ## Call Graph (YAML)
@@ -50,9 +50,9 @@ defmodule Singularity.CodeAnalysis.Analyzer.Cache do
     calls:
       - :ets (cache storage)
       - :crypto.hash/2 (content hashing)
-      - CodeAnalysis.Analyzer (on cache miss)
+      - CodeAnalyzer (on cache miss)
     called_by:
-      - CodeAnalysis.Analyzer (wrapper functions)
+      - CodeAnalyzer (wrapper functions)
       - StartupCodeIngestion (module reanalysis)
   ```
 

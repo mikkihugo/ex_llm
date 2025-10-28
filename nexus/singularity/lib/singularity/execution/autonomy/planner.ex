@@ -298,14 +298,15 @@ defmodule Singularity.Execution.Autonomy.Planner do
       # Provide confidence level
       confidence = calculate_confidence(complexity)
 
-      {:ok, %{
-        description: description,
-        estimated_effort: effort_estimate,
-        complexity_score: complexity.score,
-        confidence_level: confidence,
-        factors: complexity.factors,
-        breakdown: effort_estimate.breakdown
-      }}
+      {:ok,
+       %{
+         description: description,
+         estimated_effort: effort_estimate,
+         complexity_score: complexity.score,
+         confidence_level: confidence,
+         factors: complexity.factors,
+         breakdown: effort_estimate.breakdown
+       }}
     rescue
       e ->
         Logger.error("Error estimating effort", error: inspect(e), description: description)
@@ -322,27 +323,43 @@ defmodule Singularity.Execution.Autonomy.Planner do
 
     # Length-based complexity
     word_count = String.split(description, ~r/\s+/) |> length()
-    length_factor = cond do
-      word_count < 10 -> 1
-      word_count < 50 -> 2
-      word_count < 100 -> 3
-      true -> 4
-    end
+
+    length_factor =
+      cond do
+        word_count < 10 -> 1
+        word_count < 50 -> 2
+        word_count < 100 -> 3
+        true -> 4
+      end
+
     factors = [{:length, length_factor} | factors]
 
     # Technical complexity indicators
-    tech_indicators = ["api", "database", "authentication", "security", "integration", "microservice"]
-    tech_matches = Enum.count(tech_indicators, fn indicator ->
-      String.contains?(String.downcase(description), indicator)
-    end)
+    tech_indicators = [
+      "api",
+      "database",
+      "authentication",
+      "security",
+      "integration",
+      "microservice"
+    ]
+
+    tech_matches =
+      Enum.count(tech_indicators, fn indicator ->
+        String.contains?(String.downcase(description), indicator)
+      end)
+
     tech_factor = min(tech_matches + 1, 4)
     factors = [{:technical, tech_factor} | factors]
 
     # Domain complexity
     domain_keywords = Map.get(context, :domain_keywords, [])
-    domain_matches = Enum.count(domain_keywords, fn keyword ->
-      String.contains?(String.downcase(description), String.downcase(keyword))
-    end)
+
+    domain_matches =
+      Enum.count(domain_keywords, fn keyword ->
+        String.contains?(String.downcase(description), String.downcase(keyword))
+      end)
+
     domain_factor = if domain_matches > 0, do: 2, else: 1
     factors = [{:domain, domain_factor} | factors]
 
@@ -353,15 +370,17 @@ defmodule Singularity.Execution.Autonomy.Planner do
   end
 
   defp calculate_effort_estimate(complexity, context) do
-    base_effort = Map.get(context, :base_effort_hours, 8)  # Default 1 day
+    # Default 1 day
+    base_effort = Map.get(context, :base_effort_hours, 8)
 
     # Adjust based on complexity
-    multiplier = case complexity.score do
-      score when score < 1.5 -> 0.5
-      score when score < 2.5 -> 1.0
-      score when score < 3.5 -> 1.5
-      _ -> 2.0
-    end
+    multiplier =
+      case complexity.score do
+        score when score < 1.5 -> 0.5
+        score when score < 2.5 -> 1.0
+        score when score < 3.5 -> 1.5
+        _ -> 2.0
+      end
 
     estimated_hours = base_effort * multiplier
 

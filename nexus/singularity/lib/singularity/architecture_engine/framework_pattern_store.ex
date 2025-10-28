@@ -19,6 +19,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternStore do
 
   require Logger
   alias Singularity.Repo
+  alias Singularity.Knowledge.Requests, as: KnowledgeRequests
 
   @doc """
   Get framework pattern by name
@@ -230,6 +231,7 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternStore do
 
         if unknown != [] do
           Logger.info("Discovered #{length(unknown)} potential new framework patterns")
+          enqueue_pattern_requests(repo_path, unknown)
           {:ok, unknown}
         else
           {:ok, []}
@@ -238,6 +240,41 @@ defmodule Singularity.ArchitectureEngine.FrameworkPatternStore do
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp enqueue_pattern_requests(repo_path, patterns) do
+    Enum.each(patterns, fn
+      %{extension: nil} ->
+        :ok
+
+      %{extension: extension, file_count: count} ->
+        external_key = "pattern:framework:#{extension}"
+
+        payload = %{
+          "pattern_type" => "framework",
+          "extension" => extension,
+          "file_count" => count,
+          "repo_path" => repo_path
+        }
+
+        case KnowledgeRequests.enqueue(%{
+               request_type: :pattern,
+               external_key: external_key,
+               payload: payload,
+               source: "Singularity.ArchitectureEngine.FrameworkPatternStore",
+               source_reference: repo_path,
+               metadata: %{"pattern_type" => "framework"}
+             }) do
+          {:ok, _request} ->
+            :ok
+
+          {:error, changeset} ->
+            Logger.error("Failed to enqueue framework knowledge request",
+              external_key: external_key,
+              errors: changeset.errors
+            )
+        end
+    end)
   end
 
   @doc """

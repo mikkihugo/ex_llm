@@ -2,21 +2,51 @@
 //
 // Production-ready business-aware, architecture-aware, and security-aware code search.
 
-use serde::{Deserialize, Serialize};
+use super::business_analyzer::BusinessDomainType;
 use anyhow::Result;
-use std::collections::HashMap;
-use regex::Regex;
 use chrono::{DateTime, Utc};
+use cpp_parser::CppParser;
+use csharp_parser::CSharpParser;
+use elixir_parser::ElixirParser;
+use erlang_parser::ErlangParser;
+use gleam_parser::GleamParser;
+use go_parser::GoParser;
+use java_parser::JavaParser;
+use javascript_parser::JavascriptParser;
+use python_parser::PythonParser;
+use regex::Regex;
+use rust_parser::RustParser;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use typescript_parser::TypescriptParser;
 
 // Use universal parser framework - it handles all language parsers internally
-use parser_core::{
-    PolyglotCodeParser, 
-    PolyglotCodeParserFrameworkConfig,
-    dependencies::UniversalDependencies,
-    languages::ProgrammingLanguage,
-    AnalysisResult,
-    interfaces::ParserCapabilities,
-};
+use parser_core::{AnalysisResult, PolyglotCodeParser, PolyglotCodeParserFrameworkConfig};
+
+/// Programming language enumeration
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum ProgrammingLanguage {
+    JavaScript,
+    TypeScript,
+    Python,
+    Rust,
+    Go,
+    Erlang,
+    Elixir,
+    Gleam,
+    Java,
+    C,
+    Cpp,
+    CSharp,
+    Swift,
+    Kotlin,
+    Php,
+    Ruby,
+    Scala,
+    Haskell,
+    Lua,
+    Unknown,
+}
 
 /// Semantic search result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -570,7 +600,7 @@ impl SemanticSearchEngine {
         // Initialize universal parser framework with all language plugins
         let config = PolyglotCodeParserFrameworkConfig::default();
         let universal_parser = PolyglotCodeParser::new_with_config(config)?;
-        
+
         Ok(Self {
             pattern_registry: PatternRegistry::new(),
             vector_store: VectorStore::new(),
@@ -581,91 +611,127 @@ impl SemanticSearchEngine {
             universal_parser,
         })
     }
-    
+
     /// Initialize with fact-system integration
     pub async fn initialize(&mut self) -> Result<()> {
         // Initialize fact-system interface with built-in patterns
         self.pattern_registry.initialize().await?;
-        
+
         // Initialize analyzers with patterns
-        self.business_analyzer.initialize(&self.pattern_registry).await?;
-        self.architecture_analyzer.initialize(&self.pattern_registry).await?;
-        self.security_analyzer.initialize(&self.pattern_registry).await?;
-        
+        self.business_analyzer
+            .initialize(&self.pattern_registry)
+            .await?;
+        self.architecture_analyzer
+            .initialize(&self.pattern_registry)
+            .await?;
+        self.security_analyzer
+            .initialize(&self.pattern_registry)
+            .await?;
+
         // Initialize vector store
         self.vector_store.initialize().await?;
-        
+
         Ok(())
     }
-    
+
     /// Add code documents for indexing
     pub fn add_code_documents(&mut self, documents: Vec<CodeDocument>) {
         for doc in documents {
             self.code_documents.insert(doc.file_path.clone(), doc);
         }
     }
-    
+
     /// Parse code using universal parser framework
-    pub async fn parse_code(&self, content: &str, file_path: &str, language: ProgrammingLanguage) -> Result<AstNode> {
+    pub async fn parse_code(
+        &self,
+        content: &str,
+        file_path: &str,
+        language: ProgrammingLanguage,
+    ) -> Result<AstNode> {
         // Use universal parser framework to parse code
-        let analysis_result = self.universal_parser.analyze(content, file_path, language).await?;
-        
+        let analysis_result = self
+            .universal_parser
+            .analyze(content, file_path, language)
+            .await?;
+
         // Convert universal analysis result to our AstNode format
         Ok(self.convert_universal_analysis_result(analysis_result, language))
     }
-    
+
     /// Convert universal analysis result to unified AST format
-    fn convert_universal_analysis_result(&self, analysis_result: AnalysisResult, language: ProgrammingLanguage) -> AstNode {
+    fn convert_universal_analysis_result(
+        &self,
+        analysis_result: AnalysisResult,
+        language: ProgrammingLanguage,
+    ) -> AstNode {
         let mut attributes = HashMap::new();
-        
+
         // Extract general metrics
         if let Some(metrics) = analysis_result.metrics {
-            attributes.insert("lines_of_code".to_string(), metrics.lines_of_code.to_string());
-            attributes.insert("cyclomatic_complexity".to_string(), metrics.cyclomatic_complexity.to_string());
-            attributes.insert("maintainability_index".to_string(), metrics.maintainability_index.to_string());
+            attributes.insert(
+                "lines_of_code".to_string(),
+                metrics.lines_of_code.to_string(),
+            );
+            attributes.insert(
+                "cyclomatic_complexity".to_string(),
+                metrics.cyclomatic_complexity.to_string(),
+            );
+            attributes.insert(
+                "maintainability_index".to_string(),
+                metrics.maintainability_index.to_string(),
+            );
         }
-        
+
         // Extract language-specific information
         match language {
             ProgrammingLanguage::Rust => {
                 if let Some(rust_specific) = analysis_result.programming_language_specific {
                     attributes.insert("rust_specific".to_string(), format!("{:?}", rust_specific));
                 }
-            },
+            }
             ProgrammingLanguage::Python => {
                 if let Some(python_specific) = analysis_result.programming_language_specific {
-                    attributes.insert("python_specific".to_string(), format!("{:?}", python_specific));
+                    attributes.insert(
+                        "python_specific".to_string(),
+                        format!("{:?}", python_specific),
+                    );
                 }
-            },
+            }
             ProgrammingLanguage::JavaScript => {
                 if let Some(js_specific) = analysis_result.programming_language_specific {
-                    attributes.insert("javascript_specific".to_string(), format!("{:?}", js_specific));
+                    attributes.insert(
+                        "javascript_specific".to_string(),
+                        format!("{:?}", js_specific),
+                    );
                 }
-            },
+            }
             _ => {
                 // Handle other languages
                 if let Some(lang_specific) = analysis_result.programming_language_specific {
-                    attributes.insert("language_specific".to_string(), format!("{:?}", lang_specific));
+                    attributes.insert(
+                        "language_specific".to_string(),
+                        format!("{:?}", lang_specific),
+                    );
                 }
             }
         }
-        
+
         // Extract functions, classes, imports from analysis result
         if let Some(functions) = analysis_result.functions {
             let function_count: usize = functions.len();
             attributes.insert("function_count".to_string(), function_count.to_string());
         }
-        
+
         if let Some(classes) = analysis_result.classes {
             let class_count: usize = classes.len();
             attributes.insert("class_count".to_string(), class_count.to_string());
         }
-        
+
         if let Some(imports) = analysis_result.imports {
             let import_count: usize = imports.len();
             attributes.insert("import_count".to_string(), import_count.to_string());
         }
-        
+
         AstNode {
             node_type: format!("{}_file", language.to_string().to_lowercase()),
             children: Vec::new(), // Would extract from analysis result
@@ -676,38 +742,56 @@ impl SemanticSearchEngine {
             end_column: 1,
         }
     }
-    
+
     /// Perform semantic search
-    pub async fn search(&self, query: &str, options: SearchOptions) -> Result<SemanticSearchResult> {
+    pub async fn search(
+        &self,
+        query: &str,
+        options: SearchOptions,
+    ) -> Result<SemanticSearchResult> {
         let start_time = std::time::Instant::now();
-        
+
         // 1. Parse query and extract intent
         let query_intent = self.parse_query_intent(query).await?;
-        
+
         // 2. Generate embeddings for query
         let query_embeddings = self.vector_store.generate_embeddings(query).await?;
-        
+
         // 3. Perform vector similarity search
-        let vector_matches = self.vector_store.similarity_search(&query_embeddings, options.similarity_threshold).await?;
-        
+        let vector_matches = self
+            .vector_store
+            .similarity_search(&query_embeddings, options.similarity_threshold)
+            .await?;
+
         // 4. Analyze business context
-        let business_context = self.business_analyzer.analyze_business_context(query, &vector_matches).await?;
-        
+        let business_context = self
+            .business_analyzer
+            .analyze_business_context(query, &vector_matches)
+            .await?;
+
         // 5. Analyze architecture context
-        let architecture_context = self.architecture_analyzer.analyze_architecture_context(query, &vector_matches).await?;
-        
+        let architecture_context = self
+            .architecture_analyzer
+            .analyze_architecture_context(query, &vector_matches)
+            .await?;
+
         // 6. Analyze security context
-        let security_context = self.security_analyzer.analyze_security_context(query, &vector_matches).await?;
-        
+        let security_context = self
+            .security_analyzer
+            .analyze_security_context(query, &vector_matches)
+            .await?;
+
         // 7. Combine and rank results
-        let search_matches = self.combine_and_rank_results(
-            &vector_matches,
-            &business_context,
-            &architecture_context,
-            &security_context,
-            &query_intent
-        ).await?;
-        
+        let search_matches = self
+            .combine_and_rank_results(
+                &vector_matches,
+                &business_context,
+                &architecture_context,
+                &security_context,
+                &query_intent,
+            )
+            .await?;
+
         // 8. Generate search metadata
         let search_duration_ms = start_time.elapsed().as_millis() as u64;
         let search_metadata = SearchMetadata {
@@ -720,7 +804,7 @@ impl SemanticSearchEngine {
             architecture_awareness_enabled: options.architecture_awareness_enabled,
             security_awareness_enabled: options.security_awareness_enabled,
         };
-        
+
         Ok(SemanticSearchResult {
             query: query.to_string(),
             results: search_matches,
@@ -730,30 +814,35 @@ impl SemanticSearchEngine {
             security_context,
         })
     }
-    
+
     /// Parse query intent
     async fn parse_query_intent(&self, query: &str) -> Result<QueryIntent> {
         // Extract business intent
         let business_intent = self.extract_business_intent(query).await?;
-        
+
         // Extract architecture intent
         let architecture_intent = self.extract_architecture_intent(query).await?;
-        
+
         // Extract security intent
         let security_intent = self.extract_security_intent(query).await?;
-        
+
         // Extract technical intent
         let technical_intent = self.extract_technical_intent(query).await?;
-        
+
         Ok(QueryIntent {
             business_intent,
             architecture_intent,
             security_intent,
             technical_intent,
-            overall_intent: self.determine_overall_intent(&business_intent, &architecture_intent, &security_intent, &technical_intent),
+            overall_intent: self.determine_overall_intent(
+                &business_intent,
+                &architecture_intent,
+                &security_intent,
+                &technical_intent,
+            ),
         })
     }
-    
+
     /// Extract business intent from query
     async fn extract_business_intent(&self, query: &str) -> Result<BusinessIntent> {
         let query_lower = query.to_lowercase();
@@ -761,18 +850,27 @@ impl SemanticSearchEngine {
         let mut patterns = Vec::new();
         let mut entities = Vec::new();
         let mut workflows = Vec::new();
-        
+
         // Check for business domains
-        if query_lower.contains("payment") || query_lower.contains("checkout") || query_lower.contains("billing") {
+        if query_lower.contains("payment")
+            || query_lower.contains("checkout")
+            || query_lower.contains("billing")
+        {
             domains.push("Payment Processing".to_string());
         }
-        if query_lower.contains("user") || query_lower.contains("authentication") || query_lower.contains("login") {
+        if query_lower.contains("user")
+            || query_lower.contains("authentication")
+            || query_lower.contains("login")
+        {
             domains.push("User Management".to_string());
         }
-        if query_lower.contains("order") || query_lower.contains("inventory") || query_lower.contains("product") {
+        if query_lower.contains("order")
+            || query_lower.contains("inventory")
+            || query_lower.contains("product")
+        {
             domains.push("E-Commerce".to_string());
         }
-        
+
         // Check for business patterns
         if query_lower.contains("processing") {
             patterns.push("Payment Processing".to_string());
@@ -783,7 +881,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("fulfillment") {
             patterns.push("Order Fulfillment".to_string());
         }
-        
+
         // Check for business entities
         if query_lower.contains("customer") {
             entities.push("Customer".to_string());
@@ -794,12 +892,12 @@ impl SemanticSearchEngine {
         if query_lower.contains("order") {
             entities.push("Order".to_string());
         }
-        
+
         // Check for business workflows
         if query_lower.contains("workflow") || query_lower.contains("process") {
             workflows.push("Business Process".to_string());
         }
-        
+
         Ok(BusinessIntent {
             domains,
             patterns,
@@ -807,7 +905,7 @@ impl SemanticSearchEngine {
             workflows,
         })
     }
-    
+
     /// Extract architecture intent from query
     async fn extract_architecture_intent(&self, query: &str) -> Result<ArchitectureIntent> {
         let query_lower = query.to_lowercase();
@@ -815,18 +913,24 @@ impl SemanticSearchEngine {
         let mut components = Vec::new();
         let mut relationships = Vec::new();
         let mut quality_attributes = Vec::new();
-        
+
         // Check for architecture patterns
         if query_lower.contains("microservice") || query_lower.contains("service") {
             patterns.push("Microservices".to_string());
         }
-        if query_lower.contains("cqrs") || query_lower.contains("command") || query_lower.contains("query") {
+        if query_lower.contains("cqrs")
+            || query_lower.contains("command")
+            || query_lower.contains("query")
+        {
             patterns.push("CQRS".to_string());
         }
-        if query_lower.contains("hexagonal") || query_lower.contains("port") || query_lower.contains("adapter") {
+        if query_lower.contains("hexagonal")
+            || query_lower.contains("port")
+            || query_lower.contains("adapter")
+        {
             patterns.push("Hexagonal Architecture".to_string());
         }
-        
+
         // Check for components
         if query_lower.contains("controller") {
             components.push("Controller".to_string());
@@ -837,7 +941,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("repository") {
             components.push("Repository".to_string());
         }
-        
+
         // Check for relationships
         if query_lower.contains("dependency") {
             relationships.push("Dependency".to_string());
@@ -845,7 +949,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("communication") {
             relationships.push("Communication".to_string());
         }
-        
+
         // Check for quality attributes
         if query_lower.contains("performance") {
             quality_attributes.push("Performance".to_string());
@@ -856,7 +960,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("reliability") {
             quality_attributes.push("Reliability".to_string());
         }
-        
+
         Ok(ArchitectureIntent {
             patterns,
             components,
@@ -864,7 +968,7 @@ impl SemanticSearchEngine {
             quality_attributes,
         })
     }
-    
+
     /// Extract security intent from query
     async fn extract_security_intent(&self, query: &str) -> Result<SecurityIntent> {
         let query_lower = query.to_lowercase();
@@ -872,7 +976,7 @@ impl SemanticSearchEngine {
         let mut compliance = Vec::new();
         let mut patterns = Vec::new();
         let mut controls = Vec::new();
-        
+
         // Check for vulnerabilities
         if query_lower.contains("injection") || query_lower.contains("sql") {
             vulnerabilities.push("SQL Injection".to_string());
@@ -883,7 +987,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("csrf") {
             vulnerabilities.push("CSRF".to_string());
         }
-        
+
         // Check for compliance
         if query_lower.contains("pci") || query_lower.contains("dss") {
             compliance.push("PCI-DSS".to_string());
@@ -894,7 +998,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("hipaa") {
             compliance.push("HIPAA".to_string());
         }
-        
+
         // Check for security patterns
         if query_lower.contains("authentication") || query_lower.contains("auth") {
             patterns.push("Authentication".to_string());
@@ -905,7 +1009,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("encryption") {
             patterns.push("Encryption".to_string());
         }
-        
+
         // Check for security controls
         if query_lower.contains("preventive") {
             controls.push("Preventive".to_string());
@@ -916,7 +1020,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("corrective") {
             controls.push("Corrective".to_string());
         }
-        
+
         Ok(SecurityIntent {
             vulnerabilities,
             compliance,
@@ -924,7 +1028,7 @@ impl SemanticSearchEngine {
             controls,
         })
     }
-    
+
     /// Extract technical intent from query
     async fn extract_technical_intent(&self, query: &str) -> Result<TechnicalIntent> {
         let query_lower = query.to_lowercase();
@@ -932,7 +1036,7 @@ impl SemanticSearchEngine {
         let mut apis = Vec::new();
         let mut languages = Vec::new();
         let mut tools = Vec::new();
-        
+
         // Check for frameworks
         if query_lower.contains("react") {
             frameworks.push("React".to_string());
@@ -949,7 +1053,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("spring") {
             frameworks.push("Spring".to_string());
         }
-        
+
         // Check for APIs
         if query_lower.contains("rest") {
             apis.push("REST".to_string());
@@ -960,7 +1064,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("webhook") {
             apis.push("Webhook".to_string());
         }
-        
+
         // Check for languages
         if query_lower.contains("rust") {
             languages.push("Rust".to_string());
@@ -974,7 +1078,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("typescript") {
             languages.push("TypeScript".to_string());
         }
-        
+
         // Check for tools
         if query_lower.contains("docker") {
             tools.push("Docker".to_string());
@@ -985,7 +1089,7 @@ impl SemanticSearchEngine {
         if query_lower.contains("git") {
             tools.push("Git".to_string());
         }
-        
+
         Ok(TechnicalIntent {
             frameworks,
             apis,
@@ -993,7 +1097,7 @@ impl SemanticSearchEngine {
             tools,
         })
     }
-    
+
     /// Determine overall intent
     fn determine_overall_intent(
         &self,
@@ -1002,12 +1106,27 @@ impl SemanticSearchEngine {
         security_intent: &SecurityIntent,
         technical_intent: &TechnicalIntent,
     ) -> OverallIntent {
-        let business_score = business_intent.domains.len() + business_intent.patterns.len() + business_intent.entities.len() + business_intent.workflows.len();
-        let architecture_score = architecture_intent.patterns.len() + architecture_intent.components.len() + architecture_intent.relationships.len() + architecture_intent.quality_attributes.len();
-        let security_score = security_intent.vulnerabilities.len() + security_intent.compliance.len() + security_intent.patterns.len() + security_intent.controls.len();
-        let technical_score = technical_intent.frameworks.len() + technical_intent.apis.len() + technical_intent.languages.len() + technical_intent.tools.len();
-        
-        if business_score > architecture_score && business_score > security_score && business_score > technical_score {
+        let business_score = business_intent.domains.len()
+            + business_intent.patterns.len()
+            + business_intent.entities.len()
+            + business_intent.workflows.len();
+        let architecture_score = architecture_intent.patterns.len()
+            + architecture_intent.components.len()
+            + architecture_intent.relationships.len()
+            + architecture_intent.quality_attributes.len();
+        let security_score = security_intent.vulnerabilities.len()
+            + security_intent.compliance.len()
+            + security_intent.patterns.len()
+            + security_intent.controls.len();
+        let technical_score = technical_intent.frameworks.len()
+            + technical_intent.apis.len()
+            + technical_intent.languages.len()
+            + technical_intent.tools.len();
+
+        if business_score > architecture_score
+            && business_score > security_score
+            && business_score > technical_score
+        {
             OverallIntent::Business
         } else if architecture_score > security_score && architecture_score > technical_score {
             OverallIntent::Architecture
@@ -1019,7 +1138,7 @@ impl SemanticSearchEngine {
             OverallIntent::General
         }
     }
-    
+
     /// Combine and rank results
     async fn combine_and_rank_results(
         &self,
@@ -1032,29 +1151,29 @@ impl SemanticSearchEngine {
         // PSEUDO CODE:
         /*
         let mut search_matches = Vec::new();
-        
+
         for vector_match in vector_matches {
             // Calculate relevance score based on multiple factors
             let mut relevance_score = vector_match.similarity_score;
-            
+
             // Boost score based on business context
             if let Some(business_domain) = self.find_matching_business_domain(vector_match, business_context) {
                 relevance_score += 0.1;
             }
-            
+
             // Boost score based on architecture context
             if let Some(architecture_pattern) = self.find_matching_architecture_pattern(vector_match, architecture_context) {
                 relevance_score += 0.1;
             }
-            
+
             // Boost score based on security context
             if let Some(security_pattern) = self.find_matching_security_pattern(vector_match, security_context) {
                 relevance_score += 0.1;
             }
-            
+
             // Boost score based on query intent
             relevance_score += self.calculate_intent_boost(vector_match, query_intent);
-            
+
             // Create search match
             let search_match = SearchMatch {
                 file_path: vector_match.file_path.clone(),
@@ -1069,16 +1188,16 @@ impl SemanticSearchEngine {
                 api_type: self.extract_api_type(vector_match),
                 context: self.extract_search_context(vector_match),
             };
-            
+
             search_matches.push(search_match);
         }
-        
+
         // Sort by relevance score
         search_matches.sort_by(|a, b| b.relevance_score.partial_cmp(&a.relevance_score).unwrap());
-        
+
         Ok(search_matches)
         */
-        
+
         Ok(Vec::new())
     }
 }
@@ -1228,20 +1347,20 @@ impl VectorStore {
             similarity_threshold: 0.7,
         }
     }
-    
+
     /// Initialize vector store
     pub async fn initialize(&mut self) -> Result<()> {
         // Initialize with empty embeddings
         // In a real implementation, this would load pre-computed embeddings
         Ok(())
     }
-    
+
     /// Generate embeddings for text (simplified implementation)
     pub async fn generate_embeddings(&self, text: &str) -> Result<Vec<f64>> {
         // Simplified embedding generation using word frequency
         let words: Vec<&str> = text.split_whitespace().collect();
         let mut embedding = vec![0.0; 100]; // 100-dimensional embedding
-        
+
         for (i, word) in words.iter().enumerate() {
             if i < 100 {
                 // Simple hash-based embedding
@@ -1249,44 +1368,48 @@ impl VectorStore {
                 embedding[i] = (hash % 1000.0) / 1000.0;
             }
         }
-        
+
         Ok(embedding)
     }
-    
+
     /// Perform similarity search
-    pub async fn similarity_search(&self, query_embedding: &[f64], threshold: f64) -> Result<Vec<VectorMatch>> {
+    pub async fn similarity_search(
+        &self,
+        query_embedding: &[f64],
+        threshold: f64,
+    ) -> Result<Vec<VectorMatch>> {
         let mut matches = Vec::new();
-        
+
         for (file_path, embedding) in &self.embeddings {
             let similarity = self.cosine_similarity(query_embedding, embedding);
-            
+
             if similarity >= threshold {
                 matches.push(VectorMatch {
                     file_path: file_path.clone(),
-                    line_number: 1, // Simplified
+                    line_number: 1,                           // Simplified
                     code_snippet: "Code snippet".to_string(), // Simplified
                     similarity_score: similarity,
                     embeddings: embedding.clone(),
                 });
             }
         }
-        
+
         // Sort by similarity score
         matches.sort_by(|a, b| b.similarity_score.partial_cmp(&a.similarity_score).unwrap());
-        
+
         Ok(matches)
     }
-    
+
     /// Calculate cosine similarity between two vectors
     fn cosine_similarity(&self, a: &[f64], b: &[f64]) -> f64 {
         if a.len() != b.len() {
             return 0.0;
         }
-        
+
         let dot_product: f64 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
         let norm_a: f64 = a.iter().map(|x| x * x).sum::<f64>().sqrt();
         let norm_b: f64 = b.iter().map(|x| x * x).sum::<f64>().sqrt();
-        
+
         if norm_a == 0.0 || norm_b == 0.0 {
             0.0
         } else {
@@ -1302,24 +1425,38 @@ impl BusinessAnalyzer {
             pattern_matchers: Vec::new(),
         }
     }
-    
+
     /// Initialize with fact-system patterns
     pub async fn initialize(&mut self, fact_system: &FactSystemInterface) -> Result<()> {
         // Initialize domain keywords
-        self.domain_keywords.insert("Payment Processing".to_string(), vec![
-            "payment".to_string(), "checkout".to_string(), "billing".to_string(), "stripe".to_string(), "paypal".to_string()
-        ]);
-        self.domain_keywords.insert("User Management".to_string(), vec![
-            "user".to_string(), "authentication".to_string(), "login".to_string(), "registration".to_string()
-        ]);
-        
+        self.domain_keywords.insert(
+            "Payment Processing".to_string(),
+            vec![
+                "payment".to_string(),
+                "checkout".to_string(),
+                "billing".to_string(),
+                "stripe".to_string(),
+                "paypal".to_string(),
+            ],
+        );
+        self.domain_keywords.insert(
+            "User Management".to_string(),
+            vec![
+                "user".to_string(),
+                "authentication".to_string(),
+                "login".to_string(),
+                "registration".to_string(),
+            ],
+        );
+
         // Initialize pattern matchers
         for (name, pattern) in fact_system.get_business_patterns() {
             let keywords = self.domain_keywords.get(&name).cloned().unwrap_or_default();
-            let regex_patterns = keywords.iter()
+            let regex_patterns = keywords
+                .iter()
                 .filter_map(|keyword| Regex::new(&format!(r"\b{}\b", regex::escape(keyword))).ok())
                 .collect();
-            
+
             self.pattern_matchers.push(BusinessPatternMatcher {
                 name: name.clone(),
                 keywords,
@@ -1327,28 +1464,32 @@ impl BusinessAnalyzer {
                 confidence_threshold: pattern.confidence,
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// Analyze business context
-    pub async fn analyze_business_context(&self, query: &str, vector_matches: &[VectorMatch]) -> Result<BusinessContext> {
+    pub async fn analyze_business_context(
+        &self,
+        query: &str,
+        vector_matches: &[VectorMatch],
+    ) -> Result<BusinessContext> {
         let mut domains = Vec::new();
         let mut patterns = Vec::new();
         let mut entities = Vec::new();
         let mut workflows = Vec::new();
-        
+
         // Analyze query for business domains
         for (domain_name, keywords) in &self.domain_keywords {
             let mut score = 0.0;
             let query_lower = query.to_lowercase();
-            
+
             for keyword in keywords {
                 if query_lower.contains(keyword) {
                     score += 0.2;
                 }
             }
-            
+
             if score > 0.3 {
                 domains.push(BusinessDomain {
                     name: domain_name.clone(),
@@ -1362,19 +1503,19 @@ impl BusinessAnalyzer {
                 });
             }
         }
-        
+
         // Analyze vector matches for business patterns
         for vector_match in vector_matches {
             for matcher in &self.pattern_matchers {
                 let mut score = 0.0;
                 let content_lower = vector_match.code_snippet.to_lowercase();
-                
+
                 for keyword in &matcher.keywords {
                     if content_lower.contains(keyword) {
                         score += 0.1;
                     }
                 }
-                
+
                 if score >= matcher.confidence_threshold {
                     patterns.push(BusinessPattern {
                         name: matcher.name.clone(),
@@ -1390,7 +1531,7 @@ impl BusinessAnalyzer {
                 }
             }
         }
-        
+
         Ok(BusinessContext {
             domains,
             patterns,
@@ -1407,24 +1548,39 @@ impl ArchitectureAnalyzer {
             component_matchers: Vec::new(),
         }
     }
-    
+
     /// Initialize with fact-system patterns
     pub async fn initialize(&mut self, fact_system: &FactSystemInterface) -> Result<()> {
         // Initialize pattern keywords
-        self.pattern_keywords.insert("Microservices".to_string(), vec![
-            "microservice".to_string(), "service".to_string(), "api".to_string()
-        ]);
-        self.pattern_keywords.insert("CQRS".to_string(), vec![
-            "cqrs".to_string(), "command".to_string(), "query".to_string()
-        ]);
-        
+        self.pattern_keywords.insert(
+            "Microservices".to_string(),
+            vec![
+                "microservice".to_string(),
+                "service".to_string(),
+                "api".to_string(),
+            ],
+        );
+        self.pattern_keywords.insert(
+            "CQRS".to_string(),
+            vec![
+                "cqrs".to_string(),
+                "command".to_string(),
+                "query".to_string(),
+            ],
+        );
+
         // Initialize component matchers
         for (name, pattern) in fact_system.get_architecture_patterns() {
-            let keywords = self.pattern_keywords.get(&name).cloned().unwrap_or_default();
-            let regex_patterns = keywords.iter()
+            let keywords = self
+                .pattern_keywords
+                .get(&name)
+                .cloned()
+                .unwrap_or_default();
+            let regex_patterns = keywords
+                .iter()
                 .filter_map(|keyword| Regex::new(&format!(r"\b{}\b", regex::escape(keyword))).ok())
                 .collect();
-            
+
             self.component_matchers.push(ArchitectureComponentMatcher {
                 name: name.clone(),
                 keywords,
@@ -1432,28 +1588,32 @@ impl ArchitectureAnalyzer {
                 confidence_threshold: pattern.confidence,
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// Analyze architecture context
-    pub async fn analyze_architecture_context(&self, query: &str, vector_matches: &[VectorMatch]) -> Result<ArchitectureContext> {
+    pub async fn analyze_architecture_context(
+        &self,
+        query: &str,
+        vector_matches: &[VectorMatch],
+    ) -> Result<ArchitectureContext> {
         let mut patterns = Vec::new();
         let mut components = Vec::new();
         let mut relationships = Vec::new();
         let mut quality_attributes = Vec::new();
-        
+
         // Analyze query for architecture patterns
         for (pattern_name, keywords) in &self.pattern_keywords {
             let mut score = 0.0;
             let query_lower = query.to_lowercase();
-            
+
             for keyword in keywords {
                 if query_lower.contains(keyword) {
                     score += 0.2;
                 }
             }
-            
+
             if score > 0.3 {
                 patterns.push(ArchitecturePattern {
                     name: pattern_name.clone(),
@@ -1466,7 +1626,7 @@ impl ArchitectureAnalyzer {
                 });
             }
         }
-        
+
         Ok(ArchitectureContext {
             patterns,
             components,
@@ -1483,53 +1643,67 @@ impl SecurityAnalyzer {
             compliance_patterns: HashMap::new(),
         }
     }
-    
+
     /// Initialize with fact-system patterns
     pub async fn initialize(&mut self, fact_system: &FactSystemInterface) -> Result<()> {
         // Initialize vulnerability patterns
-        self.vulnerability_patterns.insert("SQL Injection".to_string(), VulnerabilityPattern {
-            name: "SQL Injection".to_string(),
-            keywords: vec!["sql".to_string(), "injection".to_string(), "query".to_string()],
-            regex_patterns: vec![
-                Regex::new(r"SELECT.*FROM").unwrap(),
-                Regex::new(r"INSERT.*INTO").unwrap(),
-            ],
-            severity: VulnerabilitySeverity::High,
-        });
-        
+        self.vulnerability_patterns.insert(
+            "SQL Injection".to_string(),
+            VulnerabilityPattern {
+                name: "SQL Injection".to_string(),
+                keywords: vec![
+                    "sql".to_string(),
+                    "injection".to_string(),
+                    "query".to_string(),
+                ],
+                regex_patterns: vec![
+                    Regex::new(r"SELECT.*FROM").unwrap(),
+                    Regex::new(r"INSERT.*INTO").unwrap(),
+                ],
+                severity: VulnerabilitySeverity::High,
+            },
+        );
+
         // Initialize compliance patterns
-        self.compliance_patterns.insert("PCI-DSS".to_string(), CompliancePattern {
-            name: "PCI-DSS".to_string(),
-            keywords: vec!["pci".to_string(), "dss".to_string(), "card".to_string()],
-            regex_patterns: vec![
-                Regex::new(r"card.*number").unwrap(),
-                Regex::new(r"credit.*card").unwrap(),
-            ],
-            compliance_type: ComplianceType::PCIDSS,
-        });
-        
+        self.compliance_patterns.insert(
+            "PCI-DSS".to_string(),
+            CompliancePattern {
+                name: "PCI-DSS".to_string(),
+                keywords: vec!["pci".to_string(), "dss".to_string(), "card".to_string()],
+                regex_patterns: vec![
+                    Regex::new(r"card.*number").unwrap(),
+                    Regex::new(r"credit.*card").unwrap(),
+                ],
+                compliance_type: ComplianceType::PCIDSS,
+            },
+        );
+
         Ok(())
     }
-    
+
     /// Analyze security context
-    pub async fn analyze_security_context(&self, query: &str, vector_matches: &[VectorMatch]) -> Result<SecurityContext> {
+    pub async fn analyze_security_context(
+        &self,
+        query: &str,
+        vector_matches: &[VectorMatch],
+    ) -> Result<SecurityContext> {
         let mut vulnerabilities = Vec::new();
         let mut compliance = Vec::new();
         let mut patterns = Vec::new();
         let mut controls = Vec::new();
-        
+
         // Analyze query for security patterns
         let query_lower = query.to_lowercase();
-        
+
         for (name, vuln_pattern) in &self.vulnerability_patterns {
             let mut score = 0.0;
-            
+
             for keyword in &vuln_pattern.keywords {
                 if query_lower.contains(keyword) {
                     score += 0.3;
                 }
             }
-            
+
             if score > 0.5 {
                 vulnerabilities.push(SecurityVulnerability {
                     name: name.clone(),
@@ -1543,7 +1717,7 @@ impl SecurityAnalyzer {
                 });
             }
         }
-        
+
         Ok(SecurityContext {
             vulnerabilities,
             compliance,
@@ -1569,32 +1743,31 @@ impl RustParserWrapper {
 impl CodeParser for RustParserWrapper {
     fn parse(&self, content: &str) -> Result<AstNode> {
         // Use real Rust parser from rust-parser crate
-        let analysis_result = tokio::runtime::Handle::current().block_on(
-            self.parser.analyze(content, "file.rs")
-        )?;
-        
+        let analysis_result =
+            tokio::runtime::Handle::current().block_on(self.parser.analyze(content, "file.rs"))?;
+
         // Convert parser analysis result to our AstNode format
         Ok(self.convert_analysis_result(analysis_result))
     }
-    
+
     fn extract_functions(&self, ast: &AstNode) -> Result<Vec<FunctionInfo>> {
         let mut functions = Vec::new();
         self.extract_functions_recursive(ast, &mut functions);
         Ok(functions)
     }
-    
+
     fn extract_classes(&self, ast: &AstNode) -> Result<Vec<ClassInfo>> {
         let mut classes = Vec::new();
         self.extract_classes_recursive(ast, &mut classes);
         Ok(classes)
     }
-    
+
     fn extract_imports(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut imports = Vec::new();
         self.extract_imports_recursive(ast, &mut imports);
         Ok(imports)
     }
-    
+
     fn extract_dependencies(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut dependencies = Vec::new();
         self.extract_dependencies_recursive(ast, &mut dependencies);
@@ -1603,38 +1776,44 @@ impl CodeParser for RustParserWrapper {
 }
 
 impl RustParserWrapper {
-    fn convert_analysis_result(&self, analysis_result: rust_parser::AnalysisResult) -> AstNode {
+    fn convert_analysis_result(&self, analysis_result: parser_core::AnalysisResult) -> AstNode {
         // Convert Rust analysis result to our unified AST format
         let mut attributes = HashMap::new();
-        
+
         // Extract function information
         if let Some(functions) = analysis_result.functions {
             let function_count: usize = functions.len();
             attributes.insert("function_count".to_string(), function_count.to_string());
         }
-        
+
         // Extract struct information
         if let Some(structs) = analysis_result.structs {
             let struct_count: usize = structs.len();
             attributes.insert("struct_count".to_string(), struct_count.to_string());
         }
-        
+
         // Extract trait information
         if let Some(traits) = analysis_result.traits {
             let trait_count: usize = traits.len();
             attributes.insert("trait_count".to_string(), trait_count.to_string());
         }
-        
+
         // Extract ownership patterns
         if let Some(ownership_patterns) = analysis_result.ownership_patterns {
-            attributes.insert("ownership_patterns".to_string(), format!("{:?}", ownership_patterns));
+            attributes.insert(
+                "ownership_patterns".to_string(),
+                format!("{:?}", ownership_patterns),
+            );
         }
-        
+
         // Extract concurrency analysis
         if let Some(concurrency) = analysis_result.concurrency_analysis {
-            attributes.insert("concurrency_patterns".to_string(), format!("{:?}", concurrency));
+            attributes.insert(
+                "concurrency_patterns".to_string(),
+                format!("{:?}", concurrency),
+            );
         }
-        
+
         AstNode {
             node_type: "rust_file".to_string(),
             children: Vec::new(), // Would extract from analysis result
@@ -1645,7 +1824,7 @@ impl RustParserWrapper {
             end_column: 1,
         }
     }
-    
+
     fn extract_functions_recursive(&self, ast: &AstNode, functions: &mut Vec<FunctionInfo>) {
         if ast.node_type == "function" {
             functions.push(FunctionInfo {
@@ -1654,60 +1833,72 @@ impl RustParserWrapper {
                 return_type: ast.attributes.get("return_type").cloned(),
                 start_line: ast.start_line,
                 end_line: ast.end_line,
-                is_public: ast.attributes.get("visibility").map(|v| v == "pub").unwrap_or(false),
-                is_async: ast.attributes.get("async").map(|v| v == "true").unwrap_or(false),
+                is_public: ast
+                    .attributes
+                    .get("visibility")
+                    .map(|v| v == "pub")
+                    .unwrap_or(false),
+                is_async: ast
+                    .attributes
+                    .get("async")
+                    .map(|v| v == "true")
+                    .unwrap_or(false),
             });
         }
-        
+
         for child in &ast.children {
             self.extract_functions_recursive(child, functions);
         }
     }
-    
+
     fn extract_classes_recursive(&self, ast: &AstNode, classes: &mut Vec<ClassInfo>) {
         if ast.node_type == "struct" || ast.node_type == "enum" || ast.node_type == "impl" {
             classes.push(ClassInfo {
                 name: ast.attributes.get("name").cloned().unwrap_or_default(),
                 methods: Vec::new(), // Would extract from children
-                fields: Vec::new(), // Would extract from children
+                fields: Vec::new(),  // Would extract from children
                 start_line: ast.start_line,
                 end_line: ast.end_line,
-                is_public: ast.attributes.get("visibility").map(|v| v == "pub").unwrap_or(false),
+                is_public: ast
+                    .attributes
+                    .get("visibility")
+                    .map(|v| v == "pub")
+                    .unwrap_or(false),
             });
         }
-        
+
         for child in &ast.children {
             self.extract_classes_recursive(child, classes);
         }
     }
-    
+
     fn extract_imports_recursive(&self, ast: &AstNode, imports: &mut Vec<String>) {
         if ast.node_type == "use" {
             if let Some(module) = ast.attributes.get("module") {
                 imports.push(module.clone());
             }
         }
-        
+
         for child in &ast.children {
             self.extract_imports_recursive(child, imports);
         }
     }
-    
+
     fn extract_dependencies_recursive(&self, ast: &AstNode, dependencies: &mut Vec<String>) {
         if ast.node_type == "extern_crate" {
             if let Some(crate_name) = ast.attributes.get("name") {
                 dependencies.push(crate_name.clone());
             }
         }
-        
+
         for child in &ast.children {
             self.extract_dependencies_recursive(child, dependencies);
         }
     }
-    
+
     fn extract_parameters(&self, function_ast: &AstNode) -> Vec<String> {
         let mut parameters = Vec::new();
-        
+
         for child in &function_ast.children {
             if child.node_type == "parameter" {
                 if let Some(param_name) = child.attributes.get("name") {
@@ -1715,7 +1906,7 @@ impl RustParserWrapper {
                 }
             }
         }
-        
+
         parameters
     }
 }
@@ -1736,32 +1927,31 @@ impl PythonParserWrapper {
 impl CodeParser for PythonParserWrapper {
     fn parse(&self, content: &str) -> Result<AstNode> {
         // Use real Python parser from python-parser crate
-        let analysis_result = tokio::runtime::Handle::current().block_on(
-            self.parser.analyze(content, "file.py")
-        )?;
-        
+        let analysis_result =
+            tokio::runtime::Handle::current().block_on(self.parser.analyze(content, "file.py"))?;
+
         // Convert parser analysis result to our AstNode format
         Ok(self.convert_analysis_result(analysis_result))
     }
-    
+
     fn extract_functions(&self, ast: &AstNode) -> Result<Vec<FunctionInfo>> {
         let mut functions = Vec::new();
         self.extract_functions_recursive(ast, &mut functions);
         Ok(functions)
     }
-    
+
     fn extract_classes(&self, ast: &AstNode) -> Result<Vec<ClassInfo>> {
         let mut classes = Vec::new();
         self.extract_classes_recursive(ast, &mut classes);
         Ok(classes)
     }
-    
+
     fn extract_imports(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut imports = Vec::new();
         self.extract_imports_recursive(ast, &mut imports);
         Ok(imports)
     }
-    
+
     fn extract_dependencies(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut dependencies = Vec::new();
         self.extract_dependencies_recursive(ast, &mut dependencies);
@@ -1770,39 +1960,45 @@ impl CodeParser for PythonParserWrapper {
 }
 
 impl PythonParserWrapper {
-    fn convert_analysis_result(&self, analysis_result: python_parser::PythonAnalysisResult) -> AstNode {
+    fn convert_analysis_result(
+        &self,
+        analysis_result: python_parser::PythonAnalysisResult,
+    ) -> AstNode {
         // Convert Python analysis result to our unified AST format
         let mut attributes = HashMap::new();
-        
+
         // Extract function information
         if let Some(functions) = analysis_result.functions {
             attributes.insert("function_count".to_string(), functions.len().to_string());
         }
-        
+
         // Extract class information
         if let Some(classes) = analysis_result.classes {
             let class_count: usize = classes.len();
             attributes.insert("class_count".to_string(), class_count.to_string());
         }
-        
+
         // Extract import information
         if let Some(imports) = analysis_result.imports {
             let import_count: usize = imports.len();
             attributes.insert("import_count".to_string(), import_count.to_string());
         }
-        
+
         // Extract decorator information
         if let Some(decorators) = analysis_result.decorators {
             let decorator_count: usize = decorators.len();
             attributes.insert("decorator_count".to_string(), decorator_count.to_string());
         }
-        
+
         // Extract async information
         if let Some(async_functions) = analysis_result.async_functions {
             let async_function_count: usize = async_functions.len();
-            attributes.insert("async_function_count".to_string(), async_function_count.to_string());
+            attributes.insert(
+                "async_function_count".to_string(),
+                async_function_count.to_string(),
+            );
         }
-        
+
         AstNode {
             node_type: "python_file".to_string(),
             children: Vec::new(), // Would extract from analysis result
@@ -1813,7 +2009,7 @@ impl PythonParserWrapper {
             end_column: 1,
         }
     }
-    
+
     fn extract_functions_recursive(&self, ast: &AstNode, functions: &mut Vec<FunctionInfo>) {
         if ast.node_type == "function_def" {
             functions.push(FunctionInfo {
@@ -1823,15 +2019,19 @@ impl PythonParserWrapper {
                 start_line: ast.start_line,
                 end_line: ast.end_line,
                 is_public: true, // Python functions are public by default
-                is_async: ast.attributes.get("async").map(|v| v == "true").unwrap_or(false),
+                is_async: ast
+                    .attributes
+                    .get("async")
+                    .map(|v| v == "true")
+                    .unwrap_or(false),
             });
         }
-        
+
         for child in &ast.children {
             self.extract_functions_recursive(child, functions);
         }
     }
-    
+
     fn extract_classes_recursive(&self, ast: &AstNode, classes: &mut Vec<ClassInfo>) {
         if ast.node_type == "class_def" {
             classes.push(ClassInfo {
@@ -1843,24 +2043,24 @@ impl PythonParserWrapper {
                 is_public: true,
             });
         }
-        
+
         for child in &ast.children {
             self.extract_classes_recursive(child, classes);
         }
     }
-    
+
     fn extract_imports_recursive(&self, ast: &AstNode, imports: &mut Vec<String>) {
         if ast.node_type == "import" || ast.node_type == "import_from" {
             if let Some(module) = ast.attributes.get("module") {
                 imports.push(module.clone());
             }
         }
-        
+
         for child in &ast.children {
             self.extract_imports_recursive(child, imports);
         }
     }
-    
+
     fn extract_dependencies_recursive(&self, ast: &AstNode, dependencies: &mut Vec<String>) {
         // Python dependencies are typically in requirements.txt or pyproject.toml
         // This would need to be handled separately
@@ -1868,10 +2068,10 @@ impl PythonParserWrapper {
             self.extract_dependencies_recursive(child, dependencies);
         }
     }
-    
+
     fn extract_parameters(&self, function_ast: &AstNode) -> Vec<String> {
         let mut parameters = Vec::new();
-        
+
         for child in &function_ast.children {
             if child.node_type == "parameter" {
                 if let Some(param_name) = child.attributes.get("name") {
@@ -1879,52 +2079,69 @@ impl PythonParserWrapper {
                 }
             }
         }
-        
+
         parameters
     }
 }
 
 // Add similar wrappers for other languages...
-pub struct JavascriptParserWrapper { parser: JavascriptParser, }
-pub struct TypescriptParserWrapper { parser: TypescriptParser, }
-pub struct GoParserWrapper { parser: GoParser, }
-pub struct JavaParserWrapper { parser: JavaParser, }
-pub struct CSharpParserWrapper { parser: CSharpParser, }
-pub struct CCppParserWrapper { parser: CCppParser, }
-pub struct ErlangParserWrapper { parser: ErlangParser, }
-pub struct ElixirParserWrapper { parser: ElixirParser, }
-pub struct GleamParserWrapper { parser: GleamParser, }
+pub struct JavascriptParserWrapper {
+    parser: JavascriptParser,
+}
+pub struct TypescriptParserWrapper {
+    parser: TypescriptParser,
+}
+pub struct GoParserWrapper {
+    parser: GoParser,
+}
+pub struct JavaParserWrapper {
+    parser: JavaParser,
+}
+pub struct CSharpParserWrapper {
+    parser: CSharpParser,
+}
+pub struct CCppParserWrapper {
+    parser: CCppParser,
+}
+pub struct ErlangParserWrapper {
+    parser: ErlangParser,
+}
+pub struct ElixirParserWrapper {
+    parser: ElixirParser,
+}
+pub struct GleamParserWrapper {
+    parser: GleamParser,
+}
 
 // Implement CodeParser trait for all wrappers...
 impl CodeParser for JavascriptParserWrapper {
     fn parse(&self, content: &str) -> Result<AstNode> {
         // Use real JavaScript parser from javascript-parser crate
-        let analysis_result = tokio::runtime::Handle::current().block_on(
-            self.parser.analyze(content, "file.js")
-        )?;
-        
+        let analysis_result =
+            tokio::runtime::Handle::current().block_on(self.parser.analyze(content, "file.js"))?;
+
         // Convert parser analysis result to our AstNode format
         Ok(self.convert_analysis_result(analysis_result))
     }
-    
+
     fn extract_functions(&self, ast: &AstNode) -> Result<Vec<FunctionInfo>> {
         let mut functions = Vec::new();
         self.extract_functions_recursive(ast, &mut functions);
         Ok(functions)
     }
-    
+
     fn extract_classes(&self, ast: &AstNode) -> Result<Vec<ClassInfo>> {
         let mut classes = Vec::new();
         self.extract_classes_recursive(ast, &mut classes);
         Ok(classes)
     }
-    
+
     fn extract_imports(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut imports = Vec::new();
         self.extract_imports_recursive(ast, &mut imports);
         Ok(imports)
     }
-    
+
     fn extract_dependencies(&self, ast: &AstNode) -> Result<Vec<String>> {
         let mut dependencies = Vec::new();
         self.extract_dependencies_recursive(ast, &mut dependencies);
@@ -1933,31 +2150,49 @@ impl CodeParser for JavascriptParserWrapper {
 }
 
 impl JavascriptParserWrapper {
-    pub fn new() -> Self { 
-        Self { 
-            parser: JavascriptParser::new().expect("Failed to create JavaScript parser") 
-        } 
+    pub fn new() -> Self {
+        Self {
+            parser: JavascriptParser::new().expect("Failed to create JavaScript parser"),
+        }
     }
-    
-    fn convert_analysis_result(&self, analysis_result: javascript_parser::AnalysisResult) -> AstNode {
+
+    fn convert_analysis_result(
+        &self,
+        analysis_result: javascript_parser::AnalysisResult,
+    ) -> AstNode {
         // Convert JavaScript analysis result to our unified AST format
         let mut attributes = HashMap::new();
-        
+
         // Extract JavaScript-specific information
         if let Some(js_analysis) = analysis_result.programming_language_specific {
-            attributes.insert("class_count".to_string(), js_analysis.class_count.to_string());
-            attributes.insert("function_count".to_string(), js_analysis.function_count.to_string());
-            attributes.insert("async_functions".to_string(), js_analysis.async_functions.to_string());
+            attributes.insert(
+                "class_count".to_string(),
+                js_analysis.class_count.to_string(),
+            );
+            attributes.insert(
+                "function_count".to_string(),
+                js_analysis.function_count.to_string(),
+            );
+            attributes.insert(
+                "async_functions".to_string(),
+                js_analysis.async_functions.to_string(),
+            );
             attributes.insert("imports".to_string(), js_analysis.imports.to_string());
             attributes.insert("exports".to_string(), js_analysis.exports.to_string());
         }
-        
+
         // Extract general analysis information
         if let Some(metrics) = analysis_result.metrics {
-            attributes.insert("lines_of_code".to_string(), metrics.lines_of_code.to_string());
-            attributes.insert("cyclomatic_complexity".to_string(), metrics.cyclomatic_complexity.to_string());
+            attributes.insert(
+                "lines_of_code".to_string(),
+                metrics.lines_of_code.to_string(),
+            );
+            attributes.insert(
+                "cyclomatic_complexity".to_string(),
+                metrics.cyclomatic_complexity.to_string(),
+            );
         }
-        
+
         AstNode {
             node_type: "javascript_file".to_string(),
             children: Vec::new(), // Would extract from analysis result
@@ -1968,54 +2203,58 @@ impl JavascriptParserWrapper {
             end_column: 1,
         }
     }
-    
+
     fn extract_functions_recursive(&self, ast: &AstNode, functions: &mut Vec<FunctionInfo>) {
         if ast.node_type == "function_declaration" || ast.node_type == "function_expression" {
             functions.push(FunctionInfo {
                 name: ast.attributes.get("name").cloned().unwrap_or_default(),
                 parameters: Vec::new(), // Would extract from AST
-                return_type: None, // JavaScript doesn't have explicit return types
+                return_type: None,      // JavaScript doesn't have explicit return types
                 start_line: ast.start_line,
                 end_line: ast.end_line,
                 is_public: true, // JavaScript functions are public by default
-                is_async: ast.attributes.get("async").map(|v| v == "true").unwrap_or(false),
+                is_async: ast
+                    .attributes
+                    .get("async")
+                    .map(|v| v == "true")
+                    .unwrap_or(false),
             });
         }
-        
+
         for child in &ast.children {
             self.extract_functions_recursive(child, functions);
         }
     }
-    
+
     fn extract_classes_recursive(&self, ast: &AstNode, classes: &mut Vec<ClassInfo>) {
         if ast.node_type == "class_declaration" {
             classes.push(ClassInfo {
                 name: ast.attributes.get("name").cloned().unwrap_or_default(),
                 methods: Vec::new(), // Would extract from children
-                fields: Vec::new(), // Would extract from children
+                fields: Vec::new(),  // Would extract from children
                 start_line: ast.start_line,
                 end_line: ast.end_line,
                 is_public: true, // JavaScript classes are public by default
             });
         }
-        
+
         for child in &ast.children {
             self.extract_classes_recursive(child, classes);
         }
     }
-    
+
     fn extract_imports_recursive(&self, ast: &AstNode, imports: &mut Vec<String>) {
         if ast.node_type == "import_statement" {
             if let Some(module) = ast.attributes.get("module") {
                 imports.push(module.clone());
             }
         }
-        
+
         for child in &ast.children {
             self.extract_imports_recursive(child, imports);
         }
     }
-    
+
     fn extract_dependencies_recursive(&self, ast: &AstNode, dependencies: &mut Vec<String>) {
         // JavaScript dependencies are typically in package.json
         // This would need to be handled separately
@@ -2027,35 +2266,67 @@ impl JavascriptParserWrapper {
 
 // Similar implementations for other wrappers...
 impl TypescriptParserWrapper {
-    pub fn new() -> Self { Self { parser: TypescriptParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: TypescriptParser::new(),
+        }
+    }
 }
 
 impl GoParserWrapper {
-    pub fn new() -> Self { Self { parser: GoParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: GoParser::new(),
+        }
+    }
 }
 
 impl JavaParserWrapper {
-    pub fn new() -> Self { Self { parser: JavaParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: JavaParser::new(),
+        }
+    }
 }
 
 impl CSharpParserWrapper {
-    pub fn new() -> Self { Self { parser: CSharpParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: CSharpParser::new(),
+        }
+    }
 }
 
 impl CCppParserWrapper {
-    pub fn new() -> Self { Self { parser: CCppParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: CCppParser::new(),
+        }
+    }
 }
 
 impl ErlangParserWrapper {
-    pub fn new() -> Self { Self { parser: ErlangParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: ErlangParser::new(),
+        }
+    }
 }
 
 impl ElixirParserWrapper {
-    pub fn new() -> Self { Self { parser: ElixirParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: ElixirParser::new(),
+        }
+    }
 }
 
 impl GleamParserWrapper {
-    pub fn new() -> Self { Self { parser: GleamParser::new() } }
+    pub fn new() -> Self {
+        Self {
+            parser: GleamParser::new(),
+        }
+    }
 }
 
 impl FactSystemInterface {
@@ -2066,21 +2337,21 @@ impl FactSystemInterface {
             security_patterns: HashMap::new(),
         }
     }
-    
+
     /// Initialize with built-in patterns
     pub async fn initialize(&mut self) -> Result<()> {
         // Load built-in business patterns
         self.load_business_patterns().await?;
-        
+
         // Load built-in architecture patterns
         self.load_architecture_patterns().await?;
-        
+
         // Load built-in security patterns
         self.load_security_patterns().await?;
-        
+
         Ok(())
     }
-    
+
     /// Load built-in business patterns
     async fn load_business_patterns(&mut self) -> Result<()> {
         let patterns = vec![
@@ -2090,31 +2361,49 @@ impl FactSystemInterface {
                 confidence: 0.95,
                 description: "Handles payment transactions with external providers".to_string(),
                 implementation: "Stripe SDK integration with error handling".to_string(),
-                benefits: vec!["Secure".to_string(), "Reliable".to_string(), "Scalable".to_string()],
-                trade_offs: vec!["External dependency".to_string(), "Cost per transaction".to_string()],
-                examples: vec!["Stripe integration".to_string(), "PayPal integration".to_string()],
+                benefits: vec![
+                    "Secure".to_string(),
+                    "Reliable".to_string(),
+                    "Scalable".to_string(),
+                ],
+                trade_offs: vec![
+                    "External dependency".to_string(),
+                    "Cost per transaction".to_string(),
+                ],
+                examples: vec![
+                    "Stripe integration".to_string(),
+                    "PayPal integration".to_string(),
+                ],
                 related_patterns: vec!["Checkout Flow".to_string()],
             },
             BusinessPattern {
                 name: "User Management".to_string(),
                 pattern_type: BusinessPatternType::UserManagement,
                 confidence: 0.92,
-                description: "Handles user registration, authentication, and profile management".to_string(),
+                description: "Handles user registration, authentication, and profile management"
+                    .to_string(),
                 implementation: "JWT tokens with role-based access control".to_string(),
-                benefits: vec!["Secure".to_string(), "Scalable".to_string(), "Flexible".to_string()],
+                benefits: vec![
+                    "Secure".to_string(),
+                    "Scalable".to_string(),
+                    "Flexible".to_string(),
+                ],
                 trade_offs: vec!["Complexity".to_string(), "Token management".to_string()],
-                examples: vec!["OAuth integration".to_string(), "Multi-factor authentication".to_string()],
+                examples: vec![
+                    "OAuth integration".to_string(),
+                    "Multi-factor authentication".to_string(),
+                ],
                 related_patterns: vec!["Authentication".to_string(), "Authorization".to_string()],
             },
         ];
-        
+
         for pattern in patterns {
             self.business_patterns.insert(pattern.name.clone(), pattern);
         }
-        
+
         Ok(())
     }
-    
+
     /// Load built-in architecture patterns
     async fn load_architecture_patterns(&mut self) -> Result<()> {
         let patterns = vec![
@@ -2124,8 +2413,16 @@ impl FactSystemInterface {
                 confidence: 0.94,
                 description: "Distributed system with independent services".to_string(),
                 implementation: "Service mesh with API gateway".to_string(),
-                benefits: vec!["Scalability".to_string(), "Independence".to_string(), "Technology diversity".to_string()],
-                trade_offs: vec!["Complexity".to_string(), "Network latency".to_string(), "Data consistency".to_string()],
+                benefits: vec![
+                    "Scalability".to_string(),
+                    "Independence".to_string(),
+                    "Technology diversity".to_string(),
+                ],
+                trade_offs: vec![
+                    "Complexity".to_string(),
+                    "Network latency".to_string(),
+                    "Data consistency".to_string(),
+                ],
             },
             ArchitecturePattern {
                 name: "CQRS".to_string(),
@@ -2133,18 +2430,23 @@ impl FactSystemInterface {
                 confidence: 0.89,
                 description: "Command Query Responsibility Segregation".to_string(),
                 implementation: "Separate read and write models".to_string(),
-                benefits: vec!["Performance".to_string(), "Scalability".to_string(), "Flexibility".to_string()],
+                benefits: vec![
+                    "Performance".to_string(),
+                    "Scalability".to_string(),
+                    "Flexibility".to_string(),
+                ],
                 trade_offs: vec!["Complexity".to_string(), "Eventual consistency".to_string()],
             },
         ];
-        
+
         for pattern in patterns {
-            self.architecture_patterns.insert(pattern.name.clone(), pattern);
+            self.architecture_patterns
+                .insert(pattern.name.clone(), pattern);
         }
-        
+
         Ok(())
     }
-    
+
     /// Load built-in security patterns
     async fn load_security_patterns(&mut self) -> Result<()> {
         let patterns = vec![
@@ -2154,7 +2456,10 @@ impl FactSystemInterface {
                 confidence: 0.97,
                 description: "Validates and sanitizes all user input".to_string(),
                 implementation: "Server-side validation with sanitization".to_string(),
-                benefits: vec!["Prevents injection attacks".to_string(), "Data integrity".to_string()],
+                benefits: vec![
+                    "Prevents injection attacks".to_string(),
+                    "Data integrity".to_string(),
+                ],
             },
             SecurityPattern {
                 name: "Authentication".to_string(),
@@ -2162,27 +2467,30 @@ impl FactSystemInterface {
                 confidence: 0.95,
                 description: "Verifies user identity".to_string(),
                 implementation: "JWT tokens with secure storage".to_string(),
-                benefits: vec!["Secure access".to_string(), "Session management".to_string()],
+                benefits: vec![
+                    "Secure access".to_string(),
+                    "Session management".to_string(),
+                ],
             },
         ];
-        
+
         for pattern in patterns {
             self.security_patterns.insert(pattern.name.clone(), pattern);
         }
-        
+
         Ok(())
     }
-    
+
     /// Get business patterns
     pub fn get_business_patterns(&self) -> &HashMap<String, BusinessPattern> {
         &self.business_patterns
     }
-    
+
     /// Get architecture patterns
     pub fn get_architecture_patterns(&self) -> &HashMap<String, ArchitecturePattern> {
         &self.architecture_patterns
     }
-    
+
     /// Get security patterns
     pub fn get_security_patterns(&self) -> &HashMap<String, SecurityPattern> {
         &self.security_patterns

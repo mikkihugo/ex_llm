@@ -11,9 +11,7 @@
 use rustler::NifStruct;
 use serde::{Deserialize, Serialize};
 
-use crate::analysis::control_flow::{
-    analyze_function_flow, ControlFlowAnalysis,
-};
+use crate::analysis::control_flow::{analyze_function_flow, ControlFlowAnalysis};
 use crate::graph::{CodeDependencyGraph, GraphType};
 
 /// Result returned to Elixir (maps to Elixir struct)
@@ -62,8 +60,7 @@ pub fn analyze_control_flow(file_path: String) -> Result<ControlFlowResult, Stri
     let graph = create_example_graph(&file_path)?;
 
     // Analyze using our control_flow module
-    let analysis = analyze_function_flow(graph)
-        .map_err(|e| format!("Analysis failed: {}", e))?;
+    let analysis = analyze_function_flow(graph).map_err(|e| format!("Analysis failed: {}", e))?;
 
     // Convert to Elixir-friendly format
     Ok(convert_analysis_to_result(analysis))
@@ -72,9 +69,9 @@ pub fn analyze_control_flow(file_path: String) -> Result<ControlFlowResult, Stri
 /// Helper: Create example graph (replace with real parsing)
 fn create_example_graph(file_path: &str) -> Result<CodeDependencyGraph, String> {
     // This is a placeholder - in production, parse the file
-    use crate::graph::{GraphNode, GraphEdge};
-    use std::path::PathBuf;
+    use crate::graph::{GraphEdge, GraphNode};
     use std::collections::HashMap;
+    use std::path::PathBuf;
 
     let mut graph = CodeDependencyGraph::new(GraphType::DataFlowGraph);
 
@@ -125,36 +122,43 @@ fn create_example_graph(file_path: &str) -> Result<CodeDependencyGraph, String> 
     graph.add_node(return_node);
 
     // Add edges
-    graph.add_edge(GraphEdge {
-        from: "entry".to_string(),
-        to: "validate".to_string(),
-        edge_type: "calls".to_string(),
-        weight: 1.0,
-        metadata: HashMap::new(),
-    }).map_err(|e| e.to_string())?;
+    graph
+        .add_edge(GraphEdge {
+            from: "entry".to_string(),
+            to: "validate".to_string(),
+            edge_type: "calls".to_string(),
+            weight: 1.0,
+            metadata: HashMap::new(),
+        })
+        .map_err(|e| e.to_string())?;
 
-    graph.add_edge(GraphEdge {
-        from: "validate".to_string(),
-        to: "process".to_string(),
-        edge_type: "calls".to_string(),
-        weight: 1.0,
-        metadata: HashMap::new(),
-    }).map_err(|e| e.to_string())?;
+    graph
+        .add_edge(GraphEdge {
+            from: "validate".to_string(),
+            to: "process".to_string(),
+            edge_type: "calls".to_string(),
+            weight: 1.0,
+            metadata: HashMap::new(),
+        })
+        .map_err(|e| e.to_string())?;
 
-    graph.add_edge(GraphEdge {
-        from: "process".to_string(),
-        to: "return_ok".to_string(),
-        edge_type: "calls".to_string(),
-        weight: 1.0,
-        metadata: HashMap::new(),
-    }).map_err(|e| e.to_string())?;
+    graph
+        .add_edge(GraphEdge {
+            from: "process".to_string(),
+            to: "return_ok".to_string(),
+            edge_type: "calls".to_string(),
+            weight: 1.0,
+            metadata: HashMap::new(),
+        })
+        .map_err(|e| e.to_string())?;
 
     Ok(graph)
 }
 
 /// Convert analysis result to Elixir-friendly format
 fn convert_analysis_to_result(analysis: ControlFlowAnalysis) -> ControlFlowResult {
-    let dead_ends = analysis.dead_ends
+    let dead_ends = analysis
+        .dead_ends
         .into_iter()
         .map(|de| DeadEndInfo {
             node_id: de.node_id,
@@ -164,7 +168,8 @@ fn convert_analysis_to_result(analysis: ControlFlowAnalysis) -> ControlFlowResul
         })
         .collect();
 
-    let unreachable_code = analysis.unreachable_code
+    let unreachable_code = analysis
+        .unreachable_code
         .into_iter()
         .map(|uc| UnreachableCodeInfo {
             node_id: uc.node_id,
@@ -268,24 +273,25 @@ pub struct ClassMetadataResult {
 /// Pure computation NIF - NO I/O!
 /// Returns language analysis with registry metadata
 #[rustler::nif]
-pub fn analyze_language(code: String, language_hint: String) -> Result<LanguageAnalysisResult, String> {
+pub fn analyze_language(
+    code: String,
+    language_hint: String,
+) -> Result<LanguageAnalysisResult, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     match analyzer.analyze_language(&code, &language_hint) {
-        Some(analysis) => {
-            Ok(LanguageAnalysisResult {
-                language_id: analysis.language_id,
-                language_name: analysis.language_name,
-                family: analysis.family,
-                complexity_score: analysis.complexity_score,
-                quality_score: analysis.quality_score,
-                rca_supported: analysis.rca_supported,
-                ast_grep_supported: analysis.ast_grep_supported,
-            })
-        }
+        Some(analysis) => Ok(LanguageAnalysisResult {
+            language_id: analysis.language_id,
+            language_name: analysis.language_name,
+            family: analysis.family,
+            complexity_score: analysis.complexity_score,
+            quality_score: analysis.quality_score,
+            rca_supported: analysis.rca_supported,
+            ast_grep_supported: analysis.ast_grep_supported,
+        }),
         None => Err(format!("Unsupported language: {}", language_hint)),
     }
 }
@@ -295,11 +301,14 @@ pub fn analyze_language(code: String, language_hint: String) -> Result<LanguageA
 /// Pure computation NIF - NO I/O!
 /// Returns list of rule violations
 #[rustler::nif]
-pub fn check_language_rules(code: String, language_hint: String) -> Result<Vec<RuleViolationResult>, String> {
+pub fn check_language_rules(
+    code: String,
+    language_hint: String,
+) -> Result<Vec<RuleViolationResult>, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     let violations = analyzer.check_language_rules(&code, &language_hint);
 
@@ -325,8 +334,8 @@ pub fn detect_cross_language_patterns(
 ) -> Result<Vec<CrossLanguagePatternResult>, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     let patterns = analyzer.detect_cross_language_patterns(&files);
 
@@ -352,8 +361,8 @@ pub fn detect_cross_language_patterns(
 pub fn get_rca_metrics(code: String, language_hint: String) -> Result<RcaMetricsResult, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     let metrics = analyzer.get_rca_metrics(&code, &language_hint)?;
 
@@ -373,11 +382,14 @@ pub fn get_rca_metrics(code: String, language_hint: String) -> Result<RcaMetrics
 /// Pure computation NIF - NO I/O!
 /// Uses Tree-sitter to extract function signatures, parameters, etc.
 #[rustler::nif]
-pub fn extract_functions(code: String, language_hint: String) -> Result<Vec<FunctionMetadataResult>, String> {
+pub fn extract_functions(
+    code: String,
+    language_hint: String,
+) -> Result<Vec<FunctionMetadataResult>, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     let functions = analyzer.extract_functions(&code, &language_hint)?;
 
@@ -401,11 +413,14 @@ pub fn extract_functions(code: String, language_hint: String) -> Result<Vec<Func
 /// Pure computation NIF - NO I/O!
 /// Uses Tree-sitter to extract class structure
 #[rustler::nif]
-pub fn extract_classes(code: String, language_hint: String) -> Result<Vec<ClassMetadataResult>, String> {
+pub fn extract_classes(
+    code: String,
+    language_hint: String,
+) -> Result<Vec<ClassMetadataResult>, String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     let classes = analyzer.extract_classes(&code, &language_hint)?;
 
@@ -432,8 +447,8 @@ pub fn extract_imports_exports(
 ) -> Result<(Vec<String>, Vec<String>), String> {
     use crate::analyzer::CodebaseAnalyzer;
 
-    let analyzer = CodebaseAnalyzer::new()
-        .map_err(|e| format!("Failed to create analyzer: {}", e))?;
+    let analyzer =
+        CodebaseAnalyzer::new().map_err(|e| format!("Failed to create analyzer: {}", e))?;
 
     analyzer.extract_imports_exports(&code, &language_hint)
 }

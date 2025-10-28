@@ -101,8 +101,8 @@ defmodule Singularity.Embedding.ModelLoader do
       :safetensors ->
         # Check for single file or sharded files
         (File.exists?(Path.join(model_dir, "model.safetensors")) ||
-         (File.exists?(Path.join(model_dir, "model-00001-of-00002.safetensors")) &&
-         File.exists?(Path.join(model_dir, "model-00002-of-00002.safetensors")))) &&
+           (File.exists?(Path.join(model_dir, "model-00001-of-00002.safetensors")) &&
+              File.exists?(Path.join(model_dir, "model-00002-of-00002.safetensors")))) &&
           File.exists?(Path.join(model_dir, "tokenizer.json"))
 
       :onnx ->
@@ -110,10 +110,10 @@ defmodule Singularity.Embedding.ModelLoader do
         onnx_files = [
           "model.onnx",
           "model_fp16.onnx",
-          "pytorch_model.onnx", 
+          "pytorch_model.onnx",
           "onnx_model.onnx"
         ]
-        
+
         Enum.any?(onnx_files, &File.exists?(Path.join(model_dir, &1))) &&
           File.exists?(Path.join(model_dir, "tokenizer.json"))
     end
@@ -177,7 +177,9 @@ defmodule Singularity.Embedding.ModelLoader do
   defp download_safetensors_files(repo, target_dir) do
     # Try single file first, then sharded files
     case download_file(repo, "model.safetensors", target_dir) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, _} ->
         # Try sharded files
         download_sharded_safetensors(repo, target_dir)
@@ -190,9 +192,9 @@ defmodule Singularity.Embedding.ModelLoader do
       "model-00001-of-00002.safetensors",
       "model-00002-of-00002.safetensors"
     ]
-    
+
     results = Enum.map(shard_files, &download_file(repo, &1, target_dir))
-    
+
     if Enum.all?(results, &(&1 == :ok)) do
       :ok
     else
@@ -206,21 +208,24 @@ defmodule Singularity.Embedding.ModelLoader do
       "model.onnx",
       "onnx/model.onnx",
       "onnx/model_fp16.onnx",
-      "pytorch_model.onnx", 
+      "pytorch_model.onnx",
       "onnx_model.onnx"
     ]
-    
+
     Enum.find_value(onnx_files, {:error, "No ONNX files found"}, fn file ->
       case download_file(repo, file, target_dir) do
-        :ok -> 
+        :ok ->
           # If downloaded from subdirectory, move to root
           if String.contains?(file, "/") do
             source = Path.join(target_dir, file)
             target = Path.join(target_dir, Path.basename(file))
             File.rename!(source, target)
           end
+
           :ok
-        {:error, _} -> nil
+
+        {:error, _} ->
+          nil
       end
     end)
   end

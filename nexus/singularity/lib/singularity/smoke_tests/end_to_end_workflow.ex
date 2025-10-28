@@ -29,17 +29,21 @@ defmodule Singularity.SmokeTests.EndToEndWorkflow do
     Logger.info("\n[Step 2] Planning refactoring workflow...")
     {:ok, workflow_plan} = RefactorPlanner.plan(%{codebase_id: codebase_id, issues: smells})
     Logger.info("Generated workflow with #{length(workflow_plan.nodes)} nodes")
+
     Enum.each(workflow_plan.nodes, fn node ->
       Logger.info("  - #{node.id}: #{inspect(node.worker)}")
     end)
 
     # Step 3: Persist workflow to unified system
     Logger.info("\n[Step 3] Persisting workflow to PgFlow...")
-    workflow_attrs = Map.merge(workflow_plan, %{
-      type: :workflow,
-      status: :pending,
-      payload: %{codebase_id: codebase_id, smells: smells}
-    })
+
+    workflow_attrs =
+      Map.merge(workflow_plan, %{
+        type: :workflow,
+        status: :pending,
+        payload: %{codebase_id: codebase_id, smells: smells}
+      })
+
     {:ok, workflow_id} = Workflows.create_workflow(workflow_attrs)
     Logger.info("Persisted workflow: #{workflow_id}")
 
@@ -56,7 +60,10 @@ defmodule Singularity.SmokeTests.EndToEndWorkflow do
 
     # Step 6: Apply workflow with approval (dry-run)
     Logger.info("\n[Step 6] Applying workflow with approval token (dry-run)...")
-    {:ok, apply_result} = Workflows.apply_with_approval(workflow_id, approval_token, dry_run: true)
+
+    {:ok, apply_result} =
+      Workflows.apply_with_approval(workflow_id, approval_token, dry_run: true)
+
     Logger.info("Applied workflow with result: #{inspect(apply_result)}")
 
     # Step 7: Fetch and display final workflow state
@@ -70,12 +77,13 @@ defmodule Singularity.SmokeTests.EndToEndWorkflow do
     Logger.info("✅ End-to-End Smoke Test PASSED")
     Logger.info("=" <> String.duplicate("=", 60))
 
-    {:ok, %{
-      workflow_id: workflow_id,
-      node_count: exec_summary.node_count,
-      approval_token: approval_token,
-      status: final_wf.status
-    }}
+    {:ok,
+     %{
+       workflow_id: workflow_id,
+       node_count: exec_summary.node_count,
+       approval_token: approval_token,
+       status: final_wf.status
+     }}
   end
 
   def run_with_self_improvement_agent do
@@ -91,7 +99,12 @@ defmodule Singularity.SmokeTests.EndToEndWorkflow do
       workflow_id: "test_wf_#{:erlang.unique_integer([:positive])}",
       type: :workflow,
       nodes: [
-        %{id: "task_1", type: :task, worker: {Singularity.Execution.RefactorWorker, :analyze}, args: %{}}
+        %{
+          id: "task_1",
+          type: :task,
+          worker: {Singularity.Execution.RefactorWorker, :analyze},
+          args: %{}
+        }
       ]
     }
 

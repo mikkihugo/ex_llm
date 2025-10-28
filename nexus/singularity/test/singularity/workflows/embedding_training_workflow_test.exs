@@ -56,7 +56,11 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
   describe "collect_training_data/1" do
     test "collects training data successfully" do
       # Mock the CodeStore
-      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [language: "elixir", min_length: 50, limit: 1000] ->
+      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [
+                                                                     language: "elixir",
+                                                                     min_length: 50,
+                                                                     limit: 1000
+                                                                   ] ->
         [%{code: "def test_function do\n  # test code\nend", context: "test context"}]
       end)
 
@@ -92,7 +96,11 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
 
     test "prepares Jina training data" do
       raw_data = [
-        %{code: "def test_function do\n  # test code\nend", context: "test context", metadata: %{}}
+        %{
+          code: "def test_function do\n  # test code\nend",
+          context: "test context",
+          metadata: %{}
+        }
       ]
 
       context = %{
@@ -109,7 +117,11 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
 
     test "prepares both models training data" do
       raw_data = [
-        %{code: "def test_function do\n  # test code\nend", context: "test context", metadata: %{}}
+        %{
+          code: "def test_function do\n  # test code\nend",
+          context: "test context",
+          metadata: %{}
+        }
       ]
 
       context = %{
@@ -135,7 +147,13 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
         {:ok, %{model: "qodo_trainer"}}
       end)
 
-      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"}, ^prepared_data, [epochs: 3, learning_rate: 1.0e-5, batch_size: 16] ->
+      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"},
+                                                            ^prepared_data,
+                                                            [
+                                                              epochs: 3,
+                                                              learning_rate: 1.0e-5,
+                                                              batch_size: 16
+                                                            ] ->
         {:ok, %{accuracy: 0.85}}
       end)
 
@@ -160,7 +178,13 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
         {:ok, %{model: "jina_trainer"}}
       end)
 
-      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "jina_trainer"}, ^prepared_data, [epochs: 2, learning_rate: 5.0e-6, batch_size: 32] ->
+      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "jina_trainer"},
+                                                            ^prepared_data,
+                                                            [
+                                                              epochs: 2,
+                                                              learning_rate: 5.0e-6,
+                                                              batch_size: 32
+                                                            ] ->
         {:ok, %{accuracy: 0.80}}
       end)
 
@@ -188,7 +212,8 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
         input: %{model_type: :qodo}
       }
 
-      assert {:error, "GPU not available"} = EmbeddingTrainingWorkflow.train_embedding_model(context)
+      assert {:error, "GPU not available"} =
+               EmbeddingTrainingWorkflow.train_embedding_model(context)
     end
   end
 

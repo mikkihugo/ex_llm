@@ -72,7 +72,8 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
     workers = Keyword.get(opts, :workers, 10)
     batch_size = Keyword.get(opts, :batch_size, 16)
     verbose = Keyword.get(opts, :verbose, false)
-    timeout = Keyword.get(opts, :timeout, 300_000)  # 5 minutes
+    # 5 minutes
+    timeout = Keyword.get(opts, :timeout, 300_000)
 
     total = length(artifacts)
 
@@ -89,7 +90,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
          :ok <- wait_completion(timeout),
          processed_count <- :persistent_term.get({:embedding_pipeline, :processed}, 0) do
       elapsed = (System.monotonic_time(:millisecond) - start_time) / 1000
-      success_rate = (processed_count / total) * 100
+      success_rate = processed_count / total * 100
 
       metrics = %{
         total: total,
@@ -118,14 +119,16 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__.Pipeline,
       producer: [
-        module: {Broadway.PgflowProducer, [
-          workflow_name: "embedding_producer",
-          queue_name: "embedding_jobs",
-          concurrency: 10,
-          batch_size: batch_size,
-          pgflow_config: [timeout_ms: 300_000, retries: 3],
-          resource_hints: [gpu: true]
-        ]},
+        module:
+          {Broadway.PgflowProducer,
+           [
+             workflow_name: "embedding_producer",
+             queue_name: "embedding_jobs",
+             concurrency: 10,
+             batch_size: batch_size,
+             pgflow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [gpu: true]
+           ]},
         concurrency: 10
       ],
       processors: [

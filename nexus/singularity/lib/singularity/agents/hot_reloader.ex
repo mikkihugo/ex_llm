@@ -10,14 +10,15 @@ defmodule Singularity.Agents.HotReloader do
 
   @default_opts [run: false]
 
-  @doc "Return the shell commands that would be run to recompile the project in this dir." 
+  @doc "Return the shell commands that would be run to recompile the project in this dir."
   def compile_commands(cwd \\ ".") do
     ["cd #{cwd}", "mix compile"]
   end
 
-  @doc "Trigger a Mix compile. By default dry-run; to actually run pass run: true." 
+  @doc "Trigger a Mix compile. By default dry-run; to actually run pass run: true."
   def trigger_compile(cwd \\ ".", opts \\ []) do
     opts = Keyword.merge(@default_opts, opts)
+
     if opts[:run] do
       Logger.info("Running mix compile in #{cwd}")
       # run in spawned OS process to avoid interfering with caller VM

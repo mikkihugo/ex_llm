@@ -25,9 +25,9 @@ use crate::assembly;
 use crate::caching;
 use crate::language_support;
 use crate::metrics;
+use crate::prompt_bits;
 use crate::sparc_templates;
 use crate::templates;
-use crate::prompt_bits;
 
 // Re-export main types
 use std::collections::HashMap;
@@ -107,7 +107,6 @@ pub struct NifCacheStats {
     pub misses: usize,
     pub hit_rate: f64,
 }
-
 
 // TODO: Legacy types - migrate to full DSPy API
 /// Legacy optimization context (to be migrated to DSPy)
@@ -298,12 +297,14 @@ impl PromptEngine {
             .into_iter()
             .map(|template| {
                 // Apply COPRO optimization to each template
-                let optimization_result = self.optimize_prompt(&template.template).unwrap_or_else(|_| OptimizationResult {
-                    optimized_prompt: template.template.clone(),
-                    optimization_score: 0.5,
-                    improvement_summary: "Template optimization applied".to_string(),
-                });
-                
+                let optimization_result =
+                    self.optimize_prompt(&template.template)
+                        .unwrap_or_else(|_| OptimizationResult {
+                            optimized_prompt: template.template.clone(),
+                            optimization_score: 0.5,
+                            improvement_summary: "Template optimization applied".to_string(),
+                        });
+
                 OptimizedTemplate {
                     original: template.clone(),
                     optimized: optimization_result.optimized_prompt,
@@ -327,7 +328,8 @@ impl PromptEngine {
                     .as_secs(),
             };
 
-            self.cache.store(&template.original.name, entry)
+            self.cache
+                .store(&template.original.name, entry)
                 .map_err(|e| anyhow::anyhow!("Cache store error: {}", e))?;
         }
 
@@ -425,22 +427,26 @@ impl PromptEngine {
 }
 
 // Global static instance for NIF operations (thread-safe)
-static PROMPT_ENGINE: std::sync::OnceLock<std::sync::Mutex<PromptEngine>> = std::sync::OnceLock::new();
+static PROMPT_ENGINE: std::sync::OnceLock<std::sync::Mutex<PromptEngine>> =
+    std::sync::OnceLock::new();
 
 /// Initialize or get the global prompt engine instance
-fn get_or_init_prompt_engine() -> Result<std::sync::MutexGuard<'static, PromptEngine>, rustler::Error> {
+fn get_or_init_prompt_engine(
+) -> Result<std::sync::MutexGuard<'static, PromptEngine>, rustler::Error> {
     let mutex = PROMPT_ENGINE.get_or_init(|| {
         std::sync::Mutex::new(PromptEngine::new().expect("Failed to initialize prompt engine"))
     });
 
-    mutex.lock().map_err(|_| rustler::Error::Term(Box::new("Failed to acquire prompt engine lock")))
+    mutex
+        .lock()
+        .map_err(|_| rustler::Error::Term(Box::new("Failed to acquire prompt engine lock")))
 }
 
 /// NIF function to generate a prompt
 #[rustler::nif]
 fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse, rustler::Error> {
     let mut engine = get_or_init_prompt_engine()?;
-    
+
     // Try to get SPARC prompt first
     if let Some(template_id) = &request.template_id {
         if let Ok(prompt) = engine.get_optimized_sparc_prompt(
@@ -448,10 +454,19 @@ fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse,
             Some(std::collections::HashMap::from([
                 ("context".to_string(), request.context.clone()),
                 ("language".to_string(), request.language.clone()),
-                ("trigger_type".to_string(), request.trigger_type.clone().unwrap_or_default()),
-                ("trigger_value".to_string(), request.trigger_value.clone().unwrap_or_default()),
-                ("category".to_string(), request.category.clone().unwrap_or_default()),
-            ]))
+                (
+                    "trigger_type".to_string(),
+                    request.trigger_type.clone().unwrap_or_default(),
+                ),
+                (
+                    "trigger_value".to_string(),
+                    request.trigger_value.clone().unwrap_or_default(),
+                ),
+                (
+                    "category".to_string(),
+                    request.category.clone().unwrap_or_default(),
+                ),
+            ])),
         ) {
             return Ok(NifPromptResponse {
                 prompt,
@@ -461,7 +476,7 @@ fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse,
             });
         }
     }
-    
+
     // Fallback to basic prompt generation
     let prompt = format!(
         "Generate code for: {}\nLanguage: {}\nContext: {}\nCategory: {}",
@@ -483,7 +498,7 @@ fn nif_generate_prompt(request: NifGenerateRequest) -> Result<NifPromptResponse,
 #[rustler::nif]
 fn nif_optimize_prompt(request: NifOptimizeRequest) -> Result<NifPromptResponse, rustler::Error> {
     let mut engine = get_or_init_prompt_engine()?;
-    
+
     // Use the COPRO optimizer for actual prompt optimization
     match engine.optimize_prompt(&request.prompt) {
         Ok(result) => Ok(NifPromptResponse {
@@ -509,7 +524,7 @@ fn nif_optimize_prompt(request: NifOptimizeRequest) -> Result<NifPromptResponse,
 #[rustler::nif]
 fn nif_cache_get(key: String) -> Result<NifCacheResponse, rustler::Error> {
     let engine = get_or_init_prompt_engine()?;
-    
+
     match engine.cache.get(&key) {
         Some(entry) => Ok(NifCacheResponse {
             found: true,
@@ -538,7 +553,7 @@ fn nif_cache_get(key: String) -> Result<NifCacheResponse, rustler::Error> {
 #[rustler::nif]
 fn nif_cache_put(key: String, value: String) -> Result<(), rustler::Error> {
     let mut engine = get_or_init_prompt_engine()?;
-    
+
     let entry = CacheEntry {
         prompt: value,
         score: 0.8, // Default score
@@ -548,7 +563,9 @@ fn nif_cache_put(key: String, value: String) -> Result<(), rustler::Error> {
             .as_secs(),
     };
 
-    engine.cache.store(&key, entry)
+    engine
+        .cache
+        .store(&key, entry)
         .map_err(|e| rustler::Error::Term(Box::new(format!("Cache store error: {}", e))))?;
     Ok(())
 }

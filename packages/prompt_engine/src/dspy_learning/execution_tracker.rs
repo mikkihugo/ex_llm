@@ -5,7 +5,9 @@ use std::{collections::HashMap, time::Duration};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::prompt_tracking::{PromptTrackingQuery, PromptTrackingStorage, PromptExecutionEntry, PromptExecutionData};
+use crate::prompt_tracking::{
+    PromptExecutionData, PromptExecutionEntry, PromptTrackingQuery, PromptTrackingStorage,
+};
 
 /// Execution result for tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -42,7 +42,8 @@ defmodule Singularity.Conversation.MessageHistory do
   Stores message in pgmq queue with timestamp and metadata.
   """
   @spec add_message(String.t(), map()) :: :ok | {:error, term()}
-  def add_message(conversation_id, message_data) when is_binary(conversation_id) and is_map(message_data) do
+  def add_message(conversation_id, message_data)
+      when is_binary(conversation_id) and is_map(message_data) do
     queue_name = queue_name_for(conversation_id)
 
     message = %{
@@ -86,9 +87,10 @@ defmodule Singularity.Conversation.MessageHistory do
       case PgmqClient.read_messages(queue_name, @max_messages_per_query) do
         messages when is_list(messages) ->
           # Convert to list of message data, preserving order
-          parsed_messages = Enum.map(messages, fn {_msg_id, data} ->
-            parse_message(data)
-          end)
+          parsed_messages =
+            Enum.map(messages, fn {_msg_id, data} ->
+              parse_message(data)
+            end)
 
           {:ok, parsed_messages}
 
@@ -139,8 +141,8 @@ defmodule Singularity.Conversation.MessageHistory do
         summary = %{
           conversation_id: conversation_id,
           message_count: length(messages),
-          first_message_at: messages |> Enum.at(0) |> then(&(&1[:timestamp])),
-          last_message_at: messages |> Enum.at(-1) |> then(&(&1[:timestamp])),
+          first_message_at: messages |> Enum.at(0) |> then(& &1[:timestamp]),
+          last_message_at: messages |> Enum.at(-1) |> then(& &1[:timestamp]),
           senders: messages |> Enum.map(& &1[:sender]) |> Enum.uniq(),
           message_types: messages |> Enum.map(& &1[:type]) |> Enum.uniq(),
           agent_messages: Enum.count(messages, &(&1[:sender] == :agent)),
@@ -161,12 +163,14 @@ defmodule Singularity.Conversation.MessageHistory do
   Useful for getting only agent questions or human responses.
   """
   @spec filter_messages(String.t(), atom(), atom() | nil) :: {:ok, [map()]} | {:error, term()}
-  def filter_messages(conversation_id, sender \\ nil, type \\ nil) when is_binary(conversation_id) do
+  def filter_messages(conversation_id, sender \\ nil, type \\ nil)
+      when is_binary(conversation_id) do
     case get_messages(conversation_id) do
       {:ok, messages} ->
-        filtered = messages
-        |> filter_by_sender(sender)
-        |> filter_by_type(type)
+        filtered =
+          messages
+          |> filter_by_sender(sender)
+          |> filter_by_type(type)
 
         {:ok, filtered}
 
@@ -205,12 +209,14 @@ defmodule Singularity.Conversation.MessageHistory do
 
   # Private: Filter by sender
   defp filter_by_sender(messages, nil), do: messages
+
   defp filter_by_sender(messages, sender) do
     Enum.filter(messages, &(&1[:sender] == sender))
   end
 
   # Private: Filter by type
   defp filter_by_type(messages, nil), do: messages
+
   defp filter_by_type(messages, type) do
     Enum.filter(messages, &(&1[:type] == type))
   end

@@ -324,9 +324,15 @@ impl EngineFact {
       // SPARC Research Phases
       CodeGeneration::SparcResearch => {
         // Extract research parameters from context
-        let domain = context.get("domain").and_then(|v| v.as_str()).unwrap_or("general");
-        let focus = context.get("focus").and_then(|v| v.as_str()).unwrap_or("business_analysis");
-        
+        let domain = context
+          .get("domain")
+          .and_then(|v| v.as_str())
+          .unwrap_or("general");
+        let focus = context
+          .get("focus")
+          .and_then(|v| v.as_str())
+          .unwrap_or("business_analysis");
+
         serde_json::json!({
           "sparc_phase": "research",
           "phase_number": 1,
@@ -351,7 +357,7 @@ impl EngineFact {
       }
       CodeGeneration::SparcArchitecture => {
         serde_json::json!({
-          "sparc_phase": "architecture", 
+          "sparc_phase": "architecture",
           "phase_number": 2,
           "status": "executing",
           "context": context,
@@ -362,7 +368,7 @@ impl EngineFact {
       CodeGeneration::SparcSecurity => {
         serde_json::json!({
           "sparc_phase": "security",
-          "phase_number": 3, 
+          "phase_number": 3,
           "status": "executing",
           "context": context,
           "research_focus": "security_requirements_analysis",
@@ -373,7 +379,7 @@ impl EngineFact {
         serde_json::json!({
           "sparc_phase": "performance",
           "phase_number": 4,
-          "status": "executing", 
+          "status": "executing",
           "context": context,
           "research_focus": "performance_optimization_analysis",
           "message": "SPARC Phase 4: Research performance characteristics and optimizations"
@@ -452,7 +458,9 @@ impl EngineFact {
     &self,
     context: serde_json::Value,
   ) -> Result<serde_json::Value> {
-    use crate::storage::{create_storage, PackageMetadata, PackageKey, StorageConfig};
+    use crate::storage::{
+      create_storage, PackageKey, PackageMetadata, StorageConfig,
+    };
     use std::time::SystemTime;
     use tracing::{debug, info, warn};
 
@@ -828,13 +836,13 @@ pub enum CodeGeneration {
   SparcArchitecture,
   SparcSecurity,
   SparcPerformance,
-  
+
   // Rust Code Generation
   RustMicroservice,
   RustApiEndpoint,
   RustRepository,
   RustTest,
-  
+
   // TypeScript Code Generation
   TypeScriptMicroservice,
   TypeScriptApiEndpoint,

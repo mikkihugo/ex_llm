@@ -65,6 +65,11 @@ tempfile = { workspace = true }
 
 # No database dependencies - NIF receives data from Elixir
 
+# Rust AST parsing dependencies
+syn = { version = "2.0", features = ["full", "parsing"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
 # Hashing
 sha2 = { workspace = true }
 seahash = "4.1"
@@ -90,8 +95,22 @@ quality = { path = "../linting_engine", package = "linting_engine" }
 # Individual language parsers are accessed via parser_engine NIF, not directly by code_engine
 parser_core = { path = "../parser_engine/core" }  # Core parser library (no NIF, shared types)
 
-# Missing dependencies (commented out - directories don't exist)
-prompt = { path = "../prompt_engine", package = "prompt_engine" }
+# Language-specific parsers
+rust_parser = { path = "../parser_engine/languages/rust" }
+python_parser = { path = "../parser_engine/languages/python" }
+javascript_parser = { path = "../parser_engine/languages/javascript" }
+typescript_parser = { path = "../parser_engine/languages/typescript" }
+go_parser = { path = "../parser_engine/languages/go" }
+java_parser = { path = "../parser_engine/languages/java" }
+csharp_parser = { path = "../parser_engine/languages/csharp" }
+cpp_parser = { path = "../parser_engine/languages/cpp" }
+erlang_parser = { path = "../parser_engine/languages/erlang" }
+elixir_parser = { path = "../parser_engine/languages/elixir" }
+gleam_parser = { path = "../parser_engine/languages/gleam" }
+
+# Package/dependency detection
+dependency_parser = { path = "../parser_engine/formats/dependency" }
+
 # Additional validation crates
 # validator = { path = "../linting_engine", optional = true }  # Use indirectly via quality module
 # sparc_methodology = { path = "../methodology" }  # Does not exist

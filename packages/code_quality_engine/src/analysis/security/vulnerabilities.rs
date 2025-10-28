@@ -8,10 +8,10 @@
 //! - Publishes detections to "intelligence_hub.security_pattern.detected"
 //! - No local pattern databases - all patterns from CentralCloud
 
+use crate::centralcloud::{extract_data, publish_detection, query_centralcloud};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use anyhow::Result;
-use crate::centralcloud::{query_centralcloud, publish_detection, extract_data};
 
 /// Vulnerability analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,7 +135,9 @@ impl VulnerabilityAnalyzer {
         let patterns = self.query_security_patterns(file_path).await?;
 
         // 2. Detect vulnerabilities in content (use content!)
-        let vulnerabilities = self.detect_vulnerabilities(content, file_path, &patterns).await?;
+        let vulnerabilities = self
+            .detect_vulnerabilities(content, file_path, &patterns)
+            .await?;
 
         // 3. Calculate risk score (use vulnerabilities!)
         let risk_score = self.calculate_risk_score(&vulnerabilities);
@@ -170,11 +172,8 @@ impl VulnerabilityAnalyzer {
             "include_cwe": true,
         });
 
-        let response = query_centralcloud(
-            "intelligence_hub.security_patterns.query",
-            &request,
-            3000
-        )?;
+        let response =
+            query_centralcloud("intelligence_hub.security_patterns.query", &request, 3000)?;
 
         Ok(extract_data(&response, "patterns"))
     }
@@ -217,7 +216,9 @@ impl VulnerabilityAnalyzer {
                 };
 
                 let category = match pattern.category.as_str() {
-                    "injection" | "sql_injection" | "command_injection" => VulnerabilityCategory::Injection,
+                    "injection" | "sql_injection" | "command_injection" => {
+                        VulnerabilityCategory::Injection
+                    }
                     "authentication" => VulnerabilityCategory::Authentication,
                     "authorization" => VulnerabilityCategory::Authorization,
                     "data_exposure" | "sensitive_data" => VulnerabilityCategory::DataExposure,
@@ -273,7 +274,10 @@ impl VulnerabilityAnalyzer {
     }
 
     /// Generate recommendations from vulnerabilities
-    fn generate_recommendations(&self, vulnerabilities: &[Vulnerability]) -> Vec<VulnerabilityRecommendation> {
+    fn generate_recommendations(
+        &self,
+        vulnerabilities: &[Vulnerability],
+    ) -> Vec<VulnerabilityRecommendation> {
         let mut recommendations = Vec::new();
 
         for vulnerability in vulnerabilities {

@@ -189,7 +189,8 @@ defmodule Singularity.Knowledge.ArtifactGraph do
 
       case Repo.query(query, [props]) do
         {:ok, _} -> :ok
-        {:error, _} -> :ok  # Node may already exist
+        # Node may already exist
+        {:error, _} -> :ok
       end
     end)
 
@@ -280,12 +281,13 @@ defmodule Singularity.Knowledge.ArtifactGraph do
   defp generate_nodes(artifact_id, related_list) do
     root_node = "        ROOT[\"#{artifact_id}\"]"
 
-    related_nodes = related_list
-    |> Enum.map(fn item ->
-      node_id = String.replace(item.related_artifact, "-", "_")
-      "        #{node_id}[\"#{item.related_artifact}\"]"
-    end)
-    |> Enum.uniq()
+    related_nodes =
+      related_list
+      |> Enum.map(fn item ->
+        node_id = String.replace(item.related_artifact, "-", "_")
+        "        #{node_id}[\"#{item.related_artifact}\"]"
+      end)
+      |> Enum.uniq()
 
     [root_node | related_nodes]
     |> Enum.join("\n")

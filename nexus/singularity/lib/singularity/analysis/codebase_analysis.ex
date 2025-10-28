@@ -3,7 +3,7 @@ defmodule Singularity.CodebaseAnalysis do
   Entry point for working with the codebase analysis schema inside Singularity.
 
   The modules under `Singularity.Analysis.*` mirror the Rust analysis-suite data
-  structures so we can ingest JSON emitted by the Rust analyzers and persist it
+  structures so we can ingest JSON emitted by the Singularity Code Analyzer and persist it
   to Postgres.  Nothing here performs analysis directly; rather it gives BEAM
   services a common schema to work with.
   """

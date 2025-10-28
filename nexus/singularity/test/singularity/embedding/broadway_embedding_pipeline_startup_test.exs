@@ -15,12 +15,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineStartupTest do
 
       # This should work without explicit Broadway startup
       # The pipeline manages its own Broadway lifecycle
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 1,
-        batch_size: 1,
-        timeout: 5000
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          workers: 1,
+          batch_size: 1,
+          timeout: 5000
+        )
 
       assert {:ok, metrics} = result
       assert metrics.total == 1
@@ -126,11 +127,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineStartupTest do
       artifacts = [%{id: 1, artifact_id: "error_handling_test"}]
 
       # Run with short timeout to potentially trigger timeout (simulating failure)
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        timeout: 10,  # Very short timeout
-        workers: 1
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          # Very short timeout
+          timeout: 10,
+          workers: 1
+        )
 
       # Should handle timeout gracefully (compatible with HTDAG retry expectations)
       assert match?({:ok, _}, result) or match?({:error, :timeout}, result)
@@ -141,11 +144,12 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineStartupTest do
 
       artifacts = [%{id: 1, artifact_id: "metrics_test"}]
 
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 1,
-        batch_size: 1
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          workers: 1,
+          batch_size: 1
+        )
 
       assert {:ok, metrics} = result
 
@@ -174,11 +178,12 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineStartupTest do
 
       # Run multiple times to ensure no state conflicts
       for _ <- 1..3 do
-        result = BroadwayEmbeddingPipeline.run(
-          artifacts: artifacts,
-          workers: 1,
-          timeout: 3000
-        )
+        result =
+          BroadwayEmbeddingPipeline.run(
+            artifacts: artifacts,
+            workers: 1,
+            timeout: 3000
+          )
 
         assert {:ok, _} = result
       end
@@ -191,12 +196,16 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineStartupTest do
       # Test with constrained resources
       artifacts = List.duplicate(%{id: 1, artifact_id: "resource_test"}, 50)
 
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 1,  # Limited workers
-        batch_size: 5,  # Reasonable batch size
-        timeout: 20000  # Reasonable timeout
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          # Limited workers
+          workers: 1,
+          # Reasonable batch size
+          batch_size: 5,
+          # Reasonable timeout
+          timeout: 20000
+        )
 
       # Should complete or timeout gracefully without overwhelming system
       assert match?({:ok, _}, result) or match?({:error, :timeout}, result)
