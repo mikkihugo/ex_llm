@@ -211,15 +211,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
             update_processed_count()
 
             %Broadway.Message{
-              data: {artifact.id, embedding_list},
-              ack_data: :ok
+              data: {artifact.id, embedding_list}
             }
           else
             Logger.warning("Wrong embedding dimension for #{artifact.artifact_id}")
 
             %Broadway.Message{
-              data: nil,
-              ack_data: :error
+              data: nil
             }
           end
 
