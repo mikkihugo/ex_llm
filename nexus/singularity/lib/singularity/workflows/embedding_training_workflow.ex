@@ -147,7 +147,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
     retry_opts = [max_retries: 3, base_delay_ms: 500, max_delay_ms: 5_000]
 
-    case run_with_resilience(
+    case execute_with_resilience(
            fn -> {:ok, collect_training_data_impl(task_data)} end,
            timeout_ms: 60_000,
            retry_opts: retry_opts,
@@ -167,7 +167,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     training_data = context[:data_collection].result
     task_data = context.input
 
-    case run_with_resilience(
+    case execute_with_resilience(
            fn -> {:ok, prepare_training_data_impl(training_data, task_data.model_type)} end,
            timeout_ms: 45_000,
            retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
@@ -428,37 +428,3 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
       "def different_function() do\n  # Different code\nend"
     end
   end
-
-  defp run_with_resilience(fun, opts) when is_function(fun, 0) do
-    timeout_ms = Keyword.fetch!(opts, :timeout_ms)
-    retry_opts = Keyword.get(opts, :retry_opts, [])
-    operation = Keyword.get(opts, :operation, :workflow_step)
-
-    max_retries = Keyword.get(retry_opts, :max_retries, 3)
-    base_delay = Keyword.get(retry_opts, :base_delay_ms, 500)
-    max_delay = Keyword.get(retry_opts, :max_delay_ms, 5_000)
-
-    result =
-      Resilience.with_retry(
-        fn ->
-          case Resilience.with_timeout(fun, timeout_ms: timeout_ms) do
-            {:ok, value} ->
-              {:ok, value}
-
-            {:error, :timeout} ->
-              raise "operation #{operation} timed out after #{timeout_ms}ms"
-          end
-        end,
-        max_retries: max_retries,
-        base_delay_ms: base_delay,
-        max_delay_ms: max_delay
-      )
-
-    case result do
-      {:ok, {:ok, value}} -> {:ok, value}
-      {:ok, value} -> {:ok, value}
-      {:error, {:max_retries_exceeded, error}} -> {:error, error}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-end
