@@ -343,34 +343,4 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
 
     {:ok, deployment_result}
   end
-
-  defp run_with_resilience(fun, opts) when is_function(fun, 0) do
-    timeout_ms = Keyword.fetch!(opts, :timeout_ms)
-    retry_opts = Keyword.get(opts, :retry_opts, [])
-    operation = Keyword.get(opts, :operation, :workflow_step)
-
-    max_retries = Keyword.get(retry_opts, :max_retries, 3)
-    base_delay = Keyword.get(retry_opts, :base_delay_ms, 500)
-    max_delay = Keyword.get(retry_opts, :max_delay_ms, 5_000)
-
-    result =
-      Resilience.with_retry(
-        fn ->
-          case Resilience.with_timeout(fun, timeout_ms: timeout_ms) do
-            {:ok, value} -> {:ok, value}
-            {:error, :timeout} -> raise "operation #{operation} timed out after #{timeout_ms}ms"
-          end
-        end,
-        max_retries: max_retries,
-        base_delay_ms: base_delay,
-        max_delay_ms: max_delay
-      )
-
-    case result do
-      {:ok, {:ok, value}} -> {:ok, value}
-      {:ok, value} -> {:ok, value}
-      {:error, {:max_retries_exceeded, error}} -> {:error, error}
-      {:error, reason} -> {:error, reason}
-    end
-  end
 end
