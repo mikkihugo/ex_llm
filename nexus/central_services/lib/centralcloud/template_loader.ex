@@ -169,15 +169,33 @@ defmodule CentralCloud.TemplateLoader do
   end
 
   defp render_template(lua_content, variables) do
-    # TODO: Full Lua rendering with luerl
-    # For now, do simple variable substitution as placeholder
-
     # Extract template metadata (comments at top)
-    {metadata, _body} = extract_metadata(lua_content)
+    {metadata, body} = extract_metadata(lua_content)
 
-    # Simple placeholder rendering
-    # In production, this will use luerl to execute Lua and call workspace functions
-    rendered = """
+    # Basic variable substitution (simple placeholder implementation)
+    # In production, this would use luerl for full Lua execution
+    rendered = if Code.ensure_loaded?(Luerl) do
+      # Try luerl if available
+      case Luerl.eval(lua_content, variables) do
+        {:ok, result} -> result
+        {:error, _} -> simple_substitution(lua_content, variables, metadata)
+      end
+    else
+      # Fallback to simple substitution
+      simple_substitution(lua_content, variables, metadata)
+    end
+
+    {:ok, rendered}
+  end
+
+  defp simple_substitution(lua_content, variables, metadata) do
+    # Simple variable substitution as fallback
+    substituted = Enum.reduce(variables, lua_content, fn {key, value}, content ->
+      pattern = "{{#{key}}}"
+      String.replace(content, pattern, to_string(value))
+    end)
+
+    """
     # LLM Prompt Template Rendered
 
     Template Version: #{Map.get(metadata, :version, "unknown")}
@@ -188,15 +206,8 @@ defmodule CentralCloud.TemplateLoader do
 
     ---
 
-    TODO: Full Lua rendering with luerl integration
-    This placeholder shows that template loading works.
-    Next step: Integrate luerl for full Lua execution with workspace functions.
-
-    Template Content Preview:
-    #{String.slice(lua_content, 0, 500)}...
+    #{substituted}
     """
-
-    {:ok, rendered}
   end
 
   defp extract_metadata(lua_content) do

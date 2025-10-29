@@ -37,7 +37,12 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
   alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
+  alias CentralCloud.{TemplateService}
   alias Pgflow
+
+  # ETS table for prompt caching
+  @prompt_cache_table :framework_prompt_cache
+  @cache_ttl_ms 3_600_000  # 1 hour
 
   # ===========================
   # Public API
@@ -62,6 +67,9 @@ defmodule CentralCloud.FrameworkLearningAgent do
   @impl true
   def init(_opts) do
     Logger.info("FrameworkLearningAgent started - reactive mode with NATS JetStream")
+
+    # Create ETS table for prompt caching
+    :ets.new(@prompt_cache_table, [:named_table, :set, :public, read_concurrency: true])
 
     {:ok,
      %{
@@ -183,15 +191,10 @@ defmodule CentralCloud.FrameworkLearningAgent do
   end
 
   defp fetch_templates_from_knowledge_cache do
-    # Request latest framework templates from knowledge_cache
-    # knowledge_cache syncs with templates_data/ which gets updated frequently
-    case Pgflow.send_with_notify("central.template.search", %{
-      artifact_type: "framework",
-      limit: 100
-    }, CentralCloud.Repo, timeout: 10_000) do
-      {:ok, response} ->
-        templates = response["templates"] || []
-        Logger.debug("Loaded #{length(templates)} latest framework templates from knowledge_cache")
+    # Use TemplateService directly (same application)
+    case TemplateService.list_templates(category: "framework", deprecated: false) do
+      {:ok, templates} ->
+        Logger.debug("Loaded #{length(templates)} latest framework templates")
         templates
 
       {:error, reason} ->
@@ -215,15 +218,16 @@ defmodule CentralCloud.FrameworkLearningAgent do
   end
 
   defp fetch_prompt_from_knowledge_cache(prompt_id) do
-    case Pgflow.send_with_notify("central.template.get", %{
-      artifact_type: "prompt_template",
-      artifact_id: prompt_id
-    }, CentralCloud.Repo, timeout: 5_000) do
-      {:ok, response} ->
-        prompt = response["template"] || %{}
+    # Use TemplateService directly (same application)
+    case TemplateService.get_template(prompt_id, category: "prompt") do
+      {:ok, template} ->
+        # Convert template to prompt format
+        prompt = %{
+          "prompt_template" => get_in(template, ["content", "system"]) || "",
+          "system_prompt" => %{"role" => get_in(template, ["metadata", "description"]) || "Framework detection expert"}
+        }
 
         # Cache prompts for 1 hour (they change less often)
-        # Cache in DB or PgFlow
         spawn(fn -> cache_prompt(prompt_id, prompt) end)
 
         Logger.debug("Loaded and cached prompt: #{prompt_id}")
@@ -317,12 +321,29 @@ defmodule CentralCloud.FrameworkLearningAgent do
   end
 
   defp cache_prompt(prompt_id, prompt) do
-    # TODO: Implement actual caching logic
-    Logger.debug("Cached prompt: #{prompt_id}")
+    # Store in ETS with TTL (timestamp)
+    expires_at = System.system_time(:millisecond) + @cache_ttl_ms
+    :ets.insert(@prompt_cache_table, {prompt_id, prompt, expires_at})
+    Logger.debug("Cached prompt: #{prompt_id} (expires in 1 hour)")
   end
 
   defp fetch_prompt_from_cache(cache_key) do
-    # TODO: Implement actual cache lookup
-    {:error, :not_found}
+    case :ets.lookup(@prompt_cache_table, cache_key) do
+      [{^cache_key, prompt, expires_at}] ->
+        # Check if expired
+        if System.system_time(:millisecond) < expires_at do
+          Logger.debug("Cache hit: #{cache_key}")
+          {:ok, prompt}
+        else
+          # Expired, remove and return not found
+          :ets.delete(@prompt_cache_table, cache_key)
+          Logger.debug("Cache expired: #{cache_key}")
+          {:error, :not_found}
+        end
+
+      [] ->
+        Logger.debug("Cache miss: #{cache_key}")
+        {:error, :not_found}
+    end
   end
 end

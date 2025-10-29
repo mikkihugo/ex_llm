@@ -6,8 +6,7 @@ defmodule Broadway.PgflowProducer do
   orchestrated manner, supporting batching, retries, and resource hints like GPU locks.
   """
 
-  use GenServer
-  use Broadway
+  use GenStage
 
   alias Broadway.Message
   alias Pgflow.Workflow
@@ -23,7 +22,7 @@ defmodule Broadway.PgflowProducer do
     pgflow_config = Keyword.get(opts, :pgflow_config, [])
     resource_hints = Keyword.get(opts, :resource_hints, [])
 
-    GenServer.start_link(__MODULE__, %{
+    GenStage.start_link(__MODULE__, %{
       workflow_name: workflow_name,
       queue_name: queue_name,
       concurrency: concurrency,
@@ -38,11 +37,11 @@ defmodule Broadway.PgflowProducer do
     # Start PGFlow workflow child
     {:ok, workflow_pid} = Workflow.start_link(state.workflow_name, __MODULE__.Workflow, state)
 
-    {:ok, %{state | workflow_pid: workflow_pid}}
+    {:producer, %{state | workflow_pid: workflow_pid}}
   end
 
   @impl true
-  def handle_demand(demand, _index, %{workflow_pid: workflow_pid} = state) do
+  def handle_demand(demand, %{workflow_pid: workflow_pid} = state) when demand > 0 do
     # Calculate a light-weight queue depth and recent ack latency to inform
     # dynamic batching decisions inside the workflow. These helpers are
     # intentionally non-blocking and fall back to safe defaults on error.
@@ -64,14 +63,16 @@ defmodule Broadway.PgflowProducer do
     {:noreply, [], state}
   end
 
-  @impl true
+  def handle_demand(_demand, state), do: {:noreply, [], state}
+
+  # Compatibility for tests invoking the 3-arity variant
+  def handle_demand(demand, _from, state), do: handle_demand(demand, state)
+
   def handle_failure({:basic, reason}, [{_pid, batch}], _context, state) do
     # On failure, update PGFlow to requeue the batch
     Enum.each(batch, fn %Message{data: {id, _data}} = msg ->
       Workflow.update(state.workflow_pid, :requeue, %{id: id, reason: reason})
-      msg
-      |> Message.failed(reason)
-      |> Broadway.ack!()
+      Message.failed(msg, reason)
     end)
 
     {:noreply, state}
@@ -79,9 +80,7 @@ defmodule Broadway.PgflowProducer do
 
   @impl true
   def handle_info({:workflow_yield, messages}, state) do
-    # Receive yielded messages from workflow and push to Broadway
-    send_messages(messages, state)
-    {:noreply, state}
+    {:noreply, messages, state}
   end
 
   @doc """
@@ -94,20 +93,14 @@ defmodule Broadway.PgflowProducer do
   """
   def handle_info({:ack, job_id}, %{workflow_pid: workflow_pid} = state) do
     Workflow.update(workflow_pid, :ack, %{id: job_id})
-    {:noreply, state}
+    {:noreply, [], state}
   end
 
   def handle_info({:requeue, job_id, reason}, %{workflow_pid: workflow_pid} = state) do
     Workflow.update(workflow_pid, :requeue, %{id: job_id, reason: reason})
-    {:noreply, state}
+    {:noreply, [], state}
   end
 
-  defp send_messages(messages, _state) do
-    Enum.each(messages, fn msg ->
-      Broadway.push_messages(__MODULE__, [msg])
-    end)
-  end
- 
   # Helpers for dynamic batching decisions
  
   @doc false
@@ -152,9 +145,9 @@ defmodule Broadway.PgflowProducer do
 
   defp via_tuple(workflow_name), do: {:via, Registry, {Broadway.PgflowProducer.Registry, workflow_name}}
 
-  # Callback for Broadway to prepare messages
-  @impl Broadway
-  def prepare_messages(messages, _) do
-    messages
-  end
+  @impl Broadway.Producer
+  def prepare_for_start(module, opts), do: {module, opts}
+
+  @impl Broadway.Producer
+  def prepare_for_draining(state), do: {:noreply, [], state}
 end

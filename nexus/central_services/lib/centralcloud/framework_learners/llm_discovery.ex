@@ -38,6 +38,21 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
 
   require Logger
   alias Pgflow
+  alias CentralCloud.TemplateService
+
+  # ETS table for prompt caching (shared across LLM discovery instances)
+  @prompt_cache_table :llm_discovery_prompt_cache
+  @cache_ttl_ms 3_600_000  # 1 hour
+
+  # Ensure ETS table exists (called on module load)
+  def ensure_cache_table do
+    case :ets.whereis(@prompt_cache_table) do
+      :undefined ->
+        :ets.new(@prompt_cache_table, [:named_table, :set, :public, read_concurrency: true])
+      _ ->
+        :ok
+    end
+  end
 
   # ===========================
   # FrameworkLearner Behavior Callbacks
@@ -58,6 +73,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
 
   @impl CentralCloud.FrameworkLearner
   def learn(package_id, code_samples) when is_list(code_samples) do
+    ensure_cache_table()
     Logger.info("LLM discovery: Starting framework discovery for #{package_id}")
 
     prompt_template = load_framework_discovery_prompt()
@@ -105,15 +121,16 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   end
 
   defp fetch_prompt_from_knowledge_cache(prompt_id) do
-    case Pgflow.send_with_notify("central.template.get", %{
-      artifact_type: "prompt_template",
-      artifact_id: prompt_id
-    }, CentralCloud.Repo, timeout: 5_000) do
-      {:ok, response} ->
-        prompt = response["template"] || %{}
+    # Use TemplateService directly (same application)
+    case TemplateService.get_template(prompt_id, category: "prompt") do
+      {:ok, template} ->
+        # Convert template to prompt format
+        prompt = %{
+          "prompt_template" => get_in(template, ["content", "system"]) || "",
+          "system_prompt" => %{"role" => get_in(template, ["metadata", "description"]) || "Framework detection expert"}
+        }
 
         # Cache prompts for future use (they change less often)
-        # Cache in DB
         spawn(fn -> cache_prompt(prompt_id, prompt) end)
 
         Logger.debug("LLM discovery: Loaded and cached prompt: #{prompt_id}")
@@ -250,12 +267,31 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   end
 
   defp cache_prompt(prompt_id, prompt) do
-    # TODO: Implement actual caching logic
-    Logger.debug("Cached prompt: #{prompt_id}")
+    ensure_cache_table()
+    # Store in ETS with TTL (timestamp)
+    expires_at = System.system_time(:millisecond) + @cache_ttl_ms
+    :ets.insert(@prompt_cache_table, {prompt_id, prompt, expires_at})
+    Logger.debug("Cached prompt: #{prompt_id} (expires in 1 hour)")
   end
 
   defp fetch_prompt_from_cache(cache_key) do
-    # TODO: Implement actual cache lookup
-    {:error, :not_found}
+    ensure_cache_table()
+    case :ets.lookup(@prompt_cache_table, cache_key) do
+      [{^cache_key, prompt, expires_at}] ->
+        # Check if expired
+        if System.system_time(:millisecond) < expires_at do
+          Logger.debug("Cache hit: #{cache_key}")
+          {:ok, prompt}
+        else
+          # Expired, remove and return not found
+          :ets.delete(@prompt_cache_table, cache_key)
+          Logger.debug("Cache expired: #{cache_key}")
+          {:error, :not_found}
+        end
+
+      [] ->
+        Logger.debug("Cache miss: #{cache_key}")
+        {:error, :not_found}
+    end
   end
 end

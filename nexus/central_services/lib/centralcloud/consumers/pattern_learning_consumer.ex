@@ -99,8 +99,8 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
     try do
       # Store each pattern in database for aggregation
       Enum.each(patterns, fn pattern ->
-        # TODO: Insert into patterns table with instance_id, timestamp
-        # This would aggregate patterns across instances for later broadcast
+        # Store in approved_patterns table with instance_id, timestamp
+        # This aggregates patterns across instances for later broadcast
         store_single_pattern(instance_id, pattern, timestamp)
       end)
 
@@ -124,7 +124,8 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
     try do
       # Store high-quality patterns for curation and export
       Enum.each(artifacts, fn artifact ->
-        # TODO: Insert into learned_patterns table with quality metrics
+        # Store in templates table (category="pattern") with quality metrics
+        # High-quality learned patterns become templates for distribution
         store_learned_artifact(instance_id, artifact, usage_count, success_rate, timestamp)
       end)
 
@@ -183,7 +184,7 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
     end
   end
 
-  defp store_learned_artifact(instance_id, artifact, usage_count, success_rate, _timestamp) do
+  defp store_learned_artifact(instance_id, artifact, usage_count, success_rate, timestamp) do
     Logger.debug("[PatternLearning] Storing learned artifact from #{instance_id}",
       name: artifact["name"],
       usage_count: usage_count,
@@ -196,8 +197,14 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
       description = artifact["description"]
       examples = artifact["examples"] || []
 
+      last_used =
+        timestamp ||
+          artifact["last_used"] ||
+          DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.to_iso8601()
+
       # Store high-quality learned artifact (success_rate >= 0.9)
       if success_rate >= 0.9 do
+        # Store in approved_patterns table (for aggregation)
         case CentralCloud.Repo.query("""
           INSERT INTO approved_patterns (
             id, name, ecosystem, frequency, confidence, description, examples, approved_at, inserted_at, updated_at
@@ -212,6 +219,38 @@ defmodule CentralCloud.Consumers.PatternLearningConsumer do
             updated_at = NOW()
           """, [name, ecosystem, usage_count, success_rate, description, Jason.encode!(examples)]) do
           {:ok, _} ->
+            # Also store in templates table (category="pattern") for distribution
+            template_data = %{
+              "id" => "#{name}-#{ecosystem}",
+              "category" => "pattern",
+              "metadata" => %{
+                "name" => name,
+                "description" => description || "",
+                "ecosystem" => ecosystem,
+                "instance_id" => instance_id
+              },
+              "content" => %{
+                "type" => "learned_pattern",
+                "examples" => examples,
+                "usage_count" => usage_count,
+                "success_rate" => success_rate
+              },
+              "quality_score" => success_rate,
+              "usage_stats" => %{
+                "count" => usage_count,
+                "success_rate" => success_rate,
+                "last_used" => last_used
+              },
+              "version" => "1.0.0"
+            }
+            
+            case CentralCloud.TemplateService.store_template(template_data) do
+              {:ok, _template} ->
+                Logger.debug("[PatternLearning] Stored pattern in templates table")
+              {:error, reason} ->
+                Logger.warning("[PatternLearning] Failed to store pattern template: #{inspect(reason)}")
+            end
+            
             Logger.info("[PatternLearning] ✓ Approved learned artifact #{name}",
               success_rate: success_rate,
               usage_count: usage_count

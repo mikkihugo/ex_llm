@@ -86,6 +86,8 @@ defmodule Singularity.Knowledge.ArtifactStore do
   ```
   """
 
+  require Logger
+
   import Ecto.Query
   alias Singularity.Repo
   alias Singularity.Schemas.KnowledgeArtifact
@@ -393,6 +395,108 @@ defmodule Singularity.Knowledge.ArtifactStore do
   end
 
   @doc """
+  Count total artifacts in the knowledge store.
+
+  ## Options
+  - `:artifact_type` - Filter by artifact type
+  - `:language` - Filter by language
+
+  ## Examples
+
+      iex> ArtifactStore.count_artifacts()
+      {:ok, 152}
+
+      iex> ArtifactStore.count_artifacts(artifact_type: "quality_template")
+      {:ok, 23}
+  """
+  def count_artifacts(opts \\ []) do
+    artifact_type = opts[:artifact_type]
+    language = opts[:language]
+
+    query = from(a in KnowledgeArtifact, select: count(a.id))
+
+    query =
+      if artifact_type do
+        from(a in query, where: a.artifact_type == ^artifact_type)
+      else
+        query
+      end
+
+    query =
+      if language do
+        from(a in query, where: a.language == ^language)
+      else
+        query
+      end
+
+    count = Repo.one(query)
+    {:ok, count || 0}
+  rescue
+    error ->
+      Logger.error("Failed to count artifacts", error: inspect(error))
+      {:error, :query_failed}
+  end
+
+  @doc """
+  Count artifacts ready for promotion (high usage count and success rate).
+
+  ## Options
+  - `:artifact_type` - Filter by artifact type
+  - `:min_usage_count` - Minimum usage count (default: 10)
+  - `:min_success_rate` - Minimum success rate (default: 0.90)
+
+  ## Examples
+
+      iex> ArtifactStore.count_ready_to_promote()
+      {:ok, 5}
+
+      iex> ArtifactStore.count_ready_to_promote(min_usage_count: 100, min_success_rate: 0.95)
+      {:ok, 2}
+  """
+  def count_ready_to_promote(opts \\ []) do
+    artifact_type = opts[:artifact_type]
+    min_usage_count = opts[:min_usage_count] || 10
+    min_success_rate = opts[:min_success_rate] || 0.90
+
+    try do
+      query =
+        from(a in KnowledgeArtifact,
+          # Safe JSONB extraction with fallback for missing fields
+          where: fragment(
+            "COALESCE((content->>'usage_count')::int, 0) >= ?",
+            ^min_usage_count
+          ),
+          where: fragment(
+            "COALESCE((content->>'success_rate')::float, 0.0) >= ?",
+            ^min_success_rate
+          ),
+          select: count(a.id)
+        )
+
+      query =
+        if artifact_type do
+          from(a in query, where: a.artifact_type == ^artifact_type)
+        else
+          query
+        end
+
+      count = Repo.one(query)
+      {:ok, count || 0}
+    rescue
+      error ->
+        SASL.database_failure(
+          :promotion_count_query_failed,
+          "Failed to count ready-to-promote artifacts",
+          error: inspect(error),
+          artifact_type: artifact_type,
+          min_usage_count: min_usage_count,
+          min_success_rate: min_success_rate
+        )
+        {:error, :query_failed}
+    end
+  end
+
+  @doc """
   Export learned artifacts back to Git.
 
   Exports artifacts that have been validated through usage (high success rate, sufficient usage).
@@ -514,7 +618,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
   end
 
   defp get_by_artifact_id(artifact_id) do
-    case Repo.one(from a in KnowledgeArtifact, where: a.artifact_id == ^artifact_id) do
+    case Repo.one(from(a in KnowledgeArtifact, where: a.artifact_id == ^artifact_id)) do
       nil -> {:error, :not_found}
       artifact -> {:ok, artifact}
     end

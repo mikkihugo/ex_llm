@@ -46,6 +46,9 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
   require Logger
 
   alias Singularity.BeamAnalysisEngine
+  alias Singularity.Repo
+  alias Singularity.Infrastructure.Telemetry
+  import Ecto.Query
 
   # Client API
 
@@ -351,14 +354,74 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
   end
 
   defp store_analysis_result(file_path, result) do
-    # TODO: Integrate with analysis result storage
-    # For now, just log successful completion
     case result do
       {:ok, analysis} ->
-        Logger.info("[FileAnalysisSwarm] Stored analysis for #{file_path}: #{analysis.language}")
+        # Store in codebase_metadata table for reuse
+        codebase_id = Map.get(analysis, :codebase_id, "singularity")
+        language = Map.get(analysis, :language, detect_language_from_path(file_path))
+        
+        # Upsert analysis result into codebase_metadata
+        case upsert_codebase_metadata(file_path, codebase_id, language, analysis) do
+          {:ok, _} ->
+            Logger.info("[FileAnalysisSwarm] Stored analysis for #{file_path}: #{language}")
+            
+            # Emit Telemetry event
+            Singularity.Infrastructure.Telemetry.execute(
+              [:singularity, :file_analysis, :stored],
+              %{file_path: file_path},
+              %{language: language, codebase_id: codebase_id}
+            )
 
-      {:error, _reason} ->
-        Logger.warning("[FileAnalysisSwarm] Failed to analyze #{file_path}")
+          {:error, reason} ->
+            Logger.error("[FileAnalysisSwarm] Failed to store analysis for #{file_path}",
+              reason: reason
+            )
+        end
+
+      {:error, reason} ->
+        Logger.warning("[FileAnalysisSwarm] Failed to analyze #{file_path}", reason: reason)
+        
+        # Track failures
+        Singularity.Infrastructure.Telemetry.execute(
+          [:singularity, :file_analysis, :failed],
+          %{file_path: file_path},
+          %{reason: inspect(reason)}
+        )
+    end
+  end
+
+  defp upsert_codebase_metadata(file_path, codebase_id, language, analysis) do
+    alias Singularity.Repo
+    import Ecto.Query
+
+    # Extract metadata from analysis
+    metadata = %{
+      language: language,
+      path: file_path,
+      codebase_id: codebase_id,
+      analyzed_at: DateTime.utc_now(),
+      analysis_data: analysis
+    }
+
+    # Use PostgreSQL UPSERT (ON CONFLICT)
+    query = """
+    INSERT INTO codebase_metadata (codebase_id, path, language, extended_metadata, inserted_at, updated_at)
+    VALUES ($1, $2, $3, $4::jsonb, NOW(), NOW())
+    ON CONFLICT (codebase_id, path) 
+    DO UPDATE SET 
+      language = EXCLUDED.language,
+      extended_metadata = EXCLUDED.extended_metadata,
+      updated_at = NOW()
+    """
+
+    case Repo.query(query, [
+           codebase_id,
+           file_path,
+           language,
+           Jason.encode!(metadata)
+         ]) do
+      {:ok, _} -> {:ok, metadata}
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -219,7 +219,7 @@ defmodule Singularity.Metrics.Orchestrator do
   defp detect_language(file_path, opts) do
     case Keyword.get(opts, :language) do
       nil ->
-        ext = Path.extname(file_path) |> String.lstrip(?.)
+        ext = Path.extname(file_path) |> String.trim_leading(".")
         case Singularity.Metrics.NIF.language_from_extension(ext) do
           nil -> {:error, "Could not detect language for: #{file_path}"}
           lang -> {:ok, lang}

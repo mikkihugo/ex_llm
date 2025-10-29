@@ -75,7 +75,7 @@ defmodule CentralCloud.InfrastructureSystemLearningOrchestrator do
           {:ok, systems, learner_type}
 
         {:error, :no_match} ->
-          Logger.warn("No infrastructure systems found for request",
+          Logger.warning("No infrastructure systems found for request",
             query_type: request["query_type"],
             tried_learners: Enum.map(learners, fn {type, _priority, _config} -> type end)
           )
@@ -175,7 +175,7 @@ defmodule CentralCloud.InfrastructureSystemLearningOrchestrator do
             {:error, reason}
         end
       else
-        Logger.warn("Learner module not found for #{learner_type}")
+        Logger.warning("Learner module not found for #{learner_type}")
         try_learners(rest, request, opts)
       end
     rescue
@@ -199,7 +199,7 @@ defmodule CentralCloud.InfrastructureSystemLearningOrchestrator do
             module.record_success(request, systems)
           rescue
             e ->
-              Logger.warn("Failed to record learner success",
+              Logger.warning("Failed to record learner success",
                 learner: learner_type,
                 error: inspect(e)
               )

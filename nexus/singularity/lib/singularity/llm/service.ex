@@ -3,13 +3,13 @@ defmodule Singularity.LLM.Service do
   @template_version "elixir_production_v2 v2.6.0"
 
   @moduledoc """
-  # LLM Service — Queue-based Nexus orchestration for Responses API calls
+  @moduledoc """
+  # LLM Service — Direct Pgflow orchestration for synchronous AI calls
 
   **This is the ONLY way to call LLM providers in the Elixir app.**
 
-  Every request is routed through `Singularity.Jobs.LlmRequestWorker`, published
-  to the `ai_requests` pgmq queue, executed by Nexus (Responses API), and the
-  result is persisted by `Singularity.Jobs.LlmResultPoller`.
+  Every request is executed synchronously via `Pgflow.Executor.execute/3` running the
+  `LlmRequest` workflow, which handles model selection, provider calls, and result processing.
 
   ## Quick Start
 
@@ -22,13 +22,87 @@ defmodule Singularity.LLM.Service do
 
   # With task hint for better model selection
   Service.call(:complex, messages, task_type: :architect)
-
-  # Convenience wrappers
-  Service.call_with_prompt(:medium, "Your question here")
-  Service.call_with_system(:complex, "You are an architect", "Design X")
   ```
 
   ## Public API
+
+  - `call(model_or_complexity, messages, opts)` - Main entry point
+  - `call_with_prompt(complexity, prompt, opts)` - Simple string prompt
+  - `call_with_system(complexity, system, user, opts)` - With system prompt
+  - `call_with_script(script_path, context, opts)` - Dynamic Lua scripts
+  - `determine_complexity_for_task(task_type)` - Auto-select complexity
+
+  ## Key Features
+
+  - **Synchronous Execution:** Direct workflow execution (no queuing/polling)
+  - **Cost Optimization:** 40-60% savings through intelligent model selection
+  - **SLO Monitoring:** < 2s target, tracks breaches automatically
+  - **Telemetry:** Full observability with correlation IDs
+  - **Error Handling:** Structured errors with specific reasons
+  - **Concurrency:** Stateless, fully concurrent
+
+  ## Complexity Levels
+
+  - `:simple` - Fast/cheap models (Gemini Flash) for classification, parsing
+  - `:medium` - Balanced models (Claude Sonnet) for coding, planning
+  - `:complex` - Powerful models (Claude Opus, GPT-4) for architecture, refactoring
+
+  ## Error Handling
+
+  All functions return `{:ok, result} | {:error, reason}`:
+  - `{:failed, details}` - Workflow execution failed
+  - `{:timeout, _}` or `:timeout` - Workflow execution exceeded timeout
+  - `:invalid_arguments` - Bad input
+  - `:model_unavailable` - Model not available
+
+  ## Examples
+
+  ```elixir
+  # Simple classification
+  {:ok, response} = Service.call(:simple, [
+    %{role: "user", content: "Is this spam?"}
+  ])
+  # => %{text: "Not spam", model: "gemini-1.5-flash", cost_cents: 1}
+
+  # Complex architecture
+  {:ok, response} = Service.call(:complex, [
+    %{role: "system", content: "You are a system architect"},
+    %{role: "user", content: "Design a distributed chat system"}
+  ], task_type: :architect)
+  # => %{text: "Architecture...", model: "claude-sonnet-4.5", cost_cents: 50}
+
+  # Auto-determine complexity
+  complexity = Service.determine_complexity_for_task(:architect)  # => :complex
+  Service.call(complexity, messages)
+  ```
+
+  ---
+
+  ## AI Navigation Metadata
+
+  The sections below provide structured metadata for AI assistants, graph databases (Neo4j),
+  and vector databases (pgvector) to enable intelligent code navigation at billion-line scale.
+
+  ### Module Identity (JSON)
+
+  ```json
+  {
+    "module": "Singularity.LLM.Service",
+    "purpose": "ONLY way to call LLM providers in Elixir - all AI requests MUST use this",
+    "role": "service",
+    "layer": "domain_services",
+    "alternatives": {
+      "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
+      "LlmRequestWorker": "Legacy Oban worker - replaced by direct pgflow execution",
+      "Pgflow.Executor": "Direct workflow execution engine"
+    },
+    "dependencies": {
+      "Singularity.Workflows.LlmRequest": "Workflow definition for LLM processing",
+      "Pgflow.Executor": "Workflow execution engine",
+      "Singularity.LLM.Provider": "Provider abstraction layer"
+    },
+    "replaces": ["SharedQueuePublisher", "SharedQueueConsumer", "LlmResultPoller"]
+  }  ## Public API
 
   - `call(model_or_complexity, messages, opts)` - Main entry point
   - `call_with_prompt(complexity, prompt, opts)` - Simple string prompt
@@ -96,15 +170,15 @@ defmodule Singularity.LLM.Service do
     "layer": "domain_services",
     "alternatives": {
       "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
-      "LlmRequestWorker": "Oban/ex_pgflow worker that enqueues requests to pgmq",
-      "LlmResultPoller": "Oban worker that persists Nexus results"
+      "LlmRequestWorker": "Legacy Oban worker - replaced by direct pgflow execution",
+      "Pgflow.Executor": "Direct workflow execution engine"
     },
     "disambiguation": {
       "vs_provider": "Service = High-level, intelligent routing. Provider = Low-level, internal",
-      "vs_llm_request_worker": "Service = user API surface. Worker = background execution pipeline",
-      "vs_llm_result_poller": "Service = call surface. Poller = result ingestion"
+      "vs_pgflow_executor": "Service = user API surface. Executor = synchronous workflow execution",
+      "vs_llm_request_worker": "Service = synchronous calls. Worker = legacy async queuing"
     },
-    "replaces": [],
+    "replaces": ["SharedQueuePublisher", "SharedQueueConsumer", "LlmResultPoller"],
     "replaced_by": null
   }
   ```
@@ -115,24 +189,19 @@ defmodule Singularity.LLM.Service do
   graph TB
       Agent[Agent / tools]
       Service[LLM.Service]
-      Worker[LlmRequestWorker]
-      Queue[pgmq ai_requests]
-      Nexus[Nexus Workflow]
-      Responses[OpenAI Responses API]
-      ResultsQueue[pgmq ai_results]
-      Poller[LlmResultPoller]
-      Store[job_results]
+      Executor[Pgflow.Executor]
+      Workflow[LlmRequest Workflow]
+      Provider[LLM.Provider]
 
       Agent -->|1. call/3| Service
-      Service -->|2. enqueue| Worker
-      Worker -->|3. publish| Queue
-      Queue -->|4. consume| Nexus
-      Nexus -->|5. call| Responses
-      Responses -->|6. return| Nexus
-      Nexus -->|7. publish| ResultsQueue
-      ResultsQueue -->|8. poll| Poller
-      Poller -->|9. record| Store
-      Store -->|10. lookup / await| Agent
+      Service -->|2. execute| Executor
+      Executor -->|3. run| Workflow
+      Workflow -->|4. select model| Workflow
+      Workflow -->|5. call| Provider
+      Provider -->|6. return| Workflow
+      Workflow -->|7. return| Executor
+      Executor -->|8. return| Service
+      Service -->|9. return| Agent
 
       style Service fill:#90EE90
       style Agent fill:#87CEEB
@@ -172,15 +241,14 @@ defmodule Singularity.LLM.Service do
 
   ```yaml
   calls_out:
-    - module: Singularity.Jobs.LlmRequestWorker
-      function: enqueue_llm_request/3
-      purpose: Publish requests to pgmq `ai_requests`
+    - module: Pgflow.Executor
+      function: execute/3
+      purpose: Execute LlmRequest workflow synchronously
       critical: true
 
-    - module: Singularity.Jobs.LlmResultPoller
-      function: await_responses_result/2
-      purpose: Optional helper to wait for async Responses results
-      critical: false
+    - module: Singularity.Workflows.LlmRequest
+      purpose: Workflow definition for LLM processing pipeline
+      critical: true
 
     - module: Singularity.Engines.PromptEngine
       function: optimize_prompt/2
@@ -224,15 +292,15 @@ defmodule Singularity.LLM.Service do
       frequency: medium
 
   depends_on:
-    - Singularity.Jobs.LlmRequestWorker (Oban + pgmq must be running)
-    - Nexus.Workflows.LLMRequestWorkflow (consumes `ai_requests` queue)
-    - Singularity.Jobs.LlmResultPoller (persists `ai_results`)
+    - Pgflow.Executor (synchronous workflow execution)
+    - Singularity.Workflows.LlmRequest (workflow definition)
+    - Singularity.LLM.Provider (provider abstraction layer)
     - Singularity.Engines.PromptEngine (optional - graceful degradation)
     - Singularity.LuaRunner (optional - only for Lua scripts)
 
   supervision:
     supervised: false
-    reason: "Stateless service module - orchestration handled by Oban/pgmq/Nexus."
+    reason: "Stateless service module - synchronous execution with no background processes."
   ```
 
   ## Data Flow
@@ -241,26 +309,22 @@ defmodule Singularity.LLM.Service do
   sequenceDiagram
       participant Agent
       participant Service
-      participant Worker
-      participant Queue
-      participant Nexus
-      participant Responses
-      participant Poller
+      participant Executor
+      participant Workflow
+      participant Provider
 
       Agent->>Service: call(:complex, messages, task_type: :architect)
       Service->>Service: generate_correlation_id()
       Service->>Service: build_request(messages, opts)
       Service-->>Agent: Telemetry [:llm_service, :call, :start]
 
-      Service->>Worker: enqueue_llm_request(task_type, messages, opts)
-      Worker->>Queue: Singularity.Jobs.PgmqClient.send("ai_requests", payload)
-
-      Queue->>Nexus: deliver request
-      Nexus->>Responses: POST /v1/responses
-      Responses-->>Nexus: response body
-      Nexus->>Queue: Singularity.Jobs.PgmqClient.send("ai_results", envelope)
-      Queue->>Poller: deliver result
-      Poller->>Service: JobResult stored (awaitable)
+      Service->>Executor: Pgflow.Executor.execute(LlmRequest, args, timeout: 30000)
+      Executor->>Workflow: execute workflow steps
+      Workflow->>Workflow: receive → select model → call provider
+      Workflow->>Provider: execute LLM call
+      Provider-->>Workflow: return response
+      Workflow-->>Executor: return result
+      Executor-->>Service: return result
 
       Service->>Service: track_slo_metric(:llm_call, duration, true)
       alt SLO breach (> 2000ms)
@@ -269,7 +333,6 @@ defmodule Singularity.LLM.Service do
 
       Service-->>Agent: Telemetry: [:llm_service, :call, :stop]
       Service-->>Agent: {:ok, llm_response()}
-  ```
 
   ## Anti-Patterns (DO NOT DO THESE!)
 
@@ -365,17 +428,17 @@ defmodule Singularity.LLM.Service do
 
   ## Relationships
 
-  - **Calls:** Singularity.Jobs.LlmRequestWorker.enqueue_llm_request/3 - queue publication
+  - **Calls:** Pgflow.Executor.execute/3 - Synchronous workflow execution
   - **Calls:** Singularity.Engines.PromptEngine.optimize_prompt/2 - Prompt optimization
   - **Calls:** Logger.info/2, Logger.error/2 - Structured logging
   - **Calls:** :telemetry.execute/2 - Metrics collection
   - **Called by:** Singularity.Agents.Agent, Singularity.Engines.ArchitectureEngine - AI operations
-  - **Depends on:** Singularity.Jobs.LlmRequestWorker - Queue orchestration
-  - **Depends on:** Singularity.Jobs.LlmResultPoller - Result persistence & retrieval
+  - **Depends on:** Pgflow.Executor - Workflow execution engine
+  - **Depends on:** Singularity.Workflows.LlmRequest - Workflow definition
+  - **Depends on:** Singularity.LLM.Provider - Provider abstraction
   - **Depends on:** Singularity.Engines.PromptEngine - Prompt optimization
   - **Used by:** All AI-powered features in the system
-  - **Integrates with:** Nexus.Workflows.LLMRequestWorkflow - Executes Responses requests
-  - **Integrates with:** pgmq (`ai_requests`, `ai_results`) - Message transport
+  - **Integrates with:** Pgflow - Workflow orchestration system
 
   ## Template Version
 
@@ -684,6 +747,9 @@ defmodule Singularity.LLM.Service do
   Automatically selects the right complexity level based on task type,
   optimizing for both cost and quality.
 
+  Uses system-wide LLM.Config if provider is available, otherwise falls back
+  to TaskTypeRegistry.
+
   ## Examples
 
       iex> Service.determine_complexity_for_task(:architect)
@@ -698,6 +764,10 @@ defmodule Singularity.LLM.Service do
       iex> Service.determine_complexity_for_task(:unknown, default_complexity: :medium)
       :medium
 
+      # With provider context (uses LLM.Config)
+      iex> Service.determine_complexity_for_task(:architect, provider: "claude")
+      :complex
+
   ## Task Type Mapping
 
   - **Complex:** :architect, :code_generation, :pattern_analyzer, :refactoring, :code_analysis, :qa
@@ -708,30 +778,27 @@ defmodule Singularity.LLM.Service do
   def determine_complexity_for_task(task_type, opts \\ [])
 
   def determine_complexity_for_task(task_type, opts) when is_atom(task_type) do
-    case task_type do
-      # Complex tasks - require premium models
-      task
-      when task in [
-             :architect,
-             :code_generation,
-             :pattern_analyzer,
-             :refactoring,
-             :code_analysis,
-             :qa
-           ] ->
-        :complex
-
-      # Medium tasks - balanced models
-      task when task in [:coder, :decomposition, :planning, :pseudocode, :chat] ->
-        :medium
-
-      # Simple tasks - fast models
-      task when task in [:classifier, :parser, :simple_chat, :web_search] ->
-        :simple
-
-      # Unknown/default
-      _ ->
-        Keyword.get(opts, :default_complexity, :medium)
+    # Try system-wide config if provider is available
+    case Keyword.get(opts, :provider) do
+      nil ->
+        # Fallback to TaskTypeRegistry
+        case Singularity.MetaRegistry.TaskTypeRegistry.get_complexity(task_type) do
+          nil -> Keyword.get(opts, :default_complexity, :medium)
+          complexity -> complexity
+        end
+      
+      provider ->
+        # Use system-wide LLM.Config
+        context = %{task_type: task_type}
+        case Singularity.LLM.Config.get_task_complexity(provider, context) do
+          {:ok, complexity} -> complexity
+          {:error, _} ->
+            # Fallback to TaskTypeRegistry if config fails
+            case Singularity.MetaRegistry.TaskTypeRegistry.get_complexity(task_type) do
+              nil -> Keyword.get(opts, :default_complexity, :medium)
+              complexity -> complexity
+            end
+        end
     end
   end
 
@@ -750,26 +817,46 @@ defmodule Singularity.LLM.Service do
 
   @doc """
   Get available models.
+  
+  If provider is specified in opts, uses system-wide LLM.Config.
+  Otherwise returns all default models.
+  
+  ## Examples
+  
+      iex> Service.get_available_models()
+      ["claude-sonnet-4.5", "gemini-1.5-flash", ...]
+      
+      iex> Service.get_available_models(provider: "claude")
+      {:ok, ["claude-3-5-sonnet-20241022", ...]}
   """
-  @spec get_available_models() :: [model()]
-  def get_available_models do
-    [
-      # Claude models
-      "claude-sonnet-4.5",
-      "claude-3-5-haiku-20241022",
-      "claude-3-5-sonnet-20241022",
-      "opus-4.1",
-      # Gemini models
-      "gemini-1.5-flash",
-      "gemini-2.5-pro",
-      # Codex models
-      "gpt-5-codex",
-      "o3-mini-codex",
-      # Cursor models
-      "cursor-auto",
-      # Copilot models
-      "github-copilot"
-    ]
+  @spec get_available_models(keyword()) :: [model()] | {:ok, [model()]} | {:error, term()}
+  def get_available_models(opts \\ []) do
+    case Keyword.get(opts, :provider) do
+      nil ->
+        # Return all default models
+        [
+          # Claude models
+          "claude-sonnet-4.5",
+          "claude-3-5-haiku-20241022",
+          "claude-3-5-sonnet-20241022",
+          "opus-4.1",
+          # Gemini models
+          "gemini-1.5-flash",
+          "gemini-2.5-pro",
+          # Codex models
+          "gpt-5-codex",
+          "o3-mini-codex",
+          # Cursor models
+          "cursor-auto",
+          # Copilot models
+          "github-copilot"
+        ]
+      
+      provider ->
+        # Use system-wide LLM.Config
+        context = Map.new(Keyword.take(opts, [:task_type, :complexity]))
+        Singularity.LLM.Config.get_models(provider, context)
+    end
   end
 
   defp build_request(messages, opts, overrides \\ %{}) do
@@ -820,50 +907,67 @@ defmodule Singularity.LLM.Service do
     |> maybe_put_capabilities(capabilities)
   end
 
-  # LLM communication via pgmq queue system
-  # @calls: SharedQueuePublisher.publish_llm_request/1 - Publish to llm_requests queue
-  # @calls: SharedQueueConsumer - Consumes llm_results queue asynchronously
-  # @error_flow: :timeout -> Request exceeded timeout threshold
-  # @error_flow: :unavailable -> Nexus queue consumer not running
+  # LLM communication via pgflow workflow system
+  # @calls: Pgflow.Executor.execute/3 - Execute LlmRequest workflow synchronously
+  # @error_flow: :timeout -> Workflow execution exceeded timeout threshold
+  # @error_flow: :workflow_failed -> Pgflow workflow execution failed
   defp dispatch_request(request, opts) do
-    # Publish LLM request to pgmq queue for Nexus to consume
-    # This provides asynchronous LLM calls with full observability
+    # Execute LLM request via pgflow workflow synchronously
+    # This replaces both pgmq publishing and polling with direct workflow execution
 
     task_type = Map.get(request, :task_type, :medium)
     messages = Map.get(request, :messages, [])
     complexity = Map.get(request, :complexity, :medium)
 
-    llm_request = %{
-      request_id: Ecto.UUID.generate(),
-      agent_id: "singularity-llm-service",
-      complexity: complexity,
-      messages: messages,
-      task_type: task_type,
-      api_version: "chat_completions",
-      max_tokens: Keyword.get(opts, :max_tokens, 2000),
-      temperature: Keyword.get(opts, :temperature, 0.7),
-      timestamp: DateTime.utc_now()
-    }
+    # Convert task_type to string for workflow
+    task_type_str = if is_atom(task_type), do: Atom.to_string(task_type), else: task_type
 
-    case Singularity.SharedQueuePublisher.publish_llm_request(llm_request) do
-      :ok ->
-        # TODO: Implement synchronous waiting for response via SharedQueueConsumer
-        # For now, return a placeholder response
-        {:ok,
-         %{
-           content: "LLM request published to queue (async response pending)",
-           model: "queued",
-           usage: %{prompt_tokens: 0, completion_tokens: 0, total_tokens: 0}
-         }}
+    # Prepare workflow arguments
+    workflow_args = %{
+      "request_id" => Ecto.UUID.generate(),
+      "task_type" => task_type_str,
+      "messages" => messages,
+      "model" => Keyword.get(opts, :model, "auto"),
+      "provider" => Keyword.get(opts, :provider, "auto"),
+      "api_version" => Keyword.get(opts, :api_version, "responses"),
+      "complexity" => if(is_atom(complexity), do: Atom.to_string(complexity), else: complexity),
+      "max_tokens" => Keyword.get(opts, :max_tokens),
+      "temperature" => Keyword.get(opts, :temperature),
+      "agent_id" => Keyword.get(opts, :agent_id),
+      "previous_response_id" => Keyword.get(opts, :previous_response_id),
+      "mcp_servers" => Keyword.get(opts, :mcp_servers),
+      "store" => Keyword.get(opts, :store),
+      "tools" => Keyword.get(opts, :tools)
+    }
+    # Remove nil values to keep message compact
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+
+    Logger.info("Executing LLM workflow synchronously",
+      task_type: task_type,
+      complexity: complexity,
+      message_count: length(messages)
+    )
+
+    # Execute the LLM workflow synchronously via Pgflow
+    case Pgflow.Executor.execute(Singularity.Workflows.LlmRequest, workflow_args, timeout: 30000) do
+      {:ok, result} ->
+        Logger.info("LLM workflow completed synchronously",
+          task_type: task_type,
+          complexity: complexity
+        )
+
+        # Return the actual LLM result
+        {:ok, result}
 
       {:error, reason} ->
-        Logger.error("Failed to publish LLM request to pgmq",
+        Logger.error("LLM workflow execution failed",
           reason: reason,
           task_type: task_type,
           complexity: complexity
         )
 
-        {:error, :pgmq_error}
+        {:error, :workflow_failed}
     end
   end
 
@@ -1007,62 +1111,5 @@ defmodule Singularity.LLM.Service do
       breach_percentage: (duration / threshold * 100) |> Float.round(2),
       severity: :high
     })
-  end
-
-  @doc """
-  Wait for a Responses API result synchronously.
-
-  This is a helper function for cases where you need to wait for the result
-  of a Responses API call that was made asynchronously.
-
-  ## Parameters
-
-  - `request_id` - The request ID returned from `dispatch_request/2`
-  - `timeout` - Maximum time to wait in milliseconds (default: 30_000)
-
-  ## Returns
-
-  - `{:ok, result}` - The LLM response result
-  - `{:error, :timeout}` - Request timed out
-  - `{:error, reason}` - Other error occurred
-
-  ## Examples
-
-      # Wait for a result with default timeout
-      {:ok, result} = await_responses_result("req_123")
-
-      # Wait with custom timeout
-      {:ok, result} = await_responses_result("req_123", 60_000)
-  """
-  @spec await_responses_result(String.t(), timeout()) :: {:ok, map()} | {:error, term()}
-  def await_responses_result(request_id, timeout \\ 30_000) do
-    start_time = System.monotonic_time(:millisecond)
-
-    case wait_for_result(request_id, start_time, timeout) do
-      {:ok, result} -> {:ok, result}
-      {:error, :timeout} -> {:error, :timeout}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp wait_for_result(request_id, start_time, timeout) do
-    case LlmResultPoller.get_result(request_id) do
-      {:ok, result} ->
-        {:ok, result}
-
-      {:error, :not_found} ->
-        elapsed = System.monotonic_time(:millisecond) - start_time
-
-        if elapsed >= timeout do
-          {:error, :timeout}
-        else
-          # Wait a bit before checking again
-          Process.sleep(100)
-          wait_for_result(request_id, start_time, timeout)
-        end
-
-      {:error, reason} ->
-        {:error, reason}
-    end
   end
 end

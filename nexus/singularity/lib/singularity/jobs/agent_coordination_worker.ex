@@ -69,9 +69,10 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
         )
 
         # Record result for tracking
+        instance_id = System.get_env("INSTANCE_ID", "default")
         Singularity.Schemas.Execution.JobResult.record_success(
           workflow: "Singularity.Workflows.AgentCoordination",
-          instance_id: Pgflow.Instance.Registry.instance_id(),
+          instance_id: instance_id,
           job_id: job_id,
           input: input,
           output: result,
@@ -90,9 +91,10 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
         )
 
         # Record failure for tracking
+        instance_id = System.get_env("INSTANCE_ID", "default")
         Singularity.Schemas.Execution.JobResult.record_failure(
           workflow: "Singularity.Workflows.AgentCoordination",
-          instance_id: Pgflow.Instance.Registry.instance_id(),
+          instance_id: instance_id,
           job_id: job_id,
           input: input,
           error: inspect(reason),

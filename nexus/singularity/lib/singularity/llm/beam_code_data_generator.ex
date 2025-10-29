@@ -117,7 +117,7 @@ defmodule Singularity.LLM.BeamCodeDataGenerator do
   def load_jsonl(path) do
     File.stream!(path)
     |> Stream.map(&String.trim/1)
-    |> Stream.reject(&String.empty?/1)
+    |> Stream.reject(&(&1 == ""))
     |> Stream.map(&Jason.decode!/1)
     |> Enum.to_list()
   end

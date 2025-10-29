@@ -43,14 +43,10 @@ defmodule Singularity.Dashboard.SystemHealthPage do
   dashboard, liveview, monitoring, health-metrics, real-time, analytics
   """
 
-  use Phoenix.LiveDashboard.PageBuilder
   require Logger
-
   alias Singularity.Analysis.CodebaseHealthTracker
   alias Singularity.Search.SearchAnalytics
-  alias Singularity.Knowledge.LearningLoop
-  alias Singularity.Agents.RemediationEngine
-  alias Singularity.TechnologyAgent
+  alias Singularity.Knowledge.ArtifactStore
 
   @impl true
   def menu_link(_, _) do
@@ -58,7 +54,11 @@ defmodule Singularity.Dashboard.SystemHealthPage do
   end
 
   @impl true
-  def render_page(assigns) do
+  def render(assigns) do
+    render_page(assigns)
+  end
+
+  defp render_page(_assigns) do
     # Collect metrics from all systems
     health_metrics = fetch_health_metrics()
     search_metrics = fetch_search_metrics()
@@ -115,12 +115,58 @@ defmodule Singularity.Dashboard.SystemHealthPage do
   end
 
   defp fetch_learning_metrics do
-    case LearningLoop.get_learning_insights() do
-      {:ok, insights} -> insights
-      {:error, _} -> default_learning_metrics()
+    try do
+      # Use Pipeline.Learning for learning insights
+      kpis = Singularity.Pipeline.Learning.get_kpis()
+
+      # Query real metrics from knowledge store with proper SASL error reporting
+      total_artifacts =
+        case ArtifactStore.count_artifacts() do
+          {:ok, count} when is_integer(count) -> count
+          {:error, reason} ->
+            SASL.database_failure(
+              :artifact_count_failed,
+              "Failed to count artifacts from knowledge store",
+              reason: inspect(reason)
+            )
+            0
+        end
+
+      ready_to_promote =
+        case ArtifactStore.count_ready_to_promote() do
+          {:ok, count} when is_integer(count) -> count
+          {:error, reason} ->
+            SASL.database_failure(
+              :promotion_count_failed,
+              "Failed to count ready-to-promote artifacts",
+              reason: inspect(reason)
+            )
+            0
+        end
+
+      %{
+        total_artifacts: total_artifacts,
+        actively_learning:
+          if(kpis && Map.has_key?(kpis, :execution_success_rate) && kpis.execution_success_rate,
+            do: 1,
+            else: 0
+          ),
+        ready_to_promote: ready_to_promote,
+        system_learning_rate:
+          if(kpis && Map.has_key?(kpis, :execution_success_rate) && kpis.execution_success_rate,
+            do: kpis.execution_success_rate,
+            else: 0.0
+          )
+      }
+    rescue
+      error ->
+        SASL.infrastructure_failure(
+          :learning_metrics_fetch_failed,
+          "Failed to fetch learning metrics - using defaults",
+          error: inspect(error)
+        )
+        default_learning_metrics()
     end
-  rescue
-    _ -> default_learning_metrics()
   end
 
   defp fetch_remediation_metrics do

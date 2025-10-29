@@ -83,7 +83,13 @@ defmodule CentralCloud.LLMTeamOrchestrator do
 
     Logger.debug("[LLMTeam] Specialist summary", summary: summary)
 
-    # TODO: persist into analytics tables once schema is defined
+    team_results = specialists
+    request_id =
+      result[:request_id] ||
+        result["request_id"] ||
+        generate_request_id()
+
+    persist_team_analytics(team_results, request_id)
     :ok
   end
 
@@ -103,4 +109,26 @@ defmodule CentralCloud.LLMTeamOrchestrator do
 
   defp format_confidence(nil), do: "n/a"
   defp format_confidence(value), do: :io_lib.format("~.2f", [value]) |> IO.iodata_to_binary()
+
+  defp persist_team_analytics(team_results, request_id) do
+    # Store team analytics in database
+    try do
+      analytics_data = %{
+        "request_id" => request_id,
+        "team_results" => team_results,
+        "timestamp" => DateTime.utc_now(),
+        "specialist_count" => length(team_results)
+      }
+      
+      # Store in usage_analytics table
+      CentralCloud.Repo.query("""
+        INSERT INTO usage_analytics (session_id, event_type, data, created_at)
+        VALUES ($1, $2, $3, $4)
+      """, [request_id, "llm_team_analysis", Jason.encode!(analytics_data), DateTime.utc_now()])
+      
+      Logger.debug("Persisted team analytics", request_id: request_id)
+    rescue
+      e -> Logger.warning("Failed to persist team analytics: #{inspect(e)}")
+    end
+  end
 end

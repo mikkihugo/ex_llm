@@ -123,6 +123,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
   alias Singularity.{Autonomy, ProcessRegistry}
   alias Autonomy.{RuleEngine, Correlation}
+  alias Singularity.LLM.Config
 
   defstruct [
     :id,
@@ -315,7 +316,19 @@ defmodule Singularity.Agents.CostOptimizedAgent do
       temperature: 0.7
     ]
 
-    case Singularity.LLM.Service.call(:complex, messages, opts) do
+    # Get complexity from centralized config (database ? TaskTypeRegistry fallback)
+    provider = Keyword.get(opts, :provider, "auto")
+    task_type = task.type || :code_generation
+    context = %{task_type: task_type}
+    
+    complexity = case Config.get_task_complexity(provider, context) do
+      {:ok, comp} -> comp
+      {:error, _} -> :complex  # Fallback for code generation tasks
+    end
+    
+    opts_with_complexity = Keyword.put(opts, :complexity, complexity)
+
+    case Singularity.LLM.Service.call(complexity, messages, opts_with_complexity) do
       {:ok, response} ->
         # Write code to workspace
         code_result = write_llm_code_to_workspace(response.content, task, state.workspace)
@@ -407,7 +420,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     prompt_text = task.description || task.title || ""
 
     case Cache.find_similar(prompt_text, threshold: 0.92) do
-      {:hit, cached_response} ->
+      {:ok, cached_response} ->
         Logger.info("Cache hit for task",
           task_id: task.id,
           similarity: cached_response.similarity

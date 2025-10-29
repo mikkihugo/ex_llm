@@ -142,7 +142,7 @@ defmodule Singularity.Agents.Coordination.AgentRouter do
 
       {:error, reason} ->
         if should_retry?(reason) and retry_count > 1 do
-          Logger.warn("[AgentRouter] Task failed, retrying",
+          Logger.warning("[AgentRouter] Task failed, retrying",
             task_id: task[:id],
             agent: agent_name,
             reason: inspect(reason),

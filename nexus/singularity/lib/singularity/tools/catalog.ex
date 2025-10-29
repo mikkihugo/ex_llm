@@ -18,10 +18,6 @@ defmodule Singularity.Tools.Catalog do
     update(provider, fn existing -> Enum.reduce(tools, existing, &Map.put(&2, &1.name, &1)) end)
   end
 
-  # Legacy aliases for backward compatibility
-  defdelegate add_tool(provider, tool), to: __MODULE__, as: :add_tool
-  defdelegate add_tools(provider, tools), to: __MODULE__, as: :add_tools
-
   @spec get_tool(term(), String.t()) :: {:ok, any()} | :error
   def get_tool(provider, name) do
     case get_tools(provider) do
@@ -34,9 +30,6 @@ defmodule Singularity.Tools.Catalog do
   def list_tools(provider) do
     get_tools(provider) |> Map.values()
   end
-
-  # Legacy aliases for backward compatibility
-  defdelegate get_tool(provider, name), to: __MODULE__, as: :get_tool
 
   @spec clear(term()) :: :ok
   def clear(provider) do

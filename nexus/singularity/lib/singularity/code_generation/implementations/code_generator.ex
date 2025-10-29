@@ -104,6 +104,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
   require Logger
   alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
+  alias Singularity.LLM.Config
   # Using current queue-based LLM service instead of old CodeModel
   @type generation_method :: :llm_api | :auto
   @type complexity :: :simple | :medium | :complex
@@ -151,7 +152,7 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     method = Keyword.get(opts, :method, :auto)
     language = Keyword.get(opts, :language, "elixir")
     quality = Keyword.get(opts, :quality, :production)
-    complexity = Keyword.get(opts, :complexity, detect_complexity(task))
+    complexity = Keyword.get(opts, :complexity, detect_complexity(task, Keyword.get(opts, :provider, "auto")))
     use_rag = Keyword.get(opts, :use_rag, true)
     top_k = Keyword.get(opts, :top_k, 5)
     repos = Keyword.get(opts, :repos)
@@ -336,8 +337,20 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     end
   end
 
-  # Detect task complexity from description
-  defp detect_complexity(task) do
+  # Detect task complexity from description using centralized config
+  defp detect_complexity(task, provider \\ "auto") do
+    # Use centralized LLM.Config to get complexity (database → TaskTypeRegistry fallback)
+    context = %{task: task}
+    
+    case Config.get_task_complexity(provider, context) do
+      {:ok, complexity} -> complexity
+      {:error, _} ->
+        # Fallback: detect from task text
+        detect_complexity_fallback(task)
+    end
+  end
+
+  defp detect_complexity_fallback(task) do
     task_lower = String.downcase(task)
 
     cond do
@@ -349,9 +362,12 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
       String.contains?(task_lower, ["genserver", "supervisor", "implement", "integrate", "api"]) ->
         :medium
 
-      # Simple by default
-      true ->
+      # Simple keywords
+      String.contains?(task_lower, ["function", "helper", "util", "simple"]) ->
         :simple
+
+      # Default
+      true -> :medium
     end
   end
 

@@ -133,10 +133,68 @@ defmodule CentralCloud.SharedQueueManager do
 
     if queue_name in queue_names do
       Logger.debug("[SharedQueueManager] Getting stats for queue", %{queue: queue_name})
-      # TODO: Query pgmq.queue_list() and extract stats for this queue
-      {:ok, %{queue: queue_name}}
+      
+      case Ecto.Adapters.SQL.query(
+        CentralCloud.SharedQueueRepo,
+        "SELECT queue_name, messages, messages_in_flight FROM pgmq.queue_stats() WHERE queue_name = $1",
+        [queue_name]
+      ) do
+        {:ok, %{rows: [[_name, total, in_flight]]}} ->
+          {:ok, %{
+            queue: queue_name,
+            total_messages: total,
+            messages_in_flight: in_flight,
+            available: max(0, total - in_flight)
+          }}
+        
+        {:ok, %{rows: []}} ->
+          # Queue exists but no stats yet (empty queue)
+          {:ok, %{
+            queue: queue_name,
+            total_messages: 0,
+            messages_in_flight: 0,
+            available: 0
+          }}
+        
+        {:error, reason} ->
+          Logger.error("[SharedQueueManager] Failed to get queue stats", %{
+            queue: queue_name,
+            error: inspect(reason)
+          })
+          {:error, reason}
+      end
     else
       {:error, :invalid_queue}
+    end
+  end
+
+  @doc """
+  Get statistics for all queues.
+  
+  Returns a list of queue statistics.
+  """
+  def all_queue_stats do
+    case Ecto.Adapters.SQL.query(
+      CentralCloud.SharedQueueRepo,
+      "SELECT queue_name, messages, messages_in_flight FROM pgmq.queue_stats() ORDER BY queue_name",
+      []
+    ) do
+      {:ok, %{rows: rows}} ->
+        stats = Enum.map(rows, fn [name, total, in_flight] ->
+          %{
+            queue: name,
+            total_messages: total,
+            messages_in_flight: in_flight,
+            available: max(0, total - in_flight)
+          }
+        end)
+        {:ok, stats}
+      
+      {:error, reason} ->
+        Logger.error("[SharedQueueManager] Failed to get all queue stats", %{
+          error: inspect(reason)
+        })
+        {:error, reason}
     end
   end
 
@@ -203,7 +261,7 @@ defmodule CentralCloud.SharedQueueManager do
             {:cont, :ok}
 
           {:error, reason} ->
-            Logger.warn("[SharedQueueManager] Queue creation failed (may already exist)", %{
+            Logger.warning("[SharedQueueManager] Queue creation failed (may already exist)", %{
               queue: queue_name,
               error: inspect(reason)
             })

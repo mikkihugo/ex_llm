@@ -6,6 +6,13 @@ config :genesis, ecto_repos: [Genesis.Repo]
 # Configure logging
 config :logger, level: :info
 
+# SASL Configuration - Erlang System Architecture Support Libraries
+# Provides system monitoring, error logging, and progress reports
+config :sasl,
+  sasl_error_logger: {:file, ~c"log/sasl-error.log"},
+  errlog_type: :error,
+  utc_log: true
+
 # Configure Ecto repository
 config :genesis, Genesis.Repo,
   database: "genesis",

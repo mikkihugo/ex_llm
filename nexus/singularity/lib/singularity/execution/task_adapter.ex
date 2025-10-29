@@ -31,12 +31,7 @@ defmodule Singularity.Execution.TaskAdapter do
       priority: 10,
       description: "Background job execution via Oban"
     },
-    pgmq_adapter: %{
-      module: Singularity.Adapters.NatsAdapter,
-      enabled: true,
-      priority: 15,
-      description: "Async task execution via pgmq"
-    },
+    # pgmq_adapter removed - using PGFlow workflows instead
     genserver_adapter: %{
       module: Singularity.Adapters.GenServerAdapter,
       enabled: true,

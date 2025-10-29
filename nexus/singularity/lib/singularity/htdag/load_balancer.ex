@@ -33,9 +33,7 @@ defmodule Singularity.HTDAG.LoadBalancer do
   use GenServer
   require Logger
 
-  alias Singularity.HTDAG.AutoCodeIngestionDAG
-
-  @config Application.get_env(:singularity, :htdag_auto_ingestion, %{})
+  @config Application.compile_env(:singularity, :htdag_auto_ingestion, %{})
 
   # Rate limiting
   @rate_limit_per_minute @config[:rate_limit_per_minute] || 30
@@ -353,7 +351,7 @@ defmodule Singularity.HTDAG.LoadBalancer do
     # This is a simplified implementation
     try do
       # Use :os.cmd to get memory usage (Linux/macOS)
-      case :os.cmd('top -l 1 | grep "PhysMem" | awk \'{print $2}\' | sed \'s/M used,//\'') do
+      case :os.cmd(~c"top -l 1 | grep \"PhysMem\" | awk '{print $2}' | sed 's/M used,//'") do
         result when is_binary(result) ->
           used_mb =
             result

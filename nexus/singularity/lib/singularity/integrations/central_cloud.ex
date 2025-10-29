@@ -434,22 +434,69 @@ defmodule Singularity.CentralCloud do
     patterns = Map.get(results, :patterns, [])
     insights = Map.get(results, :insights, [])
 
-    # Store patterns in local database
+    # Store patterns in knowledge_artifacts table
     Enum.each(patterns, fn pattern ->
-      Logger.debug("Storing pattern locally", pattern_type: pattern.type)
-      # TODO: Store in Singularity.Schemas.TechnologyPattern or knowledge_artifacts table
-      # Decide: Use existing TechnologyPattern schema or new pattern type?
+      Logger.debug("Storing pattern locally", pattern_type: Map.get(pattern, :type))
+      
+      # Store as knowledge artifact with type: "technology_pattern"
+      store_pattern_as_artifact(pattern)
     end)
 
-    # Store insights in local database
+    # Store insights in knowledge_artifacts table
     Enum.each(insights, fn insight ->
-      Logger.debug("Storing insight locally", insight_type: insight.type)
-      # TODO: Create Singularity.Schemas.CodeInsight schema for storing insights
-      # Or: Store as JSONB in knowledge_artifacts with type: "code_insight"
+      Logger.debug("Storing insight locally", insight_type: Map.get(insight, :type))
+      
+      # Store as JSONB in knowledge_artifacts with type: "code_insight"
+      store_insight_as_artifact(insight)
     end)
 
     # Update central knowledge via pgmq
     update_central_knowledge(results)
+  end
+
+  defp store_pattern_as_artifact(pattern) do
+    alias Singularity.Knowledge.ArtifactStore
+    
+    artifact_type = "technology_pattern"
+    artifact_id = generate_pattern_key(pattern)
+    
+    content = %{
+      type: Map.get(pattern, :type),
+      name: Map.get(pattern, :name),
+      language: Map.get(pattern, :language),
+      framework: Map.get(pattern, :framework),
+      confidence: Map.get(pattern, :confidence, 0.5),
+      pattern_data: pattern
+    }
+
+    case ArtifactStore.store(artifact_type, artifact_id, content) do
+      {:ok, _} ->
+        Logger.debug("Pattern stored as knowledge artifact", artifact_id: artifact_id)
+      {:error, reason} ->
+        Logger.warning("Failed to store pattern artifact", reason: reason)
+    end
+  end
+
+  defp store_insight_as_artifact(insight) do
+    alias Singularity.Knowledge.ArtifactStore
+    
+    artifact_type = "code_insight"
+    artifact_id = 
+      :crypto.hash(:sha256, Jason.encode!(insight))
+      |> Base.encode16(case: :lower)
+    
+    content = %{
+      type: Map.get(insight, :type),
+      insight_data: insight,
+      created_at: DateTime.utc_now()
+    }
+
+    case ArtifactStore.store(artifact_type, artifact_id, content) do
+      {:ok, _} ->
+        Logger.debug("Insight stored as knowledge artifact", artifact_id: artifact_id)
+      {:error, reason} ->
+        Logger.warning("Failed to store insight artifact", reason: reason)
+    end
   end
 
   defp update_central_knowledge(results) do

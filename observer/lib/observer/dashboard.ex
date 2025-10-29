@@ -89,6 +89,23 @@ defmodule Observer.Dashboard do
     end)
   end
 
+  def sasl_traces do
+    safe_call(fn ->
+      case Observer.Dashboard.SASLTrace.get_traces(200) do
+        {:ok, trace_data} ->
+          stats_result = Observer.Dashboard.SASLTrace.get_stats()
+          stats = case stats_result do
+            {:ok, s} -> s
+            _ -> %{}
+          end
+          
+          {:ok, Map.merge(trace_data, %{stats: stats})}
+        
+        error -> error
+      end
+    end)
+  end
+
   def adaptive_threshold do
     safe_call(fn ->
       {:ok,

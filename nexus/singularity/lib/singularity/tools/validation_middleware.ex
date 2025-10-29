@@ -362,7 +362,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_code_quality(result, opts) do
+  defp validate_code_quality(result, _opts) do
     case InstructorSchemas.CodeQualityResult.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}
@@ -373,7 +373,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_tool_parameters(result, opts) do
+  defp validate_tool_parameters(result, _opts) do
     case InstructorSchemas.ToolParameters.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}
@@ -384,7 +384,7 @@ defmodule Singularity.Tools.ValidationMiddleware do
     end
   end
 
-  defp validate_refinement_feedback(result, opts) do
+  defp validate_refinement_feedback(result, _opts) do
     case InstructorSchemas.RefinementFeedback.cast_and_validate(result) do
       %Ecto.Changeset{valid?: true} ->
         {:ok, result}

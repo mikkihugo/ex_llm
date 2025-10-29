@@ -69,8 +69,49 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
     state =
       if preload_capabilities do
         Logger.info("[CapabilityRegistry] Preloading known agent capabilities")
-        # TODO: Load from database or config
-        state
+
+        # Load from config first (if available)
+        config_capabilities =
+          Application.get_env(:singularity, :agent_capabilities, %{})
+
+        # Register capabilities directly in state (bypassing GenServer call since we're in init)
+        Enum.reduce(config_capabilities, state, fn {agent_name, attrs}, acc ->
+          try do
+            cap = AgentCapability.new(agent_name, attrs)
+
+            # Add to main registry
+            capabilities = Map.put(acc.capabilities, agent_name, cap)
+
+            # Index by domain
+            index_by_domain =
+              Enum.reduce(cap.domains, acc.index_by_domain, fn domain, idx ->
+                agents = Map.get(idx, domain, [])
+                Map.put(idx, domain, [agent_name | agents])
+              end)
+
+            # Index by role
+            index_by_role = Map.put(acc.index_by_role, cap.role, agent_name)
+
+            Logger.info("[CapabilityRegistry] Preloaded agent: #{agent_name}",
+              domains: cap.domains,
+              role: cap.role
+            )
+
+            %{
+              acc
+              | capabilities: capabilities,
+                index_by_domain: index_by_domain,
+                index_by_role: index_by_role
+            }
+          rescue
+            error ->
+              Logger.warning("[CapabilityRegistry] Failed to preload #{agent_name}: #{inspect(error)}")
+              acc
+          end
+        end)
+
+        # TODO: Load from database (requires capability persistence schema)
+        # For now, capabilities are registered dynamically at runtime by agents
       else
         state
       end

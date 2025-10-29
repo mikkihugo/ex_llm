@@ -213,29 +213,56 @@ defmodule Singularity.PackageAndCodebaseSearch do
   defp search_your_code(query, codebase_id, limit)
        when is_binary(query) and is_binary(codebase_id) do
     try do
-      case Singularity.CodeSearch.search(query, %{
-             codebase_id: codebase_id,
-             limit: limit || 10
-           }) do
-        {:ok, results} ->
+      # Generate embedding for query
+      case Singularity.Embedding.EmbeddingGenerator.generate(query) do
+        {:ok, query_vector} ->
+          # Use semantic_search which requires a vector
+          # Returns list of maps with: path, language, similarity_score, quality_score, etc.
+          # Note: CodebaseMetadata doesn't store raw code content (see schema anti-patterns)
+          results =
+            Singularity.CodeSearch.Ecto.semantic_search(codebase_id, query_vector, limit || 10)
+
+          # Handle nil or empty results gracefully
           results
+          |> List.wrap()
           |> Enum.map(fn result ->
+            # Extract function names from functions map if available
+            function_names =
+              case result do
+                %{functions: %{} = funcs} when map_size(funcs) > 0 ->
+                  funcs
+                  |> Map.keys()
+                  |> Enum.take(5)
+
+                %{functions: funcs} when is_list(funcs) ->
+                  funcs |> Enum.take(5)
+
+                _ ->
+                  []
+              end
+
             %{
-              path: result.path,
-              similarity: result.similarity,
-              content_preview: String.slice(result.content || "", 0, 200) <> "...",
-              language: result.language,
-              functions: result.functions || [],
-              metadata: result.metadata || %{}
+              path: Map.get(result, :path, ""),
+              similarity: Map.get(result, :similarity_score, 0.0) || 0.0,
+              content_preview: "#{Map.get(result, :path, "unknown")} (#{Map.get(result, :language, "unknown")})",
+              language: Map.get(result, :language, "unknown"),
+              functions: function_names,
+              metadata: %{
+                quality_score: Map.get(result, :quality_score),
+                maintainability_index: Map.get(result, :maintainability_index),
+                file_type: Map.get(result, :file_type),
+                distance: Map.get(result, :distance)
+              }
             }
           end)
 
         {:error, reason} ->
-          Logger.warning("Semantic code search failed: #{inspect(reason)}")
+          Logger.warning("Failed to generate embedding for code search: #{inspect(reason)}")
           []
       end
     rescue
       error ->
+        Logger.error("Code search operation failed", error: inspect(error))
         SASL.external_service_failure(
           :code_search_failure,
           "Code search operation failed",
@@ -247,7 +274,11 @@ defmodule Singularity.PackageAndCodebaseSearch do
   end
 
   defp search_your_code(_query, nil, _limit) do
-    Logger.warning("No codebase_id provided for code search")
+    SASL.configuration_failure(
+      :codebase_id_missing,
+      "No codebase_id provided for code search",
+      []
+    )
     []
   end
 

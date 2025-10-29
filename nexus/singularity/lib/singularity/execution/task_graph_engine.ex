@@ -802,11 +802,37 @@ defmodule Singularity.Execution.TaskGraphEngine do
   defp parse_task_type("implementation"), do: :implementation
   defp parse_task_type(_), do: :implementation
 
-  # Resolve dependency references (for now, just return the list as-is)
+  # Resolve dependency references based on created task IDs
   @spec resolve_dependencies([String.t()], [String.t()]) :: [String.t()]
-  defp resolve_dependencies(deps, _created_ids) do
-    # TODO: Implement proper dependency resolution based on created task IDs
+  defp resolve_dependencies(deps, created_ids) do
+    # Resolve dependency references to actual task IDs
     deps
+    |> Enum.map(fn dep_ref ->
+      resolve_dependency_reference(dep_ref, created_ids)
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+
+  defp resolve_dependency_reference(dep_ref, created_ids) do
+    cond do
+      # Reference is already a task ID
+      dep_ref in created_ids ->
+        dep_ref
+
+      # Reference is a description - find matching task
+      String.match?(dep_ref, ~r/^(task|subtask|goal|milestone)_/) ->
+        # Try to find task by prefix match
+        Enum.find(created_ids, fn id ->
+          String.starts_with?(id, dep_ref)
+        end)
+
+      # Reference is a description - find by matching description
+      true ->
+        # Search for task with matching description (would need DAG context)
+        # For now, return nil if not found
+        nil
+    end
   end
 
   # Check if all dependencies for a task are completed

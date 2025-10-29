@@ -248,7 +248,7 @@ defmodule Singularity.LLM.BeamLLMTrainer do
     %{
       model: trainer.model_type,
       epochs_trained: trainer.trained_epochs,
-      total_training_time: Enum.sum(trainer.training_history, & &1.time_seconds),
+      total_training_time: trainer.training_history |> Enum.map(& &1.time_seconds) |> Enum.sum(),
       best_loss: min_loss.loss,
       worst_loss: max_loss.loss,
       best_accuracy: Enum.max_by(trainer.training_history, & &1.accuracy).accuracy,

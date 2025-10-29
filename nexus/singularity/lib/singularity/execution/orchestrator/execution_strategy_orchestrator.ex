@@ -18,6 +18,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
 
   require Logger
   alias Singularity.Execution.Orchestrator.ExecutionStrategy
+  alias Singularity.LLM.Config
 
   @doc """
   Execute a goal with automatic strategy detection.
@@ -27,6 +28,9 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   def execute(goal, opts \\ []) when is_map(goal) or is_binary(goal) do
     try do
       strategies = load_strategies_for_attempt(opts)
+      
+      # Enrich opts with complexity from centralized config if not already set
+      opts = enrich_opts_with_complexity(goal, opts)
 
       Logger.info("ExecutionStrategyOrchestrator: Executing goal", goal: inspect(goal))
 
@@ -86,6 +90,41 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   end
 
   # Private helpers
+
+  defp enrich_opts_with_complexity(goal, opts) do
+    # Only add complexity if not already set
+    if Keyword.has_key?(opts, :complexity) do
+      opts
+    else
+      # Get complexity from centralized config
+      provider = Keyword.get(opts, :provider, "auto")
+      task_type = extract_task_type_from_goal(goal)
+      context = %{task_type: task_type}
+      
+      case Config.get_task_complexity(provider, context) do
+        {:ok, complexity} ->
+          Keyword.put(opts, :complexity, complexity)
+        {:error, _} ->
+          opts  # Keep opts as-is if config fails
+      end
+    end
+  end
+
+  defp extract_task_type_from_goal(goal) when is_map(goal) do
+    goal[:task_type] || goal["task_type"] || goal[:type] || goal["type"] || :coder
+  end
+  
+  defp extract_task_type_from_goal(goal) when is_binary(goal) do
+    # Try to infer from goal text
+    cond do
+      String.contains?(String.downcase(goal), ["architect", "design", "system"]) -> :architect
+      String.contains?(String.downcase(goal), ["refactor", "improve"]) -> :refactoring
+      String.contains?(String.downcase(goal), ["generate", "create", "code"]) -> :code_generation
+      true -> :coder
+    end
+  end
+  
+  defp extract_task_type_from_goal(_), do: :coder
 
   defp load_strategies_for_attempt(opts) do
     case Keyword.get(opts, :strategies) do

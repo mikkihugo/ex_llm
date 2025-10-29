@@ -67,8 +67,8 @@ defmodule Singularity.Validators.SchemaValidator do
 
   defp check_required_fields(_data, violations, _opts), do: violations
 
-  defp check_field_types(data, violations, _opts) when is_map(data) do
-    _type_specs = Keyword.get(_opts, :field_types, %{})
+  defp check_field_types(data, violations, opts) when is_map(data) do
+    _type_specs = Keyword.get(opts, :field_types, %{})
 
     violations
     |> Enum.into([])

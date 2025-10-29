@@ -65,8 +65,16 @@ defmodule Singularity.Agents.Toolkit do
   @doc "Read a codebase from the project's CodeStore if available. Returns {:ok, codebase} or {:error, reason}."
   def read_codebase(codebase_id) do
     try do
-      if function_exported?(Singularity.CodeStore, :fetch_codebase, 1) do
-        Singularity.CodeStore.fetch_codebase(codebase_id)
+      if function_exported?(Singularity.CodeStore, :list_codebases, 0) do
+        # CodeStore doesn't have fetch_codebase, use list_codebases instead
+        case Singularity.CodeStore.list_codebases() do
+          codebases when is_list(codebases) ->
+            case Enum.find(codebases, & &1.id == codebase_id) do
+              nil -> {:error, :not_found}
+              codebase -> {:ok, codebase}
+            end
+          _ -> {:error, :no_codestore}
+        end
       else
         {:error, :no_codestore}
       end

@@ -125,20 +125,50 @@ defmodule Singularity.DomainVocabularyTrainer do
   end
 
   defp extract_template_variables do
-    # Find all {{VARIABLE}} patterns in templates
-    # TODO: Implement codebase_chunks table query for template variables
-    # For now, return common template variables used in the system
-    [
-      "{{MODULE_NAME}}",
-      "{{SUBJECT}}",
-      "{{MESSAGE_TYPE}}",
-      "{{TASK_NAME}}",
-      "{{REPO_NAME}}",
-      "{{LANGUAGE}}",
-      "{{FRAMEWORK}}",
-      "{{CODEBASE_PATH}}",
-      "{{TECHNOLOGY}}"
-    ]
+    # Query codebase_chunks table for template variable patterns
+    alias Singularity.Repo
+    import Ecto.Query
+
+    # Query for {{VARIABLE}} patterns in code chunks
+    template_pattern = ~r/\{\{([A-Z_]+)\}\}/
+    
+    query =
+      from(c in "codebase_chunks",
+        where: fragment("? ~ ?", c.content, ^template_pattern),
+        select: fragment("regexp_matches(?, ?) as variables", c.content, ^template_pattern),
+        limit: 10000
+      )
+
+    variables =
+      Repo.all(query)
+      |> Enum.flat_map(fn row ->
+        # Extract variables from regex matches
+        case row do
+          %{variables: vars} when is_list(vars) ->
+            vars
+            |> Enum.map(fn var -> "{{#{String.upcase(var)}}}" end)
+            |> Enum.uniq()
+          _ -> []
+        end
+      end)
+      |> Enum.uniq()
+
+    # Fallback to common variables if query returns empty
+    if Enum.empty?(variables) do
+      [
+        "{{MODULE_NAME}}",
+        "{{SUBJECT}}",
+        "{{MESSAGE_TYPE}}",
+        "{{TASK_NAME}}",
+        "{{REPO_NAME}}",
+        "{{LANGUAGE}}",
+        "{{FRAMEWORK}}",
+        "{{CODEBASE_PATH}}",
+        "{{TECHNOLOGY}}"
+      ]
+    else
+      variables
+    end
   end
 
   defp extract_framework_patterns do

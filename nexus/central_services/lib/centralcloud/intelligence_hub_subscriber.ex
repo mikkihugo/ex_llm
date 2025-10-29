@@ -28,7 +28,8 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   require Logger
   
   alias CentralCloud.Repo
-  alias CentralCloud.Schemas.{AnalysisResult, Package, PromptTemplate, CodeSnippet}
+  alias CentralCloud.Schemas.{AnalysisResult, Package, CodeSnippet}
+  alias CentralCloud.{TemplateService, PromptManagement}
   
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -208,13 +209,13 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   defp handle_payload("intelligence_hub_knowledge_request", %{"type" => "knowledge_request"} = payload) do
     Logger.debug("Knowledge request: #{payload["knowledge_id"]}")
     
-    # Query from various tables
-    # This is a simplified version - could be expanded
+    # Query from various tables using new template system
     knowledge_id = payload["knowledge_id"]
     
     cond do
-      template = Repo.get_by(PromptTemplate, template_id: knowledge_id) ->
-        {:ok, Map.from_struct(template)}
+      # Try template system first
+      {:ok, template} = TemplateService.get_template(knowledge_id) ->
+        {:ok, template}
       
       snippet = Repo.get_by(CodeSnippet, snippet_id: knowledge_id) ->
         {:ok, Map.from_struct(snippet)}
@@ -279,19 +280,35 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   defp store_prompt_template(engine, data) do
-    %PromptTemplate{}
-    |> PromptTemplate.changeset(%{
-      template_id: data["id"] || generate_id(),
-      name: data["name"],
-      template: data["template"],
-      variables: data["variables"] || [],
-      description: data["description"],
-      metadata: %{
-        engine: engine,
-        context: data["context"] || %{}
-      }
-    })
-    |> Repo.insert()
+    # Use new template system via TemplateService
+    template_data = %{
+      "id" => data["id"] || generate_id(),
+      "category" => "prompt",
+      "metadata" => %{
+        "name" => data["name"],
+        "description" => data["description"] || "",
+        "language" => data["language"] || "general",
+        "engine" => engine,
+        "context" => data["context"] || %{}
+      },
+      "content" => %{
+        "type" => "prompt",
+        "system" => data["template"] || "",
+        "variables" => data["variables"] || [],
+        "user" => ""
+      },
+      "version" => data["version"] || "1.0.0"
+    }
+    
+    case TemplateService.store_template(template_data) do
+      {:ok, template} ->
+        Logger.debug("Stored prompt template from #{engine}: #{template["id"]}")
+        {:ok, template}
+      
+      {:error, reason} ->
+        Logger.error("Failed to store prompt template: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
   
   defp store_pattern_knowledge(knowledge) do
@@ -312,19 +329,33 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   defp store_template_knowledge(knowledge) do
-    %PromptTemplate{}
-    |> PromptTemplate.changeset(%{
-      template_id: knowledge["id"],
-      name: knowledge["data"]["name"],
-      template: knowledge["data"]["template"],
-      variables: knowledge["data"]["variables"] || [],
-      description: knowledge["data"]["description"],
-      metadata: knowledge
-    })
-    |> Repo.insert(
-      on_conflict: {:replace, [:template, :variables, :description, :metadata, :updated_at]},
-      conflict_target: :template_id
-    )
+    # Use new template system via TemplateService
+    template_data = %{
+      "id" => knowledge["id"],
+      "category" => "prompt",
+      "metadata" => %{
+        "name" => knowledge["data"]["name"],
+        "description" => knowledge["data"]["description"] || "",
+        "language" => knowledge["data"]["language"] || "general"
+      },
+      "content" => %{
+        "type" => "prompt",
+        "system" => knowledge["data"]["template"] || "",
+        "variables" => knowledge["data"]["variables"] || [],
+        "user" => ""
+      },
+      "version" => knowledge["data"]["version"] || "1.0.0"
+    }
+    
+    case TemplateService.store_template(template_data) do
+      {:ok, template} ->
+        Logger.debug("Stored template knowledge: #{template["id"]}")
+        {:ok, template}
+      
+      {:error, reason} ->
+        Logger.error("Failed to store template knowledge: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
   
   defp store_generic_knowledge(knowledge) do

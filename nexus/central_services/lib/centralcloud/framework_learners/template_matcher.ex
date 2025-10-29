@@ -143,7 +143,8 @@ defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
   end
 
   defp fetch_templates_from_knowledge_cache do
-    case TemplateService.search_templates("", template_type: "framework", limit: 100) do
+    # Use TemplateService to search for framework templates
+    case TemplateService.list_templates(category: "framework", deprecated: false) do
       {:ok, templates} ->
         Logger.debug("Template matcher: Loaded #{length(templates)} framework templates")
         templates

@@ -325,9 +325,6 @@ defmodule Singularity.Tools.Knowledge do
            examples: examples,
            count: length(examples)
          }}
-
-      {:error, reason} ->
-        {:error, "Example search failed: #{inspect(reason)}"}
     end
   end
 

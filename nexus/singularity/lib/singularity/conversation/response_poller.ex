@@ -20,7 +20,7 @@ defmodule Singularity.Conversation.ResponsePoller do
 
   require Logger
 
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Database.MessageQueue
 
   @poll_interval_ms 500
   @max_retries 3
@@ -117,12 +117,13 @@ defmodule Singularity.Conversation.ResponsePoller do
   # Private: Try to read a response from pgmq with retries
   defp read_response(queue_name, retry_count \\ 0) do
     try do
-      case PgmqClient.read_messages(queue_name, 1) do
-        [{_msg_id, response}] ->
-          # Message found, parse it
+      case MessageQueue.receive_message(queue_name) do
+        {:ok, {msg_id, response}} ->
+          # Acknowledge message
+          MessageQueue.acknowledge(queue_name, msg_id)
           {:ok, response}
 
-        [] ->
+        :empty ->
           # Queue is empty
           :empty
 

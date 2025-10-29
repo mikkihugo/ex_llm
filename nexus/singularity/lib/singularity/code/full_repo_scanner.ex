@@ -49,14 +49,17 @@ defmodule Singularity.Code.FullRepoScanner do
   require Logger
 
   # INTEGRATION: Knowledge search and code generation
+  # Note: These are defined for integration documentation/interface - used in documentation strings
   alias Singularity.Store
   alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
   alias Singularity.HotReload.SafeCodeChangeDispatcher
 
   # INTEGRATION: TaskGraph planning and tracing
+  # Note: TaskGraph defined for integration documentation - used in documentation strings
   alias Singularity.Execution.Planning.{TaskGraph, ExecutionTracer}
 
   # INTEGRATION: Self-improvement (learning from execution)
+  # Note: SelfImprovingAgent defined for integration documentation - used in documentation strings
   alias Singularity.SelfImprovingAgent
 
   # INTEGRATION: LLM service with Lua script support for dynamic fix generation
@@ -844,7 +847,7 @@ defmodule Singularity.Code.FullRepoScanner do
           action = "Generated fix via Lua script"
           File.write!(file_path, updated_content)
 
-          Logger.info("✓ Fixed broken dependency in #{file_path}")
+          Logger.info("? Fixed broken dependency in #{file_path}")
 
           dispatch_metadata = %{
             "reason" => "task_graph_auto_fix",
@@ -940,7 +943,7 @@ defmodule Singularity.Code.FullRepoScanner do
         {:ok, %{content: updated}} ->
           File.write!(file_path, updated)
 
-          Logger.info("✓ Added documentation to #{file_path}")
+          Logger.info("? Added documentation to #{file_path}")
 
           metadata = %{
             "reason" => "task_graph_auto_fix",
@@ -1035,7 +1038,7 @@ defmodule Singularity.Code.FullRepoScanner do
           # Parse the JSON analysis
           case Jason.decode(analysis_json) do
             {:ok, analysis} ->
-              Logger.info("✓ Analyzed isolated module: #{analysis["recommendation"]}")
+              Logger.info("? Analyzed isolated module: #{analysis["recommendation"]}")
 
               fix = %{
                 type: :isolated_module_fix,

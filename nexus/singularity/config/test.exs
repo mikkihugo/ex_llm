@@ -19,11 +19,9 @@ config :singularity, Singularity.Repo,
 # Disable Oban in tests - it's not needed and causes initialization issues
 config :singularity, :oban_enabled, false
 
-# Oban configuration for test mode
-# CRITICAL: start_supervised: false prevents OTP from auto-starting Oban
-# This allows us to handle Oban startup explicitly in the supervision tree
-config :oban,
-  start_supervised: false,
-  engine: Oban.Engines.Inline,
-  queues: [default: [concurrency: 1]],
-  repo: Singularity.Repo
+# SASL Configuration for Tests
+# Silence SASL in tests (errors logged via ExUnit)
+config :sasl,
+  sasl_error_logger: :silent,
+  errlog_type: :error,
+  utc_log: true

@@ -14,6 +14,7 @@ defmodule CentralCloud.Engines.ParserEngine do
   #   path: "../../../../rust/parser_engine"
 
   require Logger
+  alias Pgflow
 
   @doc """
   Parse a single file using the ParserEngine Rust engine.
@@ -68,6 +69,20 @@ defmodule CentralCloud.Engines.ParserEngine do
     end
   end
 
-  # NIF function (loaded from shared Rust crate)
-  defp parser_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  # Delegate to Singularity via pgflow (Rust NIFs compiled only in Singularity)
+  defp parser_engine_call(operation, request) do
+    # Route to Singularity via pgflow
+    case Pgflow.send_with_notify("engine.parser.#{operation}", request, CentralCloud.Repo, timeout: 30_000) do
+      {:ok, response} ->
+        {:ok, response}
+      
+      {:error, :timeout} ->
+        Logger.error("Parser engine call timed out", operation: operation)
+        {:error, :timeout}
+      
+      {:error, reason} ->
+        Logger.error("Parser engine call failed", operation: operation, reason: inspect(reason))
+        {:error, reason}
+    end
+  end
 end

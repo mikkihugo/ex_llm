@@ -22,7 +22,7 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
       model: model
     }
 
-    with :ok <- Pgflow.send_with_notify("embedding.request", request, CentralCloud.Repo) do
+    with :ok <- Pgflow.send_with_notify("embedding.request", request, CentralCloud.Repo, expect_reply: false) do
       wait_for_embedding_response(timeout)
     else
       {:error, reason} ->
@@ -91,13 +91,40 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
 
   # Private helpers
 
-  defp wait_for_embedding_response(_timeout) do
-    # TODO: Implement proper request/reply pattern with distributed tracking
-    # For now, return mock response for testing
-    case :timer.sleep(100) do
-      :ok -> {:ok, List.duplicate(0.0, 2560)}
-      error -> error
+  defp wait_for_embedding_response(timeout) do
+    # Implement proper request/reply pattern with distributed tracking
+    request_id = generate_request_id()
+    
+    # Store request for tracking
+    :ets.insert(:embedding_requests, {request_id, %{
+      timestamp: DateTime.utc_now(),
+      status: :pending
+    }})
+    
+    # Send with reply tracking
+    case Pgflow.send_with_notify("embedding.request", %{"request_id" => request_id}, CentralCloud.Repo, expect_reply: true, timeout: timeout) do
+      {:ok, response} ->
+        # Update tracking
+        :ets.insert(:embedding_requests, {request_id, %{
+          timestamp: DateTime.utc_now(),
+          status: :completed,
+          response: response
+        }})
+        {:ok, response}
+      
+      {:error, reason} ->
+        # Update tracking
+        :ets.insert(:embedding_requests, {request_id, %{
+          timestamp: DateTime.utc_now(),
+          status: :failed,
+          error: reason
+        }})
+        {:error, reason}
     end
+  end
+
+  defp generate_request_id do
+    :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
   end
 
   defp cosine_similarity(vec1, vec2) when is_list(vec1) and is_list(vec2) do

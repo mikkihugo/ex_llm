@@ -20,8 +20,7 @@ defmodule Singularity.ArchitectureEngine.MetaRegistry.Supervisor do
     Logger.info("Starting Architecture Engine Meta-Registry Supervisor...")
 
     children = [
-      # Start the message handlers
-      {Singularity.ArchitectureEngine.MetaRegistry.NatsSubscriptionRouter, []}
+      # Message handlers removed - using PGFlow workflows instead
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

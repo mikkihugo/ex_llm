@@ -83,7 +83,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       purpose: "Task decomposition via LLM"
       critical: true
 
-    - module: Singularity.Jobs.PgmqClient.NatsClient
+    - module: Singularity.Messaging.Client (PGFlow-based)
       function: publish/2, subscribe/1
       purpose: "Publish execution requests, subscribe to responses"
       critical: false
@@ -207,7 +207,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   require Logger
 
   # INTEGRATION: LLM (task decomposition via pgmq)
-  alias Singularity.LLM.Service
+  alias Singularity.LLM.{Service, Config}
 
   # INTEGRATION: Core DAG operations (data structures)
   alias Singularity.Execution.Planning.TaskGraphCore
@@ -490,9 +490,34 @@ defmodule Singularity.Execution.Planning.TaskGraph do
 
     messages = [%{role: "user", content: prompt}]
 
-    case Service.call(:medium, messages,
-           task_type: "architect",
-           capabilities: [:reasoning, :speed]
+    provider =
+      task[:provider] ||
+        Map.get(task, "provider") ||
+        "auto"
+
+    task_type =
+      task[:task_type] ||
+        Map.get(task, "task_type") ||
+        :decomposition
+
+    context = %{task_type: task_type}
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} ->
+          comp
+
+        {:error, _reason} ->
+          Service.determine_complexity_for_task(task_type,
+            provider: provider,
+            default_complexity: :medium
+          )
+      end
+
+    case Service.call(complexity, messages,
+           provider: provider,
+           task_type: task_type,
+           capabilities: [:reasoning, :decomposition]
          ) do
       {:ok, %{text: text}} ->
         case Jason.decode(text) do

@@ -32,6 +32,7 @@ defmodule Singularity.BeamAnalysisEngine do
   require Logger
 
   alias Singularity.Monitoring.CodeEngineHealthTracker
+  alias Singularity.CodeEngine
 
   @supported_beam_languages ["elixir", "erlang", "gleam"]
 
@@ -219,11 +220,21 @@ defmodule Singularity.BeamAnalysisEngine do
     Logger.debug("BeamAnalysisEngine: Analyzing Elixir BEAM patterns for #{file_path}")
 
     # Use CodeEngine for comprehensive BEAM analysis
+    start_time = System.monotonic_time(:microsecond)
+
     case CodeEngine.analyze_language(code, "elixir") do
       {:ok, analysis} ->
-        # Record successful analysis
-        # TODO: track timing
-        CodeEngineHealthTracker.record_success("elixir", file_path, 0)
+        # Track timing
+        elapsed_us = System.monotonic_time(:microsecond) - start_time
+        elapsed_ms = div(elapsed_us, 1000)
+
+        :telemetry.execute(
+          [:singularity, :beam_analysis, :complete],
+          %{duration_ms: elapsed_ms},
+          %{language: "elixir", file_path: file_path}
+        )
+
+        CodeEngineHealthTracker.record_success("elixir", file_path, elapsed_ms)
 
         # Extract OTP patterns from CodeEngine analysis
         otp_patterns = build_elixir_otp_patterns(analysis, code)

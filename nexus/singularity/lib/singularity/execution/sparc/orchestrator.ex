@@ -168,6 +168,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
   alias Singularity.Execution.Planning.TaskGraph
   alias Singularity.MethodologyExecutor
   alias Singularity.Knowledge.TemplateService
+  alias Singularity.LLM.Config
 
   defstruct [
     :template_dag,
@@ -257,6 +258,18 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
     # 1. Get best template from Template Performance DAG
     task_type = extract_task_type(goal)
     language = Keyword.get(opts, :language, "elixir")
+    
+    # Get complexity from centralized config for MethodologyExecutor
+    provider = Keyword.get(opts, :provider, "auto")
+    context = %{task_type: task_type}
+    
+    complexity = case Config.get_task_complexity(provider, context) do
+      {:ok, comp} -> comp
+      {:error, _} -> :medium  # Default for SPARC execution
+    end
+    
+    # Add complexity to opts for MethodologyExecutor
+    opts = Keyword.put(opts, :complexity, complexity)
 
     {:ok, template_id} =
       Singularity.Quality.TemplateTracker.get_best_template(task_type, language)

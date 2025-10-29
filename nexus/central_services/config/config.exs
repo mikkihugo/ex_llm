@@ -31,6 +31,16 @@ config :centralcloud, :shared_queue,
 config :centralcloud,
   ecto_repos: [CentralCloud.Repo, CentralCloud.SharedQueueRepo]
 
+# Configure logging
+config :logger, level: :info
+
+# SASL Configuration - Erlang System Architecture Support Libraries
+# Provides system monitoring, error logging, and progress reports
+config :sasl,
+  sasl_error_logger: {:file, ~c"log/sasl-error.log"},
+  errlog_type: :error,
+  utc_log: true
+
 # Oban Background Job Queue Configuration
 # Pattern aggregation, package sync, statistics generation
 config :centralcloud, Oban,

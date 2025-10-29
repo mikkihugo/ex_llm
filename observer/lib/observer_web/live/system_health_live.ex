@@ -1,29 +1,5 @@
 defmodule ObserverWeb.SystemHealthLive do
-  use ObserverWeb, :live_view
-
-  alias Observer.Dashboard
-
-  @refresh_interval :timer.seconds(5)
-
-  @impl true
-  def mount(_params, _session, socket) do
-    socket =
-      socket
-      |> assign(:data, nil)
-      |> assign(:error, nil)
-      |> assign(:last_updated, nil)
-
-    socket = load(socket)
-    if connected?(socket), do: schedule_refresh()
-
-    {:ok, socket}
-  end
-
-  @impl true
-  def handle_info(:refresh, socket) do
-    if connected?(socket), do: schedule_refresh()
-    {:noreply, load(socket)}
-  end
+  use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.system_health/0
 
   @impl true
   def render(assigns) do
@@ -213,6 +189,9 @@ defmodule ObserverWeb.SystemHealthLive do
                 <a href="/adaptive-threshold" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
                   🎯 Adaptive Threshold
                 </a>
+                <a href="/sasl-traces" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  📋 SASL Traces
+                </a>
               </div>
             </div>
 
@@ -241,25 +220,10 @@ defmodule ObserverWeb.SystemHealthLive do
     """
   end
 
-  defp load(socket) do
-    case Dashboard.system_health() do
-      {:ok, data} ->
-        assign(socket, data: data, error: nil, last_updated: DateTime.utc_now())
-
-      {:error, reason} ->
-        assign(socket,
-          error: reason,
-          last_updated: DateTime.utc_now()
-        )
-    end
-  end
-
-  defp schedule_refresh do
-    Process.send_after(self(), :refresh, @refresh_interval)
-  end
-
-  defp format_timestamp(nil), do: "never"
-  defp format_timestamp(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M:%S UTC")
+  defp health_color(:healthy), do: "text-green-600"
+  defp health_color(:warning), do: "text-amber-600"
+  defp health_color(:critical), do: "text-rose-600"
+  defp health_color(_), do: "text-zinc-500"
 
   defp percentage(nil), do: "n/a"
   defp percentage(value) when is_float(value), do: "#{Float.round(value * 100, 2)}%"
@@ -271,10 +235,8 @@ defmodule ObserverWeb.SystemHealthLive do
   defp format_ms(_), do: "n/a"
 
   defp cents_to_dollars(nil), do: "0.00"
-
   defp cents_to_dollars(cents) when is_number(cents),
     do: :io_lib.format("~.2f", [cents / 100]) |> IO.iodata_to_binary()
-
   defp cents_to_dollars(_), do: "0.00"
 
   defp llm_status(nil), do: :unknown
@@ -282,7 +244,6 @@ defmodule ObserverWeb.SystemHealthLive do
   defp llm_status(_), do: :unknown
 
   defp validation_status(nil), do: :unknown
-
   defp validation_status(%{kpis: %{accuracy: acc}}) when is_number(acc) do
     cond do
       acc >= 0.9 -> :healthy
@@ -290,7 +251,6 @@ defmodule ObserverWeb.SystemHealthLive do
       true -> :critical
     end
   end
-
   defp validation_status(_), do: :unknown
 
   defp adaptive_status(nil), do: :unknown
@@ -298,7 +258,6 @@ defmodule ObserverWeb.SystemHealthLive do
   defp adaptive_status(_), do: :unknown
 
   defp task_status(nil), do: :unknown
-
   defp task_status(%{overview: %{success_rate: rate}}) when is_number(rate) do
     cond do
       rate >= 0.9 -> :healthy
@@ -306,17 +265,11 @@ defmodule ObserverWeb.SystemHealthLive do
       true -> :critical
     end
   end
-
   defp task_status(_), do: :unknown
 
   defp cost_status(nil), do: :unknown
   defp cost_status(%{summary: %{spend_trend: trend}}), do: trend || :unknown
   defp cost_status(_), do: :unknown
-
-  defp health_color(:healthy), do: "text-green-600"
-  defp health_color(:warning), do: "text-amber-600"
-  defp health_color(:critical), do: "text-rose-600"
-  defp health_color(_), do: "text-zinc-500"
 
   attr :title, :string, required: true
   attr :status, :any, default: :unknown

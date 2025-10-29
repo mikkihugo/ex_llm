@@ -8,7 +8,8 @@ defmodule Singularity.HITL.ApprovalService do
 
   require Logger
 
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Database.MessageQueue
+  alias Singularity.PgFlow
 
   @approval_timeout_ms 30_000
   @poll_interval_ms 500
@@ -81,8 +82,15 @@ defmodule Singularity.HITL.ApprovalService do
   defp dispatch_and_wait(payload, response_queue) do
     with :ok <- ensure_queue(@request_queue),
          :ok <- ensure_queue(response_queue),
-         {:ok, _msg_id} <- PgmqClient.send_message(@request_queue, payload) do
-      await_response(response_queue, @approval_timeout_ms)
+         result <- PgFlow.send_with_notify(@request_queue, payload) do
+      case result do
+        {:ok, _} ->
+          await_response(response_queue, @approval_timeout_ms)
+
+        {:error, reason} ->
+          Logger.error("HITL request failed", reason: inspect(reason))
+          {:error, reason}
+      end
     else
       {:error, reason} ->
         Logger.error("HITL request failed", reason: inspect(reason))
@@ -96,18 +104,22 @@ defmodule Singularity.HITL.ApprovalService do
   end
 
   defp do_await_response(queue, deadline) do
-    case PgmqClient.read_messages(queue, 1) do
-      [{msg_id, body}] ->
-        PgmqClient.ack_message(queue, msg_id)
+    case MessageQueue.receive_message(queue) do
+      {:ok, {msg_id, body}} ->
+        MessageQueue.acknowledge(queue, msg_id)
         decode_response(body)
 
-      [] ->
+      :empty ->
         if System.monotonic_time(:millisecond) >= deadline do
           {:error, :timeout}
         else
           Process.sleep(@poll_interval_ms)
           do_await_response(queue, deadline)
         end
+
+      {:error, reason} ->
+        Logger.error("Error reading from queue #{queue}: #{inspect(reason)}")
+        {:error, reason}
     end
   end
 
@@ -130,8 +142,8 @@ defmodule Singularity.HITL.ApprovalService do
   end
 
   defp ensure_queue(queue) do
-    case PgmqClient.ensure_queue(queue) do
-      :ok -> :ok
+    case MessageQueue.create_queue(queue) do
+      {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}
     end
   end

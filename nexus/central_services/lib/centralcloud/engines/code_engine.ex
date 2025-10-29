@@ -1,51 +1,38 @@
 defmodule CentralCloud.Engines.CodeEngine do
   @moduledoc """
-  Code Engine - Delegates to Singularity via NATS.
+  High-level façade for Singularity's code analysis engine accessed via PGFlow.
 
-  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
-  Instead, this module delegates code analysis requests to Singularity
-  via NATS, which has the compiled code_quality_engine NIF.
+  CentralCloud forwards code understanding requests (business domain detection,
+  pattern analysis, etc.) to Singularity, which hosts the compiled Rust NIFs.
   """
-
-  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
-  # use Rustler,
-  #   otp_app: :centralcloud,
-  #   crate: :code_quality_engine,
-  #   path: "../../../../rust/code_quality_engine"
 
   require Logger
+  alias Pgflow
+
+  @default_analysis_types ["business_domains", "patterns", "architecture"]
 
   @doc """
-  Analyze codebase for business domains and patterns.
-
-  Delegates to Singularity via NATS for the actual computation.
+  Analyze a codebase for domains, patterns, and architectural signals.
   """
   def analyze_codebase(codebase_info, opts \\ []) do
-    analysis_types = Keyword.get(opts, :analysis_types, ["business_domains", "patterns", "architecture"])
-    include_embeddings = Keyword.get(opts, :include_embeddings, true)
-
     request = %{
       "codebase_info" => codebase_info,
-      "analysis_types" => analysis_types,
-      "include_embeddings" => include_embeddings
+      "analysis_types" => Keyword.get(opts, :analysis_types, @default_analysis_types),
+      "include_embeddings" => Keyword.get(opts, :include_embeddings, true)
     }
 
-    case code_quality_engine_call("analyze_codebase", request) do
-      {:ok, results} ->
-        Logger.debug("Code engine analysis completed",
-          business_domains: length(Map.get(results, "business_domains", [])),
-          patterns: length(Map.get(results, "patterns", []))
-        )
-        {:ok, results}
+    with {:ok, results} <- code_quality_engine_call("analyze_codebase", request) do
+      Logger.debug("Code engine analysis completed",
+        business_domains: length(Map.get(results, "business_domains", [])),
+        patterns: length(Map.get(results, "patterns", []))
+      )
 
-      {:error, reason} ->
-        Logger.error("Code engine failed", reason: reason)
-        {:error, reason}
+      {:ok, results}
     end
   end
 
   @doc """
-  Detect business domains in codebase.
+  Detect business domains with a configurable confidence threshold.
   """
   def detect_business_domains(codebase_info, opts \\ []) do
     request = %{
@@ -53,19 +40,33 @@ defmodule CentralCloud.Engines.CodeEngine do
       "confidence_threshold" => Keyword.get(opts, :confidence_threshold, 0.7)
     }
 
-    case code_quality_engine_call("detect_business_domains", request) do
-      {:ok, results} ->
-        Logger.debug("Code engine detected business domains",
-          domains: length(Map.get(results, "business_domains", []))
-        )
-        {:ok, results}
+    with {:ok, results} <- code_quality_engine_call("detect_business_domains", request) do
+      Logger.debug("Code engine detected business domains",
+        domains: length(Map.get(results, "business_domains", []))
+      )
 
-      {:error, reason} ->
-        Logger.error("Code engine failed", reason: reason)
-        {:error, reason}
+      {:ok, results}
     end
   end
 
-  # NIF function (loaded from shared Rust crate)
-  defp code_quality_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  # ---------------------------------------------------------------------------
+  # PGFLOW DELEGATION
+  # ---------------------------------------------------------------------------
+
+  defp code_quality_engine_call(operation, request) do
+    case Pgflow.send_with_notify("engine.code.#{operation}", request, CentralCloud.Repo,
+           timeout: 30_000
+         ) do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, :timeout} ->
+        Logger.error("Code quality engine call timed out", operation: operation)
+        {:error, :timeout}
+
+      {:error, reason} ->
+        Logger.error("Code quality engine call failed", operation: operation, reason: inspect(reason))
+        {:error, reason}
+    end
+  end
 end

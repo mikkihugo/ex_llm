@@ -9,6 +9,7 @@ defmodule Singularity.Autonomy.RuleEngine do
   require Logger
 
   alias Singularity.Evolution.RuleEvolutionSystem
+  alias Singularity.LLM.Config
 
   @autonomous_threshold 0.9
   @collaborative_threshold 0.7
@@ -152,12 +153,36 @@ defmodule Singularity.Autonomy.RuleEngine do
 
   defp rule_mismatch?(rule, context) do
     required_complexity = Map.get(rule.pattern, :complexity)
-    provided_complexity = value_from_context(context, :complexity)
+    
+    # Get complexity from centralized config instead of reading directly from context
+    provided_complexity = get_complexity_from_context(context)
 
     cond do
       is_nil(required_complexity) -> false
       is_nil(provided_complexity) -> false
       true -> to_string(required_complexity) != to_string(provided_complexity)
+    end
+  end
+
+  defp get_complexity_from_context(context) do
+    # Try to get complexity from context first (may be provided by caller)
+    case value_from_context(context, :complexity) do
+      nil ->
+        # Use centralized LLM.Config to get complexity
+        provider = value_from_context(context, :provider) || "auto"
+        task_type = value_from_context(context, :type) || value_from_context(context, :task_type)
+        
+        if task_type do
+          case Config.get_task_complexity(provider, %{task_type: task_type}) do
+            {:ok, complexity} -> complexity
+            {:error, _} -> nil
+          end
+        else
+          nil
+        end
+      
+      complexity ->
+        complexity
     end
   end
 
@@ -208,7 +233,8 @@ defmodule Singularity.Autonomy.RuleEngine do
 
   defp context_summary(context) when is_map(context) do
     type = value_from_context(context, :type)
-    complexity = value_from_context(context, :complexity)
+    # Get complexity from centralized config instead of reading directly from context
+    complexity = get_complexity_from_context(context)
 
     details =
       [
@@ -230,7 +256,7 @@ defmodule Singularity.Autonomy.RuleEngine do
   defp build_evolution_criteria(category, context) do
     %{}
     |> maybe_put(:task_type, derive_task_type(category, context))
-    |> maybe_put(:complexity, value_from_context(context, :complexity))
+    |> maybe_put(:complexity, get_complexity_from_context(context))
     |> maybe_put(:time_range, :last_week)
   end
 

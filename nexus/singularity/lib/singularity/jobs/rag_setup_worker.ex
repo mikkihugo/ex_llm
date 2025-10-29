@@ -24,7 +24,7 @@ defmodule Singularity.Jobs.RagSetupWorker do
     case Singularity.RAG.Setup.run() do
       {:ok, results} ->
         Logger.info("✅ RAG system initialized")
-        Logger.info("  - Templates synced: #{results.templates_count || "unknown"}")
+        Logger.info("  - Templates synced: #{results.templates_synced || "unknown"}")
         Logger.info("  - Codebase parsed: #{results.codebase_files || "unknown"} files")
         Logger.info("  - Embeddings generated: #{results.embeddings_count || "unknown"}")
         Logger.info("  - Quality tested: #{results.quality_score || "unknown"}")

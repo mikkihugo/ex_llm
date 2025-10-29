@@ -1,21 +1,63 @@
 defmodule Singularity.Tools.Runner do
   @moduledoc """
   Executes registered tools and normalizes responses into ToolResult structs.
+  
+  Provider selection uses models and complexity from:
+  1. Database (via sync from CentralCloud/Nexus)
+  2. Pgflow (if not in database)
   """
 
   alias Singularity.Schemas.Tools.{Tool, ToolCall, ToolResult}
+  alias Singularity.Repo
+  import Ecto.Query
 
-  @provider_aliases %{
-    "claude_cli" => :claude_cli,
-    "claude_http" => :claude_http,
-    "gemini" => :gemini,
-    "copilot" => :copilot,
-    # Legacy aliases (deprecated)
-    "gemini_code_cli" => :gemini,
-    "gemini_code_api" => :gemini,
-    "gemini_cli" => :gemini,
-    "gemini_http" => :gemini
-  }
+  @doc """
+  Get provider alias based on provider name string.
+  
+  Maps provider name strings to normalized atoms, handling compatibility variants.
+  """
+  def get_provider_alias(provider) when is_binary(provider) do
+    provider_aliases().(provider)
+  end
+
+  def get_provider_alias(provider) when is_atom(provider), do: provider
+  def get_provider_alias(other), do: other
+
+  alias Singularity.LLM.Config
+
+  @doc """
+  Get task complexity for provider selection.
+  
+  Delegates to system-wide LLM.Config.
+  """
+  def get_task_complexity(provider, context \\ %{}) do
+    Config.get_task_complexity(provider, context)
+  end
+
+  @doc """
+  Get models for provider selection.
+  
+  Delegates to system-wide LLM.Config.
+  """
+  def get_models(provider, context \\ %{}) do
+    Config.get_models(provider, context)
+  end
+
+  # Provider alias mapping based on task complexity and provider variants
+  defp provider_aliases do
+    fn
+      "claude_cli" -> :claude_cli
+      "claude_http" -> :claude_http
+      "gemini" -> :gemini
+      "copilot" -> :copilot
+      # Compatibility aliases for gemini provider variants
+      "gemini_code_cli" -> :gemini
+      "gemini_code_api" -> :gemini
+      "gemini_cli" -> :gemini
+      "gemini_http" -> :gemini
+      other -> other
+    end
+  end
 
   @type context :: map()
 
@@ -72,10 +114,5 @@ defmodule Singularity.Tools.Runner do
     end
   end
 
-  defp normalize_provider(provider) when is_atom(provider), do: provider
-
-  defp normalize_provider(provider) when is_binary(provider),
-    do: Map.get(@provider_aliases, provider, provider)
-
-  defp normalize_provider(other), do: other
+  defp normalize_provider(provider), do: get_provider_alias(provider)
 end

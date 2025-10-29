@@ -259,7 +259,7 @@ defmodule Singularity.Execution.Evolution do
 
     # 1. Establish baseline metrics
     case Aggregator.get_metrics_for(agent_id, :last_hour) do
-      {:ok, metrics} when is_list(metrics) and length(metrics) > 0 ->
+      {:ok, %{summary: %{sample_count: count}} = metrics} when count > 0 ->
         baseline = aggregate_baseline_metric(metrics, suggestion.type)
 
         # 2. Apply improvement to agent
@@ -327,7 +327,7 @@ defmodule Singularity.Execution.Evolution do
             {:error, reason}
         end
 
-      {:ok, []} ->
+      {:ok, %{summary: %{sample_count: 0}}} ->
         Logger.warning("No metrics available for baseline",
           agent_id: agent_id
         )
@@ -344,36 +344,53 @@ defmodule Singularity.Execution.Evolution do
     end
   end
 
-  @spec aggregate_baseline_metric(list(map()), atom()) :: float()
-  defp aggregate_baseline_metric(metrics, suggestion_type) do
+  @spec aggregate_baseline_metric(map(), atom()) :: float()
+  defp aggregate_baseline_metric(%{summary: %{average_value: avg_value}, samples: samples}, suggestion_type) do
+    # Extract the specific metric type from samples based on suggestion type
+    metric_name =
+      case suggestion_type do
+        :add_patterns -> "success_rate"
+        :optimize_model -> "cost_cents"
+        :improve_cache -> "latency_ms"
+        _ -> nil
+      end
+
+    # Try to extract specific metric from samples, fallback to generic average
+    value =
+      if metric_name do
+        values = extract_metric_values(samples, metric_name)
+        if length(values) > 0 do
+          Enum.sum(values) / length(values)
+        else
+          avg_value || 0.0
+        end
+      else
+        avg_value || 0.0
+      end
+
     case suggestion_type do
-      :add_patterns ->
-        # For pattern improvements, track success_rate
-        metrics
-        |> Enum.map(& &1.success_rate)
-        |> Enum.sum()
-        |> then(&(&1 / length(metrics)))
-        |> Float.round(2)
-
-      :optimize_model ->
-        # For cost improvements, track avg_cost_cents
-        metrics
-        |> Enum.map(& &1.avg_cost_cents)
-        |> Enum.sum()
-        |> then(&(&1 / length(metrics)))
-        |> Float.round(2)
-
-      :improve_cache ->
-        # For latency improvements, track avg_latency_ms
-        metrics
-        |> Enum.map(& &1.avg_latency_ms)
-        |> Enum.sum()
-        |> then(&(&1 / length(metrics)))
-        |> Float.round(0)
-
-      _ ->
-        0.0
+      :add_patterns -> Float.round(value, 2)
+      :optimize_model -> Float.round(value, 2)
+      :improve_cache -> Float.round(value, 0)
+      _ -> 0.0
     end
+  end
+
+  defp extract_metric_values(samples, metric_name) do
+    samples
+    |> Enum.filter(fn sample ->
+      labels = Map.get(sample, :labels, %{})
+      sample_metric_name = Map.get(labels, "metric_name") || Map.get(sample, :metric_name)
+      sample_metric_name == metric_name
+    end)
+    |> Enum.map(fn sample ->
+      case sample do
+        %{value: val} when is_number(val) -> val
+        %{value: %Decimal{} = dec} -> Decimal.to_float(dec)
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
   end
 
   @spec apply_improvement_to_agent(String.t(), map()) :: :ok | {:error, term()}
@@ -430,7 +447,7 @@ defmodule Singularity.Execution.Evolution do
 
     # Collect post-improvement metrics
     case Aggregator.get_metrics_for(agent_id, :last_hour) do
-      {:ok, metrics} when is_list(metrics) and length(metrics) > 0 ->
+      {:ok, %{summary: %{sample_count: count}} = metrics} when count > 0 ->
         variant = aggregate_baseline_metric(metrics, suggestion.type)
 
         # Check if improvement meets expected threshold
@@ -447,7 +464,7 @@ defmodule Singularity.Execution.Evolution do
           {:error, :insufficient_improvement}
         end
 
-      {:ok, []} ->
+      {:ok, %{summary: %{sample_count: 0}}} ->
         {:error, :no_variant_metrics}
 
       {:error, reason} ->

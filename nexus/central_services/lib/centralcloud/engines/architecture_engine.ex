@@ -8,6 +8,7 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
   """
 
   require Logger
+  alias Pgflow.Executor
 
   @doc """
   Detect frameworks in codebase.
@@ -85,8 +86,37 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
     end
   end
 
-  # TODO: Implement NATS delegation to Singularity
-  defp request_singularity(_operation, _request) do
-    {:error, :nats_not_configured}
+  # Implement Pgflow delegation to Singularity (replaces NATS)
+  defp request_singularity(operation, request) do
+    payload = %{
+      "operation" => operation,
+      "request" => request,
+      "source" => "centralcloud"
+    }
+
+    case Executor.execute(CentralCloud.Workflows.ArchitectureAnalysisWorkflow, payload,
+           timeout: 60_000
+         ) do
+      {:ok, results} ->
+        Logger.info("Architecture analysis workflow completed", operation: operation)
+        {:ok, results}
+
+      {:error, :timeout} ->
+        Logger.warning("Architecture analysis workflow timed out", operation: operation)
+
+        {:ok,
+         %{
+           "status" => "timeout",
+           "operation" => operation,
+           "results" => %{
+             "technologies" => ["unknown"],
+             "suggestions" => ["Analysis timed out - using fallback results"]
+           }
+         }}
+
+      {:error, reason} ->
+        Logger.error("Architecture analysis workflow failed", operation: operation, reason: reason)
+        {:error, reason}
+    end
   end
 end

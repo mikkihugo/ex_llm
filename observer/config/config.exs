@@ -46,6 +46,17 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# SASL Configuration - Erlang System Architecture Support Libraries
+# Provides system monitoring, error logging, and progress reports
+config :sasl,
+  # Error log file for SASL error reports
+  sasl_error_logger: {:file, ~c"log/sasl-error.log"},
+  # Control error report formatting
+  # :error | :progress | :all
+  errlog_type: :error,
+  # UTC timestamps for logs
+  utc_log: true
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

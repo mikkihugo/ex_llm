@@ -66,11 +66,11 @@ defmodule Singularity.Repo.Migrations.LoadFrameworkPatternsFromJson do
           case Jason.decode(content) do
             {:ok, data} -> {file_path, data}
             {:error, reason} ->
-              Logger.warn("Failed to parse #{file_path}: #{inspect(reason)}")
+              Logger.warning("Failed to parse #{file_path}: #{inspect(reason)}")
               nil
           end
         {:error, reason} ->
-          Logger.warn("Failed to read #{file_path}: #{inspect(reason)}")
+          Logger.warning("Failed to read #{file_path}: #{inspect(reason)}")
           nil
       end
     end)

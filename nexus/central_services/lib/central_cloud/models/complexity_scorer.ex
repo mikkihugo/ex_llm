@@ -9,6 +9,7 @@ defmodule CentralCloud.Models.ComplexityScorer do
   4. Cost-performance optimization
   """
 
+  alias CentralCloud.Models
 
   @doc """
   Calculate complexity score for a model.
@@ -16,6 +17,8 @@ defmodule CentralCloud.Models.ComplexityScorer do
   Returns a score from 0.0 (simple) to 1.0 (complex) with metadata.
   """
   def calculate_complexity_score(model, task_type \\ :general) do
+    model = resolve_model(model, task_type)
+
     base_score = calculate_base_complexity(model)
     task_adjustment = calculate_task_adjustment(model, task_type)
     cost_factor = calculate_cost_factor(model)
@@ -73,7 +76,7 @@ defmodule CentralCloud.Models.ComplexityScorer do
 
   defp calculate_base_complexity(model) do
     # Start with heuristics based on model name and known patterns
-    model_id = model.model_id || ""
+    model_id = get_attr(model, :model_id) || ""
     
     cond do
       # Ultra-simple models (small context)
@@ -109,10 +112,10 @@ defmodule CentralCloud.Models.ComplexityScorer do
   end
 
   defp calculate_from_specifications(model) do
-    specs = model.specifications || %{}
+    specs = get_attr(model, :specifications) || %{}
     
     # Use context length as primary indicator - updated for 2024+ context windows
-    context_length = get_in(specs, ["context_length"]) || 0
+    context_length = map_get(specs, :context_length) || 0
     
     cond do
       # Ultra-small context (legacy models)
@@ -138,21 +141,23 @@ defmodule CentralCloud.Models.ComplexityScorer do
   end
 
   defp calculate_task_adjustment(_model, task_type) do
-    # Adjust complexity based on task type
-    case task_type do
-      :simple -> -0.2  # Reduce complexity for simple tasks
-      :medium -> 0.0   # No adjustment
-      :complex -> 0.2  # Increase complexity for complex tasks
-      :architect -> 0.3  # Architecture tasks need more complex models
-      :coder -> 0.1   # Coding tasks slightly more complex
-      :planning -> 0.0  # Planning tasks neutral
-      _ -> 0.0
+    case task_complexity(task_type) do
+      :simple -> -0.2
+      :medium -> 0.0
+      :complex -> 0.2
+      _ ->
+        case task_type do
+          :architect -> 0.3
+          :coder -> 0.1
+          :planning -> 0.0
+          _ -> 0.0
+        end
     end
   end
 
   defp calculate_cost_factor(model) do
-    pricing = model.pricing || %{}
-    input_price = get_in(pricing, ["input"]) || 0.0
+    pricing = get_attr(model, :pricing) || %{}
+    input_price = map_get(pricing, :input) || 0.0
     
     # Higher cost = higher complexity assumption
     # But cap the influence to avoid expensive simple models
@@ -167,29 +172,161 @@ defmodule CentralCloud.Models.ComplexityScorer do
   defp calculate_performance_factor(model) do
     # This would use historical performance data
     # For now, use heuristics based on model capabilities
-    capabilities = model.capabilities || %{}
+    capabilities = get_attr(model, :capabilities) || %{}
     
-    capability_score = 
-      (if capabilities["vision"], do: 0.3, else: 0.0) +
-      (if capabilities["function_calling"], do: 0.2, else: 0.0) +
-      (if capabilities["code_generation"], do: 0.2, else: 0.0) +
-      (if capabilities["reasoning"], do: 0.3, else: 0.0)
+    capability_score =
+      (if capability?(capabilities, "vision"), do: 0.3, else: 0.0) +
+      (if capability?(capabilities, "function_calling"), do: 0.2, else: 0.0) +
+      (if capability?(capabilities, "code_generation"), do: 0.2, else: 0.0) +
+      (if capability?(capabilities, "reasoning"), do: 0.3, else: 0.0)
     
     # Normalize to 0-1 range
     min(capability_score, 1.0)
   end
 
+  defp task_complexity(task_type) when is_atom(task_type) do
+    Singularity.MetaRegistry.TaskTypeRegistry.get_complexity(task_type)
+  rescue
+    _ -> nil
+  end
+
+  defp task_complexity(task_type) when is_binary(task_type) do
+    task_type
+    |> String.to_existing_atom()
+    |> task_complexity()
+  rescue
+    _ -> nil
+  end
+
+  defp task_complexity(_), do: nil
+
+  defp resolve_model(nil, task_type), do: pick_model_for_task(task_type)
+
+  defp resolve_model(model_id, task_type) when is_binary(model_id) do
+    case safe_get_model(model_id) do
+      {:ok, model} -> model
+      {:error, _} -> pick_model_for_task(task_type)
+    end
+  end
+
+  defp resolve_model(%{} = model, _task_type), do: model
+  defp resolve_model(model, _task_type) when is_struct(model), do: Map.from_struct(model)
+  defp resolve_model(_other, task_type), do: pick_model_for_task(task_type)
+
+  defp pick_model_for_task(task_type) do
+    desired_complexity = task_complexity(task_type) || :medium
+
+    Models.list_active_models()
+    |> choose_model(desired_complexity)
+    |> ensure_model_defaults()
+  end
+
+  defp choose_model([], _desired_complexity), do: nil
+
+  defp choose_model(models, desired_complexity) do
+    models_with_levels =
+      Enum.map(models, fn model ->
+        base_score = calculate_base_complexity(model)
+        {model, complexity_level(base_score)}
+      end)
+
+    candidates =
+      models_with_levels
+      |> Enum.filter(fn {_model, level} -> level == desired_complexity end)
+      |> Enum.map(&elem(&1, 0))
+      |> case do
+        [] -> Enum.map(models_with_levels, &elem(&1, 0))
+        list -> list
+      end
+
+    case candidates do
+      [] -> nil
+      list -> list |> Enum.random() |> Map.from_struct()
+    end
+  end
+
+  defp ensure_model_defaults(nil) do
+    %{
+      "model_id" => "fallback-model",
+      "pricing" => %{},
+      "capabilities" => %{},
+      "specifications" => %{}
+    }
+  end
+
+  defp ensure_model_defaults(%{} = model) do
+    model
+    |> ensure_key("model_id", "fallback-model")
+    |> ensure_key("pricing", %{})
+    |> ensure_key("capabilities", %{})
+    |> ensure_key("specifications", %{})
+  end
+
+  defp ensure_key(map, key, default) do
+    cond do
+      Map.has_key?(map, key) ->
+        map
+
+      Map.has_key?(map, String.to_atom(key)) ->
+        Map.put(map, key, Map.get(map, String.to_atom(key)))
+
+      true ->
+        Map.put(map, key, default)
+    end
+  end
+
+  defp safe_get_model(model_id) do
+    {:ok, Models.get_model!(model_id)}
+  rescue
+    _ -> {:error, :not_found}
+  end
+
   defp calculate_confidence(model) do
     # Confidence based on how much data we have
-    has_pricing = not is_nil(model.pricing)
-    has_capabilities = not is_nil(model.capabilities)
-    has_specifications = not is_nil(model.specifications)
-    has_historical_data = not is_nil(model.last_verified_at)
+    has_pricing = not is_nil(fetch_field(model, :pricing))
+    has_capabilities = not is_nil(fetch_field(model, :capabilities))
+    has_specifications = not is_nil(fetch_field(model, :specifications))
+    has_historical_data = not is_nil(fetch_field(model, :last_verified_at))
     
     confidence_factors = [has_pricing, has_capabilities, has_specifications, has_historical_data]
     true_count = Enum.count(confidence_factors, & &1)
     
     # Convert to 0-1 confidence score
     true_count / length(confidence_factors)
+  end
+
+  defp fetch_field(model, key) when is_map(model) do
+    cond do
+      Map.has_key?(model, key) -> Map.get(model, key)
+      Map.has_key?(model, Atom.to_string(key)) -> Map.get(model, Atom.to_string(key))
+      true -> nil
+    end
+  end
+
+  defp fetch_field(model, key) when is_struct(model), do: Map.get(model, key)
+  defp fetch_field(_, _), do: nil
+
+  defp get_attr(model, key) do
+    fetch_field(model, key)
+  end
+
+  defp map_get(map, key) when is_map(map) do
+    cond do
+      Map.has_key?(map, key) -> Map.get(map, key)
+      Map.has_key?(map, Atom.to_string(key)) -> Map.get(map, Atom.to_string(key))
+      true -> nil
+    end
+  end
+
+  defp map_get(_, _), do: nil
+
+  defp capability?(capabilities, key) do
+    case map_get(capabilities, key) do
+      nil -> false
+      false -> false
+      "" -> false
+      0 -> false
+      _ -> true
+    end
   end
 end

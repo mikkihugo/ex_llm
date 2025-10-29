@@ -128,7 +128,7 @@ defmodule Singularity.Infrastructure.CircuitBreaker do
       frequency: per_llm_call
       pattern: \"Resilience wrapper for external API\"
 
-    - module: Singularity.Jobs.PgmqClient.NatsClient
+    - module: Singularity.Messaging.Client (PGFlow-based)
       function: publish/2, subscribe/2
       purpose: Protect pgmq operations from network failures
       frequency: per_pgmq_operation

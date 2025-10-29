@@ -118,15 +118,15 @@ defmodule Genesis.SharedQueueConsumer do
                 {msg_id, msg_data}
               end)
 
-            Postgrex.close(pid)
+            stop_connection(pid)
             {:ok, messages}
 
           {:ok, _} ->
-            Postgrex.close(pid)
+            stop_connection(pid)
             :empty
 
           {:error, reason} ->
-            Postgrex.close(pid)
+            stop_connection(pid)
             {:error, reason}
         end
       rescue
@@ -231,7 +231,7 @@ defmodule Genesis.SharedQueueConsumer do
              ) do
           {:ok, _} ->
             Logger.debug("[Genesis] Published job result", %{job_id: job_id})
-            Postgrex.close(pid)
+            stop_connection(pid)
             :ok
 
           {:error, reason} ->
@@ -240,7 +240,7 @@ defmodule Genesis.SharedQueueConsumer do
               error: inspect(reason)
             })
 
-            Postgrex.close(pid)
+            stop_connection(pid)
             {:error, reason}
         end
       rescue
@@ -279,7 +279,7 @@ defmodule Genesis.SharedQueueConsumer do
              ) do
           {:ok, _} ->
             Logger.debug("[Genesis] Published job stats", %{job_id: job_id, status: status})
-            Postgrex.close(pid)
+            stop_connection(pid)
             :ok
 
           {:error, reason} ->
@@ -288,7 +288,7 @@ defmodule Genesis.SharedQueueConsumer do
               error: inspect(reason)
             })
 
-            Postgrex.close(pid)
+            stop_connection(pid)
             {:error, reason}
         end
       rescue
@@ -313,7 +313,7 @@ defmodule Genesis.SharedQueueConsumer do
                [queue_name, msg_id]
              ) do
           {:ok, _} ->
-            Postgrex.close(pid)
+            stop_connection(pid)
             :ok
 
           {:error, reason} ->
@@ -323,7 +323,7 @@ defmodule Genesis.SharedQueueConsumer do
               error: inspect(reason)
             })
 
-            Postgrex.close(pid)
+            stop_connection(pid)
             :error
         end
       rescue
@@ -365,4 +365,7 @@ defmodule Genesis.SharedQueueConsumer do
   defp config do
     Application.get_env(:genesis, :shared_queue, [])
   end
+
+  defp stop_connection(pid) when is_pid(pid), do: GenServer.stop(pid)
+  defp stop_connection(_), do: :ok
 end

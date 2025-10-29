@@ -57,6 +57,7 @@ defmodule ObserverWeb.Router do
       live "/task-execution", TaskExecutionLive
       live "/todos", TodosLive
       live "/hitl-approvals", HITLApprovalsLive
+      live "/sasl-traces", SASLTraceLive
       # WebChat Integration
       live "/webchat", WebChatLive
     end
@@ -81,7 +82,14 @@ defmodule ObserverWeb.Router do
 
       live_dashboard "/dashboard",
         metrics: ObserverWeb.Telemetry,
-        ecto_repos: [Observer.Repo]
+        ecto_repos: [Observer.Repo],
+        pages: [
+          # Custom Singularity dashboard pages
+          genesis: Singularity.Dashboard.GenesisPage,
+          system_health: Singularity.Dashboard.SystemHealthPage,
+          llm: Singularity.Dashboard.LLMPage,
+          agents: Singularity.Dashboard.AgentsPage
+        ]
 
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end

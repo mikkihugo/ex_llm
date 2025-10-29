@@ -10,7 +10,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   This module integrates with:
   - `Singularity.Execution.Planning.TaskGraphCore` - DAG operations (TaskGraphCore.select_next_task/1, mark_completed/2)
-  - `Singularity.LLM.NatsOperation` - LLM execution (NatsOperation.compile/2, run/3)
+  - `Singularity.LLM.Service` - LLM execution (Service.call/3)
   - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator.find_similar/2)
   - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator.generate/2)
   - `Singularity.Store` - Knowledge search (Store.search_knowledge/2)
@@ -54,7 +54,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       "Support self-improvement via evolution feedback"
     ],
     "prevents_duplicates": ["TaskExecutor", "ExecutionEngine", "TaskRunner"],
-    "uses": ["TaskGraphCore", "LLM.NatsOperation", "RAGCodeGenerator", "QualityCodeGenerator", "GenServer"],
+    "uses": ["TaskGraphCore", "LLM.Service", "RAGCodeGenerator", "QualityCodeGenerator", "GenServer"],
     "architecture_pattern": "GenServer-based execution engine delegated to by TaskGraph orchestrator"
   }
   ```
@@ -68,8 +68,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       purpose: "Select and update task status in DAG"
       critical: true
 
-    - module: Singularity.LLM.NatsOperation
-      function: compile/2, run/3, run_streaming/4
+    - module: Singularity.LLM.Service
+      function: call/3
       purpose: "Execute LLM operations for tasks"
       critical: true
 
@@ -141,7 +141,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   depends_on:
     - TaskGraphCore (MUST be functional)
-    - LLM.NatsOperation (MUST be available for task execution)
+    - LLM.Service (MUST be available for task execution)
     - GenServer behavior (MUST be supported by Erlang VM)
     - PostgreSQL (for execution history storage)
   ```
@@ -212,9 +212,11 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   # INTEGRATION: LLM execution (pgmq-based operations)
   # INTEGRATION: Code generation and quality enforcement
+  # Note: These are defined for integration documentation/interface - may be used in future
   alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
   alias Singularity.Store
   alias Singularity.Agents.AgentSpawner
+  alias Singularity.LLM.Config
 
   # INTEGRATION: Self-improvement (learning from execution)
   # INTEGRATION: Agent spawning from Lua configurations
@@ -544,7 +546,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       task_id: task.id
     )
 
-    # Legacy fallback: use hardcoded model selection and prompt building
+    # Fallback: use hardcoded model selection and prompt building when Lua strategy not available
     op_params = build_legacy_operation_params(task, opts)
 
     # Build execution context
@@ -558,43 +560,29 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
       }
     }
 
-    # Compile and execute operation
-    case NatsOperation.compile(op_params, ctx) do
-      {:ok, compiled} ->
-        inputs = collect_task_inputs(task, state.results)
-        timeout_ms = compiled.timeout_ms
+    # Execute LLM operation via LLM.Service
+    messages = [
+      %{role: "user", content: task.description}
+    ]
 
-        task_result =
-          Task.async(fn ->
-            NatsOperation.run(compiled, inputs, ctx)
-          end)
-          |> Task.await(timeout_ms + 1000)
+    complexity = determine_complexity(task)
 
-        case task_result do
-          {:ok, result} ->
-            Logger.info("Task completed successfully (legacy)",
-              task_id: task.id,
-              tokens_used: Map.get(result, :usage, %{}) |> Map.get("total_tokens")
-            )
+    case Singularity.LLM.Service.call(complexity, messages, task_type: task.task_type) do
+      {:ok, response} ->
+        Logger.info("Task completed successfully",
+          task_id: task.id,
+          tokens_used: Map.get(response, :usage, %{}) |> Map.get("total_tokens")
+        )
 
-            {:ok, result}
-
-          {:error, reason} ->
-            Logger.error("Task execution failed (legacy)",
-              task_id: task.id,
-              reason: reason
-            )
-
-            {:error, reason}
-        end
+        {:ok, response}
 
       {:error, reason} ->
-        Logger.error("Failed to compile operation (legacy)",
+        Logger.error("Task execution failed",
           task_id: task.id,
           reason: reason
         )
 
-        {:error, {:compile_failed, reason}}
+        {:error, reason}
     end
   end
 
@@ -611,7 +599,7 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
         _ -> "gemini-1.5-flash"
       end
 
-    # Build simple prompt (LEGACY)
+    # Build simple prompt
     prompt_template = """
     Complete the following task:
 
@@ -644,6 +632,28 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
         result -> Map.put(acc, dep_id, result)
       end
     end)
+  end
+
+  defp determine_complexity(task) do
+    # Use centralized LLM.Config for complexity (database → TaskTypeRegistry fallback)
+    provider = task.provider || "auto"
+    task_type = task.task_type || :coder
+    context = %{task_type: task_type, estimated_complexity: task.estimated_complexity}
+    
+    case Config.get_task_complexity(provider, context) do
+      {:ok, complexity} -> complexity
+      {:error, _} ->
+        # Fallback: Determine from estimated_complexity numeric value
+        determine_complexity_fallback(task)
+    end
+  end
+
+  defp determine_complexity_fallback(task) do
+    case task.estimated_complexity do
+      complexity when complexity >= 8.0 -> :complex
+      complexity when complexity >= 5.0 -> :medium
+      _ -> :simple
+    end
   end
 
   defp via_tuple(run_id) do

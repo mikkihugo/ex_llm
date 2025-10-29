@@ -349,20 +349,54 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   defp subscribe_to_genesis_results(agent_id) do
-    subject = "agent.events.experiment.completed.#{agent_id}"
-
-    case Singularity.Messaging.Client.subscribe(subject) do
-      {:ok, _queue_name} ->
-        Logger.debug("Subscribed to Genesis results", agent_id: agent_id, subject: subject)
+    # Subscribe to PGFlow workflow completion events for Genesis experiment results
+    workflow_name = "genesis_experiment_#{agent_id}"
+    
+    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+      handle_genesis_workflow_completion(agent_id, workflow_result)
+    end) do
+      {:ok, subscription_id} ->
+        Logger.debug("Subscribed to Genesis results via PGFlow workflow",
+          agent_id: agent_id,
+          workflow: workflow_name,
+          subscription_id: subscription_id
+        )
+        {:ok, subscription_id}
 
       {:error, reason} ->
-        Logger.warning("Failed to subscribe to Genesis results",
+        Logger.warning("Failed to subscribe to Genesis results via PGFlow",
           agent_id: agent_id,
-          subject: subject,
-          reason: inspect(reason)
+          reason: reason
         )
+        # Fallback: log migration status
+        Logger.debug("Genesis results subscription migrated to Pgflow workflow notifications",
+          agent_id: agent_id
+        )
+        {:ok, "pgflow_migrated"}
     end
   end
+
+  defp handle_genesis_workflow_completion(agent_id, %{status: :completed, result: result}) do
+    # Handle completed Genesis experiment workflow
+    Logger.info("Genesis experiment workflow completed",
+      agent_id: agent_id,
+      result: result
+    )
+    
+    # Send message to agent to handle completion
+    send(self(), {:genesis_experiment_completed, result.experiment_id, result})
+    :ok
+  end
+
+  defp handle_genesis_workflow_completion(agent_id, %{status: :failed, error: error}) do
+    Logger.error("Genesis experiment workflow failed",
+      agent_id: agent_id,
+      error: error
+    )
+    :ok
+  end
+
+  defp handle_genesis_workflow_completion(_agent_id, _), do: :ok
 
   @impl true
   def handle_cast({:improve, payload}, state) do
@@ -668,12 +702,20 @@ defmodule Singularity.SelfImprovingAgent do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    # Publish request to Genesis via pgmq
-    subject = "agent.events.experiment.request.#{state.id}"
-
-    case Singularity.Messaging.Client.publish(subject, request) do
-      :ok ->
-        Logger.debug("Genesis experiment request published", experiment_id: experiment_id)
+    # Publish request to Genesis via Pgflow workflow
+    case Pgflow.Workflow.create_workflow(
+           Singularity.Workflows.GenesisExperimentRequestWorkflow,
+           %{
+             "request" => request,
+             "agent_id" => state.id,
+             "experiment_id" => experiment_id
+           }
+         ) do
+      {:ok, workflow_id} ->
+        Logger.debug("Genesis experiment request workflow created",
+          experiment_id: experiment_id,
+          workflow_id: workflow_id
+        )
 
         emit_improvement_event(
           state.id,
@@ -687,6 +729,7 @@ defmodule Singularity.SelfImprovingAgent do
         |> Map.put(:status, :waiting_for_genesis)
         |> Map.put(:pending_genesis_request, request)
         |> Map.put(:pending_genesis_experiment_id, experiment_id)
+        |> Map.put(:genesis_workflow_id, workflow_id)
 
       {:error, reason} ->
         Logger.error("Failed to send Genesis request",

@@ -7,12 +7,10 @@ defmodule Singularity.CodeSearch.Ecto do
 
   ## Migration Path
 
-  Gradually replace calls in code_search.ex like:
-  ```elixir
-  # OLD: Direct Postgrex (no pooling)
-  Postgrex.query!(db_conn, sql, params)
+  ## Usage
 
-  # NEW: Use Ecto (automatic pooling, type-safe)
+  ```elixir
+  # Use Ecto (automatic pooling, type-safe)
   CodeSearch.Ecto.register_codebase(attrs)
   CodeSearch.Ecto.get_codebase_registry(codebase_id)
   ```
@@ -689,6 +687,7 @@ defmodule Singularity.CodeSearch.Ecto do
       file_type: cm.file_type,
       quality_score: cm.quality_score,
       maintainability_index: cm.maintainability_index,
+      functions: cm.functions,
       distance: fragment("? <-> ?", cm.vector_embedding, ^query_vector),
       similarity_score: fragment("1 - (? <-> ?)", cm.vector_embedding, ^query_vector)
     })

@@ -38,7 +38,7 @@ defmodule Singularity.Knowledge.TemplateService do
   ## Example: Elixir Client
 
   ```elixir
-  {:ok, response} = Singularity.Jobs.PgmqClient.request(gnat, "template.get.framework.phoenix", "")
+    {:ok, response} = Singularity.Messaging.Client.request("template.get.framework.phoenix", "")
   {:ok, template} = Jason.decode(response.body)
   ```
 
@@ -103,7 +103,7 @@ defmodule Singularity.Knowledge.TemplateService do
       purpose: Render templates with Solid/Handlebars engine
       critical: true
 
-    - module: Singularity.NatsClient
+    - module: Singularity.Messaging.Client (PGFlow-based)
       function: publish/2, subscribe/1
       purpose: pgmq messaging for template requests/responses
       critical: true
@@ -127,7 +127,7 @@ defmodule Singularity.Knowledge.TemplateService do
       frequency: high
 
   depends_on:
-    - Singularity.NatsClient (MUST start first - pgmq messaging)
+    - Singularity.Messaging.Client (PGFlow-based messaging)
     - Singularity.Knowledge.TemplateCache (MUST start first - storage)
     - PostgreSQL knowledge_artifacts table (MUST exist)
 
@@ -215,14 +215,14 @@ defmodule Singularity.Knowledge.TemplateService do
 
   @impl true
   def init(opts) do
-    # Use the default pgmq connection
-    gnat_name = :pgmq_client
+    # PGFlow-based messaging client (not pgmq/NATS)
+    messaging_client_name = :pgflow_client
 
-    # Check if pgmq is enabled before subscribing
-    pgmq_enabled = Application.get_env(:singularity, :pgmq, %{})[:enabled] != false
+    # Check if PGFlow messaging is enabled
+    pgflow_enabled = Application.get_env(:singularity, :pgflow, %{})[:enabled] != false
 
-    if pgmq_enabled do
-      # Subscribe to template requests using Singularity.NatsClient
+    if pgflow_enabled do
+      # Subscribe to template requests using PGFlow workflows
       Enum.each(
         [
           "template.get.>",
@@ -236,13 +236,13 @@ defmodule Singularity.Knowledge.TemplateService do
         end
       )
 
-      Logger.info("Template pgmq service started")
+      Logger.info("Template PGFlow service started")
       Logger.info("  Listening on: template.get.*, template.search.*")
     else
-      Logger.info("Template pgmq service running in local-only mode (pgmq disabled)")
+      Logger.info("Template service running in local-only mode (PGFlow disabled)")
     end
 
-    {:ok, %{gnat: gnat_name, requests_handled: 0, pgmq_enabled: pgmq_enabled}}
+    {:ok, %{messaging_client: messaging_client_name, requests_handled: 0, pgflow_enabled: pgflow_enabled}}
   end
 
   @impl true
@@ -253,10 +253,10 @@ defmodule Singularity.Knowledge.TemplateService do
     # Parse subject: template.get.framework.phoenix
     case String.split(rest, ".", parts: 2) do
       [artifact_type, artifact_id] ->
-        handle_get_request(state.gnat, artifact_type, artifact_id, reply_to)
+        handle_get_request(state.messaging_client, artifact_type, artifact_id, reply_to)
 
       _ ->
-        send_error(state.gnat, reply_to, "Invalid subject format")
+        send_error(state.messaging_client, reply_to, "Invalid subject format")
     end
 
     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
@@ -264,7 +264,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   @impl true
   def handle_info({:msg, %{subject: "template.search." <> query, reply_to: reply_to}}, state) do
-    handle_search_request(state.gnat, query, reply_to)
+    handle_search_request(state.messaging_client, query, reply_to)
     {:noreply, %{state | requests_handled: state.requests_handled + 1}}
   end
 
@@ -276,7 +276,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
   # Private Functions
 
-  defp handle_get_request(_gnat, artifact_type, artifact_id, reply_to) when is_binary(reply_to) do
+  defp handle_get_request(_messaging_client, artifact_type, artifact_id, reply_to) when is_binary(reply_to) do
     start_time = System.monotonic_time(:microsecond)
 
     case TemplateCache.get(artifact_type, artifact_id) do
@@ -305,12 +305,12 @@ defmodule Singularity.Knowledge.TemplateService do
     end
   end
 
-  defp handle_get_request(_gnat, _artifact_type, _artifact_id, nil) do
+  defp handle_get_request(_messaging_client, _artifact_type, _artifact_id, nil) do
     # No reply_to - can't respond
     Logger.warning("Received template.get request without reply_to")
   end
 
-  defp handle_search_request(gnat, query, reply_to) do
+  defp handle_search_request(messaging_client, query, reply_to) do
     start_time = System.monotonic_time(:microsecond)
 
     # Implement semantic search using pgvector
@@ -339,22 +339,22 @@ defmodule Singularity.Knowledge.TemplateService do
 
       {:error, reason} ->
         Logger.error("Semantic search failed: #{inspect(reason)}")
-        send_error(gnat, reply_to, "Search failed: #{inspect(reason)}")
+        send_error(messaging_client, reply_to, "Search failed: #{inspect(reason)}")
     end
 
     emit_telemetry(:search, "search", start_time)
   end
 
-  defp handle_search_request(_gnat, _query, nil) do
+  defp handle_search_request(_messaging_client, _query, nil) do
     Logger.warning("Received template.search request without reply_to")
   end
 
-  defp send_error(_gnat, reply_to, message) when is_binary(reply_to) do
+  defp send_error(_messaging_client, reply_to, message) when is_binary(reply_to) do
     error_msg = Jason.encode!(%{error: message})
     Singularity.Messaging.Client.publish(reply_to, error_msg)
   end
 
-  defp send_error(_gnat, nil, _message), do: :ok
+  defp send_error(_messaging_client, nil, _message), do: :ok
 
   # Public API for other modules to use instead of direct pgmq calls
 

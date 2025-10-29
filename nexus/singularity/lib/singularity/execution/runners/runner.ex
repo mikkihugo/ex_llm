@@ -12,7 +12,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Telemetry** - Observability and metrics
   - **Circuit Breaker** - Fault tolerance for external services
   - **PostgreSQL Persistence** - Execution history and state management
-  - **pgmq Integration** - Distributed coordination and messaging
+  - **PGFlow Messaging** - Distributed coordination and messaging
 
   ## Key Features
 
@@ -23,7 +23,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Dynamic Scaling** - Adjusts resources based on load
   - **Event-Driven** - Responds to system events
   - **Persistent State** - Execution history survives restarts
-  - **Distributed Coordination** - pgmq-based task distribution
+  - **Distributed Coordination** - PGFlow-backed task distribution
 
   ## Usage
 
@@ -55,6 +55,7 @@ defmodule Singularity.Execution.Runners.Runner do
 
   alias Singularity.Agents.Agent
   alias Singularity.Code.Analyzers.MicroserviceAnalyzer
+  alias Singularity.LLM.Config
 
   @type execution_id :: String.t()
   @type task :: map()
@@ -64,7 +65,7 @@ defmodule Singularity.Execution.Runners.Runner do
           metrics: map(),
           circuit_breakers: %{atom() => map()},
           supervisor_ref: reference(),
-          gnat: pid() | nil,
+          messaging_client: pid() | nil,
           execution_history: [map()]
         }
 
@@ -159,15 +160,15 @@ defmodule Singularity.Execution.Runners.Runner do
     # Initialize circuit breakers for external services
     circuit_breakers = initialize_circuit_breakers()
 
-    # Connect to pgmq if available
-    gnat =
-      case connect_to_pgmq() do
-        {:ok, pid} ->
-          Logger.info("Connected to pgmq")
-          pid
+    # Connect to PGFlow messaging if available
+    messaging_client =
+      case connect_to_pgflow() do
+        {:ok, client} ->
+          Logger.info("Connected to PGFlow messaging")
+          client
 
         {:error, reason} ->
-          Logger.warning("pgmq connection failed: #{inspect(reason)}")
+          Logger.warning("PGFlow messaging connection failed: #{inspect(reason)}")
           nil
       end
 
@@ -193,7 +194,7 @@ defmodule Singularity.Execution.Runners.Runner do
       metrics: initialize_metrics(),
       circuit_breakers: circuit_breakers,
       supervisor_ref: supervisor_ref,
-      gnat: gnat,
+      messaging_client: messaging_client,
       execution_history: execution_history,
       config: %{
         max_concurrent_tasks: max_concurrent_tasks,
@@ -202,7 +203,7 @@ defmodule Singularity.Execution.Runners.Runner do
       }
     }
 
-    Logger.info("Runner started", supervisor_ref: supervisor_ref, pgmq: gnat != nil)
+    Logger.info("Runner started", supervisor_ref: supervisor_ref, pgflow: messaging_client != nil)
     {:ok, state}
   end
 
@@ -214,7 +215,7 @@ defmodule Singularity.Execution.Runners.Runner do
     case persist_execution(execution_id, task, :pending) do
       :ok ->
         # Publish task started event
-        publish_pgmq_event(state.gnat, "system.events.runner.task.started", %{
+        publish_pgflow_event(state.messaging_client, "system.events.runner.task.started", %{
           execution_id: execution_id,
           task_type: task.type,
           timestamp: DateTime.utc_now()
@@ -313,7 +314,7 @@ defmodule Singularity.Execution.Runners.Runner do
       metrics: state.metrics,
       circuit_breakers: state.circuit_breakers,
       supervisor_children: DynamicSupervisor.count_children(state.supervisor_ref),
-      pgmq_connected: state.gnat != nil,
+      pgflow_connected: state.messaging_client != nil,
       execution_history_count: length(state.execution_history)
     }
 
@@ -350,7 +351,7 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:publish_event, event_type, payload}, _from, state) do
-    result = publish_pgmq_event(state.gnat, event_type, payload)
+    result = publish_pgflow_event(state.messaging_client, event_type, payload)
     {:reply, result, state}
   end
 
@@ -385,7 +386,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish completion event
-    publish_pgmq_event(state.gnat, "system.events.runner.task.completed", %{
+    publish_pgflow_event(state.messaging_client, "system.events.runner.task.completed", %{
       execution_id: execution_id,
       result: result,
       timestamp: DateTime.utc_now()
@@ -426,7 +427,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish failure event
-    publish_pgmq_event(state.gnat, "system.events.runner.task.failed", %{
+    publish_pgflow_event(state.messaging_client, "system.events.runner.task.failed", %{
       execution_id: execution_id,
       error: reason,
       timestamp: DateTime.utc_now()
@@ -447,7 +448,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_pgmq_event(state.gnat, "system.events.runner.circuit.opened", %{
+    publish_pgflow_event(state.messaging_client, "system.events.runner.circuit.opened", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -467,7 +468,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_pgmq_event(state.gnat, "system.events.runner.circuit.closed", %{
+    publish_pgflow_event(state.messaging_client, "system.events.runner.circuit.closed", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -760,26 +761,27 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   # ============================================================================
-  # pgmq INTEGRATION
+  # PGFlow INTEGRATION
   # ============================================================================
 
-  defp connect_to_pgmq do
+  defp connect_to_pgflow do
     try do
-      # Use Singularity.Messaging.Client instead of direct pgmq connection
-      # pgmq connection handled by application startup
-      {:ok, nil}
+      # Messaging is handled by the global PGFlow messaging client, which is registered
+      # during application startup. Returning nil keeps the state consistent; callers
+      # simply check for a present client before publishing events.
+      {:ok, Process.whereis(:pgflow_messaging_client)}
     rescue
       error ->
         {:error, error}
     end
   end
 
-  defp publish_pgmq_event(nil, _event_type, _payload) do
-    # pgmq not available, silently ignore
+  defp publish_pgflow_event(nil, _event_type, _payload) do
+    # PGFlow messaging not available, silently ignore
     :ok
   end
 
-  defp publish_pgmq_event(_gnat, event_type, payload) do
+  defp publish_pgflow_event(_messaging_client, event_type, payload) do
     try do
       subject = "system.events.runner.#{event_type}"
       message = Jason.encode!(payload)
@@ -787,7 +789,7 @@ defmodule Singularity.Execution.Runners.Runner do
       :ok
     rescue
       error ->
-        Logger.error("Failed to publish pgmq event", event: event_type, error: error)
+        Logger.error("Failed to publish PGFlow event", event: event_type, error: error)
         {:error, error}
     end
   end
@@ -1014,8 +1016,16 @@ defmodule Singularity.Execution.Runners.Runner do
 
   defp generate_ai_insights(semantic, options) do
     # Extract options with defaults
-    complexity = Keyword.get(options, :complexity, :complex)
+    provider = Keyword.get(options, :provider, "auto")
+    task_type = Keyword.get(options, :task_type, "code_analysis")
     include_recommendations = Keyword.get(options, :include_recommendations, true)
+    
+    # Get complexity from centralized config (database ? TaskTypeRegistry fallback)
+    context = %{task_type: task_type}
+    complexity = case Config.get_task_complexity(provider, context) do
+      {:ok, comp} -> comp
+      {:error, _} -> :complex  # Fallback to complex for analysis
+    end
 
     # Delegate to existing LLM service for AI insights
     case Singularity.LLM.Service.call(
@@ -1086,7 +1096,7 @@ defmodule Singularity.Execution.Runners.Runner do
         do: [:phoenix | frameworks],
         else: frameworks
 
-    # pgmq detection
+    # PGFlow messaging detection
     frameworks =
       if String.contains?(file_path, "pgmq"), do: [:pgmq | frameworks], else: frameworks
 

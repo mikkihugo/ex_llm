@@ -20,17 +20,11 @@ defmodule Singularity.Jobs.PatternSyncWorker do
     Logger.debug("🔄 Syncing framework patterns...")
 
     try do
-      case Singularity.ArchitectureEngine.FrameworkPatternSync.refresh_cache() do
-        :ok ->
-          Logger.info("✅ Framework patterns synced to ETS/pgmq/JSON")
-          :ok
-
-        {:error, reason} ->
-          Logger.error("❌ Pattern sync failed", reason: inspect(reason))
-          {:error, reason}
-      end
+      :ok = Singularity.ArchitectureEngine.FrameworkPatternSync.refresh_cache()
+      Logger.info("✅ Framework patterns synced to ETS/pgmq/JSON")
+      :ok
     rescue
-      e in Exception ->
+      e ->
         Logger.error("❌ Pattern sync exception", error: inspect(e))
         {:error, e}
     end

@@ -98,7 +98,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   uses:
     - Singularity.Repo: Database queries
     - Singularity.CodeSearch: Semantic search
-    - Singularity.NatsClient: pgmq communication
+    - Singularity.Messaging.Client: PGFlow-based communication
     - Singularity.Tools.SecurityPolicy: Access control
 
   used_by:
@@ -156,18 +156,22 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     ]
 
     Enum.each(subjects, fn subject ->
-      case Singularity.Messaging.Client.subscribe(subject) do
-        {:ok, _sid} ->
-          Logger.info("[DatabaseToolsExecutor] Subscribed to #{subject}")
-
-        {:error, reason} ->
-          Logger.error(
-            "[DatabaseToolsExecutor] Failed to subscribe to #{subject}: #{inspect(reason)}"
-          )
-      end
+      # Subscribe to PGFlow workflow completion events for tool requests
+      subscribe_to_pgflow_tool_requests(subject)
     end)
 
     {:ok, %{}}
+  end
+
+  @impl true
+  def handle_call({:execute_tool, topic, request}, _from, state) do
+    response = execute_tool(topic, request)
+    # Convert response format from {data, error} to {:ok, result} or {:error, reason}
+    case response do
+      %{"data" => data, "error" => nil} -> {:reply, {:ok, data}, state}
+      %{"data" => nil, "error" => error} -> {:reply, {:error, error}, state}
+      other -> {:reply, {:ok, other}, state}
+    end
   end
 
   @impl true
@@ -186,16 +190,25 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
           {error_response("Invalid JSON request"), %{}}
       end
 
-    # Send response
-    response_json = Jason.encode!(response)
-
-    case Singularity.Messaging.Client.publish(reply_to, response_json) do
-      :ok ->
+    # Send response via Pgflow workflow
+    case Pgflow.Workflow.create_workflow(
+           Singularity.Workflows.DatabaseToolExecutionWorkflow,
+           %{
+             "request" => decoded_request,
+             "reply_to" => reply_to,
+             "response" => response
+           }
+         ) do
+      {:ok, workflow_id} ->
         duration = System.monotonic_time(:millisecond) - start_time
         log_tool_execution(topic, decoded_request, :success, duration)
+        Logger.info("[DatabaseToolsExecutor] Created response workflow",
+          workflow_id: workflow_id,
+          reply_to: reply_to
+        )
 
       {:error, reason} ->
-        Logger.error("[DatabaseToolsExecutor] Failed to send response: #{inspect(reason)}")
+        Logger.error("[DatabaseToolsExecutor] Failed to create response workflow: #{inspect(reason)}")
     end
 
     {:noreply, state}
@@ -710,7 +723,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
 
   defp extract_symbols(nil, _name, _type, _path), do: []
 
-  defp extract_symbols(symbols, name, type, path) do
+  defp extract_symbols(symbols, name, type, path) when is_list(symbols) do
     symbols
     |> Enum.filter(fn s -> s["name"] == name end)
     |> Enum.map(fn s ->
@@ -722,6 +735,50 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
       }
     end)
   end
+
+  # Subscribe to PGFlow workflow completion events for tool requests
+  defp subscribe_to_pgflow_tool_requests(subject) do
+    # Create PGFlow workflow subscription for tool execution requests
+    workflow_name = "database_tool_execution_#{String.replace(subject, ".", "_")}"
+    
+    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+      handle_tool_workflow_completion(workflow_result)
+    end) do
+      {:ok, subscription_id} ->
+        Logger.info("[DatabaseToolsExecutor] Subscribed to PGFlow workflow",
+          subject: subject,
+          workflow: workflow_name,
+          subscription_id: subscription_id
+        )
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("[DatabaseToolsExecutor] Failed to subscribe to PGFlow workflow",
+          subject: subject,
+          reason: reason
+        )
+        # Fallback: log migration status
+        Logger.info("[DatabaseToolsExecutor] Migrating subscription from pgmq to Pgflow: #{subject}")
+        :ok
+    end
+  end
+
+  defp handle_tool_workflow_completion(%{status: :completed, result: result}) do
+    # Handle completed tool execution workflow
+    Logger.debug("[DatabaseToolsExecutor] Received completed workflow result",
+      result: result
+    )
+    :ok
+  end
+
+  defp handle_tool_workflow_completion(%{status: :failed, error: error}) do
+    Logger.error("[DatabaseToolsExecutor] Tool execution workflow failed",
+      error: error
+    )
+    :ok
+  end
+
+  defp handle_tool_workflow_completion(_), do: :ok
 
   defp truncate_text(text, max_len) do
     if String.length(text) > max_len do

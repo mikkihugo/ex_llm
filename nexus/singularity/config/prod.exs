@@ -13,13 +13,9 @@ config :singularity, :fly,
 
 # HTTP server not applicable - Singularity is pure Elixir application
 
-# Production Oban Configuration
-# Persistent job queue with proper error handling
-# Note: Merge with base config in config.exs - only override production-specific settings
-config :oban,
-  queues: [
-    # Override dev defaults for production
-    training: [concurrency: 1],
-    maintenance: [concurrency: 3],
-    default: [concurrency: 10]
-  ]
+# SASL Configuration for Production
+# Log to file in production for system monitoring
+config :sasl,
+  sasl_error_logger: {:file, ~c"log/sasl-error.log"},
+  errlog_type: :error,
+  utc_log: true

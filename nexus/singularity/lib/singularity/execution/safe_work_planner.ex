@@ -198,6 +198,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
   # INTEGRATION: Vision persistence and notifications
   alias Singularity.{CodeStore, Conversation}
+  alias Singularity.LLM.Config
 
   # INTEGRATION: Rule validation (WSJF and feature readiness)
   alias Singularity.Execution.Autonomy.RuleEngine, as: RuleEngine
@@ -479,7 +480,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     end
 
     # Analyze chunk using LLM
-    analysis = analyze_chunk(state, text, relates_to, updates_id)
+    analysis = analyze_chunk(state, text, relates_to, updates_id, opts)
 
     Logger.info("Vision chunk analyzed",
       level: analysis.level,
@@ -630,7 +631,10 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
   ## Analysis & Intelligence
 
-  defp analyze_chunk(state, text, relates_to, updates_id) do
+  defp analyze_chunk(state, text, relates_to, updates_id),
+    do: analyze_chunk(state, text, relates_to, updates_id, [])
+
+  defp analyze_chunk(state, text, relates_to, updates_id, opts) do
     # Use LLM for intelligent work item classification
     existing_items = format_existing_items(state)
 
@@ -657,7 +661,17 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     Return JSON with this structure.
     """
 
-    case Singularity.LLM.Service.call(:simple, [%{role: "user", content: prompt}],
+    # Get complexity from centralized config (database → TaskTypeRegistry fallback)
+    provider = Keyword.get(opts, :provider, "auto")
+    task_type = "classifier"
+    context = %{task_type: task_type}
+    
+    complexity = case Config.get_task_complexity(provider, context) do
+      {:ok, comp} -> comp
+      {:error, _} -> :simple  # Fallback for classifier tasks
+    end
+
+    case Singularity.LLM.Service.call(complexity, [%{role: "user", content: prompt}],
            task_type: "classifier",
            capabilities: [:analysis, :reasoning]
          ) do

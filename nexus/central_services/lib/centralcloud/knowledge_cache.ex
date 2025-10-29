@@ -107,11 +107,36 @@ defmodule CentralCloud.KnowledgeCache do
       write_concurrency: true
     ])
 
-    # Load initial data from database if needed
-    # TODO: Implement database load for persistence across restarts
+    # Load initial data from database on startup
+    load_from_database()
 
     Logger.info("KnowledgeCache ready - using ETS table :#{@cache_table}")
     {:ok, %{entries: 0}}
+  end
+
+  # Load cache from database on startup
+  defp load_from_database do
+    try do
+      # Load templates/prompts from TemplateService
+      case CentralCloud.TemplateService.list_templates(deprecated: false) do
+        {:ok, templates} ->
+          Enum.each(templates, fn template ->
+            asset = %{
+              asset_type: template["category"] || "template",
+              id: template["id"],
+              data: template
+            }
+            save_asset(asset)
+          end)
+          Logger.info("KnowledgeCache: Loaded #{length(templates)} templates from database")
+
+        {:error, reason} ->
+          Logger.warning("KnowledgeCache: Failed to load templates: #{inspect(reason)}")
+      end
+    rescue
+      e ->
+        Logger.warning("KnowledgeCache: Exception loading from database: #{inspect(e)}")
+    end
   end
 
   # ===========================

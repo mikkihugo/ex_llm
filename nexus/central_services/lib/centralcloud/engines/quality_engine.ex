@@ -1,76 +1,84 @@
 defmodule CentralCloud.Engines.LintingEngine do
   @moduledoc """
-  Linting Engine - Delegates to Singularity via NATS.
+  Linting Engine – delegates code quality analysis to Singularity via PGFlow.
 
-  CentralCloud doesn't compile Rust NIFs directly (compile: false in mix.exs).
-  Instead, this module delegates linting & quality gate requests to Singularity
-  via NATS, which has the compiled linting_engine NIF.
-
-  This module provides linting integration, quality gate enforcement, and external
-  linter coordination (ESLint, Clippy, Credo, etc.).
+  CentralCloud keeps Rust NIF compilation disabled, so all linting and quality
+  evaluation runs inside Singularity. This module provides a thin façade that
+  packages requests, sends them through PGFlow, and returns the structured
+  responses.
   """
-
-  # Note: Rustler bindings disabled - NIFs compiled only in Singularity
-  # use Rustler,
-  #   otp_app: :centralcloud,
-  #   crate: :linting_engine,
-  #   path: "../../../../rust/linting_engine"
 
   require Logger
+  alias Pgflow
+
+  @default_quality_checks ["maintainability", "performance", "security", "architecture"]
+  @default_languages ["elixir", "rust", "javascript"]
 
   @doc """
-  Analyze code quality using Rust Quality Engine.
+  Analyze code quality for a repository or project.
+
+  Options:
+    * `:quality_checks` - list of checks to run (defaults to #{@default_quality_checks |> Enum.join(", ")})
+    * `:include_metrics` - boolean flag controlling metric enrichment (default: true)
   """
   def analyze_quality(codebase_info, opts \\ []) do
-    quality_checks = Keyword.get(opts, :quality_checks, ["maintainability", "performance", "security", "architecture"])
-    include_metrics = Keyword.get(opts, :include_metrics, true)
-
     request = %{
       "codebase_info" => codebase_info,
-      "quality_checks" => quality_checks,
-      "include_metrics" => include_metrics
+      "quality_checks" => Keyword.get(opts, :quality_checks, @default_quality_checks),
+      "include_metrics" => Keyword.get(opts, :include_metrics, true)
     }
 
-    case linting_engine_call("analyze_quality", request) do
-      {:ok, results} ->
-        Logger.debug("Linting engine quality analysis completed",
-          overall_score: Map.get(results, "overall_score", 0.0),
-          checks_performed: length(Map.get(results, "quality_checks", []))
-        )
-        {:ok, results}
+    with {:ok, results} <- linting_engine_call("analyze_quality", request) do
+      Logger.debug("Linting engine quality analysis completed",
+        overall_score: Map.get(results, "overall_score", 0.0),
+        checks_performed: length(Map.get(results, "quality_checks", []))
+      )
 
-      {:error, reason} ->
-        Logger.error("Linting engine failed", reason: reason)
-        {:error, reason}
+      {:ok, results}
     end
   end
 
   @doc """
-  Run linting on codebase.
+  Run linting passes across the supplied codebase metadata.
+
+  Options:
+    * `:languages` - target languages (default #{@default_languages |> Enum.join(", ")})
+    * `:strict_mode` - enable stricter lint rules (default false)
   """
   def run_linting(codebase_info, opts \\ []) do
-    languages = Keyword.get(opts, :languages, ["elixir", "rust", "javascript"])
-    strict_mode = Keyword.get(opts, :strict_mode, false)
-
     request = %{
       "codebase_info" => codebase_info,
-      "languages" => languages,
-      "strict_mode" => strict_mode
+      "languages" => Keyword.get(opts, :languages, @default_languages),
+      "strict_mode" => Keyword.get(opts, :strict_mode, false)
     }
 
-    case linting_engine_call("run_linting", request) do
-      {:ok, results} ->
-        Logger.debug("Linting engine linting completed",
-          issues_found: length(Map.get(results, "issues", []))
-        )
-        {:ok, results}
+    with {:ok, results} <- linting_engine_call("run_linting", request) do
+      Logger.debug("Linting engine linting completed",
+        issues_found: length(Map.get(results, "issues", []))
+      )
 
-      {:error, reason} ->
-        Logger.error("Linting engine failed", reason: reason)
-        {:error, reason}
+      {:ok, results}
     end
   end
 
-  # NIF function (loaded from shared Rust crate)
-  defp linting_engine_call(_operation, _request), do: :erlang.nif_error(:nif_not_loaded)
+  # ---------------------------------------------------------------------------
+  # PGFLOW DELEGATION
+  # ---------------------------------------------------------------------------
+
+  defp linting_engine_call(operation, request) do
+    case Pgflow.send_with_notify("engine.linting.#{operation}", request, CentralCloud.Repo,
+           timeout: 30_000
+         ) do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, :timeout} ->
+        Logger.error("Linting engine call timed out", operation: operation)
+        {:error, :timeout}
+
+      {:error, reason} ->
+        Logger.error("Linting engine call failed", operation: operation, reason: inspect(reason))
+        {:error, reason}
+    end
+  end
 end

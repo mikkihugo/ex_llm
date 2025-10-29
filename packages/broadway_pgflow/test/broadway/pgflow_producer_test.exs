@@ -50,7 +50,11 @@ defmodule Broadway.PgflowProducerTest do
   describe "handle_demand/3" do
     test "enqueues workflow with demand and returns empty list", %{workflow_pid: workflow_pid} do
       expect(Workflow, :start_link, fn _, _, _ -> {:ok, workflow_pid} end)
-      expect(Workflow, :enqueue, fn ^workflow_pid, :fetch, %{demand: 10, batch_size: 16} -> :ok end)
+      expect(Workflow, :enqueue, fn ^workflow_pid, :fetch, params ->
+        assert params.demand == 10
+        assert params.batch_size == 16
+        :ok
+      end)
 
       state = %{
         workflow_pid: workflow_pid,
@@ -67,7 +71,11 @@ defmodule Broadway.PgflowProducerTest do
 
     test "handles high concurrency demand", %{workflow_pid: workflow_pid} do
       expect(Workflow, :start_link, fn _, _, _ -> {:ok, workflow_pid} end)
-      expect(Workflow, :enqueue, fn ^workflow_pid, :fetch, %{demand: 100, batch_size: 16} -> :ok end)
+      expect(Workflow, :enqueue, fn ^workflow_pid, :fetch, params ->
+        assert params.demand == 100
+        assert params.batch_size == 16
+        :ok
+      end)
 
       state = %{
         workflow_pid: workflow_pid,
@@ -127,10 +135,7 @@ defmodule Broadway.PgflowProducerTest do
 
       state = %{workflow_pid: workflow_pid}
 
-      # Mock Broadway.push_messages
-      expect(Broadway, :push_messages, fn Broadway.PgflowProducer, ^messages -> :ok end)
-
-      assert {:noreply, ^state} = PgflowProducer.handle_info({:workflow_yield, messages}, state)
+      assert {:noreply, ^messages, ^state} = PgflowProducer.handle_info({:workflow_yield, messages}, state)
     end
 
     test "handles empty message yield", %{workflow_pid: workflow_pid} do
@@ -138,9 +143,7 @@ defmodule Broadway.PgflowProducerTest do
 
       state = %{workflow_pid: workflow_pid}
 
-      expect(Broadway, :push_messages, fn Broadway.PgflowProducer, ^messages -> :ok end)
-
-      assert {:noreply, ^state} = PgflowProducer.handle_info({:workflow_yield, messages}, state)
+      assert {:noreply, ^messages, ^state} = PgflowProducer.handle_info({:workflow_yield, messages}, state)
     end
   end
 

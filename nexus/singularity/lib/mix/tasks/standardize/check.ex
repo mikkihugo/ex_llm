@@ -11,8 +11,7 @@ defmodule Mix.Tasks.Standardize.Check do
 
   1. **Module Names**: Checks for generic suffixes (Manager, Service, Handler, Helper, Utils)
   2. **Function Names**: Checks for overly generic function names
-  3. **NATS Subjects**: Validates subject naming patterns
-  4. **@moduledoc**: Ensures all modules have proper documentation
+  3. **@moduledoc**: Ensures all modules have proper documentation
 
   ## Examples
 
@@ -57,9 +56,8 @@ defmodule Mix.Tasks.Standardize.Check do
     moduledoc_violations = check_moduledoc()
     violations = violations ++ moduledoc_violations
 
-    # Check NATS subjects (if NATS_SUBJECTS.md exists)
-    nats_violations = check_nats_subjects()
-    violations = violations ++ nats_violations
+    # NATS subjects check removed - using PGFlow workflows instead
+    violations = violations
 
     # Report results
     if violations == [] do
@@ -249,42 +247,4 @@ defmodule Mix.Tasks.Standardize.Check do
     end)
   end
 
-  defp check_nats_subjects do
-    nats_file = Path.join([File.cwd!(), "NATS_SUBJECTS.md"])
-
-    if File.exists?(nats_file) do
-      case File.read(nats_file) do
-        {:ok, content} ->
-          # Check for old patterns that should be updated
-          violations = []
-
-          violations =
-            if content =~ ~r/tech\.templates/ and not content =~ ~r/templates\.technology/ do
-              violations ++
-                [
-                  "NATS_SUBJECTS.md: Contains old pattern 'tech.templates', should be 'templates.technology.*'"
-                ]
-            else
-              violations
-            end
-
-          violations =
-            if content =~ ~r/facts\./ and not content =~ ~r/knowledge\.facts/ do
-              violations ++
-                [
-                  "NATS_SUBJECTS.md: Contains old pattern 'facts.*', should be 'knowledge.facts.*'"
-                ]
-            else
-              violations
-            end
-
-          violations
-
-        {:error, _} ->
-          []
-      end
-    else
-      []
-    end
-  end
 end

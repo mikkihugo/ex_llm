@@ -317,7 +317,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
       WorkflowLearner.record_outcome(outcome)
     rescue
       e ->
-        Logger.warn("[ExecutionCoordinator] Failed to record learning outcome",
+        Logger.warning("[ExecutionCoordinator] Failed to record learning outcome",
           task_id: task[:id],
           error: inspect(e)
         )

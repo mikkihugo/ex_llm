@@ -17,7 +17,7 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   require Logger
 
   alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
-  alias Singularity.LLM.{Service, PromptCache}
+  alias Singularity.LLM.{Service, PromptCache, Config}
 
   @doc """
   Generate LLM prompt with optimal template selection
@@ -337,7 +337,20 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
   end
 
   defp determine_complexity(task, template) do
-    # Determine complexity level for pgmq routing based on task and template
+    # Use centralized LLM.Config for complexity (database ? TaskTypeRegistry fallback)
+    provider = select_provider_for_template(template) |> Atom.to_string()
+    task_type = task.type || :coder
+    context = %{task_type: task_type}
+    
+    case Config.get_task_complexity(provider, context) do
+      {:ok, complexity} -> complexity
+      {:error, _} ->
+        # Fallback: Determine from template complexity and task type
+        determine_complexity_fallback(task, template)
+    end
+  end
+
+  defp determine_complexity_fallback(task, template) do
     template_complexity = get_in(template, ["metadata", "performance", "complexity"]) || 5
 
     cond do

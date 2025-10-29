@@ -144,7 +144,7 @@ defmodule Singularity.Tools.Validation do
       naming_consistency: naming_check,
       summary: %{
         overall_valid: tool_validation.overall_valid,
-        total_roles: length(ToolMapping.get_corrected_role_tools()),
+        total_roles: map_size(ToolMapping.get_corrected_role_tools()),
         total_actual_tools: tool_validation.total_actual_tools,
         total_role_tools: tool_validation.total_role_tools,
         naming_inconsistencies: naming_check.total_inconsistencies

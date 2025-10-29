@@ -48,9 +48,6 @@ defmodule Singularity.HTDAG.Supervisor do
     children =
       if enabled do
         [
-          # Real-time file watching for automatic detection
-          Singularity.Execution.Planning.CodeFileWatcher,
-
           # HTDAG workflow management
           Singularity.HTDAG.AutoCodeIngestionDAG,
 
@@ -61,9 +58,12 @@ defmodule Singularity.HTDAG.Supervisor do
           Singularity.Workflows
         ]
       else
-        Logger.info("HTDAG auto ingestion disabled, skipping file watcher")
+        Logger.info("HTDAG auto ingestion disabled")
         []
       end
+
+    # Note: CodeFileWatcher is started by ApplicationSupervisor (singleton)
+    # HTDAG workflows use the existing CodeFileWatcher instance via its public API
 
     Supervisor.init(children, strategy: :one_for_one)
   end

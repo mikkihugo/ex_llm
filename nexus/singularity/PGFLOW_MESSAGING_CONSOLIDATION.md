@@ -44,7 +44,7 @@ All messaging and real-time communication has been consolidated into **PgFlow** 
 ### **Send Messages with Persistence + Real-time**
 ```elixir
 # Send message via PGMQ with NOTIFY for real-time delivery
-{:ok, message_id} = PgFlow.send_with_notify(
+{:ok, :sent} = PgFlow.send_with_notify(
   "chat_messages", 
   %{type: "notification", content: "Hello!"}
 )

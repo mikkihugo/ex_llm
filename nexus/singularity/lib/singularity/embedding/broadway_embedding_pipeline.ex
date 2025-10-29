@@ -115,7 +115,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
   end
 
   # Start Broadway pipeline with multiple stages
-  defp start_pipeline(artifacts, device, workers, batch_size, verbose) do
+  defp start_pipeline(_artifacts, device, workers, batch_size, verbose) do
     Broadway.start_link(__MODULE__,
       name: __MODULE__.Pipeline,
       producer: [

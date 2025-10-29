@@ -120,7 +120,7 @@ defmodule Singularity.Agents.Coordination.LearningFeedback do
                   agent_name
 
                 {:error, reason} ->
-                  Logger.warn("[LearningFeedback] Failed to update success rate",
+                  Logger.warning("[LearningFeedback] Failed to update success rate",
                     agent: agent_name,
                     reason: inspect(reason)
                   )

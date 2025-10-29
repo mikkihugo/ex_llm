@@ -49,11 +49,11 @@ defmodule Singularity.CodeAnalyzer.Native do
   - `has_rca_support/1` - Check if language has RCA support
   - `has_ast_grep_support/1` - Check if language has AST-Grep support
 
-  ### Legacy Parsing (OLD)
+  ### Tree-sitter Parsing
   - `parse_file_nif/1` - Parse a single file using tree-sitter
-  - `supported_languages_nif/0` - Get list of supported languages (old format)
-  - `analyze_code_nif/2` - Analyze code quality and patterns (old format)
-  - `calculate_quality_metrics_nif/2` - Calculate quality metrics (old format)
+  - `supported_languages_nif/0` - Get list of supported languages
+  - `analyze_code_nif/2` - Analyze code quality and patterns
+  - `calculate_quality_metrics_nif/2` - Calculate quality metrics
 
   ### Knowledge/Asset Management (placeholder)
   - `load_asset_nif/1` - Load asset from local cache
@@ -263,11 +263,11 @@ defmodule Singularity.CodeAnalyzer.Native do
   def has_ast_grep_support(_language_id), do: :erlang.nif_error(:nif_not_loaded)
 
   # ===========================
-  # Legacy Parsing NIFs (OLD)
+  # Tree-sitter Parsing NIFs
   # ===========================
 
   @doc """
-  Parse a single file using tree-sitter (LEGACY).
+  Parse a single file using tree-sitter.
 
   **Note:** Consider using `analyze_language/2` instead for richer analysis.
 
@@ -287,7 +287,7 @@ defmodule Singularity.CodeAnalyzer.Native do
   end
 
   @doc """
-  Get list of supported languages (LEGACY format).
+  Get list of supported languages.
 
   **Note:** Use `supported_languages/0` instead (returns proper list).
   """
@@ -297,7 +297,7 @@ defmodule Singularity.CodeAnalyzer.Native do
   end
 
   @doc """
-  Analyze code quality and patterns (LEGACY).
+  Analyze code quality and patterns.
 
   **Note:** Use `analyze_language/2` instead for modern analysis.
   """
@@ -310,7 +310,7 @@ defmodule Singularity.CodeAnalyzer.Native do
   end
 
   @doc """
-  Calculate quality metrics (LEGACY).
+  Calculate quality metrics.
 
   **Note:** Use `get_rca_metrics/2` for comprehensive metrics.
   """

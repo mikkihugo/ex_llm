@@ -13,7 +13,7 @@ defmodule CentralServices.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :runtime_tools, :sasl]
     ]
   end
 
@@ -28,7 +28,7 @@ defmodule CentralServices.MixProject do
       # Background Job Queue for aggregation, package sync, statistics
       {:oban, "~> 2.18"},
       # Workflow orchestration via ex_pgflow macros
-      {:ex_pgflow, path: "../../packages/ex_pgflow"},
+      {:ex_pgflow, in_umbrella: true, env: Mix.env(), override: true},
       
       # Data Processing Pipeline for ML training
       {:broadway, "~> 1.0"},

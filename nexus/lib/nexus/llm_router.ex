@@ -161,6 +161,8 @@ defmodule Nexus.LLMRouter do
     case task_type do
       :coder -> select_codex_or_fallback(find_medium_model())
       :planning -> find_medium_model()
+      task when task in Singularity.MetaRegistry.TaskTypeRegistry.get_tasks_by_complexity(:medium) ->
+        find_medium_model()
       _ -> find_medium_model()
     end
   end
@@ -170,6 +172,8 @@ defmodule Nexus.LLMRouter do
       :architect -> select_codex_or_fallback(find_complex_model())
       :code_generation -> select_codex_or_fallback(find_complex_model())
       :refactoring -> select_codex_or_fallback(find_complex_model())
+      task when task in Singularity.MetaRegistry.TaskTypeRegistry.get_tasks_by_complexity(:complex) ->
+        find_complex_model()
       _ -> find_complex_model()
     end
   end

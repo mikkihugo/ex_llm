@@ -9,6 +9,7 @@ defmodule CentralCloud.Models do
   """
 
   import Ecto.Query, warn: false
+  require Logger
   alias CentralCloud.Repo
   alias CentralCloud.Models.ModelCache
 
@@ -166,14 +167,71 @@ defmodule CentralCloud.Models do
   # Private functions
 
   defp fetch_models_from_dev do
-    # TODO: Implement HTTP client to fetch from models.dev API
-    # For now, return mock data
-    {:ok, []}
+    # Fetch from models.dev API
+    # Note: models.dev API endpoint may need to be configured
+    api_url = System.get_env("MODELS_DEV_API_URL", "https://models.dev/api/v1/models")
+    
+    try do
+      case Req.get(api_url, receive_timeout: 30_000) do
+        {:ok, %Req.Response{status: 200, body: body}} ->
+          case body do
+            %{"models" => models} when is_list(models) ->
+              Logger.info("Fetched #{length(models)} models from models.dev")
+              {:ok, models}
+            
+            models when is_list(models) ->
+              Logger.info("Fetched #{length(models)} models from models.dev")
+              {:ok, models}
+            
+            data ->
+              Logger.warning("Unexpected models.dev API response format: #{inspect(data)}")
+              {:ok, []}
+          end
+        
+        {:ok, %Req.Response{status: status}} ->
+          Logger.warning("models.dev API returned status #{status}")
+          {:ok, []}  # Return empty list instead of error (graceful degradation)
+        
+        {:error, reason} ->
+          Logger.warning("Failed to fetch from models.dev API: #{inspect(reason)}")
+          {:ok, []}  # Graceful degradation - continue without models.dev data
+      end
+    rescue
+      e ->
+        Logger.warning("Exception fetching models from models.dev: #{inspect(e)}")
+        {:ok, []}  # Graceful degradation
+    end
   end
 
-  defp load_yaml_model(_yaml_file) do
-    # TODO: Implement YAML loading
-    # For now, return mock data
-    {:ok, %{}}
+  defp load_yaml_model(yaml_file) do
+    # Load YAML model definition from file
+    try do
+      case File.read(yaml_file) do
+        {:ok, content} ->
+          # Try yaml_elixir if available
+          if Code.ensure_loaded?(YamlElixir) do
+            case YamlElixir.read_from_string(content) do
+              {:ok, model_data} ->
+                Logger.debug("Loaded YAML model from #{yaml_file}")
+                {:ok, Map.put(model_data, "yaml_file", yaml_file)}
+              
+              {:error, reason} ->
+                Logger.error("Failed to parse YAML model: #{inspect(reason)}")
+                {:error, :parse_error}
+            end
+          else
+            Logger.warning("yaml_elixir not available, skipping YAML model: #{yaml_file}")
+            {:error, :yaml_not_available}
+          end
+        
+        {:error, reason} ->
+          Logger.error("Failed to read YAML file: #{inspect(reason)}")
+          {:error, :file_read_error}
+      end
+    rescue
+      e ->
+        Logger.error("Exception loading YAML model: #{inspect(e)}")
+        {:error, :exception}
+    end
   end
 end

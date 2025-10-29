@@ -21,10 +21,10 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
     priority: 5
 
   require Logger
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.PgFlow
 
   @doc """
-  Enqueue knowledge update to send to CentralCloud via Singularity.Jobs.PgmqClient.
+  Enqueue knowledge update to send to CentralCloud via pgflow.
 
   Args:
     - patterns: List of discovered patterns
@@ -68,9 +68,18 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
       insights: length(insights)
     )
 
-    case PgmqClient.send_message("centralcloud_updates", message) do
-      {:ok, message_id} ->
-        Logger.info("Knowledge update sent to CentralCloud",
+    case PgFlow.send_with_notify("centralcloud_updates", message) do
+      {:ok, :sent} ->
+        Logger.info("Knowledge update sent to CentralCloud via pgflow",
+          instance_id: instance_id,
+          patterns: length(patterns),
+          insights: length(insights)
+        )
+
+        :ok
+
+      {:ok, message_id} when is_integer(message_id) ->
+        Logger.info("Knowledge update sent to CentralCloud via pgflow",
           instance_id: instance_id,
           message_id: message_id,
           patterns: length(patterns),

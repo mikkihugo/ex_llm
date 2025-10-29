@@ -142,8 +142,8 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
       |> Enum.any?(fn {app, _, _} -> app == :ex_unit end)
 
     unless is_test do
-      PgmqClient.ensure_queue("infrastructure_registry_requests")
-      PgmqClient.ensure_queue("infrastructure_registry_responses")
+      MessageQueue.create_queue("infrastructure_registry_requests")
+      MessageQueue.create_queue("infrastructure_registry_responses")
     end
 
     registry =
@@ -188,17 +188,17 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
     }
 
     try do
-      # Send request via pgmq
-      case PgmqClient.send_message("infrastructure_registry_requests", request) do
-        {:ok, _message_id} ->
+      # Send request via pgflow (pgmq + NOTIFY)
+      case PgFlow.send_with_notify("infrastructure_registry_requests", request) do
+        {:ok, _} ->
           # Wait for response from CentralCloud
-          Logger.debug("Sent infrastructure registry request to CentralCloud via pgmq")
+          Logger.debug("Sent infrastructure registry request to CentralCloud via pgflow")
           # 3 second timeout
           wait_for_response(3000)
 
         {:error, reason} ->
           Logger.debug(
-            "Failed to send infrastructure registry request via pgmq: #{inspect(reason)}"
+            "Failed to send infrastructure registry request via pgflow: #{inspect(reason)}"
           )
 
           nil
@@ -238,16 +238,17 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
 
   # Poll response queue
   defp poll_response_queue do
-    case PgmqClient.read_messages("infrastructure_registry_responses", 1) do
-      [{_msg_id, response}] ->
-        # Got a response, acknowledge it
+    case MessageQueue.receive_message("infrastructure_registry_responses") do
+      {:ok, {msg_id, response}} ->
+        # Acknowledge message
+        MessageQueue.acknowledge("infrastructure_registry_responses", msg_id)
         {:ok, response}
 
-      [] ->
+      :empty ->
         :empty
 
-      error ->
-        {:error, error}
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

@@ -90,7 +90,7 @@ defmodule Singularity.LintingEngine do
     end
   end
 
-  # Central Cloud Integration via Singularity.NatsClient
+  # Central Cloud Integration via PGFlow workflows
 
   @doc """
   Query central quality service for quality rules and patterns.

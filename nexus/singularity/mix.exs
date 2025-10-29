@@ -132,7 +132,7 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-      {:ex_pgflow, path: "../../packages/ex_pgflow", from_umbrella: true},
+      {:ex_pgflow, in_umbrella: true, override: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},
@@ -164,7 +164,10 @@ defmodule Singularity.MixProject do
       # Test factories
       {:ex_machina, "~> 2.7", only: :test},
       # Mocks
-      {:mox, "~> 1.1", only: :test}
+      {:mox, "~> 1.1", only: :test},
+      # BEAM Debugging Tools
+      {:recon, "~> 2.5", only: [:dev, :test]},
+      {:observer_cli, "~> 1.7", only: [:dev, :test]}
     ]
   end
 
@@ -180,7 +183,9 @@ defmodule Singularity.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "deps.compile"],
+      setup: ["deps.get", "deps.compile", "build.rust_engines"],
+      # Rust engines build via build.rust_engines task (called in setup alias)
+      # Set SKIP_RUST_BUILD=1 to skip Rust builds during development
       test: ["test"],
       "test.ci": ["test --color --cover"],
       coverage: ["coveralls.html"],

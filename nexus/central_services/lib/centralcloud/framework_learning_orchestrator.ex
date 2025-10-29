@@ -155,7 +155,7 @@ defmodule CentralCloud.FrameworkLearningOrchestrator do
           {:ok, framework, learner_type}
 
         {:error, :no_match} ->
-          Logger.warn("No framework found for #{package_id}",
+          Logger.warning("No framework found for #{package_id}",
             tried_learners: Enum.map(learners, fn {type, _priority, _config} -> type end)
           )
           {:error, :no_framework_found}
@@ -268,7 +268,7 @@ defmodule CentralCloud.FrameworkLearningOrchestrator do
             {:error, reason}
         end
       else
-        Logger.warn("Learner module not found for #{learner_type}")
+        Logger.warning("Learner module not found for #{learner_type}")
         try_learners(rest, package_id, code_samples, opts)
       end
     rescue
@@ -292,7 +292,7 @@ defmodule CentralCloud.FrameworkLearningOrchestrator do
             module.record_success(package_id, framework)
           rescue
             e ->
-              Logger.warn("Failed to record learner success",
+              Logger.warning("Failed to record learner success",
                 learner: learner_type,
                 error: inspect(e)
               )

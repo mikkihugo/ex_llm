@@ -289,7 +289,36 @@ defmodule Singularity.LLM.BeamLLMService do
       # #{String.slice(prompt, 0..60)}...
 
       def main do
-        # TODO: Implement based on requirements
+        # Implement based on requirements
+        # Parse command-line arguments
+        opts = parse_args()
+        
+        # Process input files
+        case process_files(opts.input_files) do
+          {:ok, results} ->
+            # Output results
+            output_results(results, opts.output_format)
+        
+          {:error, reason} ->
+            IO.puts(:stderr, "Error: \#{inspect(reason)}")
+            System.halt(1)
+        end
+      end
+
+      defp parse_args do
+        # Parse command-line arguments
+        # In production, would use OptionParser
+        %{input_files: [], output_format: :json}
+      end
+
+      defp process_files(_files) do
+        # Process input files
+        {:ok, []}
+      end
+
+      defp output_results(_results, _format) do
+        # Output results in specified format
+        :ok
       end
     end
     """

@@ -31,7 +31,8 @@ defmodule Singularity.Conversation.MessageHistory do
   """
 
   require Logger
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Database.MessageQueue
+  alias Singularity.PgFlow
 
   @queue_prefix "conv_history_"
   @max_messages_per_query 100
@@ -57,7 +58,7 @@ defmodule Singularity.Conversation.MessageHistory do
     }
 
     try do
-      case PgmqClient.send_message(queue_name, message) do
+      case MessageQueue.send(queue_name, message) do
         {:ok, _msg_id} ->
           Logger.debug("Message stored for conversation #{conversation_id}")
           :ok
@@ -84,28 +85,36 @@ defmodule Singularity.Conversation.MessageHistory do
 
     try do
       # Read all available messages from the queue
-      case PgmqClient.read_messages(queue_name, @max_messages_per_query) do
-        messages when is_list(messages) ->
-          # Convert to list of message data, preserving order
-          parsed_messages =
-            Enum.map(messages, fn {_msg_id, data} ->
-              parse_message(data)
-            end)
+      messages = read_batch_messages(queue_name, @max_messages_per_query)
 
-          {:ok, parsed_messages}
+      # Convert to list of message data, preserving order
+      parsed_messages =
+        Enum.map(messages, fn {_msg_id, data} ->
+          parse_message(data)
+        end)
 
-        {:error, reason} ->
-          Logger.warning("Failed to read messages for #{conversation_id}: #{inspect(reason)}")
-          {:error, reason}
-
-        _ ->
-          {:ok, []}
-      end
+      {:ok, parsed_messages}
     rescue
       error ->
         Logger.error("Exception reading messages: #{inspect(error)}")
         {:error, error}
     end
+  end
+
+  defp read_batch_messages(queue_name, limit) do
+    Enum.reduce(1..limit, [], fn _, acc ->
+      case MessageQueue.receive_message(queue_name) do
+        {:ok, {msg_id, message}} ->
+          [{msg_id, message} | acc]
+
+        :empty ->
+          acc
+
+        {:error, _reason} ->
+          acc
+      end
+    end)
+    |> Enum.reverse()
   end
 
   @doc """
@@ -119,7 +128,7 @@ defmodule Singularity.Conversation.MessageHistory do
 
     try do
       # Note: pgmq doesn't have direct delete queue, so we'll just log it
-      # In practice, old queues can be purged via PgmqClient.purge_queue
+      # In practice, old queues can be purged via MessageQueue.purge/1
       Logger.info("Conversation #{conversation_id} archived (queue: #{queue_name})")
       :ok
     rescue

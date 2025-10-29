@@ -180,7 +180,7 @@ defmodule Mix.Tasks.Rag.Setup do
           Mix.shell().info("✅ Parsed #{success_count} files successfully")
 
           if error_count > 0 do
-            Mix.shell().warn("⚠️  #{error_count} files failed to parse")
+            Mix.shell().warning("⚠️  #{error_count} files failed to parse")
           end
 
         {:error, reason} ->
@@ -262,18 +262,18 @@ defmodule Mix.Tasks.Rag.Setup do
             Mix.shell().info("  ✅ Validator works (score: #{Float.round(score, 2)})")
 
           {:ok, %{compliant: false, score: score, violations: violations}} ->
-            Mix.shell().warn(
+            Mix.shell().warning(
               "  ⚠️  Validator works but test code failed (score: #{Float.round(score, 2)})"
             )
 
-            Mix.shell().warn("  Violations: #{inspect(violations)}")
+            Mix.shell().warning("  Violations: #{inspect(violations)}")
 
           {:error, reason} ->
             Mix.shell().error("  ❌ Validator error: #{inspect(reason)}")
         end
 
       {:error, _} ->
-        Mix.shell().warn("  ⚠️  Skipping validator test (template not loaded)")
+        Mix.shell().warning("  ⚠️  Skipping validator test (template not loaded)")
     end
 
     # Test 3: Check parser
@@ -284,7 +284,7 @@ defmodule Mix.Tasks.Rag.Setup do
         Mix.shell().info("  ✅ Parser ready (#{length(languages)} languages)")
 
       _ ->
-        Mix.shell().warn("  ⚠️  Parser may not be ready")
+        Mix.shell().warning("  ⚠️  Parser may not be ready")
     end
 
     Mix.shell().info("""

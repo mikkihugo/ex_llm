@@ -435,7 +435,7 @@ defmodule Singularity.Agents.Coordination.WorkflowLearner do
       |> Repo.insert()
     rescue
       e ->
-        Logger.warn("[WorkflowLearner] Failed to persist outcome to database",
+        Logger.warning("[WorkflowLearner] Failed to persist outcome to database",
           agent: outcome[:agent],
           task_id: outcome[:task_id],
           error: inspect(e)

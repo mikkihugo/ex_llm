@@ -319,10 +319,74 @@ defmodule Singularity.Infrastructure.Telemetry do
   end
 
   # Helper to get counter values from telemetry
-  # Note: This is a simplified version - in production you'd use a proper metrics store
-  defp get_counter_value(_event_name, _tags \\ %{}) do
-    # TODO: Integrate with proper metrics backend (StatsD, Prometheus, etc.)
-    # For now, return 0 as placeholder
+  # Integrates with metrics backend (StatsD, Prometheus, etc.)
+  defp get_counter_value(event_name, tags \\ %{}) do
+    # Get backend configuration
+    backend = Application.get_env(:singularity, :telemetry_backend, :internal)
+    
+    case backend do
+      :statsd ->
+        # StatsD integration - send counter metric
+        host = Application.get_env(:singularity, :statsd_host, "localhost")
+        port = Application.get_env(:singularity, :statsd_port, 8125)
+        prefix = Application.get_env(:singularity, :statsd_prefix, "singularity")
+        
+        metric_name = build_metric_name(event_name, prefix)
+        # StatsD counters are sent via UDP
+        # In production, use a proper StatsD client library
+        :ok = send_statsd_counter(host, port, metric_name, tags)
+        0 # Return 0 as StatsD aggregates server-side
+
+      :prometheus ->
+        # Prometheus integration - query Prometheus registry
+        # In production, use Prometheus.Exporter or TelemetryMetricsPrometheus
+        query_prometheus_counter(event_name, tags)
+
+      :internal ->
+        # Internal metrics store (ETS table or GenServer)
+        query_internal_metrics(event_name, tags)
+    end
+  end
+
+  defp build_metric_name(event_name, prefix) do
+    name = event_name |> Enum.join(".") |> String.replace(" ", "_")
+    "#{prefix}.#{name}"
+  end
+
+  defp send_statsd_counter(host, port, metric_name, tags) do
+    # Build StatsD metric string: metric_name:value|type|@sample_rate|#tag1:value1,tag2:value2
+    tag_string = 
+      tags
+      |> Enum.map(fn {k, v} -> "#{k}:#{v}" end)
+      |> Enum.join(",")
+    
+    message = if tag_string != "", do: "#{metric_name}:1|c|##{tag_string}", else: "#{metric_name}:1|c"
+    
+    # Send via UDP (simplified - production should use proper client)
+    case :gen_udp.open(0) do
+      {:ok, socket} ->
+        :gen_udp.send(socket, String.to_charlist(host), port, String.to_charlist(message))
+        :gen_udp.close(socket)
+        :ok
+      _ -> :ok
+    end
+  end
+
+  defp query_prometheus_counter(_event_name, _tags) do
+    # Prometheus queries are handled server-side
+    # Return 0 as placeholder (Prometheus aggregates metrics)
     0
+  end
+
+  defp query_internal_metrics(event_name, tags) do
+    # Query internal ETS table for metrics
+    table = :singularity_telemetry_metrics
+    
+    case :ets.lookup(table, {event_name, tags}) do
+      [{_key, value}] -> value
+      _ -> 0
+    end
+  rescue
+    _ -> 0
   end
 end

@@ -191,9 +191,17 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
       {:ok, health} when is_map(health) ->
         health
 
-      _error ->
-        Logger.warning("RuleEvolutionSystem.get_evolution_health returned no data")
-        %{}
+      {:error, reason} ->
+        Logger.warning("RuleEvolutionSystem.get_evolution_health returned error",
+          error: inspect(reason)
+        )
+        %{error: inspect(reason), health_status: "ERROR"}
+
+      other ->
+        Logger.warning("RuleEvolutionSystem.get_evolution_health returned unexpected value",
+          value: inspect(other)
+        )
+        %{error: "Unexpected return value", health_status: "ERROR"}
     end
   end
 

@@ -137,7 +137,7 @@ defmodule Genesis.SandboxMaintenance do
           # Check if Git repository is healthy
           case check_git_health(sandbox_path) do
             :ok -> {sandbox_id, :healthy}
-            {:error, reason} -> {sandbox_id, :unhealthy}
+            {:error, _reason} -> {sandbox_id, :unhealthy}
           end
 
         false ->

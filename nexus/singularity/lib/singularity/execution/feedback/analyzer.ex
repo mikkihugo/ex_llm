@@ -83,7 +83,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
     try do
       # Get recent metrics for the agent
       case Aggregator.get_metrics_for(agent_id, :last_week) do
-        {:ok, metrics} when is_list(metrics) and length(metrics) > 0 ->
+        {:ok, %{summary: %{sample_count: count}} = metrics} when count > 0 ->
           # Aggregate metrics across the week
           aggregated = aggregate_metrics(metrics)
           issues = identify_issues(agent_id, aggregated)
@@ -104,7 +104,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
           Logger.info("✅ Analyzed agent", agent_id: agent_id, issues: length(issues))
           {:ok, analysis}
 
-        {:ok, []} ->
+        {:ok, %{summary: %{sample_count: 0}}} ->
           Logger.warning("⚠️ No metrics found for agent", agent_id: agent_id)
           {:ok, %{agent_id: agent_id, issues: [], suggestions: [], overall_health: :no_data}}
 
@@ -169,41 +169,57 @@ defmodule Singularity.Execution.Feedback.Analyzer do
 
   # Private Functions
 
-  @spec aggregate_metrics(list(map())) :: map()
-  defp aggregate_metrics(metrics) when is_list(metrics) and length(metrics) > 0 do
-    count = length(metrics)
-
-    avg_success_rate =
-      metrics
-      |> Enum.map(& &1.success_rate)
-      |> Enum.sum()
-      |> then(&(&1 / count))
-      |> Float.round(2)
-
-    avg_cost_cents =
-      metrics
-      |> Enum.map(& &1.avg_cost_cents)
-      |> Enum.sum()
-      |> then(&(&1 / count))
-      |> Float.round(2)
-
-    avg_latency_ms =
-      metrics
-      |> Enum.map(& &1.avg_latency_ms)
-      |> Enum.sum()
-      |> then(&(&1 / count))
-      |> Float.round(0)
+  @spec aggregate_metrics(map()) :: map()
+  defp aggregate_metrics(%{summary: summary, samples: samples} = _metrics) do
+    # Extract different metric types from samples
+    # Samples contain raw metrics with labels that identify metric type
+    success_rates = extract_metric_values(samples, "success_rate")
+    costs = extract_metric_values(samples, "cost_cents")
+    latencies = extract_metric_values(samples, "latency_ms")
 
     %{
-      avg_success_rate: avg_success_rate,
-      avg_cost_cents: avg_cost_cents,
-      avg_latency_ms: avg_latency_ms,
-      metric_count: count,
-      latest_metric: List.first(metrics)
+      avg_success_rate: average_or_default(success_rates, 0.0) |> Float.round(2),
+      avg_cost_cents: average_or_default(costs, 0.0) |> Float.round(2),
+      avg_latency_ms: average_or_default(latencies, 0.0) |> Float.round(0),
+      metric_count: summary.sample_count || 0,
+      latest_metric: %{
+        value: summary.latest_value || 0.0,
+        timestamp: summary.latest_timestamp
+      }
     }
   end
 
-  defp aggregate_metrics(_), do: %{}
+  defp aggregate_metrics(_), do: %{
+    avg_success_rate: 0.0,
+    avg_cost_cents: 0.0,
+    avg_latency_ms: 0.0,
+    metric_count: 0,
+    latest_metric: nil
+  }
+
+  defp extract_metric_values(samples, metric_name) do
+    samples
+    |> Enum.filter(fn sample ->
+      # Check if this sample matches the metric name in labels or metric_name field
+      labels = Map.get(sample, :labels, %{})
+      sample_metric_name = Map.get(labels, "metric_name") || Map.get(sample, :metric_name)
+      sample_metric_name == metric_name
+    end)
+    |> Enum.map(fn sample ->
+      # Extract numeric value from sample
+      case sample do
+        %{value: val} when is_number(val) -> val
+        %{value: %Decimal{} = dec} -> Decimal.to_float(dec)
+        _ -> nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp average_or_default([], default), do: default
+  defp average_or_default(values, _default) when is_list(values) do
+    Enum.sum(values) / length(values)
+  end
 
   @spec identify_issues(String.t(), map()) :: list(map())
   defp identify_issues(agent_id, aggregated) do

@@ -17,6 +17,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
     priority: 2
 
   require Logger
+  alias Singularity.PgFlow
 
   @doc """
   Report search analytics metrics.
@@ -36,7 +37,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
 
   @impl Oban.Worker
   def perform(%Oban.Job{
-        args: %{
+        args: args = %{
           "query" => query,
           "elapsed_ms" => elapsed_ms,
           "results_count" => results_count
@@ -48,7 +49,40 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
       results_count: results_count
     )
 
-    # TODO: Send to pgmq:search_analytics when consumer ready
-    :ok
+    # Send analytics via pgflow (pgmq + NOTIFY)
+    message = %{
+      "event" => "search_performed",
+      "query" => query,
+      "elapsed_ms" => elapsed_ms,
+      "results_count" => results_count,
+      "embedding_model" => Map.get(args, "embedding_model", "qodo"),
+      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    case PgFlow.send_with_notify("search_analytics", message) do
+      {:ok, :sent} ->
+        Logger.debug("Search analytics sent via pgflow",
+          query: query
+        )
+
+        :ok
+
+      {:ok, message_id} when is_integer(message_id) ->
+        Logger.debug("Search analytics sent via pgflow",
+          query: query,
+          message_id: message_id
+        )
+
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Failed to send search analytics via pgflow",
+          query: query,
+          error: inspect(reason)
+        )
+
+        # Don't fail the job - analytics are non-critical
+        :ok
+    end
   end
 end

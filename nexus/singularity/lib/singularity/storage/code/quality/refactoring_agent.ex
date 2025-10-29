@@ -224,28 +224,106 @@ defmodule Singularity.RefactoringAgent do
   end
 
   defp detect_schema_migrations_needed(analysis) do
-    # TODO: Implement N+1 query detection using CodeAnalyzer.Native
-    # Implementation plan:
-    # 1. Parse Ecto queries from code AST using CodeAnalyzer.Native.analyze_language/2
-    # 2. Detect repeated queries in loops (preload candidates)
-    # 3. Suggest schema changes or query optimization
-    # 4. Use Singularity.CodeAnalyzer.Native.analyze_language("elixir", code)
-
-    case analysis do
-      %{queries: queries} when length(queries) > 5 ->
-        %{
-          type: :n_plus_one_queries,
-          severity: :high,
-          message: "Potential N+1 queries detected - #{length(queries)} queries found",
-          suggestions: [
-            "Add preload/join to reduce query count",
-            "Consider using Repo.preload/2",
-            "Review query patterns in loops"
-          ]
-        }
-
-      _ ->
-        nil
+    # Detect N+1 query patterns using CodeAnalyzer
+    queries = extract_ecto_queries(analysis)
+    
+    # Detect repeated queries in loops (N+1 patterns)
+    n_plus_one_patterns = detect_n_plus_one_queries(queries, analysis)
+    
+    if length(n_plus_one_patterns) > 0 do
+      %{
+        type: :n_plus_one_queries,
+        severity: :high,
+        message: "N+1 query pattern detected - #{length(n_plus_one_patterns)} potential issues found",
+        patterns: n_plus_one_patterns,
+        suggestions: [
+          "Add preload/join to reduce query count",
+          "Consider using Repo.preload/2 or Repo.all(from(...) |> preload(...))",
+          "Review query patterns in loops - move queries outside loops",
+          "Use Repo.all with joins instead of Enum.map + Repo.get"
+        ]
+      }
+    else
+      nil
     end
+  end
+
+  defp extract_ecto_queries(analysis) do
+    # Extract Ecto queries from code AST
+    functions = Map.get(analysis, :functions, [])
+    
+    queries =
+      functions
+      |> Enum.flat_map(fn func ->
+        code = Map.get(func, :body, "") || ""
+        
+        # Use CodeAnalyzer to find Ecto queries
+        case Singularity.CodeAnalyzer.analyze_language(code, "elixir") do
+          {:ok, code_analysis} ->
+            # Extract queries from AST
+            extract_queries_from_ast(code_analysis)
+          _ -> []
+        end
+      end)
+      |> Enum.filter(&(&1 != nil))
+    
+    queries
+  end
+
+  defp extract_queries_from_ast(%{ast: ast}) when is_map(ast) do
+    # Extract Repo calls from AST
+    # Look for patterns like: Repo.get, Repo.all, Repo.one, Repo.preload
+    query_patterns = [
+      ~r/Repo\.(get|all|one|get_by|get!|one!)/,
+      ~r/from\(.*\)/,
+      ~r/Ecto\.Query/
+    ]
+    
+    code_string = if Map.has_key?(ast, :code), do: Map.get(ast, :code, ""), else: ""
+    
+    query_patterns
+    |> Enum.flat_map(fn pattern ->
+      Regex.scan(pattern, code_string, capture: :first)
+    end)
+    |> Enum.uniq()
+  end
+  
+  defp extract_queries_from_ast(_), do: []
+
+  defp detect_n_plus_one_queries(queries, analysis) do
+    # Find queries inside loops
+    functions = Map.get(analysis, :functions, [])
+    
+    functions
+    |> Enum.flat_map(fn func ->
+      body = Map.get(func, :body, "") || ""
+      
+      # Check if function contains loops (Enum.map, for, Enum.each, etc.)
+      has_loop = Regex.match?(~r/(Enum\.(map|each|reduce|filter)|for\s+.*<-)/, body)
+      
+      if has_loop do
+        # Check if queries are inside loops
+        queries_in_loop = 
+          queries
+          |> Enum.filter(fn query ->
+            # Simple heuristic: query appears after loop start
+            query_in_body = String.contains?(body, query)
+            query_in_body && has_loop
+          end)
+        
+        if length(queries_in_loop) > 0 do
+          [%{
+            function: Map.get(func, :name, "unknown"),
+            queries: queries_in_loop,
+            severity: :high,
+            suggestion: "Move queries outside loop or use Repo.preload"
+          }]
+        else
+          []
+        end
+      else
+        []
+      end
+    end)
   end
 end

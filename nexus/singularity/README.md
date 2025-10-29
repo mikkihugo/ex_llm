@@ -1,17 +1,18 @@
 # Singularity Runtime
 
-Singularity is an Elixir 1.20 + Gleam runtime for building self-improving agents designed to run on Fly.io first and migrate to Kubernetes later. It includes clustering, hot-reload scaffolding, and deployment assets for both environments.
+Singularity is an Elixir 1.19+ runtime for building self-improving AI agents and autonomous code generation pipelines. It includes a complete agent system, PGFlow workflow orchestration, multi-instance learning (CentralCloud), and comprehensive debugging tools.
 
 ## Stack Overview
 
-- **Elixir 1.20-dev / Erlang OTP 28** – Custom toolchain with Gleam-friendly build and OTP supervision.
-- **Gleam 1.5** – Still available for future hybrid strategies, though the default
-  self-improvement loop now generates Elixir modules directly and hot-loads them
-  in-process.
-- **Bandit + Plug** – Lightweight HTTP API for health, metrics, and control.
-- **libcluster** – DNS-based clustering for Fly.io and Kubernetes.
-- **Persistent code store** – Writes artifacts to `/data/code` (volume in Fly, PVC in Kubernetes).
-- **Quality toolchain** – Credo, Dialyzer, ExCoveralls, Semgrep, ESLint, TypeScript tooling for CI-ready checks.
+- **Elixir 1.19 / Erlang OTP 28** – Production-ready BEAM runtime
+- **PostgreSQL 17** – Database with pgvector, timescaledb, postgis extensions
+- **PGFlow** – Workflow orchestration using PostgreSQL as message queue
+- **Rust NIF Engines** – High-performance parsing, analysis, and quality tools
+- **Pure Elixir ML** – Embeddings via Nx (Qodo + Jina v3 multi-vector, 2560-dim)
+- **GPU-Accelerated Search** – RTX 4080 + pgvector for semantic code search
+- **CentralCloud & Genesis** – Multi-instance learning and autonomous improvement
+- **Observer** – Phoenix web UI for observability (port 4002)
+- **Quality toolchain** – Credo, Dialyzer, ExCoveralls, Semgrep, ESLint
 
 ## Search Architecture
 
@@ -115,7 +116,7 @@ The repository ships with a `flake.nix` dev shell. Install [direnv](https://dire
 direnv allow
 ```
 
-This pulls in Elixir 1.20-dev on OTP 28 (custom build with Gleam support), Gleam, Flyctl, Node.js 20, PostgreSQL 17, Redis, Hex/Rebar, Semgrep, ESLint, and other helper CLI tools.
+This pulls in Elixir 1.19+ on OTP 28, PostgreSQL 17, Hex/Rebar, Semgrep, ESLint, and other helper CLI tools.
 
 Additional shells:
 
@@ -126,69 +127,44 @@ nix develop .#fly      # minimal Fly.io deployment shell
 
 ### Manual tooling
 
-1. Install Elixir ≥ 1.20 and Erlang OTP ≥ 28.
-2. Install [Gleam](https://gleam.run/) and verify it is available on your `$PATH`:
-   ```bash
-   gleam --version
-   ```
-3. Authenticate with Fly.io (`fly auth login`) and create required volumes/buckets.
+1. Install Elixir ≥ 1.19 and Erlang OTP ≥ 28.
+2. Install PostgreSQL 17 with pgvector extension.
+3. Set up database: `./scripts/setup-database.sh`
 
 ## Project Layout
 
 ```
-lib/                    # Elixir application, supervision tree, HTTP layer
-lib/singularity/hot_reload/  # Queue + pipeline stub for improvements
-lib/singularity_web/     # Plug router exposing health + metrics
-lib/singularity/dynamic_compiler.ex  # Validates & loads auto-generated Elixir modules
-code/                   # Created at runtime for staged/active code
-gleam/                  # Gleam modules compiled via the bundled Mix task
-rel/                    # Release environment hooks
-Dockerfile, fly.toml    # Fly.io deployment assets
-deployment/k8s/         # StatefulSet + services for Kubernetes
+lib/                    # Elixir application, supervision tree
+lib/singularity/agents/ # Autonomous agent system
+lib/singularity/workflows/ # PGFlow workflow definitions
+lib/singularity/debug.ex # BEAM debugging toolkit
+packages/               # Publishable packages (Rust NIF engines, ex_pgflow)
+config/                 # Application configuration
+priv/repo/migrations/   # Database migrations
+docs/                   # Documentation (debugging guides, etc.)
 ```
 
 ## Local Development
 
 ```bash
 cd singularity
-mix deps.get
-mix gleam.deps.get
-mix test
-PORT=4000 iex -S mix
+mix setup        # Installs dependencies and builds Rust engines
+mix test         # Run tests
+iex -S mix       # Start interactive shell
+
+# Debugging tools
+iex> supervision_tree()    # Show supervision tree
+iex> memory_table()        # Show memory usage
+iex> observer()           # Start Observer GUI
+iex> debugger()           # Start Debugger GUI
+
+# Mix debugging tasks
+mix debug.tree         # Show supervision tree
+mix debug.memory       # Show memory usage
+mix debug.recon memory # Use Recon for production debugging
 ```
 
-## Gleam via mix_gleam
-
-Gleam modules in `src/` are compiled automatically by Mix through `mix_gleam`.
-
-Common commands (inside `nix develop` or with a compatible host toolchain):
-
-```
-cd singularity
-mix deps.get                 # also fetches Gleam deps via alias
-mix compile                  # compiles Elixir + Gleam
-gleam check                  # optional fast type-check
-gleam test                   # optional Gleam tests
-```
-
-If you ever hit a one‑time stdlib resolution issue, run:
-
-```
-mix compile.gleam gleam_stdlib --force
-mix compile
-```
-
-With Nix/direnv you can lean on the bundled [Just](https://just.systems/) commands:
-
-```bash
-just setup       # Install Elixir + Gleam deps
-just verify      # Format, Credo, Dialyzer, Sobelow, dependency audit, Elixir+Gleam tests
-just coverage    # Generate HTML coverage via ExCoveralls
-just fly-deploy  # Deploy to Fly.io (blue/green)
-
-# Stage code snippets directly from the CLI (optional promotion with --promote)
-mix code.load --agent cli-agent --code lib/new_feature.ex --version v1 --promote
-```
+See [docs/BEAM_DEBUGGING_GUIDE.md](docs/BEAM_DEBUGGING_GUIDE.md) for complete debugging toolkit documentation.
 
 Coverage reports are written to `_build/test/cover`, and Dialyzer PLTs live in `priv/plts/` (already gitignored).
 
@@ -237,64 +213,103 @@ Autonomous coordination:
 modules with `Code.compile_string/2`, so successful promotions replace runtime
 behaviour immediately while keeping the artifact on disk for auditing.
 
-### Git coordinator runtime
+## Git Coordinator
 
-The git coordinator is optional and disabled by default. Enable it with
-environment variables:
+The Git coordinator provides multi-agent development coordination using isolated git workspaces and tree synchronization. It's optional and disabled by default.
 
-```
-export GIT_COORDINATOR_ENABLED=true
-export GIT_COORDINATOR_REPO_PATH=/absolute/path/to/shared/repo
-export GIT_COORDINATOR_BASE_BRANCH=main
-export GIT_COORDINATOR_REMOTE=origin   # optional; omit to skip pushes/PRs
-```
+### Features
 
-- The coordinator runs under `Singularity.Git.Supervisor` and exposes a
-  high-level façade via `Singularity.Git.Coordinator`.
-- When enabled, each LLM-backed task receives an isolated working tree under
-  `GIT_COORDINATOR_REPO_PATH`, branches are pushed to the configured remote,
-  and merges are attempted automatically in dependency order.
-- Assignment metadata, pending merges, and merge history are persisted in
-  PostgreSQL via `git_agent_sessions`, `git_pending_merges`, and
-  `git_merge_history`, so coordination survives restarts and can be queried by
-  other services.
-- For PR automation, ensure the [GitHub CLI](https://cli.github.com/) is
-  installed and authenticated (`gh auth login`). If you skip
-  `GIT_COORDINATOR_REMOTE`, pushes and PR creation are also skipped so you can
-  run entirely local experiments.
+- **Isolated Workspaces**: Each LLM-powered agent gets its own branch and workspace
+- **Tree Sync**: Automatic synchronization of git trees across agent workspaces
+- **Rule-Based Agents**: Work directly on main branch (no conflicts, no branches needed)
+- **Merge Coordination**: Handles conflicts and manages PR creation with dependency ordering
+- **Dependency-Based Merging**: Automatically determines merge order based on file changes
+- **Conflict Detection**: Identifies and reports merge conflicts before merging
+- **Persistent State**: Tracks agent sessions, pending merges, and merge history in PostgreSQL
 
-## Fly.io Deployment
+### Architecture
+
+**Strategy:**
+- Each LLM-powered agent gets own branch
+- Agents work in isolated git workspaces (clones of main repo)
+- Rule-based agents work on main (no conflicts, no branches needed)
+- Merge coordination handles conflicts and consensus
+- Dependency graph built from file changes to determine merge order
+
+**This minimizes:**
+- LLM calls (only when necessary)
+- Git branches (only for LLM work)
+- Merge conflicts (isolated workspaces)
+
+### Configuration
+
+Enable via environment variables:
 
 ```bash
-fly launch --copy-config --no-deploy
-fly volumes create agent_code --region sea --size 5 --count 2
-fly secrets set RELEASE_COOKIE=$(openssl rand -base64 32)
-nix build ..#singularity-oci
-podman load < ../result
-podman tag singularity:latest registry.fly.io/singularity:$(git rev-parse --short HEAD)
-podman push registry.fly.io/singularity:$(git rev-parse --short HEAD)
-fly deploy --strategy bluegreen --image registry.fly.io/singularity:$(git rev-parse --short HEAD)
+export GIT_COORDINATOR_ENABLED=true
+export GIT_COORDINATOR_REPO_PATH=/path/to/shared/repo
+export GIT_COORDINATOR_BASE_BRANCH=main
+export GIT_COORDINATOR_REMOTE=origin  # optional; omit to skip pushes/PRs
 ```
 
-- `fly.toml` sets IPv6 clustering (`DNS_CLUSTER_QUERY`) and keeps two machines alive for hot upgrades.
-- `/data/code` must be backed by a volume; blue/green deploys require temporarily scaling up if you mutate volumes in-place.
-- Use `fly ssh console` to connect and inspect BEAM nodes with `:observer_cli`.
-- While connected over `fly ssh console`, you can interact with the autonomous
-  loop directly:
-  ```elixir
-  # Record observed outcomes
-  Singularity.record_outcome("agent-123", :success)
-  Singularity.record_outcome("agent-123", :failure)
+Or in `config/config.exs`:
 
-  # Merge richer metrics (latency, reward)
-  Singularity.update_agent_metrics("agent-123", %{latency_ms: 180, reward: 0.42})
+```elixir
+config :singularity, :git_coordinator,
+  enabled: true,
+  repo_path: "/path/to/shared/repo",
+  base_branch: "main",
+  remote: "origin"
+```
 
-  # Force a new strategy on the next evaluation cycle
-  Singularity.force_improvement("agent-123", "manual test")
-  ```
-  Agents that drop below the configured score threshold or stagnate for 30+ tick
-  cycles will self-synthesise a new Elixir module and push it through the same
-  hot-reload queue—no HTTP ingress or external orchestration required.
+### Usage
+
+```elixir
+alias Singularity.Git.GitTreeSyncCoordinator
+
+# Assign task to agent (creates branch + workspace for LLM tasks)
+{:ok, assignment} = GitTreeSyncCoordinator.assign_task("agent-123", task, use_llm: true)
+# Returns: %{agent_id, task, branch, workspace, correlation_id}
+
+# Submit completed work (creates PR if from branch)
+{:ok, pr_number} = GitTreeSyncCoordinator.submit_work("agent-123", result)
+
+# Check merge status for epic (how many PRs pending)
+status = GitTreeSyncCoordinator.merge_status(correlation_id)
+# Returns: %{pending_count: 3, pending_branches: ["branch1", "branch2", "branch3"]}
+
+# Coordinate merging all PRs for an epic (dependency-aware)
+{:ok, results} = GitTreeSyncCoordinator.merge_all_for_epic(correlation_id)
+# Automatically merges PRs in correct order based on file dependencies
+```
+
+### Components
+
+- **`GitTreeSyncCoordinator`** - Core GenServer managing git operations
+- **`GitTreeSyncProxy`** - Wrapper with enable/disable control
+- **`GitTreeBootstrap`** - Startup integration with agent system
+- **`GitStateStore`** - PostgreSQL persistence for sessions, merges, history
+
+### Database Tables
+
+- `git_agent_sessions` - Active agent sessions and workspace assignments
+- `git_pending_merges` - Pending pull requests awaiting merge
+- `git_merge_history` - Historical merge records with status
+
+The coordinator runs under `Singularity.Git.Supervisor` and persists state in PostgreSQL.
+
+For PR automation, ensure the [GitHub CLI](https://cli.github.com/) is installed and authenticated (`gh auth login`). If you skip `GIT_COORDINATOR_REMOTE`, pushes and PR creation are also skipped so you can run entirely local experiments.
+
+## Deployment
+
+For Fly.io deployment, see `fly.toml` and deployment scripts. Use `fly ssh console` to connect and inspect BEAM nodes with debugging tools:
+
+```elixir
+# Use debugging toolkit
+supervision_tree()
+memory_table()
+observer()
+```
 
 ## Kubernetes Migration Notes
 
@@ -312,88 +327,7 @@ Suggested steps when migrating:
 
 ## Observability
 
-- `/metrics` provides basic Prometheus gauges (queue depth, cluster size).
-- `Singularity.Telemetry.metrics/0` enumerates metrics for exporters (PromEx, TelemetryMetricsPrometheus, etc.).
-- Hot reload operations emit `[:singularity, :hot_reload, :start|:success|:error|:duration]` telemetry events.
+- `/metrics` provides Prometheus gauges (queue depth, cluster size, agent metrics).
+- `Singularity.Telemetry.metrics/0` enumerates metrics for exporters.
+- Workflow execution emits telemetry events for monitoring.
 
-## Release Workflow
-
-This project keeps the semantic version number in `VERSION`, which `mix.exs` reads at compile time.
-
-- **Micro releases** (`just release-micro`): bump the patch number, run `just verify` (format, Credo, Dialyzer, Elixir tests), and prepare an annotated tag `vX.Y.Z`. Use these for rapid Fly hot reloads.
-- **Baseline releases** (`just release-baseline`): bump the minor number, run the same verification plus `just coverage` to enforce the 85% ExCoveralls gate, commit `VERSION` and the generated `RELEASE_SUMMARY.md`, and tag `baseline-vX.Y.0`. Baselines are the stable snapshots for Fly deployments and rollbacks.
-- The scripts assume a clean git worktree and leave you with a commit and tag ready to push (`git push origin HEAD --tags`).
-- Agents can automate release prep, but keep merges gated on the verification pipeline so humans can review larger promotion jumps.
-
-If you need to perform a manual bump, call `./scripts/bump_version.sh [micro|baseline|major]` and edit `RELEASE_SUMMARY.md` before committing.
-
-## Claude & GitHub Integration
-
-1. **Claude credentials**
-   - Install the Claude Code native binary with `./scripts/install_claude_native.sh` (stable by default). The script backs up any existing `claude` binary and restores it automatically if the install fails.
-   - Run `claude setup-token` once interactively (or `claude setup-token --headless --output json`) to obtain the OAuth token; copy the printed `CLAUDE_CODE_OAUTH_TOKEN` into `.envrc` and keep the generated `~/.claude` directory.
-   - Optional overrides: `CLAUDE_DEFAULT_MODEL` (defaults to `sonnet`), `CLAUDE_MAX_TOKENS`, `CLAUDE_API_URL`, `CLAUDE_CLI_PATH`, and `CLAUDE_HOME` if you store the `.claude` directory elsewhere (e.g. on a Fly volume).
-   - Use `scripts/sync_secrets.sh` to push `CLAUDE_CODE_OAUTH_TOKEN`/`GITHUB_TOKEN` to both Fly secrets and the GitHub repository. The script keeps `HTTP_SERVER_ENABLED=true` on Fly so the router stays running.
-
-2. **GitHub access**
-   - Authenticate the GitHub CLI once with `gh auth login` (the nix shell bundles `gh`).
-   - Export a PAT with repo + workflow scopes as `GITHUB_TOKEN`; run `scripts/sync_secrets.sh` to propagate it to Fly and GitHub so CI and Fly machines share the same credentials.
-   - The release scripts produce git tags; push with `git push origin HEAD --tags` so GitHub Actions can build, test, and deploy.
-
-3. **Secrets in Fly**
-   - Recommended set: `fly secrets set CLAUDE_CODE_OAUTH_TOKEN=... GITHUB_TOKEN=... HTTP_SERVER_ENABLED=true`.
-   - Store the `.claude` directory on a Fly volume (e.g. `/data/claude`) and set `CLAUDE_HOME=/data/claude` via `fly.toml` env if you prefer persistence beyond the token.
-
-4. **Agent behaviour**
-   - `Singularity.Integration.Claude.chat/2` shells out to the CLI with the OAuth token. Provide either a prompt string or a Claude Code messages payload.
-   - If no token is available the helper returns `{:error, :missing_api_key}` so the autonomous agent can escalate.
-
-
-## Using Vercel AI with Native CLIs
-
-The repository includes custom language models under `tools/providers/cli.ts` so you can reuse the existing Claude Code and Codex CLIs through the [Vercel AI SDK](https://sdk.vercel.ai/). Example:
-
-```ts
-import { generateText } from "ai";
-import { claudeCliLanguageModel } from "../tools/providers/cli";
-
-const result = await generateText({
-  model: claudeCliLanguageModel,
-  prompt: "Summarise the latest release notes",
-});
-
-console.log(result.text);
-```
-
-The Claude model shells out to `claude --print --output-format json` and expects
-`CLAUDE_CODE_OAUTH_TOKEN` (or a mounted `.claude` directory). The Codex model
-uses `codex exec --experimental-json --skip-git-repo-check` and relies on the
-existing Codex CLI login. Both return plain text completions that work with
-`generateText`, `streamText`, or higher-level chat helpers.
-
-Run `bun install --frozen-lockfile` (already part of `just setup`) to make the
-`ai` package available when exercising these models.
-Set `CODEX_SANDBOX` if you want to override the default Codex CLI sandbox (defaults to read-only).
-
-- Bundle existing CLI tokens (for Fly/CI):
-  ```bash
-  ./scripts/bundle_cli_state.sh                 # produces bundles/cli-state.tar.gz
-  tar xzf bundles/cli-state.tar.gz -C /         # restore on a machine (adjust path)
-  ```
-  This captures both `~/.claude` and `~/.codex` if they exist. Mount them on Fly and set `CLAUDE_HOME` / `CODEX_HOME` so the CLIs stay logged in.
-
-## Extending Hot Reload
-
-1. Expand `Singularity.DynamicCompiler` to support richer guardrails (sandboxed
-   evaluation, resource quotas) before modules are made live.
-2. Persist comparison metrics across improvements and feed them into a
-   longer-term optimiser (e.g. bandit-based strategy selection).
-3. Add CRDT or PostgreSQL-backed metadata to coordinate agent state across clusters.
-4. Introduce request authentication and agent control endpoints before exposing externally.
-
-## Pending Improvements
-
-- Implement real compilation/loading of generated modules.
-- Persist compiled bytecode artifacts per version for auditing.
-- Add self-healing tasks for Fly volume constraints (e.g. optional remote object storage sync).
-- Harden `/metrics` with authentication/ingress policies.

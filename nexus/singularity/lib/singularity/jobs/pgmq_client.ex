@@ -1,140 +1,129 @@
 defmodule Singularity.Jobs.PgmqClient do
   @moduledoc """
-  PostgreSQL Message Queue (pgmq) Client
+  **DEPRECATED** - PostgreSQL Message Queue (pgmq) Client
 
-  Provides helper functions for publishing messages to pgmq queues.
-  pgmq enables Singularity (Elixir/Oban) ↔ Nexus (Responses API workflows) communication.
+  ⚠️ **This module is deprecated and will be removed in a future version.**
 
-  Architecture:
-  - Singularity enqueues tasks to pgmq (via Oban/ex_pgflow workers)
-  - Nexus polls pgmq, executes Responses workflows
-  - Results published back to pgmq
-  - Singularity polls results via separate Oban jobs
+  Use `Singularity.PgFlow.send_with_notify/3` for sending messages (pgmq + NOTIFY).
+  Use `Singularity.Database.MessageQueue` for reading/acknowledging messages.
+
+  ## Migration Guide
+
+  ### Send Messages
+  ```elixir
+  # OLD (deprecated):
+  PgmqClient.send_message("my_queue", message)
+
+  # NEW:
+  PgFlow.send_with_notify("my_queue", message)
+  ```
+
+  ### Read Messages
+  ```elixir
+  # OLD (deprecated):
+  PgmqClient.read_messages("my_queue", 10)
+
+  # NEW:
+  MessageQueue.receive_message("my_queue")  # Reads one at a time
+  ```
+
+  ### Acknowledge Messages
+  ```elixir
+  # OLD (deprecated):
+  PgmqClient.ack_message("my_queue", msg_id)
+
+  # NEW:
+  MessageQueue.acknowledge("my_queue", msg_id)
+  ```
+
+  ### Ensure Queue
+  ```elixir
+  # OLD (deprecated):
+  PgmqClient.ensure_queue("my_queue")
+
+  # NEW:
+  MessageQueue.create_queue("my_queue")
+  ```
+
+  All functions delegate to the new implementation for backwards compatibility,
+  but new code should use `PgFlow` and `Database.MessageQueue` directly.
   """
 
   require Logger
+
+  alias Singularity.Database.MessageQueue
+  alias Singularity.PgFlow
   alias Singularity.Repo
 
-  @doc """
-  Send a message to a pgmq queue.
-
-  Returns {:ok, message_id} or {:error, reason}
-  """
-  @spec send_message(String.t(), map()) :: {:ok, non_neg_integer()} | {:error, term()}
+  @deprecated "Use PgFlow.send_with_notify/3 instead"
   def send_message(queue_name, message) do
-    try do
-      result =
-        Repo.query!(
-          "SELECT pgmq.send($1, $2)",
-          [queue_name, Jason.encode!(message)]
-        )
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.send_message/2 is deprecated. Use PgFlow.send_with_notify/3 instead."
+    )
 
-      case result.rows do
-        [[message_id]] -> {:ok, message_id}
-        _ -> {:error, "Failed to send message to pgmq queue: #{queue_name}"}
-      end
-    rescue
-      error ->
-        Logger.error("pgmq error",
-          queue: queue_name,
-          error: inspect(error),
-          message: inspect(message)
-        )
+    case PgFlow.send_with_notify(queue_name, message) do
+      {:ok, :sent} ->
+        {:ok, 0}
 
-        {:error, error}
+      {:ok, msg_id} when is_integer(msg_id) ->
+        {:ok, msg_id}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  @doc """
-  Read messages from a pgmq queue.
-
-  Returns list of {message_id, body} tuples or empty list if no messages.
-  """
-  @spec read_messages(String.t(), non_neg_integer()) :: [{non_neg_integer(), map()}]
+  @deprecated "Use Database.MessageQueue.receive_message/1 instead"
   def read_messages(queue_name, limit \\ 1) do
-    try do
-      result =
-        Repo.query!(
-          "SELECT msg_id, msg_body FROM pgmq.read($1, limit => $2)",
-          [queue_name, limit]
-        )
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.read_messages/2 is deprecated. Use Database.MessageQueue.receive_message/1 instead."
+    )
 
-      Enum.map(result.rows, fn [msg_id, body] ->
-        {msg_id, decode(body)}
-      end)
-    rescue
-      error ->
-        Logger.error("pgmq read error",
-          queue: queue_name,
-          error: inspect(error)
-        )
+    Enum.reduce(1..limit, [], fn _, acc ->
+      case MessageQueue.receive_message(queue_name) do
+        {:ok, {msg_id, message}} ->
+          [{msg_id, message} | acc]
 
-        []
-    end
+        :empty ->
+          acc
+
+        {:error, _reason} ->
+          acc
+      end
+    end)
+    |> Enum.reverse()
   end
 
-  @doc """
-  Acknowledge (delete) a message from a pgmq queue.
-
-  Returns :ok or {:error, reason}
-  """
-  @spec ack_message(String.t(), non_neg_integer()) :: :ok | {:error, term()}
+  @deprecated "Use Database.MessageQueue.acknowledge/2 instead"
   def ack_message(queue_name, message_id) do
-    try do
-      Repo.query!(
-        "SELECT pgmq.delete($1, $2)",
-        [queue_name, message_id]
-      )
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.ack_message/2 is deprecated. Use Database.MessageQueue.acknowledge/2 instead."
+    )
 
-      :ok
-    rescue
-      error ->
-        Logger.error("pgmq ack error",
-          queue: queue_name,
-          message_id: message_id,
-          error: inspect(error)
-        )
-
-        {:error, error}
+    case MessageQueue.acknowledge(queue_name, message_id) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  @doc """
-  Create a pgmq queue if it doesn't exist.
-
-  Returns :ok or {:error, reason}
-  """
-  @spec ensure_queue(String.t()) :: :ok | {:error, term()}
+  @deprecated "Use Database.MessageQueue.create_queue/1 instead"
   def ensure_queue(queue_name) do
-    try do
-      Repo.query!(
-        "SELECT Singularity.Jobs.PgmqClient.create($1)",
-        [queue_name]
-      )
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.ensure_queue/1 is deprecated. Use Database.MessageQueue.create_queue/1 instead."
+    )
 
-      Logger.info("pgmq queue created", queue: queue_name)
-      :ok
-    rescue
-      error ->
-        # Queue may already exist, which is fine
-        if String.contains?(inspect(error), "already exists") do
-          :ok
-        else
-          Logger.error("pgmq queue creation error",
-            queue: queue_name,
-            error: inspect(error)
-          )
-
-          {:error, error}
-        end
+    case MessageQueue.create_queue(queue_name) do
+      {:ok, _} -> :ok
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  @doc """
-  Ensure all required pgmq queues exist.
-  """
-  @spec ensure_all_queues() :: :ok
+  @deprecated "Use Database.MessageQueue.create_queue/1 directly for each queue"
   def ensure_all_queues do
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.ensure_all_queues/0 is deprecated. Use Database.MessageQueue.create_queue/1 directly."
+    )
+
     queues = [
       "ai_requests",
       "ai_results",
@@ -143,23 +132,28 @@ defmodule Singularity.Jobs.PgmqClient do
       "agent_messages",
       "agent_responses",
       "centralcloud_updates",
+      "centralcloud_failures",
+      "search_analytics",
       "observer_hitl_requests",
       "infrastructure_registry_requests",
       "infrastructure_registry_responses"
     ]
 
-    Enum.each(queues, &ensure_queue/1)
+    Enum.each(queues, fn queue ->
+      MessageQueue.create_queue(queue)
+    end)
+
     :ok
   end
 
-  defp decode(body) when is_map(body), do: body
+  @deprecated "Use Database.MessageQueue.receive_message/1 and acknowledge/2 instead"
+  def read_message(queue_name, message_id) do
+    Logger.warning(
+      "[DEPRECATED] PgmqClient.read_message/2 is deprecated. Use Database.MessageQueue.receive_message/1 instead."
+    )
 
-  defp decode(body) when is_binary(body) do
-    case Jason.decode(body) do
-      {:ok, map} -> map
-      _ -> %{"raw" => body}
-    end
+    # This function doesn't exist in MessageQueue - read_message only reads by ID
+    # If you need to read a specific message by ID, you'll need to poll or use a different approach
+    {:error, :not_implemented}
   end
-
-  defp decode(other), do: other
 end

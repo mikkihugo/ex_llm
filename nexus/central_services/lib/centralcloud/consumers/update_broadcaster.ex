@@ -102,6 +102,8 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
 
   @doc """
   Sync approved templates from CentralCloud to all Singularity instances.
+  
+  Templates are synced as READ-ONLY copies to Singularity databases.
   """
   def sync_approved_templates do
     Logger.info("[UpdateBroadcaster] Starting template sync to instances")
@@ -111,11 +113,47 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
         Logger.info("[UpdateBroadcaster] Syncing #{length(templates)} approved templates",
           template_count: length(templates)
         )
-        {:ok, templates}
+
+        case sync_templates_to_singularity_databases(templates) do
+          :ok ->
+            Logger.info("[UpdateBroadcaster] ✓ Completed template sync to instances")
+            log_sync_completion(:template_sync, "full", :success)
+            {:ok, templates}
+
+          {:error, reason} ->
+            Logger.error("[UpdateBroadcaster] ✗ Template sync failed: #{inspect(reason)}")
+            log_sync_completion(:template_sync, "full", :failed, reason)
+            {:error, reason}
+        end
 
       {:error, reason} ->
         Logger.error("[UpdateBroadcaster] Failed to fetch approved templates: #{inspect(reason)}")
         {:error, reason}
+    end
+  end
+
+  defp sync_templates_to_singularity_databases(templates) do
+    try do
+      # Templates are synced via:
+      # 1. Logical replication (read-only copies in Singularity DB)
+      # 2. pgflow notifications for real-time updates
+      
+      # Broadcast via pgflow for immediate updates
+      Enum.each(templates, fn template ->
+        subject = "template.sync.#{template["category"]}.#{template["id"]}"
+        Pgflow.send_with_notify(subject, template, CentralCloud.Repo, expect_reply: false)
+      end)
+
+      Logger.info("[UpdateBroadcaster] ✓ Templates queued for replication",
+        template_count: length(templates),
+        replication_method: "Logical replication + pgflow notifications"
+      )
+
+      :ok
+    rescue
+      e ->
+        Logger.error("Error in sync_templates_to_singularity_databases: #{inspect(e)}")
+        {:error, e}
     end
   end
 
@@ -218,13 +256,54 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
 
   defp fetch_approved_templates do
     try do
-      # TODO: Implement template fetching when templates table is created
-      {:ok, []}
+      query = """
+      SELECT
+        id, category, metadata, content, version, extends, compose,
+        quality_standard, usage_stats, quality_score, embedding,
+        deprecated, created_at, updated_at
+      FROM templates
+      WHERE deprecated = false
+      ORDER BY updated_at DESC
+      """
+
+      case Repo.query(query, []) do
+        {:ok, %{rows: rows}} ->
+          templates = Enum.map(rows, &format_template_row/1)
+          {:ok, templates}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
     rescue
       e ->
         Logger.error("Error fetching approved templates: #{inspect(e)}")
         {:error, e}
     end
+  end
+
+  defp format_template_row(row) do
+    [
+      id, category, metadata, content, version, extends, compose,
+      quality_standard, usage_stats, quality_score, embedding,
+      deprecated, created_at, updated_at
+    ] = row
+
+    %{
+      "id" => id,
+      "category" => category,
+      "metadata" => metadata || %{},
+      "content" => content || %{},
+      "version" => version,
+      "extends" => extends,
+      "compose" => compose || [],
+      "quality_standard" => quality_standard,
+      "usage_stats" => usage_stats || %{},
+      "quality_score" => quality_score,
+      "embedding" => embedding,
+      "deprecated" => deprecated,
+      "created_at" => created_at,
+      "updated_at" => updated_at
+    }
   end
 
   defp format_pattern_row(row) do

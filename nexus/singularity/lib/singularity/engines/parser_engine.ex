@@ -602,7 +602,7 @@ defmodule Singularity.ParserEngine do
     }
   end
 
-  # Central Cloud Integration via Singularity.NatsClient
+  # Central Cloud Integration via PGFlow workflows
 
   @doc """
   Query central parser service for language support and parsing capabilities.

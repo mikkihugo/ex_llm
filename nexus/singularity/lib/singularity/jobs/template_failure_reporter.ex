@@ -17,6 +17,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
     priority: 8
 
   require Logger
+  alias Singularity.PgFlow
 
   @doc """
   Report template failure pattern to CentralCloud.
@@ -53,13 +54,42 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
       count: count
     )
 
-    # TODO: Enqueue to pgmq:centralcloud_failures when consumer ready
-    Logger.info("Template failure reported",
-      template_id: template_id,
-      failure_type: failure_type,
-      count: count
-    )
+    # Send failure report via pgflow (pgmq + NOTIFY)
+    message = %{
+      "template_id" => template_id,
+      "failure_type" => failure_type,
+      "failure_count" => count,
+      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
 
-    :ok
+    case PgFlow.send_with_notify("centralcloud_failures", message) do
+      {:ok, :sent} ->
+        Logger.info("Template failure reported to CentralCloud via pgflow",
+          template_id: template_id,
+          failure_type: failure_type,
+          count: count
+        )
+
+        :ok
+
+      {:ok, message_id} when is_integer(message_id) ->
+        Logger.info("Template failure reported to CentralCloud via pgflow",
+          template_id: template_id,
+          failure_type: failure_type,
+          count: count,
+          message_id: message_id
+        )
+
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to report template failure to CentralCloud",
+          template_id: template_id,
+          failure_type: failure_type,
+          error: inspect(reason)
+        )
+
+        {:error, reason}
+    end
   end
 end

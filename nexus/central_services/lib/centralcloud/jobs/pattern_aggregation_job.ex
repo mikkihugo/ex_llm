@@ -304,14 +304,14 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
 
   defp count_active_instances do
     # Count distinct instances from usage_analytics in last hour
-    # For MVP, return placeholder - will be implemented when instances register
-
-    # TODO: Query usage_analytics table for distinct session_ids in last hour
-    # query = from ua in "usage_analytics",
-    #   where: ua.created_at > ago(1, "hour"),
-    #   select: count(fragment("DISTINCT ?", ua.session_id))
-    # Repo.one(query)
-
-    0  # Placeholder until instances start reporting
+    case CentralCloud.Repo.query("""
+      SELECT COUNT(DISTINCT session_id) 
+      FROM usage_analytics 
+      WHERE created_at > NOW() - INTERVAL '1 hour'
+    """) do
+      {:ok, %{rows: [[count]]}} when is_integer(count) -> count
+      {:ok, %{rows: [[count]]}} when is_float(count) -> trunc(count)
+      _ -> 0
+    end
   end
 end

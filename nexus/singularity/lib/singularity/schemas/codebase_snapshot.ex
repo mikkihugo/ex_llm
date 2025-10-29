@@ -27,7 +27,8 @@ defmodule Singularity.Schemas.CodebaseSnapshot do
       :metadata,
       :summary,
       :detected_technologies,
-      :features
+      :features,
+      :inserted_at
     ])
     |> validate_required([:codebase_id, :snapshot_id])
     |> unique_constraint([:codebase_id, :snapshot_id])

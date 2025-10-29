@@ -10,7 +10,6 @@ defmodule Nexus.MixProject do
       deps: deps(),
       apps_path: ".",
       apps: [
-        :ex_pgflow,
         :singularity,
         :genesis,
         :central_services,
@@ -22,10 +21,9 @@ defmodule Nexus.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :runtime_tools, :sasl],
       mod: {Nexus.Application, []},
       applications: [
-        :ex_pgflow,
         :singularity,
         :genesis,
         :central_services,

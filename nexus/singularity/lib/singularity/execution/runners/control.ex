@@ -3,7 +3,7 @@ defmodule Singularity.Execution.Runners.Control do
   Modern control system for coordinating agent improvements and system events.
 
   Provides a clean interface for:
-  - Publishing improvement events
+  - Publishing improvement events via Pgflow workflows
   - Managing system state
   - Coordinating between agents
   - Event broadcasting
@@ -45,7 +45,25 @@ defmodule Singularity.Execution.Runners.Control do
       metadata: %{source: :control}
     }
 
-    GenServer.cast(__MODULE__, {:publish_improvement, event})
+    # Use Pgflow workflow instead of direct pgmq publishing
+    case Pgflow.Workflow.create_workflow(
+           Singularity.Workflows.AgentImprovementWorkflow,
+           %{"event" => event}
+         ) do
+      {:ok, workflow_id} ->
+        Logger.debug("Created agent improvement workflow",
+          agent_id: agent_id,
+          workflow_id: workflow_id
+        )
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to create agent improvement workflow",
+          agent_id: agent_id,
+          reason: reason
+        )
+        :ok
+    end
   end
 
   @doc """
@@ -78,18 +96,62 @@ defmodule Singularity.Execution.Runners.Control do
 
   @doc """
   Subscribe to improvement events for a specific agent.
+
+  Note: With Pgflow migration, subscriptions are handled through workflow completion
+  notifications rather than direct pgmq subscriptions.
   """
   @spec subscribe_to_agent(String.t()) :: :ok | {:error, term()}
   def subscribe_to_agent(agent_id) when is_binary(agent_id) do
-    Singularity.Messaging.Client.subscribe("agent_improvements.#{agent_id}")
+    # Subscribe to PGFlow workflow completion events for agent improvements
+    workflow_name = "agent_improvement_#{agent_id}"
+    
+    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+      handle_agent_improvement_completion(agent_id, workflow_result)
+    end) do
+      {:ok, subscription_id} ->
+        Logger.info("[Control] Subscribed to agent improvements via PGFlow",
+          agent_id: agent_id,
+          workflow: workflow_name,
+          subscription_id: subscription_id
+        )
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("[Control] Failed to subscribe to agent improvements via PGFlow",
+          agent_id: agent_id,
+          reason: reason
+        )
+        {:error, reason}
+    end
   end
 
   @doc """
   Subscribe to all system events.
+
+  Note: With Pgflow migration, subscriptions are handled through workflow completion
+  notifications rather than direct pgmq subscriptions.
   """
   @spec subscribe_to_system_events() :: :ok | {:error, term()}
   def subscribe_to_system_events do
-    Singularity.Messaging.Client.subscribe("system_events")
+    # Subscribe to PGFlow workflow completion events for system-wide events
+    workflow_name = "system_events"
+    
+    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+      handle_system_event_completion(workflow_result)
+    end) do
+      {:ok, subscription_id} ->
+        Logger.info("[Control] Subscribed to system events via PGFlow",
+          workflow: workflow_name,
+          subscription_id: subscription_id
+        )
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("[Control] Failed to subscribe to system events via PGFlow",
+          reason: reason
+        )
+        {:error, reason}
+    end
   end
 
   ## GenServer Callbacks
@@ -116,50 +178,41 @@ defmodule Singularity.Execution.Runners.Control do
   end
 
   @impl true
-  def handle_cast({:publish_improvement, event}, state) do
-    # Publish to agent-specific pgmq subject
-    Singularity.Messaging.Client.publish(
-      "agent_improvements.#{event.agent_id}",
-      Jason.encode!(%{improvement: event})
-    )
-
-    # Publish to general improvements pgmq subject
-    Singularity.Messaging.Client.publish("improvements", Jason.encode!(%{improvement: event}))
-
-    # Update metrics
-    new_metrics = Map.update!(state.metrics, :improvements_published, &(&1 + 1))
-
-    # Log improvement published
-    Logger.debug("Published improvement event", %{
-      agent_id: event.agent_id,
-      payload_size: map_size(event.payload),
-      timestamp: event.timestamp
-    })
-
-    new_state = %{
-      state
-      | metrics: new_metrics,
-        event_count: state.event_count + 1,
-        last_event: event
-    }
-
-    {:noreply, new_state}
-  end
-
-  @impl true
   def handle_cast({:broadcast_event, event}, state) do
-    # Broadcast to system events pgmq subject
-    Singularity.Messaging.Client.publish("system_events", Jason.encode!(%{system_event: event}))
+    # Create PGFlow workflow for system events
+    workflow_name = "system_event_broadcast"
+    
+    case Pgflow.Workflow.create_workflow(
+           Singularity.Workflows.SystemEventBroadcastWorkflow,
+           %{
+             "event_type" => event.type,
+             "source" => event.source,
+             "timestamp" => event.timestamp,
+             "payload" => event.payload || %{}
+           }
+         ) do
+      {:ok, workflow_id} ->
+        Logger.debug("Broadcast system event via PGFlow workflow",
+          event_type: event.type,
+          source: event.source,
+          workflow_id: workflow_id
+        )
+
+      {:error, reason} ->
+        Logger.warning("Failed to create PGFlow workflow for system event",
+          event_type: event.type,
+          reason: reason
+        )
+        # Fallback: log the event
+        Logger.debug("Broadcast system event", %{
+          event_type: event.type,
+          source: event.source,
+          timestamp: event.timestamp
+        })
+    end
 
     # Update metrics
     new_metrics = Map.update!(state.metrics, :system_events_broadcast, &(&1 + 1))
-
-    # Log system event broadcast
-    Logger.debug("Broadcast system event", %{
-      event_type: event.type,
-      source: event.source,
-      timestamp: event.timestamp
-    })
 
     new_state = %{
       state
@@ -183,6 +236,45 @@ defmodule Singularity.Execution.Runners.Control do
 
     {:reply, status, state}
   end
+
+  # Handle agent improvement workflow completion
+  defp handle_agent_improvement_completion(agent_id, %{status: :completed, result: result}) do
+    Logger.info("[Control] Agent improvement completed",
+      agent_id: agent_id,
+      result: result
+    )
+    
+    # Notify agent coordinator about completion
+    GenServer.cast(__MODULE__, {:agent_improvement_completed, agent_id, result})
+    :ok
+  end
+
+  defp handle_agent_improvement_completion(agent_id, %{status: :failed, error: error}) do
+    Logger.error("[Control] Agent improvement failed",
+      agent_id: agent_id,
+      error: error
+    )
+    :ok
+  end
+
+  defp handle_agent_improvement_completion(_agent_id, _), do: :ok
+
+  # Handle system event workflow completion
+  defp handle_system_event_completion(%{status: :completed, result: result}) do
+    Logger.debug("[Control] System event workflow completed",
+      result: result
+    )
+    :ok
+  end
+
+  defp handle_system_event_completion(%{status: :failed, error: error}) do
+    Logger.warning("[Control] System event workflow failed",
+      error: error
+    )
+    :ok
+  end
+
+  defp handle_system_event_completion(_), do: :ok
 
   @impl true
   def handle_info({:agent_started, agent_id}, state) do

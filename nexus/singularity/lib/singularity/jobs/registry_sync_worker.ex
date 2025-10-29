@@ -2,49 +2,47 @@ defmodule Singularity.Jobs.RegistrySyncWorker do
   @moduledoc """
   Run analyzers and persist results to codebase registry (Oban scheduled job)
 
-  Scheduled: Daily at 4:00 AM UTC
-
-  Runs all code analyzers and stores snapshot in registry for:
-  - Architecture analysis
-  - Quality metrics
-  - Dependency tracking
-  - Performance trends
-
-  Previously manual: `mix registry.sync`
+  Scheduled: Daily at 4:00 AM UTC.
+  Previously manual: `mix registry.sync`.
   """
 
   use Oban.Worker, queue: :maintenance
 
   require Logger
 
+  alias Pgflow.Executor
+  alias Singularity.Workflows.CodebaseRegistrySyncWorkflow
+
   @impl Oban.Worker
   def perform(_job) do
     codebase_id = Application.get_env(:singularity, :codebase_id, "singularity")
-    snapshot_id = DateTime.utc_now() |> DateTime.to_unix(:millisecond)
 
-    Logger.info("Running analysis for #{codebase_id} (snapshot #{snapshot_id})")
+    Logger.info("Running registry sync for #{codebase_id} via PGFlow")
 
-    case Singularity.CodeAnalysis.Runner.run() do
-      {:ok, metadata, file_reports, summary} ->
-        Logger.info("Analysis complete, persisting to registry...")
+    case Executor.execute(CodebaseRegistrySyncWorkflow, %{codebase_id: codebase_id}, Singularity.Repo) do
+      {:ok, output} ->
+        info = step_payload(output, :persist_snapshot)
+        snapshot_codebase = info[:codebase_id] || info["codebase_id"] || codebase_id
+        snapshot_id = info[:snapshot_id] || info["snapshot_id"]
 
-        Singularity.CodebaseRegistry.upsert_snapshot(
-          Map.merge(metadata, %{codebase_id: codebase_id, snapshot_id: snapshot_id})
+        Logger.info("✅ Registry snapshot saved",
+          codebase_id: snapshot_codebase,
+          snapshot_id: snapshot_id
         )
 
-        Singularity.CodebaseRegistry.insert_file_reports(codebase_id, snapshot_id, file_reports)
-        Singularity.CodebaseRegistry.upsert_summary(codebase_id, snapshot_id, summary)
-
-        Logger.info("✅ Registry snapshot saved (#{codebase_id}/#{snapshot_id})")
         :ok
 
       {:error, reason} ->
-        Logger.error("❌ Registry sync failed: #{reason}")
+        Logger.error("❌ Registry sync failed", codebase_id: codebase_id, error: inspect(reason))
         {:error, reason}
     end
   rescue
     e ->
-      Logger.error("Exception during registry sync: #{inspect(e)}")
+      Logger.error("Exception during registry sync", error: inspect(e))
       {:error, "Exception: #{inspect(e)}"}
+  end
+
+  defp step_payload(output, key) do
+    output[to_string(key)] || output[key] || %{}
   end
 end

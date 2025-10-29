@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.RuleImport do
 
   require Logger
 
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Database.MessageQueue
 
   @default_namespace "validation_rules"
   @default_min_confidence 0.85
@@ -58,14 +58,30 @@ defmodule Singularity.Workflows.RuleImport do
     )
 
     try do
-      PgmqClient.ensure_queue(queue_name(namespace))
-      messages = PgmqClient.read_messages(queue_name(namespace), limit)
+      MessageQueue.create_queue(queue_name(namespace))
+      messages = read_batch_messages(queue_name(namespace), limit)
       {:ok, Map.put(state, :messages, messages)}
     rescue
       error ->
         Logger.error("RuleImport workflow: Failed to read queue", error: inspect(error))
         {:error, error}
     end
+  end
+
+  defp read_batch_messages(queue_name, limit) do
+    Enum.reduce(1..limit, [], fn _, acc ->
+      case MessageQueue.receive_message(queue_name) do
+        {:ok, {msg_id, message}} ->
+          [{msg_id, message} | acc]
+
+        :empty ->
+          acc
+
+        {:error, _reason} ->
+          acc
+      end
+    end)
+    |> Enum.reverse()
   end
 
   @doc false
@@ -90,7 +106,7 @@ defmodule Singularity.Workflows.RuleImport do
   @doc false
   def ack_messages(%{messages: messages, namespace: namespace} = state) do
     Enum.each(messages, fn {msg_id, _payload} ->
-      PgmqClient.ack_message(queue_name(namespace), msg_id)
+      MessageQueue.acknowledge(queue_name(namespace), msg_id)
     end)
 
     Logger.debug("RuleImport workflow: Acknowledged #{length(messages)} messages")

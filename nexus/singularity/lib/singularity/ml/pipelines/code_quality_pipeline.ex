@@ -1,13 +1,23 @@
 defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   @moduledoc """
-  Broadway Pipeline for Code Quality ML Training
+  Code Quality Pipeline with PGFlow Migration Support
 
-  Processes code quality training tasks through multiple stages:
-  1. Data Collection - Gather code quality data from codebases
-  2. Data Preparation - Clean and format quality data
-  3. Model Training - Train quality models with Axon
-  4. Model Validation - Test model performance
-  5. Model Deployment - Save and deploy trained models
+  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
+  Use PGFLOW_CODE_QUALITY_ENABLED=true to enable PGFlow mode.
+
+  ## Migration Notes
+
+  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **Canary Rollout**: Environment flag controls rollout percentage
+
+  ## Configuration
+
+  ```elixir
+  config :singularity, :code_quality_pipeline,
+    pgflow_enabled: System.get_env("PGFLOW_CODE_QUALITY_ENABLED", "false") == "true",
+    canary_percentage: String.to_integer(System.get_env("CODE_QUALITY_CANARY_PERCENT", "10"))
+  ```
   """
 
   use Broadway
@@ -18,8 +28,38 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
 
   @doc """
   Start the code quality pipeline.
+
+  Supports both Broadway and PGFlow modes based on configuration.
   """
-  def start_link(_opts) do
+  def start_link(opts \\ []) do
+    if pgflow_enabled?() do
+      start_pgflow_pipeline(opts)
+    else
+      start_broadway_pipeline(opts)
+    end
+  end
+
+  # Check if PGFlow mode is enabled
+  defp pgflow_enabled? do
+    Application.get_env(:singularity, :code_quality_pipeline, %{})
+    |> Map.get(:pgflow_enabled, false)
+  end
+
+  # Start PGFlow-based pipeline
+  defp start_pgflow_pipeline(_opts) do
+    Logger.info("🚀 Starting Code Quality Pipeline (PGFlow mode)")
+
+    # Start PGFlow workflow supervisor
+    PGFlow.WorkflowSupervisor.start_workflow(
+      Singularity.Workflows.CodeQualityTrainingWorkflow,
+      name: CodeQualityTrainingWorkflowSupervisor
+    )
+  end
+
+  # Start legacy Broadway-based pipeline
+  defp start_broadway_pipeline(_opts) do
+    Logger.info("🎭 Starting Code Quality Pipeline (Broadway legacy mode)")
+
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [

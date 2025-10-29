@@ -21,7 +21,7 @@ defmodule Singularity.EmbeddingModelLoader do
   end
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %{
       models: %{},
       # Use code-specialized model as default
@@ -151,16 +151,6 @@ defmodule Singularity.EmbeddingModelLoader do
 
       _ ->
         {:error, "Unsupported model: #{model_name}. Use 'jina_v3' or 'qodo_embed'"}
-    end
-  end
-
-  defp get_model_dimension(model_name) do
-    # Return dimension based on model name
-    case model_name do
-      "jina_v3" -> 1024
-      "qodo_embed" -> 1536
-      # Default to code model
-      _ -> 1536
     end
   end
 

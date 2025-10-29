@@ -12,6 +12,7 @@ defmodule Singularity.Agents.RealWorkloadFeeder do
   """
   use GenServer
   require Logger
+  alias Singularity.LLM.Config
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -110,10 +111,19 @@ defmodule Singularity.Agents.RealWorkloadFeeder do
 
   defp execute_llm_task(agent_id) do
     task_type = select_task_type(agent_id)
+    
+    # Get complexity from centralized config (database ? TaskTypeRegistry fallback)
+    provider = "auto"
+    context = %{task_type: task_type}
+    
+    complexity = case Config.get_task_complexity(provider, context) do
+      {:ok, comp} -> comp
+      {:error, _} -> :simple  # Fallback for simple tasks
+    end
 
     prompt = generate_task_prompt(task_type)
 
-    case Singularity.LLM.Service.call(:simple, [%{role: "user", content: prompt}],
+    case Singularity.LLM.Service.call(complexity, [%{role: "user", content: prompt}],
            task_type: task_type,
            timeout: 30_000
          ) do

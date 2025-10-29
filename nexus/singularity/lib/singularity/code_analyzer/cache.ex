@@ -72,8 +72,6 @@ defmodule Singularity.CodeAnalyzer.Cache do
   use GenServer
   require Logger
 
-  alias Singularity.CodeAnalyzer
-
   # Default configuration
   @default_max_size 1000
   # 1 hour in seconds

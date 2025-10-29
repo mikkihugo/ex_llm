@@ -71,9 +71,6 @@ defmodule Singularity.Metrics.Event do
     |> validate_measurement_valid(:measurement)
   end
 
-  @doc """
-  Validate that measurement is a valid number (not NaN or Infinity).
-  """
   defp validate_measurement_valid(changeset, field) do
     validate_change(changeset, field, fn ^field, value ->
       cond do

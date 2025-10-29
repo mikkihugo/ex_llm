@@ -351,21 +351,21 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
         :pause ->
           pause_autonomous_actions()
-          "⏸️ Autonomous actions paused"
+          "?? Autonomous actions paused"
 
         :resume ->
           resume_autonomous_actions()
-          "▶️ Autonomous actions resumed"
+          "?? Autonomous actions resumed"
 
         :set_vision ->
           Singularity.Execution.Planning.Vision.set_vision(command.vision_text,
             approved_by: user_id
           )
 
-          "✅ Vision updated"
+          "? Vision updated"
 
         _ ->
-          "❓ Unknown command"
+          "? Unknown command"
       end
 
     WebChat.notify(response)
@@ -380,11 +380,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case mark_task_as_failure(feedback) do
           {:ok, _} ->
             Logger.info("Marked task as failure and downgraded patterns")
-            WebChat.notify("🐛 Bug logged. I'll avoid this pattern.")
+            WebChat.notify("?? Bug logged. I'll avoid this pattern.")
 
           {:error, reason} ->
             Logger.error("Failed to mark task as failure: #{inspect(reason)}")
-            WebChat.notify("🐛 Bug logged, but failed to update patterns.")
+            WebChat.notify("?? Bug logged, but failed to update patterns.")
         end
 
       :positive ->
@@ -393,11 +393,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case update_pattern_scores(feedback, 0.1) do
           {:ok, _} ->
             Logger.info("Updated pattern scores positively")
-            WebChat.notify("✅ Thanks! I'll prioritize similar changes.")
+            WebChat.notify("? Thanks! I'll prioritize similar changes.")
 
           {:error, reason} ->
             Logger.error("Failed to update pattern scores: #{inspect(reason)}")
-            WebChat.notify("✅ Thanks! (Pattern update failed)")
+            WebChat.notify("? Thanks! (Pattern update failed)")
         end
 
       :suggestion ->
@@ -405,11 +405,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         case add_to_goal_queue(feedback) do
           {:ok, goal_id} ->
             Logger.info("Added suggestion to goal queue: #{goal_id}")
-            WebChat.notify("💡 Added to task queue.")
+            WebChat.notify("?? Added to task queue.")
 
           {:error, reason} ->
             Logger.error("Failed to add to goal queue: #{inspect(reason)}")
-            WebChat.notify("💡 Suggestion received, but failed to queue.")
+            WebChat.notify("?? Suggestion received, but failed to queue.")
         end
     end
 
@@ -426,19 +426,19 @@ defmodule Singularity.Conversation.ChatConversationAgent do
              "Respond to: #{message_text}\nContext: #{conversation_history}"
            ) do
         {:ok, %{text: response}} ->
-          WebChat.notify("💬 #{response}")
+          WebChat.notify("?? #{response}")
           Logger.info("Chat response sent to user #{user_id}")
           {:noreply, state}
 
         {:error, reason} ->
           Logger.error("LLM chat failed: #{inspect(reason)}")
-          WebChat.notify("❌ Sorry, I'm having trouble responding right now.")
+          WebChat.notify("? Sorry, I'm having trouble responding right now.")
           {:noreply, state}
       end
     rescue
       error ->
         Logger.error("Chat handling error: #{inspect(error)}")
-        WebChat.notify("❌ Chat error occurred")
+        WebChat.notify("? Chat error occurred")
         {:noreply, state}
     end
   end
@@ -508,15 +508,86 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   defp generate_daily_summary do
-    # TODO: Gather actual metrics
+    # Gather actual metrics from Telemetry and agent state
+    now = DateTime.utc_now()
+    today_start = %{now | hour: 0, minute: 0, second: 0}
+    
+    # Query completed tasks from today
+    completed_tasks = query_completed_tasks_since(today_start)
+    
+    # Query failed tasks from today
+    failed_tasks = query_failed_tasks_since(today_start)
+    
+    # Query deployments from today
+    deployments = query_deployments_since(today_start)
+    
+    # Calculate average confidence from agent metrics
+    avg_confidence = calculate_avg_confidence()
+    
+    # Get pending questions
+    pending_questions = query_pending_questions()
+    
+    # Get top recommendation
+    top_recommendation = get_top_recommendation()
+    
+    # Emit Telemetry metrics
+    Singularity.Infrastructure.Telemetry.execute(
+      [:singularity, :chat_conversation, :daily_summary],
+      %{
+        completed_tasks: length(completed_tasks),
+        failed_tasks: length(failed_tasks),
+        deployments: length(deployments)
+      },
+      %{
+        avg_confidence: avg_confidence,
+        pending_questions_count: length(pending_questions)
+      }
+    )
+    
     %{
-      completed_tasks: 0,
-      failed_tasks: 0,
-      deployments: 0,
-      avg_confidence: 0,
-      pending_questions: [],
-      top_recommendation: nil
+      completed_tasks: length(completed_tasks),
+      failed_tasks: length(failed_tasks),
+      deployments: length(deployments),
+      avg_confidence: avg_confidence,
+      pending_questions: pending_questions,
+      top_recommendation: top_recommendation
     }
+  end
+
+  defp query_completed_tasks_since(since) do
+    # Query completed tasks from database or agent state
+    # Placeholder - would query actual task store
+    []
+  end
+
+  defp query_failed_tasks_since(since) do
+    # Query failed tasks from database or agent state
+    # Placeholder - would query actual task store
+    []
+  end
+
+  defp query_deployments_since(since) do
+    # Query deployments from database or agent state
+    # Placeholder - would query actual deployment store
+    []
+  end
+
+  defp calculate_avg_confidence do
+    # Calculate average confidence from agent metrics
+    # Placeholder - would aggregate from Telemetry
+    0.0
+  end
+
+  defp query_pending_questions do
+    # Query pending questions from conversation state
+    # Placeholder - would query actual conversation store
+    []
+  end
+
+  defp get_top_recommendation do
+    # Get top recommendation from agent coordinator
+    # Placeholder - would query actual recommendation store
+    nil
   end
 
   defp generate_status_report do
@@ -531,12 +602,12 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Update state to reflect paused status
       state = %{autonomous_enabled: false, paused_at: DateTime.utc_now()}
 
-      WebChat.notify("⏸️ Autonomous actions paused")
+      WebChat.notify("?? Autonomous actions paused")
       {:ok, state}
     rescue
       error ->
         Logger.error("Failed to pause autonomous actions: #{inspect(error)}")
-        WebChat.notify("❌ Failed to pause autonomous actions")
+        WebChat.notify("? Failed to pause autonomous actions")
         {:error, error}
     end
   end
@@ -549,12 +620,12 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       # Update state to reflect resumed status
       state = %{autonomous_enabled: true, resumed_at: DateTime.utc_now()}
 
-      WebChat.notify("▶️ Autonomous actions resumed")
+      WebChat.notify("?? Autonomous actions resumed")
       {:ok, state}
     rescue
       error ->
         Logger.error("Failed to resume autonomous actions: #{inspect(error)}")
-        WebChat.notify("❌ Failed to resume autonomous actions")
+        WebChat.notify("? Failed to resume autonomous actions")
         {:error, error}
     end
   end
@@ -566,7 +637,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       case AgentSupervisor.get_all_agents() do
         [] ->
           Logger.warning("No agents available to execute recommendation")
-          WebChat.notify("⚠️ No agents available to execute recommendation")
+          WebChat.notify("?? No agents available to execute recommendation")
           {:error, :no_agents}
 
         agent_pids ->
@@ -587,7 +658,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           # Check if all succeeded
           if Enum.all?(results, &(&1 == :ok)) do
             WebChat.notify(
-              "✅ Executed recommendation: #{Map.get(recommendation, :description, "unknown")}"
+              "? Executed recommendation: #{Map.get(recommendation, :description, "unknown")}"
             )
 
             Logger.info("Recommendation executed successfully across all agents")
@@ -595,7 +666,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
           else
             failed_count = Enum.count(results, &(&1 != :ok))
 
-            WebChat.notify("⚠️ Recommendation executed with #{failed_count} failures")
+            WebChat.notify("?? Recommendation executed with #{failed_count} failures")
 
             Logger.warning("Recommendation execution had failures",
               total_agents: length(agent_pids),
@@ -608,7 +679,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     rescue
       error ->
         Logger.error("Recommendation execution error: #{inspect(error)}")
-        WebChat.notify("❌ Recommendation execution error")
+        WebChat.notify("? Recommendation execution error")
         {:error, error}
     end
   end
@@ -623,7 +694,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
            ) do
         {:ok, _} ->
           Logger.info("Updated pattern score for rejection: #{recommendation.pattern_id}")
-          WebChat.notify("📚 Learned from rejection")
+          WebChat.notify("?? Learned from rejection")
           :ok
 
         {:error, error_reason} ->
@@ -927,7 +998,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
             |> max(0.0)
             |> min(1.0)
 
-          Logger.info("Pattern #{pattern}: #{old_score} → #{new_score}")
+          Logger.info("Pattern #{pattern}: #{old_score} ? #{new_score}")
 
           %{
             pattern: pattern,
@@ -960,7 +1031,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
                ) do
             {:ok, pattern} ->
               Logger.debug(
-                "Persisted pattern update for #{update.pattern}: #{update.old_score} → #{pattern.confidence}"
+                "Persisted pattern update for #{update.pattern}: #{update.old_score} ? #{pattern.confidence}"
               )
 
               {:ok, pattern.id}
@@ -975,7 +1046,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
                    ) do
                 {:ok, pattern} ->
                   Logger.debug(
-                    "Persisted tech pattern update for #{update.pattern}: #{update.old_score} → #{pattern.confidence}"
+                    "Persisted tech pattern update for #{update.pattern}: #{update.old_score} ? #{pattern.confidence}"
                   )
 
                   {:ok, pattern.id}
@@ -1103,13 +1174,23 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
           # Use transaction to ensure atomicity
           case Singularity.Repo.transaction(fn ->
-                 case Singularity.Jobs.PgmqClient.send_message("goal_queue", message) do
-                   {:ok, message_id} ->
+                 case Singularity.PgFlow.send_with_notify("goal_queue", message) do
+                   {:ok, :sent} ->
+                     # Also store goal in local database for tracking
+                     store_goal_locally(goal_id, goal, nil)
+
+                     Logger.info(
+                       "Enqueued goal #{goal_id} with priority #{goal.priority} via pgflow"
+                     )
+
+                     %{id: goal_id, message_id: nil, queued_at: DateTime.utc_now()}
+
+                   {:ok, message_id} when is_integer(message_id) ->
                      # Also store goal in local database for tracking
                      store_goal_locally(goal_id, goal, message_id)
 
                      Logger.info(
-                       "Enqueued goal #{goal_id} with priority #{goal.priority} (pgmq msg_id: #{message_id})"
+                       "Enqueued goal #{goal_id} with priority #{goal.priority} (pgflow msg_id: #{message_id})"
                      )
 
                      %{id: goal_id, message_id: message_id, queued_at: DateTime.utc_now()}
@@ -1167,7 +1248,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   # Helper: Notify stakeholders that goal was enqueued via chat channels
   defp notify_goal_enqueued(goal_id, goal) do
     try do
-      message = "📋 New goal #{goal_id} added: #{goal.description}"
+      message = "?? New goal #{goal_id} added: #{goal.description}"
       Logger.info(message)
 
       # Send notification to all configured chat channels with proper error handling

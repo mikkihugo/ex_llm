@@ -41,7 +41,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
 
   require Logger
   alias Singularity.Agents.Coordination.{CapabilityRegistry, AgentCapability}
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.Database.MessageQueue
+  alias Singularity.PgFlow
   alias Singularity.Repo
 
   @centralcloud_push_queue "centralcloud_updates"
@@ -104,8 +105,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
 
   defp ensure_queues do
     try do
-      PgmqClient.ensure_queue(@centralcloud_push_queue)
-      PgmqClient.ensure_queue(@centralcloud_poll_queue)
+      MessageQueue.create_queue(@centralcloud_push_queue)
+      MessageQueue.create_queue(@centralcloud_poll_queue)
       :ok
     rescue
       _ -> {:error, :queue_creation_failed}
@@ -115,12 +116,7 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   defp poll_responses do
     try do
       # Read up to 10 aggregated capability updates from other instances
-      messages = PgmqClient.read_messages(@centralcloud_poll_queue, 10)
-
-      # Acknowledge messages after reading (they'll be deleted)
-      Enum.each(messages, fn {msg_id, _body} ->
-        PgmqClient.ack_message(@centralcloud_poll_queue, msg_id)
-      end)
+      messages = read_batch_messages(@centralcloud_poll_queue, 10)
 
       {:ok, messages}
     rescue
@@ -128,9 +124,27 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
         Logger.debug("[CentralCloudSync] Error polling responses",
           error: inspect(e)
         )
-
         {:error, :poll_failed}
     end
+  end
+
+  # Helper to read batch messages and acknowledge them
+  defp read_batch_messages(queue_name, limit) do
+    Enum.reduce(1..limit, [], fn _, acc ->
+      case MessageQueue.receive_message(queue_name) do
+        {:ok, {msg_id, message}} ->
+          # Acknowledge after reading
+          MessageQueue.acknowledge(queue_name, msg_id)
+          [{msg_id, message} | acc]
+
+        :empty ->
+          acc
+
+        {:error, _reason} ->
+          acc
+      end
+    end)
+    |> Enum.reverse()
   end
 
   defp aggregate_messages(messages) do
@@ -182,19 +196,25 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
           end)
       }
 
-      # Publish to CentralCloud
-      case Jason.encode(message) do
-        {:ok, json_body} ->
-          PgmqClient.send_message(@centralcloud_push_queue, json_body)
-
-          Logger.info("[CentralCloudSync] Pushed local capabilities to CentralCloud",
+      # Publish to CentralCloud via pgflow (pgmq + NOTIFY)
+      case PgFlow.send_with_notify(@centralcloud_push_queue, message) do
+        {:ok, :sent} ->
+          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via pgflow",
             capability_count: length(capabilities),
             instance_id: @instance_id
           )
 
-        {:error, encode_error} ->
-          Logger.warning("[CentralCloudSync] Failed to encode capabilities",
-            error: inspect(encode_error)
+        {:ok, workflow_id} when is_integer(workflow_id) ->
+          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via pgflow",
+            capability_count: length(capabilities),
+            instance_id: @instance_id,
+            workflow_id: workflow_id
+          )
+
+        {:error, reason} ->
+          Logger.error("[CentralCloudSync] Failed to push capabilities to CentralCloud",
+            reason: reason,
+            capability_count: length(capabilities)
           )
       end
     rescue

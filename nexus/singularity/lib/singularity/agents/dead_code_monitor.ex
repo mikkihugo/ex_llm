@@ -480,15 +480,26 @@ defmodule Singularity.Agents.DeadCodeMonitor do
   end
 
   defp publish_report(subject, report) do
-    # Publish to pgmq (if available)
-    case Process.whereis(Singularity.Messaging.Client) do
-      nil ->
-        Logger.warning("pgmq not available, skipping report publish")
+    # Publish via Pgflow workflow
+    case Pgflow.Workflow.create_workflow(
+           Singularity.Workflows.DeadCodeReportWorkflow,
+           %{
+             "report" => report,
+             "subject" => subject
+           }
+         ) do
+      {:ok, workflow_id} ->
+        Logger.info("Created dead code report workflow",
+          subject: subject,
+          workflow_id: workflow_id
+        )
         :ok
 
-      _pid ->
-        # Would publish via pgmq here
-        Logger.info("Publishing report to #{subject}")
+      {:error, reason} ->
+        Logger.error("Failed to create dead code report workflow",
+          subject: subject,
+          reason: reason
+        )
         :ok
     end
   end

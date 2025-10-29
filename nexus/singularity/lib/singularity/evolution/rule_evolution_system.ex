@@ -87,7 +87,9 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   alias Singularity.Storage.FailurePatternStore
   alias Singularity.Validation.EffectivenessTracker
   alias Singularity.Evolution.AdaptiveConfidenceGating
-  alias Singularity.Jobs.PgmqClient
+  alias Singularity.PgFlow
+  alias Singularity.LLM.Config
+  alias Singularity.Settings
 
   @type rule :: %{
           pattern: map(),
@@ -580,10 +582,49 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   end
 
   defp extract_pattern(pattern) do
+    task_type = pattern["task_type"] || pattern["story_type"]
+    raw_complexity = pattern["plan_characteristics"] && pattern["plan_characteristics"]["complexity"]
+    failure_mode = pattern["failure_mode"]
+    
+    # Use LLM.Config to validate/learn complexity
+    validated_complexity =
+      case {task_type, raw_complexity} do
+        {task_type, complexity} when not is_nil(task_type) and not is_nil(complexity) ->
+          provider = "auto"
+          context = %{task_type: task_type}
+
+          with {:ok, config_complexity} <- Config.get_task_complexity(provider, context),
+               {:ok, pattern_complexity} <- normalize_complexity(complexity) do
+            if pattern_complexity == config_complexity do
+              config_complexity
+            else
+              Logger.debug("RuleEvolutionSystem: Pattern complexity differs from config",
+                pattern_complexity: pattern_complexity,
+                config_complexity: config_complexity,
+                task_type: task_type
+              )
+
+              config_complexity
+            end
+          else
+            {:error, _reason} ->
+              case normalize_complexity(complexity) do
+                {:ok, normalized} -> normalized
+                _ -> :medium
+              end
+          end
+
+        _ ->
+          case normalize_complexity(raw_complexity) do
+            {:ok, normalized} -> normalized
+            _ -> :medium
+          end
+      end
+    
     %{
-      task_type: pattern["task_type"] || pattern["story_type"],
-      complexity: pattern["plan_characteristics"]["complexity"],
-      failure_mode: pattern["failure_mode"]
+      task_type: task_type,
+      complexity: validated_complexity,
+      failure_mode: failure_mode
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
@@ -617,6 +658,24 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
     }
   end
 
+  defp normalize_complexity(value) when value in [:simple, :medium, :complex], do: {:ok, value}
+
+  defp normalize_complexity(value) when is_binary(value) do
+    try do
+      atom = String.to_existing_atom(value)
+
+      if atom in [:simple, :medium, :complex] do
+        {:ok, atom}
+      else
+        {:error, :invalid_value}
+      end
+    rescue
+      ArgumentError -> {:error, :invalid_value}
+    end
+  end
+
+  defp normalize_complexity(_), do: {:error, :invalid_value}
+
   @doc false
   def publish_rule_to_genesis(rule, namespace) do
     Logger.debug("RuleEvolutionSystem: Publishing rule to Genesis",
@@ -639,9 +698,17 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
         "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
       }
 
-      case PgmqClient.send_message("genesis_rule_updates", payload) do
-        {:ok, msg_id} ->
-          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue",
+      case PgFlow.send_with_notify("genesis_rule_updates", payload) do
+        {:ok, :sent} ->
+          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via pgflow",
+            pattern: inspect(rule.pattern),
+            confidence: rule.confidence
+          )
+
+          {:ok, :sent}
+
+        {:ok, msg_id} when is_integer(msg_id) ->
+          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via pgflow",
             pattern: inspect(rule.pattern),
             confidence: rule.confidence,
             message_id: msg_id

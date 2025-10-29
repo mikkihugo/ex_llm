@@ -150,7 +150,7 @@ defmodule Singularity.Code.AIMetadataExtractor do
       iex> graph = AIMetadataExtractor.extract_call_graph(source)
       %{
         "calls_out" => [
-          %{"module" => "NatsClient", "function" => "request/3"}
+          %{"module" => "Messaging.Client", "function" => "publish/2"}
         ],
         "called_by" => [
           %{"module" => "Agent", "frequency" => "high"}

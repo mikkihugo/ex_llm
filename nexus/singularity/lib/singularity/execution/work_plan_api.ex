@@ -269,7 +269,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
       trigger: reply_to present in original message
       actions:
         - Encode response to JSON
-        - Publish via Singularity.Jobs.PgmqClient.pub(gnat, reply_to, json)
+        - Publish via Singularity.Messaging.Client.publish(reply_to, json)
         - Return {:noreply, state}
 
   depends_on:
@@ -278,7 +278,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
     - pgmq server on localhost:4222 (MUST be running)
   ```
 
-  ### Performance Characteristics ⚡
+  ### Performance Characteristics ?
 
   **Time Complexity**
   - handle_message/2: O(1) for JSON parsing
@@ -302,22 +302,22 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ---
 
-  ### Concurrency & Safety 🔒
+  ### Concurrency & Safety ??
 
   **Process Safety**
-  - ✅ GenServer singleton ensures serialized state updates
-  - ✅ pgmq message handling is sequential
-  - ✅ Safe for multiple pgmq clients (request/reply pattern)
+  - ? GenServer singleton ensures serialized state updates
+  - ? pgmq message handling is sequential
+  - ? Safe for multiple pgmq clients (request/reply pattern)
 
   **Thread Safety**
-  - ✅ GenServer handle_info serializes all messages
-  - ✅ SafeWorkPlanner calls are serialized per module
-  - ✅ No shared mutable state (GenServer state is immutable)
+  - ? GenServer handle_info serializes all messages
+  - ? SafeWorkPlanner calls are serialized per module
+  - ? No shared mutable state (GenServer state is immutable)
 
   **Atomicity Guarantees**
-  - ✅ Single pgmq message: Atomic (all-or-nothing response)
-  - ✅ SafeWorkPlanner operations: Atomic with Ecto transactions
-  - ❌ Conflict detection: Not atomic with creation (time-of-check/time-of-use race)
+  - ? Single pgmq message: Atomic (all-or-nothing response)
+  - ? SafeWorkPlanner operations: Atomic with Ecto transactions
+  - ? Conflict detection: Not atomic with creation (time-of-check/time-of-use race)
   - Recommended: Add database constraints for redundancy detection
 
   **Race Condition Risks**
@@ -328,7 +328,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ---
 
-  ### Observable Metrics 📊
+  ### Observable Metrics ??
 
   **Telemetry Events**
   - message_received: pgmq message arrives (topic, payload_size)
@@ -354,7 +354,7 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ---
 
-  ### Troubleshooting Guide 🔧
+  ### Troubleshooting Guide ??
 
   **Problem: High Latency on Work Item Creation (>500ms)**
 
@@ -421,71 +421,71 @@ defmodule Singularity.Execution.Planning.WorkPlanAPI do
 
   ### Anti-Patterns
 
-  #### ❌ DO NOT create PlanningAPI, WorkPlanService, or SAFeAPI duplicates
+  #### ? DO NOT create PlanningAPI, WorkPlanService, or SAFeAPI duplicates
   **Why:** WorkPlanAPI is the single canonical pgmq gateway for work planning operations.
 
   ```elixir
-  # ❌ WRONG - Duplicate planning API
+  # ? WRONG - Duplicate planning API
   defmodule MyApp.PlanningAPI do
     def create_feature(name, description) do
       # Re-implementing what WorkPlanAPI already does
     end
   end
 
-  # ✅ CORRECT - Use WorkPlanAPI via pgmq
+  # ? CORRECT - Use WorkPlanAPI via pgmq
   Singularity.Jobs.PgmqClient.request(conn, "planning.feature.create", Jason.encode!(%{
     "name" => name,
     "description" => description
   }))
   ```
 
-  #### ❌ DO NOT bypass conflict detection when creating work items
+  #### ? DO NOT bypass conflict detection when creating work items
   **Why:** Undetected conflicts lead to redundant work and wasted effort.
 
   ```elixir
-  # ❌ WRONG - Create without checking conflicts
+  # ? WRONG - Create without checking conflicts
   SafeWorkPlanner.add_chunk(description, type: :feature)
 
-  # ✅ CORRECT - Route through WorkPlanAPI for conflict detection
+  # ? CORRECT - Route through WorkPlanAPI for conflict detection
   # check_task_conflicts/1 automatically runs after creation
   {:ok, %{status: :updated_with_conflicts, conflicts: [...]}}
   ```
 
-  #### ❌ DO NOT apply task updates without syncing to SafeWorkPlanner
+  #### ? DO NOT apply task updates without syncing to SafeWorkPlanner
   **Why:** Out-of-sync state causes cascading failures and duplicate work.
 
   ```elixir
-  # ❌ WRONG - Update task state outside SafeWorkPlanner
+  # ? WRONG - Update task state outside SafeWorkPlanner
   my_task_store.update(task_id, status: :completed)
 
-  # ✅ CORRECT - Sync via process_task_update which updates SafeWorkPlanner
+  # ? CORRECT - Sync via process_task_update which updates SafeWorkPlanner
   sync_task_updates([%{task_id: task_id, status: :completed, changes: [...]}])
   # This calls SafeWorkPlanner.update_task, then checks conflicts
   ```
 
-  #### ❌ DO NOT ignore error responses from SafeWorkPlanner
+  #### ? DO NOT ignore error responses from SafeWorkPlanner
   **Why:** Silent failures leave work items in inconsistent state.
 
   ```elixir
-  # ❌ WRONG - Don't check result
+  # ? WRONG - Don't check result
   SafeWorkPlanner.add_chunk(description, type: :epic)
   # What if it failed?
 
-  # ✅ CORRECT - Handle both success and error cases
+  # ? CORRECT - Handle both success and error cases
   case SafeWorkPlanner.add_chunk(description, type: :epic) do
     {:ok, id} -> %{status: "ok", id: id}
     {:error, %Ecto.Changeset{} = cs} -> %{status: "error", errors: format_changeset_errors(cs)}
   end
   ```
 
-  #### ❌ DO NOT hardcode TaskGraph priority calculation
+  #### ? DO NOT hardcode TaskGraph priority calculation
   **Why:** Priority formulas should be centralized and updatable.
 
   ```elixir
-  # ❌ WRONG - Inline priority calculation
+  # ? WRONG - Inline priority calculation
   priority = task.value * task.priority / task.effort
 
-  # ✅ CORRECT - Use calculate_task_graph_priority/1
+  # ? CORRECT - Use calculate_task_graph_priority/1
   priority_score = calculate_task_graph_priority(task).priority_score
   # Encapsulates WSJF (value/(effort * dependencies)) formula
   ```

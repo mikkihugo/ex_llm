@@ -42,10 +42,18 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       - StartupCodeIngestion.persist_module_to_db/2  # Re-ingest changed file
       - TodoExtractor.extract_after_file_update/1  # Extract TODOs after DB update
     called_by:
-      - ApplicationSupervisor  # Started in supervision tree
+      - ApplicationSupervisor  # Started in supervision tree (SINGLETON - only one instance)
     triggers:
       - on_file_modified: Re-ingests single file immediately + extracts TODOs
   ```
+
+  ## Singleton Pattern
+
+  **IMPORTANT**: This is a singleton GenServer (registered with `name: __MODULE__`).
+  Only ONE instance should be started in the supervision tree.
+
+  **Started by**: `ApplicationSupervisor` (checks `:auto_ingestion` config)
+  **NOT started by**: `HTDAG.Supervisor` (uses existing instance instead)
 
   ## Anti-Patterns
 
@@ -80,10 +88,15 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   @config Application.get_env(:singularity, :auto_ingestion, %{})
 
   # Debounce delay (ms) - wait after last change before re-ingesting
-  @debounce_delay @config[:debounce_delay_ms] || 500
+  # Default: 1 minute (60000ms) - waits for file writes to complete
+  @debounce_delay @config[:debounce_delay_ms] || 60_000
 
   # Maximum file age for busy detection (ms) - skip if modified very recently
-  @busy_file_threshold @config[:busy_file_threshold_ms] || 100
+  # Increased to 2 seconds for more reliable busy detection
+  @busy_file_threshold @config[:busy_file_threshold_ms] || 2_000
+
+  # Maximum concurrent reload operations to prevent resource exhaustion
+  @max_concurrent_reloads @config[:max_concurrent_reloads] || 3
 
   # Retry configuration
   @max_retries @config[:max_retries] || 3
@@ -135,6 +148,12 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   # Logging control
   @quiet_mode @config[:quiet_mode] || false
 
+  # Rate limiting - prevent overwhelming system with too many files
+  @max_files_per_minute @config[:max_files_per_minute] || 50
+
+  # Health check interval (ms) - emit telemetry periodically
+  @health_check_interval @config[:health_check_interval_ms] || 60_000
+
   # ------------------------------------------------------------------------------
   # Client API
   # ------------------------------------------------------------------------------
@@ -148,13 +167,56 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @doc """
+  Get current metrics and status.
+
+  Returns metrics including files processed, failures, reloads, and rate limit status.
+  """
+  def get_metrics do
+    GenServer.call(__MODULE__, :get_metrics)
+  end
+
+  @doc """
+  Get health status of the file watcher.
+
+  Returns health information including metrics and uptime.
+  """
+  def health_check do
+    GenServer.call(__MODULE__, :health_check)
+  end
+
   # ------------------------------------------------------------------------------
   # GenServer Callbacks
   # ------------------------------------------------------------------------------
 
   @impl true
+  def handle_call(:get_metrics, _from, %{metrics: metrics, rate_limit_window: window} = state) do
+    current_time = System.system_time(:second)
+    recent_files = Enum.count(window, fn {_path, timestamp} -> current_time - timestamp < 60 end)
+
+    metrics_with_rate_limit = Map.put(metrics, :files_in_rate_limit_window, recent_files)
+
+    {:reply, {:ok, metrics_with_rate_limit}, state}
+  end
+
+  @impl true
+  def handle_call(:health_check, _from, %{metrics: metrics, watcher_pid: watcher_pid} = state) do
+    watcher_alive = Process.alive?(watcher_pid)
+
+    health = %{
+      status: if(watcher_alive, do: :healthy, else: :unhealthy),
+      watcher_alive: watcher_alive,
+      metrics: metrics,
+      uptime_ms: System.monotonic_time(:millisecond) - (state[:start_time] || System.monotonic_time(:millisecond))
+    }
+
+    {:reply, {:ok, health}, state}
+  end
+
+  @impl true
   def init(opts) do
-    Logger.info("Starting CodeFileWatcher with #{@debounce_delay}ms debouncing...")
+    debounce_seconds = div(@debounce_delay, 1000)
+    Logger.info("Starting CodeFileWatcher with #{debounce_seconds}s debouncing (waits #{debounce_seconds}s after last write)...")
 
     # Get project root - monitor entire project, not just lib/
     project_root = File.cwd!()
@@ -165,6 +227,12 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
 
     Logger.info("CodeFileWatcher monitoring: #{project_root}")
 
+    # Start health check timer
+    health_check_timer = Process.send_after(self(), :health_check, @health_check_interval)
+
+    # Emit telemetry for startup
+    :telemetry.execute([:singularity, :code_file_watcher, :start], %{count: 1})
+
     {:ok,
      %{
        watcher_pid: watcher_pid,
@@ -172,7 +240,21 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
        # Track pending re-ingestions (file_path => timer_ref)
        pending_ingestions: %{},
        # Track in-progress re-ingestions to prevent duplicates
-       in_progress: MapSet.new()
+       in_progress: MapSet.new(),
+       # Rate limiting - track files processed in last minute
+       rate_limit_window: [],
+       # Health check timer
+       health_check_timer: health_check_timer,
+       # Start time for uptime calculation
+       start_time: System.monotonic_time(:millisecond),
+       # Metrics
+       metrics: %{
+         files_processed: 0,
+         files_failed: 0,
+         reloads_succeeded: 0,
+         reloads_failed: 0,
+         last_reload_at: nil
+       }
      }}
   end
 
@@ -223,48 +305,137 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       Logger.debug("Skipping #{file_path} - already in progress")
       {:noreply, %{state | pending_ingestions: new_pending}}
     else
-      Logger.info("Re-ingesting: #{file_path} (after #{@debounce_delay}ms debounce)")
+      # Rate limiting check
+      current_time = System.system_time(:second)
+      %{rate_limit_window: window} = state
 
-      # Mark as in-progress
-      new_in_progress = MapSet.put(in_progress, file_path)
+      # Filter out entries older than 1 minute
+      recent_window = Enum.filter(window, fn {_path, timestamp} -> current_time - timestamp < 60 end)
 
-      # Re-ingest asynchronously
-      Task.start(fn ->
-        result = reingest_file_with_retry(file_path, project_root, @max_retries)
-        send(self(), {:reingest_complete, file_path, result})
-      end)
+      if length(recent_window) >= @max_files_per_minute do
+        Logger.warning("Rate limit exceeded: #{length(recent_window)} files in last minute, skipping #{file_path}")
+        :telemetry.execute([:singularity, :code_file_watcher, :rate_limited], %{count: 1})
+        {:noreply, %{state | pending_ingestions: new_pending, rate_limit_window: recent_window}}
+      else
+        debounce_seconds = div(@debounce_delay, 1000)
+        Logger.info("Re-ingesting: #{file_path} (after #{debounce_seconds}s debounce from last write)")
 
-      {:noreply, %{state | pending_ingestions: new_pending, in_progress: new_in_progress}}
+        # Mark as in-progress
+        new_in_progress = MapSet.put(in_progress, file_path)
+
+        # Update rate limit window
+        new_window = [{file_path, current_time} | recent_window]
+
+        # Re-ingest asynchronously with timeout
+        Task.start(fn ->
+          result =
+            with_timeout(
+              fn -> reingest_file_with_retry(file_path, project_root, @max_retries) end,
+              @ingestion_timeout
+            )
+
+          send(__MODULE__, {:reingest_complete, file_path, result})
+        end)
+
+        {:noreply,
+         %{
+           state
+           | pending_ingestions: new_pending,
+             in_progress: new_in_progress,
+             rate_limit_window: new_window
+         }}
+      end
     end
   end
 
   @impl true
-  def handle_info({:reingest_complete, file_path, result}, %{in_progress: in_progress} = state) do
-    # Re-ingestion completed (success or failure)
-    case result do
-      {:ok, _} ->
-        Logger.info("✓ Successfully re-ingested: #{file_path}")
+  def handle_info(
+        {:reingest_complete, file_path, result},
+        %{in_progress: in_progress, metrics: metrics} = state
+      ) do
+    new_metrics =
+      case result do
+        {:ok, _} ->
+          Logger.info("✓ Successfully re-ingested: #{file_path}",
+            file_path: file_path,
+            result: :success
+          )
 
-        # Auto-update graph for this file (async, non-blocking)
-        update_graph_for_file(file_path)
+          :telemetry.execute([:singularity, :code_file_watcher, :reingest_success], %{count: 1})
 
-      {:error, :file_busy} ->
-        Logger.debug("⏭ Skipped #{file_path} - file is busy (being written)")
+          updated_metrics = %{
+            metrics
+            | files_processed: metrics.files_processed + 1,
+              last_reload_at: DateTime.utc_now()
+          }
 
-      {:error, reason} ->
-        Logger.warning("✗ Failed to re-ingest #{file_path}: #{inspect(reason)}")
-    end
+          update_graph_for_file(file_path)
+
+          if String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") do
+            reload_elixir_module(file_path, updated_metrics)
+          end
+
+          updated_metrics
+
+        {:error, :file_busy} ->
+          Logger.debug("⏭ Skipped #{file_path} - file is busy (being written)",
+            file_path: file_path,
+            reason: :file_busy
+          )
+
+          metrics
+
+        {:error, :timeout} ->
+          Logger.warning("✗ Timeout re-ingesting #{file_path}",
+            file_path: file_path,
+            timeout_ms: @ingestion_timeout
+          )
+
+          :telemetry.execute([:singularity, :code_file_watcher, :reingest_timeout], %{count: 1})
+
+          %{metrics | files_failed: metrics.files_failed + 1}
+
+        {:error, reason} ->
+          Logger.warning("✗ Failed to re-ingest #{file_path}: #{inspect(reason)}",
+            file_path: file_path,
+            reason: reason
+          )
+
+          :telemetry.execute([:singularity, :code_file_watcher, :reingest_error], %{count: 1})
+
+          %{metrics | files_failed: metrics.files_failed + 1}
+      end
 
     # Remove from in-progress
     new_in_progress = MapSet.delete(in_progress, file_path)
 
-    {:noreply, %{state | in_progress: new_in_progress}}
+    {:noreply, %{state | in_progress: new_in_progress, metrics: new_metrics}}
   end
 
   @impl true
   def handle_info({:file_event, _watcher_pid, :stop}, state) do
     Logger.warning("FileSystem watcher stopped")
+    :telemetry.execute([:singularity, :code_file_watcher, :watcher_stopped], %{count: 1})
     {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(:health_check, %{health_check_timer: _old_timer, metrics: metrics} = state) do
+    # Emit health metrics
+    :telemetry.execute(
+      [:singularity, :code_file_watcher, :health],
+      %{
+        files_processed: metrics.files_processed,
+        files_failed: metrics.files_failed,
+        reloads_succeeded: metrics.reloads_succeeded,
+        reloads_failed: metrics.reloads_failed
+      }
+    )
+
+    # Schedule next health check
+    new_timer = Process.send_after(self(), :health_check, @health_check_interval)
+
+    {:noreply, %{state | health_check_timer: new_timer}}
   end
 
   # ------------------------------------------------------------------------------
@@ -307,12 +478,27 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   defp reingest_file(file_path, project_root) do
     # Check if file is busy (recently modified - likely still being written)
     case check_file_busy(file_path) do
-      {:busy, _} ->
+      {:busy, reason} ->
+        Logger.debug("File busy: #{reason}")
         {:error, :file_busy}
+
+      {:error, reason} ->
+        {:error, reason}
 
       :ready ->
         # File is ready for ingestion
         do_reingest(file_path, project_root)
+    end
+  end
+
+  # Wrapper to add timeout to file operations
+  defp with_timeout(fun, timeout_ms) do
+    task = Task.async(fun)
+
+    case Task.yield(task, timeout_ms) || Task.shutdown(task) do
+      {:ok, result} -> result
+      nil -> {:error, :timeout}
+      {:exit, reason} -> {:error, reason}
     end
   end
 
@@ -322,17 +508,23 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
         # Convert mtime to milliseconds since epoch
         mtime_ms = :calendar.datetime_to_gregorian_seconds(mtime) * 1000
         now_ms = System.system_time(:millisecond)
+        age_ms = now_ms - mtime_ms
 
-        if now_ms - mtime_ms < @busy_file_threshold do
-          {:busy, "Modified #{now_ms - mtime_ms}ms ago"}
+        if age_ms < @busy_file_threshold do
+          {:busy, "Modified #{age_ms}ms ago (< #{@busy_file_threshold}ms threshold)"}
         else
           :ready
         end
 
+      {:error, :enoent} ->
+        # File doesn't exist - might have been deleted
+        Logger.debug("File not found (may have been deleted): #{file_path}")
+        {:error, :file_not_found}
+
       {:error, reason} ->
-        # File doesn't exist or can't stat - skip
+        # File permission or other error
         Logger.debug("Could not stat #{file_path}: #{inspect(reason)}")
-        {:busy, reason}
+        {:error, reason}
     end
   end
 
@@ -458,22 +650,44 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
 
   # Extract module name from file path.
   # For Elixir: lib/singularity/foo/bar.ex → Singularity.Foo.Bar
-  # For other files: use the file path as identifier
+  # Handles edge cases: test files, multiple lib/ paths, Windows paths
   defp extract_module_name(file_path) do
     cond do
-      String.ends_with?(file_path, ".ex") ->
-        # Elixir module naming
-        file_path
-        |> String.replace(~r/^.*\/lib\//, "")
-        |> String.replace(".ex", "")
-        |> String.split("/")
-        |> Enum.map(&String.capitalize/1)
-        |> Enum.join(".")
+      String.ends_with?(file_path, ".ex") or String.ends_with?(file_path, ".exs") ->
+        # Elixir module naming - handle multiple lib/ paths
+        normalized = String.replace(file_path, "\\", "/")
+
+        # Extract path after last lib/ occurrence (handles nested lib/ dirs)
+        case Regex.run(~r/(?:^|\/)(lib\/.+)$/, normalized) do
+          [_, lib_path] ->
+            lib_path
+            |> String.replace(~r/\.exs?$/, "")
+            |> String.split("/")
+            |> Enum.reject(&(&1 == ""))
+            |> Enum.map(fn segment ->
+              # Handle snake_case → PascalCase conversion
+              segment
+              |> String.split("_")
+              |> Enum.map(&String.capitalize/1)
+              |> Enum.join("")
+            end)
+            |> Enum.join(".")
+
+          _ ->
+            # Fallback: use filename
+            Path.basename(file_path, ".ex")
+            |> String.replace(~r/\.exs$/, "")
+            |> String.split("_")
+            |> Enum.map(&String.capitalize/1)
+            |> Enum.join("")
+        end
 
       true ->
         # For non-Elixir files, use the relative path as identifier
+        cwd = File.cwd!() |> String.replace("\\", "/")
         file_path
-        |> String.replace(File.cwd!() <> "/", "")
+        |> String.replace("\\", "/")
+        |> String.replace(cwd <> "/", "")
         |> String.replace("/", ".")
         # Remove file extension
         |> String.replace(~r/\.[^.]*$/, "")
@@ -492,11 +706,13 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
           Logger.debug("Skipping graph update for #{file_path} - not found in DB")
 
         file ->
-          # Note: GraphPopulator functions are private, so we'll just trigger a full rebuild
-          # This is acceptable since it uses UPSERT and will be fast for a single file
+          # Optimize: Only update graph nodes/edges for this specific file
+          # (populate_all uses UPSERT so it's safe, but incremental would be faster)
           Logger.debug("Scheduling graph update for #{file_path}...")
 
-          # Trigger async full population (UPSERT will only update changed nodes/edges)
+          # Trigger async graph population (UPSERT ensures idempotency)
+          # TODO: Optimize to only update nodes/edges for this file instead of full rebuild
+          # This would require exposing GraphPopulator.populate_file/1 or similar API
           Task.start(fn ->
             case Singularity.Graph.GraphPopulator.populate_all("singularity") do
               {:ok, _stats} ->
@@ -511,5 +727,138 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       # Extract TODOs from the updated file (after database is updated)
       TodoExtractor.extract_after_file_update(file_path)
     end)
+  end
+
+  # Automatically reload Elixir modules when .ex/.exs files change
+  # This enables hot code reloading for pure Elixir applications
+  # Production-grade: proper error handling, rate limiting, metrics
+  defp reload_elixir_module(file_path, metrics) do
+    # Check concurrent reload limit
+    if MapSet.size(metrics[:concurrent_reloads] || MapSet.new()) >= @max_concurrent_reloads do
+      Logger.debug("Skipping reload - #{@max_concurrent_reloads} concurrent reloads in progress")
+      :ok
+    else
+      do_reload_elixir_module(file_path)
+    end
+  end
+
+  defp do_reload_elixir_module(file_path) do
+    Task.start(fn ->
+      start_time = System.monotonic_time(:millisecond)
+
+      try do
+        # Only reload in dev/test environments
+        if Mix.env() in [:dev, :test] do
+          # Extract module name from file path
+          module_name = extract_module_name(file_path)
+
+          # Validate file exists and is readable
+          if File.exists?(file_path) do
+            # Try to compile and reload the module
+            # This will work if running in IEx or with Mix code reloader
+            reload_result =
+              case Code.recompile() do
+                {:ok, modules} ->
+                  duration_ms = System.monotonic_time(:millisecond) - start_time
+
+                  Logger.info("🔥 Hot reloaded #{length(modules)} modules after #{Path.basename(file_path)} changed",
+                    file_path: file_path,
+                    module_count: length(modules),
+                    duration_ms: duration_ms
+                  )
+
+                  :telemetry.execute(
+                    [:singularity, :code_file_watcher, :reload_success],
+                    %{module_count: length(modules), duration_ms: duration_ms}
+                  )
+
+                  {:ok, modules}
+
+                {:error, _errors} ->
+                  # Fallback: try to compile just the file
+                  reload_result =
+                    with {:ok, modules} <- Code.compile_file(file_path) do
+                      duration_ms = System.monotonic_time(:millisecond) - start_time
+
+                      Logger.info("🔥 Compiled and reloaded: #{module_name}",
+                        file_path: file_path,
+                        module_name: module_name,
+                        duration_ms: duration_ms
+                      )
+
+                      :telemetry.execute(
+                        [:singularity, :code_file_watcher, :reload_success],
+                        %{module_count: length(modules), duration_ms: duration_ms}
+                      )
+
+                      {:ok, modules}
+                    else
+                      {:error, reason} ->
+                        duration_ms = System.monotonic_time(:millisecond) - start_time
+
+                        Logger.debug("Could not reload #{module_name}: #{inspect(reason)}",
+                          file_path: file_path,
+                          module_name: module_name,
+                          reason: reason,
+                          duration_ms: duration_ms
+                        )
+
+                        :telemetry.execute(
+                          [:singularity, :code_file_watcher, :reload_error],
+                          %{duration_ms: duration_ms}
+                        )
+
+                        {:error, reason}
+                    end
+
+                  reload_result
+              end
+
+            # Update metrics based on result
+            case reload_result do
+              {:ok, _} ->
+                send(__MODULE__, {:reload_complete, file_path, :success})
+
+              {:error, _} ->
+                send(__MODULE__, {:reload_complete, file_path, :error})
+            end
+          else
+            Logger.debug("File does not exist for reload: #{file_path}")
+            send(__MODULE__, {:reload_complete, file_path, :error})
+          end
+        end
+      rescue
+        e ->
+          duration_ms = System.monotonic_time(:millisecond) - start_time
+          stacktrace = __STACKTRACE__
+
+          Logger.warning("Hot reload failed for #{file_path}: #{inspect(e)}",
+            file_path: file_path,
+            error: inspect(e),
+            duration_ms: duration_ms
+          )
+
+          Logger.debug("Hot reload stacktrace", stacktrace: Exception.format_stacktrace(stacktrace))
+
+          :telemetry.execute(
+            [:singularity, :code_file_watcher, :reload_exception],
+            %{duration_ms: duration_ms}
+          )
+
+          send(__MODULE__, {:reload_complete, file_path, :error})
+      end
+    end)
+  end
+
+  @impl true
+  def handle_info({:reload_complete, _file_path, :success}, %{metrics: metrics} = state) do
+    new_metrics = %{metrics | reloads_succeeded: metrics.reloads_succeeded + 1}
+    {:noreply, %{state | metrics: new_metrics}}
+  end
+
+  @impl true
+  def handle_info({:reload_complete, _file_path, :error}, %{metrics: metrics} = state) do
+    new_metrics = %{metrics | reloads_failed: metrics.reloads_failed + 1}
+    {:noreply, %{state | metrics: new_metrics}}
   end
 end

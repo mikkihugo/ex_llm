@@ -108,6 +108,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
 
   require Logger
   alias Singularity.Agents.Coordination.AgentRouter
+  alias Singularity.LLM.Config
   alias Singularity.Agents.Coordination.ExecutionCoordinator
 
   @doc """
@@ -165,7 +166,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
         {:ok, result}
 
       {:error, reason} ->
-        Logger.warn("TaskGraph agent routing failed, falling back",
+        Logger.warning("TaskGraph agent routing failed, falling back",
           task_id: task[:id],
           reason: inspect(reason)
         )
@@ -230,9 +231,12 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
   defp convert_to_router_task(task) do
     # Infer domain from goal text
     domain = infer_domain(task[:goal], task[:description])
+    
+    # Get provider from task context or default to "auto"
+    provider = task[:provider] || "auto"
 
-    # Infer complexity from token estimate or description
-    complexity = infer_complexity(task[:estimated_tokens], task[:description])
+    # Infer complexity using centralized config (database → TaskTypeRegistry fallback)
+    complexity = infer_complexity(task[:estimated_tokens], task[:description], provider)
 
     # Build router task
     %{
@@ -265,27 +269,34 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
   end
 
   @doc false
-  defp infer_complexity(estimated_tokens, description \\ nil) do
+  defp infer_complexity(estimated_tokens, description \\ nil, provider \\ "auto") do
     # If token estimate provided, use it
-    case estimated_tokens do
-      tokens when is_integer(tokens) and tokens > 2000 ->
-        :complex
+    if estimated_tokens do
+      cond do
+        estimated_tokens > 5000 -> :complex
+        estimated_tokens > 2000 -> :medium
+        true -> :simple
+      end
+    else
+      # Use centralized LLM.Config to get complexity based on description
+      context = %{description: description}
+      
+      case Config.get_task_complexity(provider, context) do
+        {:ok, complexity} -> complexity
+        {:error, _} ->
+          # Fallback: infer from description text
+          infer_complexity_from_description(description)
+      end
+    end
+  end
 
-      tokens when is_integer(tokens) and tokens > 500 ->
-        :medium
-
-      tokens when is_integer(tokens) ->
-        :simple
-
-      _ ->
-        # Fall back to description heuristics
-        desc_text = (description || "") |> String.downcase()
-
-        cond do
-          String.match?(desc_text, ~r/large|multi|complex|architecture/) -> :complex
-          String.match?(desc_text, ~r/module|file|component/) -> :medium
-          true -> :medium
-        end
+  defp infer_complexity_from_description(description) do
+    desc_text = (description || "") |> String.downcase()
+    
+    cond do
+      String.match?(desc_text, ~r/large|multi|complex|architecture/) -> :complex
+      String.match?(desc_text, ~r/module|file|component/) -> :medium
+      true -> :medium
     end
   end
 

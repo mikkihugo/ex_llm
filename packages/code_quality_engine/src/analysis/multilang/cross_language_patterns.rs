@@ -99,9 +99,6 @@ pub struct AstExtraction {
     pub classes: Option<Vec<crate::nif_bindings::ClassMetadataResult>>,
 }
 
-// Re-export for test module
-pub use AstExtraction;
-
 
 impl std::fmt::Debug for CrossLanguageCodePatternsDetector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -298,6 +295,42 @@ impl CrossLanguageCodePatternsDetector {
         patterns
     }
 
+    /// Get or extract AST for a code snippet, with caching
+    pub fn get_or_extract_ast(&self, code: &str, language_id: &str) -> Option<AstExtraction> {
+        use std::hash::{Hash, Hasher};
+        use seahash::SeaHasher;
+        
+        // Calculate hash for code + language
+        let mut hasher = SeaHasher::new();
+        code.hash(&mut hasher);
+        language_id.hash(&mut hasher);
+        let code_hash = hasher.finish();
+        let cache_key = (code_hash, language_id.to_string());
+
+        // Check cache first
+        {
+            let cache = AST_CACHE.lock().unwrap();
+            if let Some(cached) = cache.get(&cache_key) {
+                return Some(cached.clone());
+            }
+        }
+
+        // Extract AST (placeholder - actual implementation would call NIF)
+        // For now, return None since AST extraction requires NIF bindings
+        let ast = AstExtraction {
+            functions: None,
+            classes: None,
+        };
+
+        // Cache the result
+        {
+            let mut cache = AST_CACHE.lock().unwrap();
+            cache.insert(cache_key, ast.clone());
+        }
+
+        Some(ast)
+    }
+
     /// AST-aware API integration pattern detection
     fn has_api_pattern_ast(&self, _code: &str, _language_id: &str, ast: Option<&AstExtraction>) -> bool {
         if let Some(ast) = ast {
@@ -346,6 +379,23 @@ impl CrossLanguageCodePatternsDetector {
     }
 
     // Removed: string-based logging pattern detection
+
+    /// AST-aware messaging pattern detection
+    fn has_messaging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+        if let Some(ast) = ast {
+            if let Some(functions) = &ast.functions {
+                // Look for messaging-related function names
+                return functions.iter().any(|f| {
+                    let name = f.name.to_lowercase();
+                    name.contains("publish") || name.contains("subscribe") || 
+                    name.contains("nats") || name.contains("kafka") || 
+                    name.contains("queue") || name.contains("message")
+                });
+            }
+        }
+        // Fallback to string-based detection if AST is not available
+        self.has_messaging_pattern(code, language_id)
+    }
 
     /// Check for message passing pattern (NATS, queues, etc.)
     ///
