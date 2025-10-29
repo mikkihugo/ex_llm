@@ -68,6 +68,7 @@ defmodule Singularity.Storage.ValidationMetricsStore do
   alias Singularity.Repo
   alias Singularity.Schemas.ValidationMetric
   alias Singularity.Schemas.ExecutionMetric
+  alias Singularity.PgFlow
 
   @type time_range :: :last_hour | :last_day | :last_week
   @type kpi_result :: float() | nil
@@ -412,23 +413,20 @@ defmodule Singularity.Storage.ValidationMetricsStore do
         source_instance: "singularity_#{node()}"
       }
 
-      # Check if CentralCloud integration is available
-      cond do
-        Code.ensure_loaded?(CentralCloud.ValidationMetricsIngestion) and
-            function_exported?(CentralCloud.ValidationMetricsIngestion, :ingest_metrics, 1) ->
-          CentralCloud.ValidationMetricsIngestion.ingest_metrics(sync_payload)
-
-        Code.ensure_loaded?(CentralCloud.PatternLearningPublisher) and
-            function_exported?(
-              CentralCloud.PatternLearningPublisher,
-              :publish_validation_metrics,
-              1
-            ) ->
-          CentralCloud.PatternLearningPublisher.publish_validation_metrics(sync_payload)
-
-        true ->
-          Logger.debug("CentralCloud validation metrics sync skipped: integration not configured")
-          {:ok, 0}
+      # Publish validation metrics to CentralCloud via PgFlow
+      # Queue: execution_metrics_aggregated (consumed by CentralCloud.Consumers.PerformanceStatsConsumer)
+      message = Map.put(sync_payload, "type", "execution_metrics")
+      
+      case PgFlow.send_with_notify("execution_metrics_aggregated", message) do
+        {:ok, _} ->
+          Logger.debug("Validation metrics published to CentralCloud",
+            metrics_count: length(sync_payload.validation_metrics) + length(sync_payload.execution_metrics)
+          )
+          {:ok, length(sync_payload.validation_metrics) + length(sync_payload.execution_metrics)}
+        
+        {:error, reason} ->
+          Logger.warning("Failed to publish validation metrics to CentralCloud", reason: reason)
+          {:error, reason}
       end
     rescue
       error ->

@@ -190,7 +190,21 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
   defp load_safetensors_weights(safetensors_path, device) do
     # Load safetensors file and parse weight tensors
     # In production, would use proper safetensors parser and Nx tensor loading
-    # For now, return mock weights
+    # For now, return mock weights, but log intent for the current device
+    exists? = File.exists?(safetensors_path)
+    metadata = extract_safetensors_metadata(safetensors_path)
+
+    Logger.debug("Attempted to load safetensors",
+      path: safetensors_path,
+      device: device,
+      bytes: metadata.bytes,
+      tensors: metadata.tensors,
+      exists?: exists?
+    )
+
+    if exists? do
+      Logger.debug("Safetensors file detected", path: safetensors_path)
+    end
     {:error, "Safetensors loading not yet implemented - requires Nx integration"}
   end
 
@@ -210,5 +224,14 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
     path = Path.join(File.cwd!(), "priv/models")
     File.mkdir_p!(path)
     path
+  end
+
+  defp extract_safetensors_metadata(path) do
+    if File.exists?(path) do
+      {:ok, size} = File.stat(path)
+      %{bytes: size.size, tensors: :unknown}
+    else
+      %{bytes: 0, tensors: :missing}
+    end
   end
 end

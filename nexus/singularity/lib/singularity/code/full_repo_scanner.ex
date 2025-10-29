@@ -49,18 +49,10 @@ defmodule Singularity.Code.FullRepoScanner do
   require Logger
 
   # INTEGRATION: Knowledge search and code generation
-  # Note: These are defined for integration documentation/interface - used in documentation strings
-  alias Singularity.Store
-  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
+  # Note: These modules are referenced in documentation strings but not used in code
+  # Documentation uses full module names: Singularity.Store, Singularity.CodeGeneration.Implementations.RAGCodeGenerator, etc.
   alias Singularity.HotReload.SafeCodeChangeDispatcher
-
-  # INTEGRATION: TaskGraph planning and tracing
-  # Note: TaskGraph defined for integration documentation - used in documentation strings
-  alias Singularity.Execution.Planning.{TaskGraph, ExecutionTracer}
-
-  # INTEGRATION: Self-improvement (learning from execution)
-  # Note: SelfImprovingAgent defined for integration documentation - used in documentation strings
-  alias Singularity.SelfImprovingAgent
+  alias Singularity.Execution.Planning.ExecutionTracer
 
   # INTEGRATION: LLM service with Lua script support for dynamic fix generation
   alias Singularity.LLM.Service

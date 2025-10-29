@@ -30,6 +30,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryCollector do
 
   require Logger
   alias Singularity.ArchitectureEngine.PackageRegistryKnowledge
+  alias Timex
 
   # Path to Rust package_registry_indexer binary
   @package_registry_indexer_bin Path.join([

@@ -15,8 +15,6 @@ defmodule Singularity.Workflows.AgentImprovementWorkflow do
   use Pgflow.Workflow
 
   require Logger
-  alias Singularity.Repo
-  alias Singularity.Agents.Agent
 
   @doc """
   Define the agent improvement workflow structure

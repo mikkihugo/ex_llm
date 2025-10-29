@@ -28,7 +28,6 @@ defmodule Mix.Tasks.Build.RustEngines do
 
   @engines [
     %{name: "parser_engine", crate: "parser_code", path: "packages/parser_engine"},
-    %{name: "architecture_engine", crate: "architecture_engine", path: "packages/architecture_engine"},
     %{name: "code_quality_engine", crate: "code_quality_engine", path: "packages/code_quality_engine"},
     %{name: "linting_engine", crate: "linting_engine", path: "packages/linting_engine"},
     %{name: "prompt_engine", crate: "prompt_engine", path: "packages/prompt_engine"}
@@ -36,7 +35,7 @@ defmodule Mix.Tasks.Build.RustEngines do
 
   @shortdoc "Build all Rust NIF engines"
 
-  def run(args) do
+  def run(_args) do
     Logger.info("Rust engine build task started", skip_build: System.get_env("SKIP_RUST_BUILD") == "1")
     
     # Skip if SKIP_RUST_BUILD env var is set (for faster iteration)
@@ -115,83 +114,24 @@ defmodule Mix.Tasks.Build.RustEngines do
         :skip
 
       true ->
-        cargo_toml = Path.join(full_path, "Cargo.toml")
+        # Check if we need to rebuild
+        so_file = find_so_file(full_path, crate)
+        needs_rebuild = needs_rebuild?(full_path, so_file)
 
-        # Step 1: Fetch dependencies (uses cargo cache automatically)
-        # This ensures dependencies are available before building
-        # Cargo will use cached dependencies if available, only downloading missing ones
-        # We suppress output unless there's an error (cargo fetch is quiet if cached)
-        Logger.debug("Fetching dependencies", engine: name, manifest: cargo_toml)
-        fetch_start = System.monotonic_time()
-        
-        case System.cmd("cargo", ["fetch", "--manifest-path", cargo_toml],
-               cd: full_path,
-               stderr_to_stdout: false,
-               into: []
-             ) do
-          {output, 0} ->
-            fetch_duration = System.monotonic_time() - fetch_start
-            # Dependencies fetched or already cached
-            # Only show output if there was actual fetching (not just cache hit)
-            if String.contains?(output, "Downloading") or String.contains?(output, "Updating") do
-              Logger.info("Dependencies updated", engine: name, duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond))
-              Mix.shell().info("📦 Dependencies updated for #{name}")
-            else
-              Logger.debug("Dependencies already cached", engine: name, duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond))
-            end
-            :ok
+        if so_file && not needs_rebuild do
+          Logger.debug("Engine already built and up to date", engine: name, so_file: so_file)
+          Mix.shell().info("✅ #{name} already built and up to date")
+          :ok
+        else
+          if needs_rebuild do
+            Logger.info("Engine source changed, rebuilding", engine: name)
+            Mix.shell().info("� #{name} source changed, rebuilding...")
+          else
+            Logger.info("Engine not built yet, building", engine: name)
+            Mix.shell().info("🏗️  Building #{name} for first time...")
+          end
 
-          {error_output, fetch_exit_code} ->
-            Logger.warning("cargo fetch failed, continuing with build", 
-              engine: name, 
-              exit_code: fetch_exit_code,
-              error: String.slice(to_string(error_output), 0..500))
-            # Show error if fetch failed
-            Mix.shell().warning("⚠️  cargo fetch failed for #{name} (exit code: #{fetch_exit_code})")
-            Mix.shell().info("Continuing with build anyway (cargo build will fetch if needed)...")
-            :ok
-        end
-
-        # Step 2: Build the engine
-        # Cargo build will also use cached dependencies automatically
-        Logger.info("Building engine", engine: name, crate: crate, mode: "release")
-        build_start = System.monotonic_time()
-        Mix.shell().info("🔨 Building #{name} (#{crate})...")
-        
-        case System.cmd("cargo", ["build", "--release", "--manifest-path", cargo_toml],
-               cd: full_path,
-               stderr_to_stdout: true,
-               into: IO.stream(:stdio, :line)
-             ) do
-          {_, 0} ->
-            build_duration = System.monotonic_time() - build_start
-            # Verify .so file exists
-            so_file = find_so_file(full_path, crate)
-
-            if so_file do
-              so_stat = File.stat!(so_file)
-              Logger.info("Engine built successfully", 
-                engine: name, 
-                so_file: so_file,
-                file_size_bytes: so_stat.size,
-                duration_ms: System.convert_time_unit(build_duration, :native, :millisecond))
-              Mix.shell().info("✅ Built #{name}: #{so_file}")
-              :ok
-            else
-              Logger.error("Build succeeded but .so file not found", engine: name, crate: crate, search_path: full_path)
-              Mix.shell().error("❌ Build succeeded but .so file not found for #{name}")
-              :error
-            end
-
-          {build_output, exit_code} ->
-            build_duration = System.monotonic_time() - build_start
-            Logger.error("Build failed", 
-              engine: name, 
-              exit_code: exit_code,
-              duration_ms: System.convert_time_unit(build_duration, :native, :millisecond),
-              error_preview: String.slice(to_string(build_output), 0..500))
-            Mix.shell().error("❌ Failed to build #{name} (exit code: #{exit_code})")
-            :error
+          do_build_engine(full_path, name, crate)
         end
     end
   end
@@ -213,5 +153,86 @@ defmodule Mix.Tasks.Build.RustEngines do
       basename = Path.basename(path)
       String.contains?(basename, crate_name) or String.contains?(basename, "lib#{crate_name}")
     end)
+  end
+
+  defp needs_rebuild?(engine_path, so_file) do
+    if so_file && File.exists?(so_file) do
+      # Check if any Rust source files are newer than the .so file
+      source_newer_than_target?(engine_path, so_file)
+    else
+      true
+    end
+  end
+
+  defp source_newer_than_target?(engine_path, target_file) do
+    target_mtime = File.stat!(target_file).mtime
+
+    # Check Rust source files in src/ directory
+    src_patterns = [
+      Path.join([engine_path, "src", "**", "*.rs"]),
+      Path.join([engine_path, "Cargo.toml"])
+    ]
+
+    src_patterns
+    |> Enum.flat_map(&Path.wildcard/1)
+    |> Enum.any?(fn source_file ->
+      source_mtime = File.stat!(source_file).mtime
+      source_mtime > target_mtime
+    end)
+  end
+
+  defp do_build_engine(engine_path, name, crate) do
+    cargo_toml = Path.join(engine_path, "Cargo.toml")
+
+    try do
+      # Step 1: Fetch dependencies (uses cargo cache automatically)
+      Logger.debug("Fetching dependencies", engine: name, cargo_toml: cargo_toml)
+      fetch_result = System.cmd("cargo", ["fetch", "--manifest-path", cargo_toml],
+        cd: engine_path,
+        stderr_to_stdout: true,
+        into: IO.stream(:stdio, :line)
+      )
+
+      case fetch_result do
+        {_, 0} ->
+          Logger.debug("Dependencies fetched", engine: name)
+        {output, code} ->
+          Logger.warning("Dependency fetch had issues", engine: name, exit_code: code, output: output)
+      end
+
+      # Step 2: Build the engine (release mode for production .so)
+      Logger.info("Building engine", engine: name, crate: crate, path: engine_path)
+      
+      build_result = System.cmd("cargo", ["build", "--release", "--manifest-path", cargo_toml],
+        cd: engine_path,
+        stderr_to_stdout: true,
+        into: IO.stream(:stdio, :line)
+      )
+
+      case build_result do
+        {_, 0} ->
+          # Verify .so file was created
+          so_file = find_so_file(engine_path, crate)
+          if so_file && File.exists?(so_file) do
+            Logger.info("Engine built successfully", engine: name, so_file: so_file)
+            Mix.shell().info("✅ #{name} built successfully")
+            :ok
+          else
+            Logger.error("Build succeeded but .so file not found", engine: name, crate: crate)
+            Mix.shell().error("⚠️  #{name}: Build succeeded but .so file not found")
+            :error
+          end
+
+        {output, code} ->
+          Logger.error("Build failed", engine: name, exit_code: code, output: output)
+          Mix.shell().error("❌ #{name} build failed (exit code: #{code})")
+          :error
+      end
+    rescue
+      e ->
+        Logger.error("Build exception", engine: name, error: inspect(e), stacktrace: __STACKTRACE__)
+        Mix.shell().error("❌ #{name} build failed: #{Exception.message(e)}")
+        :error
+    end
   end
 end

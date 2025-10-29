@@ -7,6 +7,9 @@ defmodule ObserverWeb.TaskExecutionLive do
     rates = Map.get(dashboard, :execution_rates, %{})
     timing = Map.get(dashboard, :timing_metrics, %{})
 
+    assigns = assign(assigns, :rates, rates)
+    assigns = assign(assigns, :timing, timing)
+
     ~H"""
     <div class="max-w-6xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
@@ -36,19 +39,19 @@ defmodule ObserverWeb.TaskExecutionLive do
             <dl class="mt-3 space-y-2 text-sm text-zinc-700">
               <div class="flex justify-between">
                 <dt>Total executions</dt>
-                <dd><%= rates[:total_executions] || 0 %></dd>
+                <dd><%= @rates[:total_executions] || 0 %></dd>
               </div>
               <div class="flex justify-between">
                 <dt>Successful</dt>
-                <dd><%= rates[:successful] || 0 %></dd>
+                <dd><%= @rates[:successful] || 0 %></dd>
               </div>
               <div class="flex justify-between">
                 <dt>Failed</dt>
-                <dd><%= rates[:failed] || 0 %></dd>
+                <dd><%= @rates[:failed] || 0 %></dd>
               </div>
               <div class="flex justify-between">
                 <dt>Success rate</dt>
-                <dd><%= percent(rates[:overall_success_rate]) %></dd>
+                <dd><%= percent(@rates[:overall_success_rate]) %></dd>
               </div>
             </dl>
           </div>
@@ -57,15 +60,15 @@ defmodule ObserverWeb.TaskExecutionLive do
             <dl class="mt-3 space-y-2 text-sm text-zinc-700">
               <div class="flex justify-between">
                 <dt>Average</dt>
-                <dd><%= ms(timing[:avg_total_time_ms]) %></dd>
+                <dd><%= ms(@timing[:avg_total_time_ms]) %></dd>
               </div>
               <div class="flex justify-between">
                 <dt>P95</dt>
-                <dd><%= ms(timing[:p95_total_time_ms]) %></dd>
+                <dd><%= ms(@timing[:p95_total_time_ms]) %></dd>
               </div>
               <div class="flex justify-between">
                 <dt>Slowest execution</dt>
-                <dd><%= ms(timing[:slowest_execution_ms]) %></dd>
+                <dd><%= ms(@timing[:slowest_execution_ms]) %></dd>
               </div>
             </dl>
           </div>

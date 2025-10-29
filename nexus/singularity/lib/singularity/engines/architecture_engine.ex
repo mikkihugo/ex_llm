@@ -19,13 +19,12 @@ defmodule Singularity.ArchitectureEngine do
       "framework_patterns (via FrameworkPatternStore)",
       "technology_patterns (via TechnologyPatternStore)"
     ],
-    "io_pattern": "Elixir I/O → Rust computation → Elixir I/O",
+    "io_pattern": "Elixir I/O → PostgreSQL lookup → Elixir analysis",
     "related_modules": {
       "stores": ["FrameworkPatternStore", "TechnologyPatternStore"],
-      "rust_nif": "architecture_engine::nif",
       "callers": ["CodeSearch", "ArchitectureAnalyzer", "Mix.Tasks.Architecture.*"]
     },
-    "technology_stack": ["Elixir", "Rustler 0.34", "PostgreSQL", "Ecto.SQL"]
+    "technology_stack": ["Elixir", "PostgreSQL", "Ecto.SQL"]
   }
   ```
 
@@ -86,17 +85,17 @@ defmodule Singularity.ArchitectureEngine do
 
   ## Anti-Patterns (DO NOT DO THIS!)
 
-  - ❌ **DO NOT call Rust NIF directly from outside this module** - All NIF calls go through this orchestrator
-  - ❌ **DO NOT skip database queries** - Rust needs DB patterns for accurate detection
-  - ❌ **DO NOT perform I/O in Rust** - Rust NIFs are pure computation only
+  - ❌ **DO NOT bypass this module** - All detection flows through the orchestrator so learning hooks fire
+  - ❌ **DO NOT skip database queries** - Detectors rely on stored patterns for accurate detection
+  - ❌ **DO NOT reintroduce Rust calls** - Implementation is intentionally pure Elixir for portability
   - ❌ **DO NOT bypass pattern stores** - Always use FrameworkPatternStore/TechnologyPatternStore
   - ❌ **DO NOT create duplicate architecture analysis modules** - This is THE ONLY architecture engine
   - ❌ **DO NOT confuse with central package intelligence** - This analyzes YOUR codebase, not external packages
 
   ## Search Keywords (for AI/vector search)
 
-  architecture engine, NIF orchestrator, framework detection, technology detection, pattern matching,
-  database-driven detection, self-learning patterns, Rustler NIF, Elixir Rust integration,
+  architecture engine, Elixir orchestrator, framework detection, technology detection, pattern matching,
+  database-driven detection, self-learning patterns, PGFlow integration,
   PostgreSQL patterns, confidence scoring, architectural suggestions, codebase analysis,
   technology identification, framework identification, pattern storage, success rate tracking,
   pure computation, I/O orchestration, Ecto queries
@@ -149,7 +148,7 @@ defmodule Singularity.ArchitectureEngine do
   ## Flow
 
   1. Fetch patterns from PostgreSQL
-  2. Pass to Rust NIF for pattern matching
+  2. Delegate to in-process detectors for pattern matching
   3. Store results back to PostgreSQL
 
   ## Examples
@@ -166,9 +165,9 @@ defmodule Singularity.ArchitectureEngine do
 
     # STEP 1: Fetch learned patterns from PostgreSQL (Elixir I/O)
     with {:ok, db_patterns} <- fetch_framework_patterns_from_db(),
-         # STEP 2: Call Rust NIF for pure computation
+         # STEP 2: Run detector in-process
          {:ok, results} <-
-           call_rust_detect_frameworks(code_patterns, db_patterns, context, confidence_threshold),
+           run_detect_frameworks(code_patterns, db_patterns, context, confidence_threshold),
          # STEP 3: Store results back to PostgreSQL (Elixir I/O)
          :ok <- store_detection_results(results) do
       Logger.info("✅ Detected #{length(results)} frameworks")
@@ -182,7 +181,7 @@ defmodule Singularity.ArchitectureEngine do
   ## Flow
 
   1. Fetch technology patterns from PostgreSQL
-  2. Pass to Rust NIF for pattern matching
+  2. Delegate to in-process detectors for pattern matching
   3. Store results back to PostgreSQL
 
   ## Examples
@@ -199,9 +198,9 @@ defmodule Singularity.ArchitectureEngine do
 
     # STEP 1: Fetch learned technology patterns from PostgreSQL (Elixir I/O)
     with {:ok, db_patterns} <- fetch_technology_patterns_from_db(),
-         # STEP 2: Call Rust NIF for pure computation
+         # STEP 2: Run detector in-process
          {:ok, results} <-
-           call_rust_detect_technologies(
+           run_detect_technologies(
              code_patterns,
              db_patterns,
              context,
@@ -249,7 +248,7 @@ defmodule Singularity.ArchitectureEngine do
     """
 
     case Repo.query(query, []) do
-      {:ok, %{rows: rows}} when length(rows) > 0 ->
+      {:ok, %{rows: [_head | _] = rows}} ->
         patterns = Enum.map(rows, &parse_framework_pattern_row/1)
         {:ok, patterns}
 
@@ -461,11 +460,11 @@ defmodule Singularity.ArchitectureEngine do
   end
 
   ##############################################################################
-  ## PRIVATE: Rust NIF Calls (Pure Computation)
+  ## PRIVATE: Detection Dispatch (Pure Elixir)
   ##############################################################################
 
-  # Call Rust NIF to detect frameworks (pure computation)
-  defp call_rust_detect_frameworks(code_patterns, db_patterns, context, threshold) do
+  # Run Elixir-based framework detection
+  defp run_detect_frameworks(code_patterns, db_patterns, context, threshold) do
     request = %{
       code_patterns: code_patterns,
       known_frameworks: db_patterns,
@@ -485,8 +484,8 @@ defmodule Singularity.ArchitectureEngine do
     :ok
   end
 
-  # Call Rust NIF to detect technologies (pure computation)
-  defp call_rust_detect_technologies(code_patterns, db_patterns, context, threshold) do
+  # Run Elixir-based technology detection
+  defp run_detect_technologies(code_patterns, db_patterns, context, threshold) do
     request = %{
       code_patterns: code_patterns,
       known_technologies: db_patterns,

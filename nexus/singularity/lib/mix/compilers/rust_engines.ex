@@ -19,7 +19,6 @@ defmodule Mix.Compilers.RustEngines do
 
   @engines [
     %{name: "parser_engine", crate: "parser_code", path: "packages/parser_engine"},
-    %{name: "architecture_engine", crate: "architecture_engine", path: "packages/architecture_engine"},
     %{name: "code_quality_engine", crate: "code_quality_engine", path: "packages/code_quality_engine"},
     %{name: "linting_engine", crate: "linting_engine", path: "packages/linting_engine"},
     %{name: "prompt_engine", crate: "prompt_engine", path: "packages/prompt_engine"}

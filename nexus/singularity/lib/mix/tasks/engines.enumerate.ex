@@ -48,7 +48,14 @@ defmodule Mix.Tasks.Engines.Enumerate do
       IO.puts(String.duplicate("=", 80))
 
       Enum.each(engines, fn engine ->
-        print_engine_summary(engine, opts[:health])
+        # Use show_health from opts, or rely on default value in print_engine_summary function
+        show_health = opts[:health]
+        if show_health != nil do
+          print_engine_summary(engine, show_health)
+        else
+          # Use default value from function definition
+          print_engine_summary(engine)
+        end
       end)
 
       IO.puts("\n" <> IO.ANSI.green() <> "Total: #{length(engines)} engines" <> IO.ANSI.reset())

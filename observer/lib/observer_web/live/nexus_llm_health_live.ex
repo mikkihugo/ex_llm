@@ -1,4 +1,4 @@
-defmodule ObserverWeb.NexusLlmHealthLive do
+defmodule ObserverWeb.NexusLLMHealthLive do
   use ObserverWeb.DashboardLive, fetch: &Observer.Dashboard.llm_health/0
 
   @impl true

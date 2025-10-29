@@ -1,4 +1,4 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
@@ -15,11 +15,11 @@ impl SqlParser {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let language = tree_sitter_sequel::LANGUAGE.into();
         let mut parser = Parser::new();
-        parser.set_language(language)?;
+        parser.set_language(&language)?;
         
         // Query for common SQL elements
         let query = Query::new(
-            language,
+            &language,
             r#"
             (select_statement) @select
             (insert_statement) @insert
@@ -57,11 +57,11 @@ impl SqlParser {
             .ok_or("Failed to parse SQL")?;
         
         let mut cursor = QueryCursor::new();
-        let captures = cursor.captures(&self.query, tree.root_node(), |_| content.as_bytes());
+        let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
         
         let mut document = SqlDocument::new();
         
-        for (matched_node, _) in captures {
+        while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
                 let text = &content[node.byte_range()];
@@ -408,6 +408,12 @@ pub struct SqlDocument {
     pub havings: Vec<HavingInfo>,
 }
 
+impl Default for SqlDocument {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SqlDocument {
     pub fn new() -> Self {
         Self {
@@ -718,7 +724,7 @@ impl LanguageParser for SqlParser {
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(self.language)
+        parser.set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         
         let tree = parser.parse(content, None)
@@ -750,9 +756,9 @@ impl LanguageParser for SqlParser {
         // Count SQL statements
         let mut statement_count = 0;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for _match in matches {
+        while matches.next().is_some() {
             statement_count += 1;
         }
         
@@ -777,9 +783,10 @@ impl LanguageParser for SqlParser {
         let mut functions = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for (match_index, _match) in matches.enumerate() {
+        let mut match_index = 0;
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 let node = capture.node;
                 let statement_type = node.kind();
@@ -807,6 +814,7 @@ impl LanguageParser for SqlParser {
                     body: Some(statement_content.to_string()),
                 });
             }
+            match_index += 1;
         }
         
         Ok(functions)
@@ -821,9 +829,9 @@ impl LanguageParser for SqlParser {
         let mut comments = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for _match in matches {
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 if capture.node.kind() == "comment" {
                     let node = capture.node;

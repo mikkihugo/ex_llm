@@ -14,6 +14,8 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Pgvector.Ecto.Vector
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
@@ -26,6 +28,11 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
     # Dual storage (dual storage pattern: raw JSON + parsed JSONB)
     field :content_raw, :string
     field :content, :map
+
+    # Semantic search (1024-dim: Jina v3)
+    field :embedding, Vector
+    field :embedding_model, :string
+    field :embedding_generated_at, :utc_datetime
 
     # Generated columns (read-only) - extracted from JSONB content
     field :language, :string
@@ -44,7 +51,10 @@ defmodule Singularity.Schemas.KnowledgeArtifact do
       :artifact_id,
       :version,
       :content_raw,
-      :content
+      :content,
+      :embedding,
+      :embedding_model,
+      :embedding_generated_at
     ])
     |> validate_required([:artifact_type, :artifact_id, :version, :content_raw, :content])
     |> validate_content_consistency()

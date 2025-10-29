@@ -16,7 +16,7 @@
 │  Singularity (Elixir/BEAM)                                  │
 │  ┌────────────────────────────────────────────────────┐     │
 │  │  NIF Engines (Rust compiled to .so/.dll)          │     │
-│  │  - architecture_engine  → rust/architecture       │     │
+│  │  - ~~architecture_engine~~  → (removed; now pure Elixir)       │     │
 │  │  - code_engine         → rust/code_analysis       │     │
 │  │  - parser_engine       → rust/parser/*            │     │
 │  │  - quality_engine      → rust/quality             │     │
@@ -47,7 +47,7 @@
 ### 1. `/rust` (Primary Engines - 14 modules) ✅ **ACTIVE NIFs**
 
 **NIF Engines (loaded by Singularity):**
-- `architecture/` → `architecture_engine` NIF - Architecture analysis and design
+- `architecture/` → ~~`architecture_engine` NIF~~ (removed; replaced by pure Elixir architecture engine)
 - `code_analysis/` → `code_engine` NIF - Code quality and analysis
 - `embedding/` → `embedding_engine` NIF - Embedding generation
 - `framework/` - Framework detection (not NIF, library)
@@ -701,7 +701,7 @@ cd singularity && mix test test/integration/rust_engines_test.exs
 │  Singularity (Elixir/BEAM)                                  │
 │  ┌────────────────────────────────────────────────────┐     │
 │  │  NIF Engines (Rust compiled to .so/.dll)          │     │
-│  │  - architecture_engine  → rust-central/            │     │
+│  │  - ~~architecture_engine~~  → (removed; replaced by Elixir detectors)            │     │
 │  │  - code_engine         → rust-central/             │     │
 │  │  - parser_engine       → rust-central/             │     │
 │  │  - quality_engine      → rust-central/             │     │

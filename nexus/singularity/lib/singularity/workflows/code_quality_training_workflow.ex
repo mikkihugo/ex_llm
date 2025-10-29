@@ -16,8 +16,6 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   use Pgflow.Workflow
 
   require Logger
-  alias Singularity.CodeAnalysis.{QualityAnalyzer, QualityScanner}
-  alias Singularity.Repo
 
   @doc """
   Define the code quality training workflow structure
@@ -165,7 +163,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     end
   end
 
-  defp attempt_axon_training(training_data) do
+  defp attempt_axon_training(_training_data) do
     # Attempt to use Axon for training if available
     # In production, would check if Axon is available and use it
     # For now, return not available

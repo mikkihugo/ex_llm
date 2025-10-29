@@ -8,6 +8,10 @@ defmodule ObserverWeb.TodosLive do
     swarm = Map.get(dashboard, :swarm, %{})
     recent_todos = Map.get(dashboard, :recent_todos, [])
 
+    assigns = assign(assigns, :counts, counts)
+    assigns = assign(assigns, :swarm, swarm)
+    assigns = assign(assigns, :recent_todos, recent_todos)
+
     ~H"""
     <div class="max-w-7xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
@@ -44,7 +48,7 @@ defmodule ObserverWeb.TodosLive do
               </div>
               <div class="ml-4">
                 <p class="text-sm font-medium text-zinc-500">Pending</p>
-                <p class="text-2xl font-semibold text-zinc-900"><%= counts.pending || 0 %></p>
+                <p class="text-2xl font-semibold text-zinc-900"><%= @counts.pending || 0 %></p>
               </div>
             </div>
           </div>
@@ -60,7 +64,7 @@ defmodule ObserverWeb.TodosLive do
               </div>
               <div class="ml-4">
                 <p class="text-sm font-medium text-zinc-500">In Progress</p>
-                <p class="text-2xl font-semibold text-zinc-900"><%= counts.in_progress || 0 %></p>
+                <p class="text-2xl font-semibold text-zinc-900"><%= @counts.in_progress || 0 %></p>
               </div>
             </div>
           </div>
@@ -76,7 +80,7 @@ defmodule ObserverWeb.TodosLive do
               </div>
               <div class="ml-4">
                 <p class="text-sm font-medium text-zinc-500">Completed</p>
-                <p class="text-2xl font-semibold text-zinc-900"><%= counts.completed || 0 %></p>
+                <p class="text-2xl font-semibold text-zinc-900"><%= @counts.completed || 0 %></p>
               </div>
             </div>
           </div>
@@ -92,7 +96,7 @@ defmodule ObserverWeb.TodosLive do
               </div>
               <div class="ml-4">
                 <p class="text-sm font-medium text-zinc-500">Failed</p>
-                <p class="text-2xl font-semibold text-zinc-900"><%= counts.failed || 0 %></p>
+                <p class="text-2xl font-semibold text-zinc-900"><%= @counts.failed || 0 %></p>
               </div>
             </div>
           </div>
@@ -106,15 +110,15 @@ defmodule ObserverWeb.TodosLive do
           <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div class="text-center">
-                <p class="text-3xl font-bold text-zinc-900"><%= swarm.active_workers || 0 %></p>
+                <p class="text-3xl font-bold text-zinc-900"><%= @swarm.active_workers || 0 %></p>
                 <p class="text-sm text-zinc-500">Active Workers</p>
               </div>
               <div class="text-center">
-                <p class="text-3xl font-bold text-green-600"><%= swarm.completed || 0 %></p>
+                <p class="text-3xl font-bold text-green-600"><%= @swarm.completed || 0 %></p>
                 <p class="text-sm text-zinc-500">Completed Today</p>
               </div>
               <div class="text-center">
-                <p class="text-3xl font-bold text-red-600"><%= swarm.failed || 0 %></p>
+                <p class="text-3xl font-bold text-red-600"><%= @swarm.failed || 0 %></p>
                 <p class="text-sm text-zinc-500">Failed Today</p>
               </div>
             </div>
@@ -127,7 +131,7 @@ defmodule ObserverWeb.TodosLive do
             <h2 class="text-lg font-semibold text-zinc-900">Recent Todos</h2>
           </header>
           <div class="overflow-hidden">
-            <%= if Enum.empty?(recent_todos) do %>
+            <%= if Enum.empty?(@recent_todos) do %>
               <div class="p-6 text-center text-zinc-500">
                 <p>No todos found</p>
               </div>
@@ -144,7 +148,7 @@ defmodule ObserverWeb.TodosLive do
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-zinc-200">
-                    <%= for todo <- recent_todos do %>
+                    <%= for todo <- @recent_todos do %>
                       <tr class="hover:bg-zinc-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                           <div class="text-sm font-medium text-zinc-900"><%= todo.title %></div>

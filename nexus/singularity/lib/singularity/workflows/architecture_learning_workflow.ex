@@ -16,9 +16,8 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
   use Pgflow.Workflow
 
   require Logger
-  alias Singularity.Architecture.{PatternDetector, FrameworkDetector}
+  alias Singularity.Architecture.PatternDetector
   alias Singularity.Infrastructure.Resilience
-  alias Singularity.Repo
 
   @doc """
   Define the architecture learning workflow structure

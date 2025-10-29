@@ -26,10 +26,10 @@ serde_json = "1.0"
 toml = "0.8"  # For parsing Cargo.toml, mix.exs, etc.
 
 # Tree-sitter core only (individual parsers provide their own language bindings)
-tree-sitter = { workspace = true }
+tree-sitter = "0.25.10"
 
 # AST-Grep for structural search, linting, and code transformation
-ast-grep-core = { workspace = true }
+ast-grep-core = "0.39.6"
 
 # Lazy static for global language registry
 lazy_static = "1.4"
@@ -59,31 +59,32 @@ tracing = "0.1"
 singularity-code-analysis = { path = "../../singularity-code-analysis" }
 
 # Tree-sitter language grammars (for ast-grep)
-tree-sitter-javascript = { workspace = true }
-tree-sitter-typescript = { workspace = true }
-tree-sitter-python = { workspace = true }
-tree-sitter-rust = { workspace = true }
-tree-sitter-elixir = { workspace = true }
-tree-sitter-erlang = { workspace = true }
-tree-sitter-gleam = { workspace = true }
-tree-sitter-go = { workspace = true }
-tree-sitter-java = { workspace = true }
-tree-sitter-c = { workspace = true }
-tree-sitter-cpp = { workspace = true }
-tree-sitter-c-sharp = { workspace = true }
-tree-sitter-bash = { workspace = true }
-tree-sitter-json = { workspace = true }
-tree-sitter-yaml = { workspace = true }
-tree-sitter-lua = { workspace = true }
-tree-sitter-md = { workspace = true }
-tree-sitter-sequel = { workspace = true }
-tree-sitter-dockerfile-updated = { workspace = true }
-tree-sitter-toml-ng = { workspace = true }
+tree-sitter-javascript = "0.25.0"
+tree-sitter-typescript = "0.23.2"
+tree-sitter-python = "0.25.0"
+tree-sitter-rust = "0.24.0"
+tree-sitter-elixir = "0.3.4"
+tree-sitter-erlang = "0.15.0"
+tree-sitter-gleam = "1.0.0"
+tree-sitter-go = "0.25.0"
+tree-sitter-java = "0.23.5"
+tree-sitter-c = "0.24.1"
+tree-sitter-cpp = "0.23.4"
+tree-sitter-c-sharp = "0.23.1"
+tree-sitter-bash = "0.25.0"
+tree-sitter-json = "0.24.8"
+tree-sitter-yaml = "0.7.2"
+tree-sitter-lua = "0.2.0"
+tree-sitter-md = "0.5.1"
+tree-sitter-sequel = "0.3.11"
+tree-sitter-dockerfile-updated = "0.2.0"
+tree-sitter-toml-ng = "0.7.0"
 
-tree-sitter-language = { workspace = true }
+tree-sitter-language = "0.1.5"
 
 # Utility crates
-num_cpus = { workspace = true }
+# CPU detection for parallel processing
+num_cpus = "^1.16"
 
 [dev-dependencies]
 tokio-test = "0.4"

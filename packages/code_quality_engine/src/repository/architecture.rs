@@ -188,7 +188,7 @@ impl ArchitectureAnalyzer {
             let domain_name = self.extract_domain_from_package(package);
             domains
                 .entry(domain_name)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(package.id.clone());
         }
 
@@ -324,7 +324,7 @@ impl ArchitectureAnalyzer {
     /// Extract Go dependencies
     async fn extract_go_dependencies(&self, manifest_path: &PathBuf) -> Result<Vec<PackageId>> {
         let contents = std::fs::read_to_string(manifest_path)?;
-        let mut deps = Vec::new();
+        let deps = Vec::new();
 
         for line in contents.lines() {
             if line.trim().starts_with("require (") {

@@ -205,7 +205,6 @@ Edit `rust-central/Cargo.toml`:
 ```toml
 [workspace]
 members = [
-    "architecture_engine",
     "my_engine",  # Add here
     # ... other engines
 ]

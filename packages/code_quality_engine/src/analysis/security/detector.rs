@@ -133,6 +133,12 @@ pub struct SecurityPattern {
     pub owasp_category: Option<String>,
 }
 
+impl Default for SecurityPatternRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecurityPatternRegistry {
     pub fn new() -> Self {
         Self {

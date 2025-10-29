@@ -4,6 +4,7 @@ members = [
     # Rust NIF engines - now in packages/ as standalone Moon projects (publishable)
     "packages/code_quality_engine",
     "packages/linting_engine",
+    "packages/parser_engine",
     "packages/parser_engine/core",
     "packages/parser_engine/formats/dependency",
     "packages/parser_engine/formats/template_definitions",
@@ -17,9 +18,21 @@ members = [
     "packages/parser_engine/languages/javascript",
     "packages/parser_engine/languages/typescript",
     "packages/parser_engine/languages/gleam",
+    "packages/parser_engine/languages/c",
+    "packages/parser_engine/languages/cpp",
+    "packages/parser_engine/languages/csharp",
+    "packages/parser_engine/languages/java",
+    "packages/parser_engine/languages/go",
+    "packages/parser_engine/languages/bash",
+    "packages/parser_engine/languages/json",
+    "packages/parser_engine/languages/yaml",
+    "packages/parser_engine/languages/lua",
+    "packages/parser_engine/languages/markdown",
+    "packages/parser_engine/languages/dockerfile",
+    "packages/parser_engine/languages/toml",
+    "packages/parser_engine/languages/sql",
     "packages/prompt_engine",
     "packages/package_intelligence",
-    "packages/architecture_engine",
 ]
 
 [workspace.dependencies]
@@ -135,6 +148,7 @@ overflow-checks = true
 lto = false
 panic = "unwind"
 incremental = true
+codegen-units = 256
 
 [profile.release]
 opt-level = 3
@@ -144,7 +158,7 @@ debug-assertions = false
 overflow-checks = false
 lto = "thin"
 panic = "abort"
-incremental = false
+incremental = true
 codegen-units = 16
 
 [profile.test]

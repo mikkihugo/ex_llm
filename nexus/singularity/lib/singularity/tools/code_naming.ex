@@ -449,9 +449,27 @@ defmodule Singularity.Tools.CodeNaming do
   end
 
   defp suggest_module_name(current, context, "elixir", framework) do
+    # Use TechnologyAgent to get framework-specific naming patterns
+    framework_patterns = TechnologyAgent.get_naming_patterns(framework)
+    
     suggestions = [
       %{name: to_pascal_case(current), reasoning: "Elixir PascalCase module", confidence: 0.9}
     ]
+    
+    # Add framework-specific suggestions if available
+    if framework_patterns do
+      framework_suggestions = Enum.map(framework_patterns, fn pattern ->
+        %{
+          name: apply_pattern(current, pattern),
+          reasoning: "Framework-specific pattern: #{pattern.type}",
+          confidence: pattern.confidence
+        }
+      end)
+      
+      suggestions ++ framework_suggestions
+    else
+      suggestions
+    end
 
     if framework == "phoenix" do
       suggestions ++
@@ -651,5 +669,14 @@ defmodule Singularity.Tools.CodeNaming do
     |> String.split(~r/\b#{Regex.escape(pattern)}\b/)
     |> length()
     |> Kernel.-(1)
+  end
+
+  defp apply_pattern(current, pattern) do
+    case pattern.type do
+      :prefix -> "#{pattern.value}#{current}"
+      :suffix -> "#{current}#{pattern.value}"
+      :replace -> String.replace(current, pattern.from, pattern.to)
+      _ -> current
+    end
   end
 end

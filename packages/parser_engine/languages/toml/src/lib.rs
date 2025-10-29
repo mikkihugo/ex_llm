@@ -1,4 +1,4 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
@@ -13,13 +13,14 @@ pub struct TomlParser {
 impl TomlParser {
     /// Create a new TOML parser
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let language = tree_sitter_toml::language();
+        let language_fn = tree_sitter_toml_ng::LANGUAGE;
+        let language = language_fn.into();
         let mut parser = Parser::new();
-        parser.set_language(language)?;
+        parser.set_language(&language)?;
         
         // Query for common TOML elements
         let query = Query::new(
-            language,
+            &language,
             r#"
             (table) @table
             (table_array) @table_array
@@ -50,11 +51,11 @@ impl TomlParser {
             .ok_or("Failed to parse TOML")?;
         
         let mut cursor = QueryCursor::new();
-        let captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
+        let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
         
         let mut document = TomlDocument::new();
         
-        for (matched_node, _) in captures {
+        while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
                 let text = &content[node.byte_range()];
@@ -576,7 +577,7 @@ impl LanguageParser for TomlParser {
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(self.language)
+        parser.set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         
         let tree = parser.parse(content, None)
@@ -608,9 +609,9 @@ impl LanguageParser for TomlParser {
         // Count TOML elements
         let mut element_count = 0;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for _match in matches {
+        while let Some(_) = matches.next() {
             element_count += 1;
         }
         
@@ -621,6 +622,7 @@ impl LanguageParser for TomlParser {
             lines_of_code: code_lines as u64,
             functions: element_count as u64,
             classes: 0, // TOML doesn't have classes
+            imports: 0, // TOML doesn't have imports
             complexity_score: element_count as f64,
         })
     }
@@ -629,9 +631,10 @@ impl LanguageParser for TomlParser {
         let mut functions = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for (match_index, _match) in matches.enumerate() {
+        let mut match_index = 0;
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 let node = capture.node;
                 let element_type = node.kind();
@@ -659,6 +662,7 @@ impl LanguageParser for TomlParser {
                     body: Some(element_content.to_string()),
                 });
             }
+            match_index += 1;
         }
         
         Ok(functions)
@@ -673,9 +677,9 @@ impl LanguageParser for TomlParser {
         let mut comments = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        for _match in matches {
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 if capture.node.kind() == "comment" {
                     let node = capture.node;
@@ -687,6 +691,7 @@ impl LanguageParser for TomlParser {
                         content: comment_content.to_string(),
                         line,
                         column,
+                        kind: "inline".to_string(), // TOML comments are inline
                     });
                 }
             }

@@ -25,14 +25,12 @@
 
 use std::collections::HashMap;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
 
 use crate::analysis::semantic::custom_tokenizers::DataToken;
 use parser_core::language_registry::{LanguageRegistry, LANGUAGE_REGISTRY};
 use serde::{Deserialize, Serialize};
 
 // AST extraction NIFs
-use crate::nif_bindings;
 
 /// Cross-language pattern occurrence
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -474,7 +472,7 @@ impl CrossLanguageCodePatternsDetector {
                 pattern.source_language.clone(),
                 pattern.target_language.clone(),
             );
-            grouped.entry(key).or_insert_with(Vec::new).push(pattern);
+            grouped.entry(key).or_default().push(pattern);
         }
         grouped
     }

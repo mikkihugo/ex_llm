@@ -14,7 +14,6 @@ defmodule Singularity.Pipelines.CodeQualityPipeline do
   require Logger
 
   alias Broadway.Message
-  alias Singularity.CodeAnalysis.{QualityAnalyzer, QualityScanner}
   alias Singularity.Workflows.CodeQualityTrainingWorkflow
 
   @doc """

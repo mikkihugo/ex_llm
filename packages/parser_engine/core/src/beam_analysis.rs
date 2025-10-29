@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 /// BEAM-specific analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct BeamAnalysisResult {
     /// OTP patterns detected in the code
     pub otp_patterns: OtpPatterns,
@@ -26,6 +27,7 @@ pub struct BeamAnalysisResult {
 
 /// OTP (Open Telecom Platform) patterns
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct OtpPatterns {
     /// GenServer implementations
     pub genservers: Vec<GenServerInfo>,
@@ -120,6 +122,7 @@ pub struct DynamicSupervisorInfo {
 
 /// Actor model analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ActorAnalysis {
     /// Process spawning patterns
     pub process_spawning: ProcessSpawningAnalysis,
@@ -131,6 +134,7 @@ pub struct ActorAnalysis {
 
 /// Process spawning analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ProcessSpawningAnalysis {
     /// spawn/1 calls
     pub spawn_calls: Vec<SpawnCall>,
@@ -171,6 +175,7 @@ pub struct ProcessRegistration {
 
 /// Message passing analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct MessagePassingAnalysis {
     /// send/2 calls
     pub send_calls: Vec<SendCall>,
@@ -209,6 +214,7 @@ pub struct MessagePattern {
 
 /// Mailbox analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct MailboxAnalysis {
     /// Estimated message queue size
     pub estimated_queue_size: u32,
@@ -220,6 +226,7 @@ pub struct MailboxAnalysis {
 
 /// Concurrency patterns
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ConcurrencyPatterns {
     /// Agent usage (Elixir)
     pub agents: Vec<AgentInfo>,
@@ -269,6 +276,7 @@ pub struct PortUsage {
 
 /// Fault tolerance analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct FaultToleranceAnalysis {
     /// try/catch expressions
     pub try_catch_expressions: Vec<TryCatchExpression>,
@@ -329,6 +337,7 @@ pub struct BeamMetrics {
 
 /// Language-specific features
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct LanguageFeatures {
     /// Elixir-specific features
     pub elixir: Option<ElixirFeatures>,
@@ -667,96 +676,13 @@ pub struct WebPatterns {
     pub web_safety_features: Vec<String>,
 }
 
-impl Default for BeamAnalysisResult {
-    fn default() -> Self {
-        Self {
-            otp_patterns: OtpPatterns::default(),
-            actor_analysis: ActorAnalysis::default(),
-            fault_tolerance: FaultToleranceAnalysis::default(),
-            beam_metrics: BeamMetrics::default(),
-            language_features: LanguageFeatures::default(),
-        }
-    }
-}
 
-impl Default for OtpPatterns {
-    fn default() -> Self {
-        Self {
-            genservers: Vec::new(),
-            supervisors: Vec::new(),
-            applications: Vec::new(),
-            genevents: Vec::new(),
-            genstages: Vec::new(),
-            dynamic_supervisors: Vec::new(),
-        }
-    }
-}
 
-impl Default for ActorAnalysis {
-    fn default() -> Self {
-        Self {
-            process_spawning: ProcessSpawningAnalysis::default(),
-            message_passing: MessagePassingAnalysis::default(),
-            concurrency_patterns: ConcurrencyPatterns::default(),
-        }
-    }
-}
 
-impl Default for ProcessSpawningAnalysis {
-    fn default() -> Self {
-        Self {
-            spawn_calls: Vec::new(),
-            spawn_link_calls: Vec::new(),
-            task_async_calls: Vec::new(),
-            process_flags: Vec::new(),
-            process_registrations: Vec::new(),
-        }
-    }
-}
 
-impl Default for MessagePassingAnalysis {
-    fn default() -> Self {
-        Self {
-            send_calls: Vec::new(),
-            receive_expressions: Vec::new(),
-            message_patterns: Vec::new(),
-            mailbox_analysis: MailboxAnalysis::default(),
-        }
-    }
-}
 
-impl Default for MailboxAnalysis {
-    fn default() -> Self {
-        Self {
-            estimated_queue_size: 0,
-            processing_patterns: Vec::new(),
-            bottlenecks: Vec::new(),
-        }
-    }
-}
 
-impl Default for ConcurrencyPatterns {
-    fn default() -> Self {
-        Self {
-            agents: Vec::new(),
-            ets_tables: Vec::new(),
-            mnesia_usage: Vec::new(),
-            port_usage: Vec::new(),
-        }
-    }
-}
 
-impl Default for FaultToleranceAnalysis {
-    fn default() -> Self {
-        Self {
-            try_catch_expressions: Vec::new(),
-            rescue_clauses: Vec::new(),
-            let_it_crash_patterns: Vec::new(),
-            supervision_tree_depth: 0,
-            error_handling_strategies: Vec::new(),
-        }
-    }
-}
 
 impl Default for BeamMetrics {
     fn default() -> Self {
@@ -772,12 +698,3 @@ impl Default for BeamMetrics {
     }
 }
 
-impl Default for LanguageFeatures {
-    fn default() -> Self {
-        Self {
-            elixir: None,
-            erlang: None,
-            gleam: None,
-        }
-    }
-}

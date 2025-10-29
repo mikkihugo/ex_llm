@@ -407,8 +407,8 @@ impl Graph {
 
     /// Check if files are of the same type
     fn same_file_type(&self, file1: &str, file2: &str) -> bool {
-        let ext1 = file1.split('.').last().unwrap_or("");
-        let ext2 = file2.split('.').last().unwrap_or("");
+        let ext1 = file1.split('.').next_back().unwrap_or("");
+        let ext2 = file2.split('.').next_back().unwrap_or("");
         ext1 == ext2
     }
 

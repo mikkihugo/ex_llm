@@ -439,6 +439,12 @@ pub struct LuaDocument {
     pub identifiers: Vec<IdentifierInfo>,
 }
 
+impl Default for LuaDocument {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LuaDocument {
     pub fn new() -> Self {
         Self {

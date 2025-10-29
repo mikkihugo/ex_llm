@@ -68,7 +68,9 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
 
   use GenServer
   require Logger
-  alias Singularity.Jobs.PgmqClient
+
+  alias Singularity.Database.MessageQueue
+  alias Singularity.PgFlow
 
   # Public API
 

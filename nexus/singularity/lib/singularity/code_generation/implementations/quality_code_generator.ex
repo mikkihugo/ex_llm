@@ -35,7 +35,8 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   """
 
   require Logger
-  alias Singularity.{RAGCodeGenerator, CodeModel}
+  alias Singularity.CodeModel
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
   alias Singularity.Knowledge.TemplateGeneration
 
   @templates_dir "priv/code_quality_templates"
@@ -89,7 +90,7 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     end
   end
 
-  def load_template(filename, opts) do
+  def load_template(filename, opts) when is_list(opts) do
     case load_template(filename) do
       {:ok, template} ->
         {:ok, template}
@@ -100,7 +101,7 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     end
   end
 
-  defp default_template(opts \\ []) do
+  defp default_template(_opts \\ []) do
     %{
       "quality_standards" => %{
         "documentation" => %{
@@ -171,7 +172,7 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     end
   end
 
-  defp generate_with_template(task, language, quality, use_rag, template, output_path \\ nil) do
+  defp generate_with_template(task, language, quality, use_rag, template, output_path) do
     Logger.info("Generating #{quality} quality code: #{task}")
 
     # NEW: Ask questions if template has them (Phase 2: 2-way templates)
@@ -214,11 +215,6 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
     end
   end
 
-  @doc """
-  Ask template questions if they exist (Phase 2: 2-way templates).
-
-  Questions are inferred from LLM context based on the task.
-  """
   defp ask_template_questions(template, task, language, quality) do
     case Map.get(template, "questions") do
       questions when is_list(questions) and length(questions) > 0 ->
@@ -267,7 +263,7 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
          output_path,
          success,
          score,
-         question_answers \\ %{}
+         question_answers
        ) do
     # Only track if output_path provided
     if output_path do
@@ -357,23 +353,24 @@ defmodule Singularity.CodeGeneration.Implementations.QualityCodeGenerator do
   """
   @spec load_template(String.t(), quality_level(), String.t() | nil) ::
           {:ok, map()} | {:error, term()}
-  def load_template(language, quality, custom_path \\ nil) do
-    # If custom_path is provided, try to load from that path first
-    if custom_path do
-      case load_template_from_path(custom_path) do
-        {:ok, template} ->
-          Logger.debug("Loaded quality template from custom path: #{custom_path}")
-          {:ok, template}
+  def load_template(language, quality), do: load_template(language, quality, nil)
 
-        {:error, _} ->
-          Logger.warning(
-            "Failed to load template from custom path: #{custom_path}, falling back to discovery"
-          )
+  def load_template(language, quality, nil) do
+    load_template_via_discovery(language, quality)
+  end
 
-          load_template_via_discovery(language, quality)
-      end
-    else
-      load_template_via_discovery(language, quality)
+  def load_template(language, quality, custom_path) when is_binary(custom_path) do
+    case load_template_from_path(custom_path) do
+      {:ok, template} ->
+        Logger.debug("Loaded quality template from custom path: #{custom_path}")
+        {:ok, template}
+
+      {:error, _} ->
+        Logger.warning(
+          "Failed to load template from custom path: #{custom_path}, falling back to discovery"
+        )
+
+        load_template_via_discovery(language, quality)
     end
   end
 

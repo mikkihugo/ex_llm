@@ -48,7 +48,6 @@ defmodule Singularity.LLM.BeamCodeDataGenerator do
   """
 
   require Logger
-  alias Singularity.LanguageDetection
 
   @doc """
   Generate training pairs from BEAM codebase

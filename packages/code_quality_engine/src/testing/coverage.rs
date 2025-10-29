@@ -269,6 +269,12 @@ impl Default for CoverageThresholds {
     }
 }
 
+impl Default for CoverageAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverageAnalyzer {
     pub fn new() -> Self {
         Self {
@@ -474,6 +480,12 @@ pub struct CoverageSummary {
     pub covered_branches: usize,
     pub total_functions: usize,
     pub covered_functions: usize,
+}
+
+impl Default for FactSystemInterface {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FactSystemInterface {

@@ -84,7 +84,7 @@ defmodule Singularity.Agents.SelfImprovementAgent do
     {:reply, {:ok, token}, state}
   end
 
-  def handle_call({:apply_workflow_with_approval, workflow_token, opts}, _from, state) do
+  def handle_call({:apply_workflow_with_approval, workflow_token, _opts}, _from, state) do
     case Singularity.Agents.Arbiter.authorize_workflow(workflow_token) do
       :ok ->
         # For now, we simply fetch the workflow and return it as 'executed' (dry-run)

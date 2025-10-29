@@ -48,7 +48,6 @@ defmodule Singularity.TemplateStore do
   require Logger
 
   alias Singularity.{Repo, EmbeddingEngine}
-  # alias Singularity.PackageRegistryKnowledge  # Unused for now
   alias Singularity.Schemas.Template
 
   defp templates_dir do

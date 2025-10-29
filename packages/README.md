@@ -36,12 +36,6 @@ Following [moonrepo best practices](https://moonrepo.dev/docs/concepts/project#o
 
 Rust-based native interface modules (NIFs) for high-performance code analysis. Each is an Elixir+Rust hybrid package with independent Cargo and Mix builds.
 
-#### architecture_engine
-- **Path**: `packages/architecture_engine/`
-- **Purpose**: Framework detection, architecture patterns, package registry analysis
-- **Status**: Production, internal use
-- **Moon tasks**: `cargo:build`, `cargo:test`, `mix:compile`, `mix:test`
-
 #### code_quality_engine
 - **Path**: `packages/code_quality_engine/`
 - **Purpose**: Code quality metrics and analysis

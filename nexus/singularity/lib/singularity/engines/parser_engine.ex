@@ -14,7 +14,11 @@ defmodule Singularity.ParserEngine do
   # Standalone Cargo.toml (no workspace dependencies) to avoid Rustler conflicts
 
   # Match exact crate name from Cargo.toml (parser-code with dash)
-  use Rustler, otp_app: :singularity, crate: "parser_code", skip_compilation?: true
+  use Rustler,
+    otp_app: :singularity,
+    crate: "parser-code",
+    path: "../../packages/parser_engine",
+    load_from: {:singularity, "priv/native/parser_code"}
 
   require Logger
   alias Singularity.BeamAnalysisEngine

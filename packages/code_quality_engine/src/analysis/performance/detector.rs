@@ -298,6 +298,12 @@ pub struct PerformancePattern {
     pub expected_impact: PerformanceImpact,
 }
 
+impl Default for PerformancePatternRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PerformancePatternRegistry {
     pub fn new() -> Self {
         Self {

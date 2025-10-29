@@ -55,6 +55,14 @@ defmodule Observer.HITL do
   end
 
   @doc """
+  Fetch a single approval by ID, returning nil when not found.
+  """
+  @spec get_approval(approval_id()) :: Approval.t() | nil
+  def get_approval(id) do
+    Repo.get(Approval, id)
+  end
+
+  @doc """
   Fetch an approval by request_id, returning nil if it does not exist.
   """
   @spec get_by_request_id(String.t()) :: Approval.t() | nil
@@ -99,7 +107,7 @@ defmodule Observer.HITL do
   end
 
   @doc """
-  Broadcast a decision to the requester via pgmq.
+  Broadcast a decision to the requester via pgflow.
   """
   @spec publish_decision(Approval.t()) :: :ok | {:error, term()}
   def publish_decision(%Approval{response_queue: nil}), do: :ok
@@ -112,7 +120,7 @@ defmodule Observer.HITL do
       decision_reason: approval.decision_reason
     }
 
-    Pgmq.send_message(approval.response_queue, payload)
+    Pgmq.send_reply(approval.response_queue, payload)
     :ok
   end
 

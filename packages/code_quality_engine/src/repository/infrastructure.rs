@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::Result;
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::json;
 
 use crate::repository::types::*;
 
@@ -70,13 +70,11 @@ impl DetectionContext {
         for entry in std::fs::read_dir(&self.root_path)
             .ok()
             .into_iter()
-            .flatten()
+            .flatten().flatten()
         {
-            if let Ok(entry) = entry {
-                if let Ok(contents) = std::fs::read_to_string(entry.path()) {
-                    if contents.contains(pattern) {
-                        return true;
-                    }
+            if let Ok(contents) = std::fs::read_to_string(entry.path()) {
+                if contents.contains(pattern) {
+                    return true;
                 }
             }
         }

@@ -109,6 +109,12 @@ pub struct MetricsCollector {
     start_time: Instant,
 }
 
+impl Default for MetricsCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetricsCollector {
     pub fn new() -> Self {
         Self {
@@ -140,7 +146,7 @@ impl MetricsCollector {
         let mut metrics = self.metrics.write().unwrap();
         metrics
             .entry(name.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(point);
     }
 
@@ -273,6 +279,12 @@ pub struct MetricsSummary {
     pub uptime: Duration,
 }
 
+impl Default for MetricsSummary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetricsSummary {
     pub fn new() -> Self {
         Self {
@@ -327,6 +339,12 @@ impl MetricsSummary {
 #[derive(Debug, Clone)]
 pub struct MetricThresholds {
     thresholds: HashMap<String, Threshold>,
+}
+
+impl Default for MetricThresholds {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MetricThresholds {

@@ -102,7 +102,7 @@ impl VectorStore {
         // Add to file index
         self.file_vectors
             .entry(file_path)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
     }
 

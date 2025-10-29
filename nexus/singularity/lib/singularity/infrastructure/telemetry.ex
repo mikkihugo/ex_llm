@@ -389,4 +389,17 @@ defmodule Singularity.Infrastructure.Telemetry do
   rescue
     _ -> 0
   end
+
+  @doc """
+  Execute a telemetry event.
+
+  ## Parameters
+  - `event_name` - List of atoms representing the event name
+  - `measurements` - Map of measurements
+  - `metadata` - Map of metadata
+  """
+  @spec execute([atom()], map(), map()) :: :ok
+  def execute(event_name, measurements, metadata) do
+    :telemetry.execute(event_name, measurements, metadata)
+  end
 end

@@ -117,7 +117,7 @@ defmodule Singularity.Analysis.MetadataValidator do
   }
   ```
   """
-  def validate_file(file_path, content) do
+  def validate_file(_file_path, content) do
     moduledoc = extract_moduledoc(content)
 
     if moduledoc do
@@ -538,17 +538,4 @@ defmodule Singularity.Analysis.MetadataValidator do
     end)
   end
 
-  defp build_recommendations(missing) do
-    Enum.map(missing, fn item ->
-      case item do
-        :human_content -> "Add human-readable content at top (Quick Start, Examples, API list)"
-        :separator -> "Add separator (---) and 'AI Navigation Metadata' heading"
-        :module_identity -> "Add Module Identity JSON block"
-        :architecture_diagram -> "Add Architecture Diagram (Mermaid)"
-        :call_graph -> "Add Call Graph (YAML)"
-        :anti_patterns -> "Add Anti-Patterns section"
-        :search_keywords -> "Add Search Keywords (comma-separated)"
-      end
-    end)
-  end
 end

@@ -153,7 +153,7 @@ where
     response
         .get(key)
         .and_then(|v| serde_json::from_value(v.clone()).ok())
-        .unwrap_or_else(Vec::new)
+        .unwrap_or_default()
 }
 
 #[cfg(test)]

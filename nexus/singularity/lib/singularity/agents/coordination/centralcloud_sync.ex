@@ -40,10 +40,9 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   """
 
   require Logger
-  alias Singularity.Agents.Coordination.{CapabilityRegistry, AgentCapability}
+  alias Singularity.Agents.Coordination.CapabilityRegistry
   alias Singularity.Database.MessageQueue
   alias Singularity.PgFlow
-  alias Singularity.Repo
 
   @centralcloud_push_queue "centralcloud_updates"
   @centralcloud_poll_queue "centralcloud_responses"

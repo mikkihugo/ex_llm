@@ -142,7 +142,7 @@ impl ControlFlowGraph {
                 unreachable.push(UnreachableCode {
                     node_id: node.id.clone(),
                     line_number: node.line_number.unwrap_or(0),
-                    reason: format!("Code cannot be reached from entry points"),
+                    reason: "Code cannot be reached from entry points".to_string(),
                 });
             }
         }

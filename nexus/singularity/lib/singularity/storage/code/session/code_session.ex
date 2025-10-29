@@ -54,7 +54,8 @@ defmodule Singularity.CodeSession do
 
   use GenServer
   require Logger
-  alias Singularity.{CodeSynthesisPipeline, PatternIndexer, RAGCodeGenerator, CodeModel}
+  alias Singularity.{CodeSynthesisPipeline, PatternIndexer, CodeModel}
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
 
   defstruct [
     :id,

@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tree-sitter = { workspace = true }
-tree-sitter-cpp = { workspace = true }
+tree-sitter = "0.25.10"
+tree-sitter-cpp = "0.23.4"
 parser_core = { path = "../../core" }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
@@ -13,4 +13,4 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-rustler = { workspace = true, optional = true }
+rustler = { version = "0.37.0", optional = true }

@@ -83,6 +83,12 @@ pub struct PromptCoordinator {
     pub name: String,
 }
 
+impl Default for PromptCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PromptCoordinator {
     pub fn new() -> Self {
         Self {

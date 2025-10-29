@@ -14,6 +14,7 @@ defmodule Singularity.Storage.FailurePatternStore do
 
   alias Singularity.Repo
   alias Singularity.Schemas.FailurePattern
+  alias Singularity.PgFlow
 
   @type filteropts ::
           %{
@@ -136,18 +137,49 @@ defmodule Singularity.Storage.FailurePatternStore do
   def sync_with_centralcloud(filters \\ %{}) do
     patterns = query(filters)
 
-    cond do
-      Code.ensure_loaded?(CentralCloud.TemplateIntelligence) and
-          function_exported?(CentralCloud.TemplateIntelligence, :ingest_failure_patterns, 1) ->
-        CentralCloud.TemplateIntelligence.ingest_failure_patterns(patterns)
+    # Publish failure patterns to CentralCloud via PgFlow
+    # Queue: patterns_learned_published (consumed by CentralCloud.Consumers.PatternLearningConsumer)
+    message = %{
+      "type" => "patterns_learned",
+      "instance_id" => System.get_env("SINGULARITY_INSTANCE_ID", "singularity_#{node()}"),
+      "artifacts" => Enum.map(patterns, &format_pattern_for_centralcloud/1),
+      "usage_count" => Enum.reduce(patterns, 0, fn p, acc -> acc + (p.frequency || 0) end),
+      "success_rate" => calculate_success_rate(patterns),
+      "timestamp" => DateTime.utc_now()
+    }
+    
+    case PgFlow.send_with_notify("patterns_learned_published", message) do
+      {:ok, _} ->
+        Logger.debug("Failure patterns published to CentralCloud", pattern_count: length(patterns))
+        {:ok, patterns}
+      
+      {:error, reason} ->
+        Logger.warning("Failed to publish failure patterns to CentralCloud", reason: reason)
+        {:error, reason}
+    end
+  end
 
-      Code.ensure_loaded?(CentralCloud.PatternLearningPublisher) and
-          function_exported?(CentralCloud.PatternLearningPublisher, :publish_failure_patterns, 1) ->
-        CentralCloud.PatternLearningPublisher.publish_failure_patterns(patterns)
+  defp format_pattern_for_centralcloud(%FailurePattern{} = pattern) do
+    %{
+      "name" => pattern.failure_mode || "unknown",
+      "type" => "failure_pattern",
+      "story_type" => pattern.story_type,
+      "failure_mode" => pattern.failure_mode,
+      "story_signature" => pattern.story_signature,
+      "frequency" => pattern.frequency || 0,
+      "successful_fixes" => pattern.successful_fixes || [],
+      "last_seen_at" => pattern.last_seen_at
+    }
+  end
 
-      true ->
-        Logger.debug("CentralCloud failure pattern sync skipped: integration not configured")
-        {:error, :centralcloud_not_configured}
+  defp calculate_success_rate(patterns) when is_list(patterns) do
+    if length(patterns) > 0 do
+      total = Enum.reduce(patterns, 0, fn p, acc -> acc + (p.frequency || 0) end)
+      successful = Enum.reduce(patterns, 0, fn p, acc -> acc + length(p.successful_fixes || []) end)
+      
+      if total > 0, do: successful / total, else: 0.0
+    else
+      0.0
     end
   end
 

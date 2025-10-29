@@ -5,7 +5,7 @@
 use super::extractor::{ExtractedFeature, FeatureExtractor, FeatureType};
 use anyhow::Result;
 use std::path::Path;
-use syn::{parse_file, File, Item, Visibility};
+use syn::{parse_file, Item, Visibility};
 
 /// Rust feature extractor using syn parser
 pub struct RustFeatureExtractor {}

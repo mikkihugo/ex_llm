@@ -18,18 +18,19 @@ defmodule Observer.Dashboard.SASLTrace do
   
   def get_traces(limit \\ 100) do
     try do
-      traces = 
+      traces =
         @sasl_log_paths
         |> Enum.flat_map(&read_log_file/1)
-        |> Enum.sort_by(& &1.timestamp, {:desc, &String.compare/2})
+        |> Enum.sort(&newer_trace?/2)
         |> Enum.take(limit)
-      
-      {:ok, %{
-        traces: traces,
-        total_count: length(traces),
-        log_paths: @sasl_log_paths,
-        last_updated: DateTime.utc_now()
-      }}
+
+      {:ok,
+       %{
+         traces: traces,
+         total_count: length(traces),
+         log_paths: @sasl_log_paths,
+         last_updated: DateTime.utc_now()
+       }}
     rescue
       error ->
         Logger.error("Failed to read SASL traces", error: inspect(error))
@@ -54,86 +55,83 @@ defmodule Observer.Dashboard.SASLTrace do
     # Format varies, but typically includes timestamp and error details
     cond do
       String.contains?(line, "CRASH REPORT") ->
-        %{
-          type: :crash_report,
-          timestamp: extract_timestamp(line),
-          content: line,
-          severity: :error,
-          source: Path.basename(source_path)
-        }
+        build_trace(:crash_report, :error, line, source_path)
       
       String.contains?(line, "SUPERVISOR REPORT") ->
-        %{
-          type: :supervisor_report,
-          timestamp: extract_timestamp(line),
-          content: line,
-          severity: :warning,
-          source: Path.basename(source_path)
-        }
+        build_trace(:supervisor_report, :warning, line, source_path)
       
       String.contains?(line, "PROGRESS REPORT") ->
-        %{
-          type: :progress_report,
-          timestamp: extract_timestamp(line),
-          content: line,
-          severity: :info,
-          source: Path.basename(source_path)
-        }
+        build_trace(:progress_report, :info, line, source_path)
       
       String.contains?(line, "ERROR REPORT") ->
-        %{
-          type: :error_report,
-          timestamp: extract_timestamp(line),
-          content: line,
-          severity: :error,
-          source: Path.basename(source_path)
-        }
+        build_trace(:error_report, :error, line, source_path)
       
       String.contains?(line, "ALARM REPORT") ->
-        %{
-          type: :alarm_report,
-          timestamp: extract_timestamp(line),
-          content: line,
-          severity: :warning,
-          source: Path.basename(source_path)
-        }
+        build_trace(:alarm_report, :warning, line, source_path)
       
       true ->
         # Only include non-empty lines
         if String.trim(line) != "" do
-          %{
-            type: :other,
-            timestamp: extract_timestamp(line),
-            content: line,
-            severity: :info,
-            source: Path.basename(source_path)
-          }
+          build_trace(:other, :info, line, source_path)
         else
           nil
         end
     end
   end
   
+  defp build_trace(type, severity, line, source_path) do
+    timestamp = extract_timestamp(line)
+
+    %{
+      type: type,
+      timestamp: timestamp,
+      content: line,
+      severity: severity,
+      source: Path.basename(source_path)
+    }
+  end
+
   defp extract_timestamp(line) do
-    # Try multiple timestamp formats
     cond do
-      # Format: "=CRASH REPORT 2025-01-29 12:34:56"
       match = Regex.run(~r/(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/, line) ->
-        List.last(match)
-      
-      # Format: "2025-01-29T12:34:56Z"
+        match |> List.last() |> parse_naive_timestamp()
+
       match = Regex.run(~r/(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?)/, line) ->
-        List.last(match)
-      
-      # Format: Unix timestamp
+        match |> List.last() |> parse_iso_timestamp()
+
       match = Regex.run(~r/(\d{10})/, line) ->
-        timestamp = List.last(match) |> String.to_integer()
-        DateTime.from_unix!(timestamp) |> DateTime.to_string()
-      
+        match |> List.last() |> String.to_integer() |> DateTime.from_unix!()
+
       true ->
-        # Default to current time if no timestamp found
-        DateTime.utc_now() |> DateTime.to_string()
+        DateTime.utc_now()
     end
+  end
+
+  defp parse_naive_timestamp(value) do
+    value
+    |> String.trim()
+    |> String.replace(" ", "T")
+    |> Kernel.<>("Z")
+    |> parse_iso_timestamp()
+  end
+
+  defp parse_iso_timestamp(value) do
+    value = String.trim(value)
+
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} ->
+        datetime
+
+      {:error, _} ->
+        case DateTime.from_iso8601(value <> "Z") do
+          {:ok, datetime, _offset} -> datetime
+          {:error, _} -> DateTime.utc_now()
+        end
+    end
+  end
+
+  defp newer_trace?(%{timestamp: ts1}, %{timestamp: ts2}) do
+    DateTime.compare(ts1, ts2) != :lt
   end
   
   def get_recent_errors(limit \\ 50) do
@@ -183,4 +181,3 @@ defmodule Observer.Dashboard.SASLTrace do
     Enum.count(traces, &(&1.type == type))
   end
 end
-

@@ -32,8 +32,6 @@ rm -rf rust/lib/code_lib
 echo "  Removing old rust/lib/knowledge_lib..."
 rm -rf rust/lib/knowledge_lib
 
-echo "  Removing old rust/engine/architecture_engine..."
-rm -rf rust/engine/architecture_engine
 
 echo "  Removing old rust/engine/code_engine..."
 rm -rf rust/engine/code_engine
@@ -66,7 +64,6 @@ if [ -f "rust/Cargo.toml" ]; then
     echo "    - 'lib/architecture_lib' → 'architecture'"
     echo "    - 'lib/code_lib' → 'code_analysis'"
     echo "    - 'lib/knowledge_lib' → 'knowledge'"
-    echo "    - Remove 'engine/architecture_engine'"
     echo "    - Remove 'engine/code_engine'"
     echo "    - Remove 'engine/knowledge_engine'"
     echo ""

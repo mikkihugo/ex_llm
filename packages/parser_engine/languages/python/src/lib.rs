@@ -146,7 +146,7 @@ impl LanguageParser for PythonParser {
             let decorators = collect_python_decorators(node, &ast.content);
             let is_async = is_async_function(node, &ast.content);
             let is_generator = is_generator_body(&body);
-            let signature = Some(build_signature(&name, &params, &return_type));
+            let signature = Some(build_signature(&name, params, &return_type));
 
             functions.push(FunctionInfo {
                 name: name.to_string(),
@@ -185,7 +185,7 @@ impl LanguageParser for PythonParser {
         let mut imports = Vec::new();
 
         let mut captures = cursor.captures(&query, ast.tree.root_node(), ast.content.as_bytes());
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             let mut module = "";
             let mut node_ref: Option<Node> = None;
 
@@ -225,7 +225,7 @@ impl LanguageParser for PythonParser {
         let mut comments = Vec::new();
 
         let mut captures = cursor.captures(&query, ast.tree.root_node(), ast.content.as_bytes());
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             for capture in m.captures {
                 let text = capture
                     .node

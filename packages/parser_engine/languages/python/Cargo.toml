@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 parser_core = { path = "../../core" }
-tree-sitter = { workspace = true }
+tree-sitter = "0.25.10"
 tree-sitter-python = { workspace = true }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }

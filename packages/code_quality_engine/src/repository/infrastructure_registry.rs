@@ -703,7 +703,7 @@ impl InfrastructureRegistry {
 
     /// Get global registry instance
     pub fn global() -> Result<&'static Self> {
-        Ok(INFRA_REGISTRY.get_or_init(|| Self::default_registry()))
+        Ok(INFRA_REGISTRY.get_or_init(Self::default_registry))
     }
 
     /// Initialize global registry from CentralCloud

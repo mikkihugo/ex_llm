@@ -253,7 +253,7 @@ defmodule Singularity.BeamAnalysisEngine do
          }}
 
       {:error, reason} ->
-        Logger.error("🚨 CodeEngine analysis FAILED for #{file_path}: #{inspect(reason)}")
+        Logger.error("?? CodeEngine analysis FAILED for #{file_path}: #{inspect(reason)}")
         CodeEngineHealthTracker.record_failure("elixir", file_path, reason)
         Logger.debug("[BeamAnalysis] SCA analysis failed - no fallback available")
         {:error, "SCA analysis failed for Elixir: #{inspect(reason)}. Please ensure singularity-code-analysis NIF is properly configured."}
@@ -689,7 +689,7 @@ defmodule Singularity.BeamAnalysisEngine do
          }}
 
       {:error, reason} ->
-        Logger.error("🚨 CodeEngine analysis FAILED for Erlang #{file_path}: #{inspect(reason)}")
+        Logger.error("?? CodeEngine analysis FAILED for Erlang #{file_path}: #{inspect(reason)}")
         CodeEngineHealthTracker.record_failure("erlang", file_path, reason)
 
         SASL.analysis_failure(
@@ -743,7 +743,7 @@ defmodule Singularity.BeamAnalysisEngine do
         {:ok, gleam_analysis}
 
       {:error, reason} ->
-        Logger.error("🚨 CodeEngine analysis FAILED for Gleam #{file_path}: #{inspect(reason)}")
+        Logger.error("?? CodeEngine analysis FAILED for Gleam #{file_path}: #{inspect(reason)}")
         CodeEngineHealthTracker.record_failure("gleam", file_path, reason)
         {:error, "CodeEngine analysis failed for Gleam: #{inspect(reason)}"}
     end
@@ -1102,69 +1102,6 @@ defmodule Singularity.BeamAnalysisEngine do
         line_start: line_num,
         line_end: line_num,
         stages: []
-      }
-    end)
-  end
-
-  defp detect_erlang_gen_servers(code) do
-    # Detect "-behaviour(gen_server)" patterns
-    code
-    |> String.split("\n")
-    |> Enum.with_index(1)
-    |> Enum.filter(fn {line, _} -> String.contains?(line, "-behaviour(gen_server)") end)
-    |> Enum.map(fn {line, line_num} ->
-      %{
-        name: "GenServer_#{line_num}",
-        module: extract_module_name(line),
-        line_start: line_num,
-        line_end: line_num,
-        callbacks: [
-          "init/1",
-          "handle_call/3",
-          "handle_cast/2",
-          "handle_info/2",
-          "terminate/2",
-          "code_change/3"
-        ],
-        state_type: nil,
-        message_types: []
-      }
-    end)
-  end
-
-  defp detect_erlang_supervisors(code) do
-    # Detect "-behaviour(supervisor)" patterns
-    code
-    |> String.split("\n")
-    |> Enum.with_index(1)
-    |> Enum.filter(fn {line, _} -> String.contains?(line, "-behaviour(supervisor)") end)
-    |> Enum.map(fn {line, line_num} ->
-      %{
-        name: "Supervisor_#{line_num}",
-        module: extract_module_name(line),
-        line_start: line_num,
-        line_end: line_num,
-        strategy: "one_for_one",
-        children: []
-      }
-    end)
-  end
-
-  defp detect_erlang_applications(code) do
-    # Detect "-behaviour(application)" patterns
-    code
-    |> String.split("\n")
-    |> Enum.with_index(1)
-    |> Enum.filter(fn {line, _} -> String.contains?(line, "-behaviour(application)") end)
-    |> Enum.map(fn {line, line_num} ->
-      %{
-        name: "Application_#{line_num}",
-        module: extract_module_name(line),
-        line_start: line_num,
-        line_end: line_num,
-        mod: nil,
-        start_phases: [],
-        applications: []
       }
     end)
   end

@@ -30,7 +30,6 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
 
   alias Singularity.Agents.Agent
   alias Singularity.Database.MetricsAggregation
-  alias Singularity.Storage.ValidationMetricsStore
 
   @agent_types [:self_improving, :cost_optimized, :architecture, :technology, :refactoring, :chat]
 
@@ -377,7 +376,7 @@ defmodule Singularity.Agents.AgentPerformanceDashboard do
   defp calculate_health_status(metrics) do
     success_rate = Map.get(metrics, :success_rate, 0.0)
     latency_ms = Map.get(metrics, :avg_latency_ms, 0.0)
-    cost_cents = Map.get(metrics, :avg_cost_cents, 0.0)
+    _cost_cents = Map.get(metrics, :avg_cost_cents, 0.0)
 
     cond do
       success_rate >= 0.95 and latency_ms < 2000 -> :excellent

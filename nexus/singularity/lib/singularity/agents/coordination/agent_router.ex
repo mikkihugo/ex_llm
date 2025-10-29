@@ -66,7 +66,7 @@ defmodule Singularity.Agents.Coordination.AgentRouter do
     Logger.info("[AgentRouter] Routing task DAG", task_count: length(tasks))
 
     execution_id = generate_execution_id()
-    timeout = Keyword.get(opts, :timeout, 300_000)
+    _timeout = Keyword.get(opts, :timeout, 300_000)
 
     case ExecutionCoordinator.execute_task_dag(execution_id, tasks, opts) do
       {:ok, results} ->

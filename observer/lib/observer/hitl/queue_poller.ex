@@ -2,6 +2,8 @@ defmodule Observer.HITL.QueuePoller do
   @moduledoc """
   Background process that ingests approval requests from pgmq
   and stores them in the Observer database.
+
+  Uses Pgflow notifications for real-time message processing instead of polling.
   """
 
   use GenServer
@@ -9,9 +11,9 @@ defmodule Observer.HITL.QueuePoller do
 
   alias Observer.HITL
   alias Observer.Pgmq
+  alias Observer.Repo
 
   @request_queue "observer_hitl_requests"
-  @poll_interval Application.compile_env(:observer, [:hitl, :poll_interval], 1_000)
 
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -20,16 +22,48 @@ defmodule Observer.HITL.QueuePoller do
   @impl true
   def init(:ok) do
     Pgmq.ensure_queue(@request_queue)
-    schedule_poll(0)
-    {:ok, %{}}
+
+    # Start listening for notifications
+    case Pgflow.Notifications.listen(@request_queue, Repo) do
+      {:ok, listener_pid} ->
+        Logger.info("HITL QueuePoller: Started listening for notifications",
+          queue: @request_queue,
+          listener_pid: inspect(listener_pid)
+        )
+        {:ok, %{listener_pid: listener_pid}}
+
+      {:error, reason} ->
+        Logger.error("HITL QueuePoller: Failed to start notification listener, falling back to polling",
+          queue: @request_queue,
+          error: inspect(reason)
+        )
+        # Fallback to polling
+        schedule_poll(0)
+        {:ok, %{polling: true}}
+    end
   end
 
   @impl true
-  def handle_info(:poll, state) do
+  def handle_info({:notification, _pid, _channel, _payload}, state) do
+    # Notification received, process messages
     ingest_requests()
-    schedule_poll(@poll_interval)
     {:noreply, state}
   end
+
+  @impl true
+  def handle_info(:poll, %{polling: true} = state) do
+    ingest_requests()
+    schedule_poll(1_000)
+    {:noreply, state}
+  end
+
+  @impl true
+  def terminate(_reason, %{listener_pid: pid} = _state) do
+    Pgflow.Notifications.unlisten(pid, Repo)
+  end
+
+  @impl true
+  def terminate(_reason, _state), do: :ok
 
   defp ingest_requests do
     Pgmq.read_messages(@request_queue, 10)

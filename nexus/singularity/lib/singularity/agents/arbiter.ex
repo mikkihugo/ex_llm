@@ -164,6 +164,9 @@ defmodule Singularity.Agents.Arbiter do
         now = :erlang.system_time(:millisecond)
 
         if entry && entry.expires_at > now do
+          # Use the token for cleanup and logging
+          Logger.info("Authorizing workflow", token: token, workflow_id: workflow.id)
+          
           :ets.delete(@table, token)
 
           try do

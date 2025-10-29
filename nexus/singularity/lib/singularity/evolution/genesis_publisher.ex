@@ -438,7 +438,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       case rule_id do
         "rule_" <> _ ->
           # Simulate published rules
-          {:published, "genesis_#{UUID.uuid4()}"}
+          {:published, "genesis_#{UUID.generate()}"}
 
         _ ->
           :not_found
@@ -903,12 +903,11 @@ defmodule Singularity.Evolution.GenesisPublisher do
     }
   end
 
+  # Normalize complexity to string format
   defp normalize_complexity(value) when value in [:simple, :medium, :complex], do: {:ok, value}
-
   defp normalize_complexity(value) when is_binary(value) do
     try do
       atom = String.to_existing_atom(value)
-
       if atom in [:simple, :medium, :complex] do
         {:ok, atom}
       else
@@ -918,7 +917,6 @@ defmodule Singularity.Evolution.GenesisPublisher do
       ArgumentError -> {:error, :invalid_value}
     end
   end
-
   defp normalize_complexity(complexity) when is_binary(complexity) do
     case String.downcase(complexity) do
       "simple" -> {:ok, :simple}
@@ -927,7 +925,6 @@ defmodule Singularity.Evolution.GenesisPublisher do
       _ -> {:error, :invalid_value}
     end
   end
-  
   defp normalize_complexity(complexity) when is_atom(complexity) do
     case complexity do
       :simple -> {:ok, :simple}
@@ -936,7 +933,6 @@ defmodule Singularity.Evolution.GenesisPublisher do
       _ -> {:error, :invalid_value}
     end
   end
-
   defp normalize_complexity(_), do: {:error, :invalid_value}
 
   # Expose as public function for workflow use

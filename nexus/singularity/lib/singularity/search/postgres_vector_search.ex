@@ -63,7 +63,6 @@ defmodule Singularity.Search.PostgresVectorSearch do
   """
 
   alias Singularity.Repo
-  alias Singularity.Search.EmbeddingService
   alias Singularity.Embedding.NxService
 
   @doc """

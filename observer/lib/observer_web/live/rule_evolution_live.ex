@@ -7,6 +7,9 @@ defmodule ObserverWeb.RuleEvolutionLive do
     counts = Map.get(dashboard, :rule_counts, %{})
     health = Map.get(dashboard, :evolution_health, %{})
 
+    assigns = assign(assigns, :counts, counts)
+    assigns = assign(assigns, :health, health)
+
     ~H"""
     <div class="max-w-6xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
@@ -33,22 +36,22 @@ defmodule ObserverWeb.RuleEvolutionLive do
         <section class="rounded-xl border border-zinc-200 bg-white shadow-sm p-6 space-y-3">
           <header class="flex items-center justify-between">
             <h2 class="text-lg font-semibold text-zinc-900">Stages</h2>
-            <span class={health_badge(health[:status])}>
-              <%= String.upcase(to_string(health[:status] || :unknown)) %>
+            <span class={health_badge(@health[:status])}>
+              <%= String.upcase(to_string(@health[:status] || :unknown)) %>
             </span>
           </header>
           <dl class="grid gap-4 sm:grid-cols-3 text-sm text-zinc-700">
             <div>
               <dt class="uppercase text-xs font-semibold text-zinc-400">Candidates</dt>
-              <dd class="text-lg font-semibold"><%= counts[:candidate_rules] || 0 %></dd>
+              <dd class="text-lg font-semibold"><%= @counts[:candidate_rules] || 0 %></dd>
             </div>
             <div>
               <dt class="uppercase text-xs font-semibold text-zinc-400">Confident</dt>
-              <dd class="text-lg font-semibold"><%= counts[:confident_rules] || 0 %></dd>
+              <dd class="text-lg font-semibold"><%= @counts[:confident_rules] || 0 %></dd>
             </div>
             <div>
               <dt class="uppercase text-xs font-semibold text-zinc-400">Published</dt>
-              <dd class="text-lg font-semibold"><%= counts[:published_rules] || 0 %></dd>
+              <dd class="text-lg font-semibold"><%= @counts[:published_rules] || 0 %></dd>
             </div>
           </dl>
         </section>

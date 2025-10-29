@@ -9,7 +9,6 @@ defmodule Singularity.Metrics.Pipeline do
   use GenServer
   require Logger
 
-  alias Singularity.Metrics.Orchestrator
   alias Singularity.Workflows.CodeMetricsWorkflow
 
   @default_opts []
@@ -58,7 +57,7 @@ defmodule Singularity.Metrics.Pipeline do
         name: Keyword.get(opts, :workflow_name, CodeMetricsWorkflowSupervisor)
       ]
 
-    case PGFlow.WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
+    case WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
       {:ok, _pid} ->
         Logger.info("Metrics PGFlow workflow supervisor started")
 
@@ -70,41 +69,6 @@ defmodule Singularity.Metrics.Pipeline do
         {:error, reason}
     end
   end
-
-  defp run_direct(%{file_paths: paths} = payload) do
-    Enum.map(paths, fn path ->
-      Orchestrator.analyze_file(path,
-        code: File.read!(path),
-        language: payload[:language],
-        enrich: Map.get(payload, :enrich, true),
-        store: Map.get(payload, :store, true),
-        project_id: payload[:project_id]
-      )
-    end)
-  end
-
-  defp run_direct(%{codebase_id: codebase_id} = payload) do
-    CodeMetricsWorkflow.fetch_targets(%Pgflow.Workflow.Context{
-      input: Map.merge(payload, %{limit: Map.get(payload, :limit, 50)})
-    })
-    |> case do
-      {:ok, %{targets: targets}} ->
-        Enum.map(targets, fn target ->
-          Orchestrator.analyze_file(target.path,
-            code: target.code,
-            language: target.language,
-            enrich: payload[:enrich],
-            store: payload[:store],
-            project_id: codebase_id
-          )
-        end)
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp run_direct(_payload), do: {:error, :invalid_payload}
 
   defp redact(payload) do
     payload

@@ -444,8 +444,22 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   end
 
   defp remove_pattern_from_file(file_path, pattern, language, dry_run) do
-    # Removing code is risky - just mark for manual review
-    {:skipped, "Code removal requires manual review"}
+    # Use Agent to get intelligent code removal suggestions
+    case Agent.analyze_code_removal(file_path, pattern, language) do
+      {:ok, removal_plan} ->
+        if dry_run do
+          {:ok, %{plan: removal_plan, message: "Dry run - no changes made"}}
+        else
+          # Apply the removal plan
+          case Agent.apply_code_removal(file_path, removal_plan) do
+            {:ok, result} -> {:ok, result}
+            {:error, reason} -> {:error, reason}
+          end
+        end
+      
+      {:error, reason} ->
+        {:error, "Agent analysis failed: #{reason}"}
+    end
   end
 
   defp rollback_all_applied_fixes(state) do

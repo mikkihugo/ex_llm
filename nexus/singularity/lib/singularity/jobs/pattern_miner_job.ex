@@ -133,7 +133,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
       repo_pattern = "#{codebase_path}%#{instance_id}%"
 
       case Repo.query(query, [languages, repo_pattern]) do
-        {:ok, %{rows: rows}} when length(rows) > 0 ->
+        {:ok, %{rows: [_head | _] = rows}} ->
           code_files =
             Enum.map(rows, fn [id, content, language, file_path, repo, chunk_index, embedding] ->
               %{

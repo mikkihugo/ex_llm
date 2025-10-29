@@ -258,7 +258,9 @@ defmodule Singularity.CodeGraph.AGEQueries do
   """
   @spec shortest_path(String.t(), String.t(), list()) ::
           {:ok, map()} | {:error, String.t()}
-  def shortest_path(source, target, opts \\ []) do
+  def shortest_path(source, target), do: shortest_path(source, target, [])
+
+  def shortest_path(source, target, _opts) do
     query = """
     MATCH path = shortestPath(
       (m1:Module {name: $1}) -[:CALLS*]- (m2:Module {name: $2})

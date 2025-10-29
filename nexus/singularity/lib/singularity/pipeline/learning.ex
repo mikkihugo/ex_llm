@@ -362,26 +362,42 @@ defmodule Singularity.Pipeline.Learning do
   end
 
   defp publish_to_central_cloud(result) do
-    # Try to publish learnings to CentralCloud if integrated
-    cond do
-      Code.ensure_loaded?(CentralCloud.Learnings) ->
-        try do
-          CentralCloud.Learnings.publish_execution_result(result)
-        rescue
-          _ -> :ok
-        end
-
-      Code.ensure_loaded?(CentralCloud.TemplateIntelligence) ->
-        try do
-          CentralCloud.TemplateIntelligence.ingest_execution_learning(result)
-        rescue
-          _ -> :ok
-        end
-
-      true ->
-        Logger.debug("Pipeline.Learning: CentralCloud not configured, skipping publish")
+    # Publish execution learning to CentralCloud via PgFlow
+    # Queue: patterns_learned_published (consumed by CentralCloud.Consumers.PatternLearningConsumer)
+    try do
+      message = %{
+        "type" => "patterns_learned",
+        "instance_id" => System.get_env("SINGULARITY_INSTANCE_ID", "singularity_#{node()}"),
+        "artifacts" => [format_execution_learning(result)],
+        "timestamp" => DateTime.utc_now()
+      }
+      
+      case PgFlow.send_with_notify("patterns_learned_published", message) do
+        {:ok, _} ->
+          Logger.debug("Execution learning published to CentralCloud")
+        
+        {:error, reason} ->
+          Logger.warning("Failed to publish execution learning to CentralCloud", reason: reason)
+      end
+    rescue
+      _ -> :ok
     end
   end
+
+  defp format_execution_learning(result) when is_map(result) do
+    %{
+      "name" => "execution_learning_#{DateTime.utc_now() |> DateTime.to_unix()}",
+      "type" => "execution_learning",
+      "story_signature" => extract_signature(result),
+      "failure_mode" => extract_failure_mode(result),
+      "root_cause" => extract_root_cause(result),
+      "validation_state" => extract_validation_state(result),
+      "execution_success" => result[:success] || false,
+      "timestamp" => DateTime.utc_now()
+    }
+  end
+
+  defp format_execution_learning(_), do: %{"type" => "execution_learning", "timestamp" => DateTime.utc_now()}
 
   # Extraction Helpers
 

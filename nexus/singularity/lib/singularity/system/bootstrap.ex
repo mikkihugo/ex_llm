@@ -43,16 +43,11 @@ defmodule Singularity.System.Bootstrap do
   # INTEGRATION: TaskGraph planning and execution
   alias Singularity.Execution.Planning.{
     TaskGraph,
-    TaskGraphExecutor,
-    TaskGraphEvolution,
     FullRepoScanner
   }
 
-  # INTEGRATION: Knowledge storage and self-improvement
-  alias Singularity.{Store, SelfImprovingAgent}
-
-  # INTEGRATION: Code generation and quality enforcement
-  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
+  # INTEGRATION: Knowledge storage
+  alias Singularity.Store
   # INTEGRATION: SPARC methodology and hierarchical planning
   alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
 
@@ -271,7 +266,7 @@ defmodule Singularity.System.Bootstrap do
     # Check if TaskGraph is integrated with SelfImprovingAgent
     missing =
       if not task_graph_integrated_with_self_improving?() do
-        ["TaskGraph → SelfImprovingAgent" | missing]
+        ["TaskGraph ? SelfImprovingAgent" | missing]
       else
         missing
       end
@@ -279,7 +274,7 @@ defmodule Singularity.System.Bootstrap do
     # Check if TaskGraph is integrated with SafeWorkPlanner
     missing =
       if not task_graph_integrated_with_safe_planner?() do
-        ["TaskGraph → SafeWorkPlanner" | missing]
+        ["TaskGraph ? SafeWorkPlanner" | missing]
       else
         missing
       end
@@ -287,7 +282,7 @@ defmodule Singularity.System.Bootstrap do
     # Check if TaskGraph uses RAG generator
     missing =
       if not task_graph_uses_rag?() do
-        ["TaskGraph → RAGCodeGenerator" | missing]
+        ["TaskGraph ? RAGCodeGenerator" | missing]
       else
         missing
       end

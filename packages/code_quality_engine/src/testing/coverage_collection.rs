@@ -294,6 +294,12 @@ impl Default for CoverageThresholds {
     }
 }
 
+impl Default for CoverageDataCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverageDataCollector {
     pub fn new() -> Self {
         Self {
@@ -571,6 +577,12 @@ impl CoverageDataCollector {
         */
 
         Vec::new()
+    }
+}
+
+impl Default for FactSystemInterface {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

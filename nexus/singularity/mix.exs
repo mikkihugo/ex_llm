@@ -72,26 +72,26 @@ defmodule Singularity.MixProject do
       # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
       # Engines are now in packages/ as standalone Moon projects (publishable)
-      {:singularity_code_analysis,
-       path: "../../packages/singularity-code-analysis", runtime: false, compile: false, app: false},
       {:parser_engine,
        path: "../../packages/parser_engine",
        runtime: false,
-       compile: false,
        app: false,
-       optional: true},
+       compile: false},
       {:prompt_engine,
        path: "../../packages/prompt_engine",
        runtime: false,
-       compile: false,
        app: false,
-       optional: true},
+       compile: false},
       {:linting_engine,
-       path: "../../packages/linting_engine", runtime: false, compile: false, app: false},
+       path: "../../packages/linting_engine", runtime: false, app: false, compile: false},
+      {:code_quality_engine,
+       path: "../../packages/code_quality_engine", runtime: false, app: false, compile: false},
 
       # Data & Serialization
       {:jason, "~> 1.4"},
       {:nimble_options, "~> 1.1"},
+      # JSON Schema validation (Draft 07) for config validation
+      {:ex_json_schema, "~> 0.9", optional: true},
       # Templating engines
       {:solid, "~> 1.0"},
       # Lua on BEAM for dynamic prompt scripts (ergonomic luerl wrapper)
@@ -132,7 +132,8 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-      {:ex_pgflow, in_umbrella: true, override: true},
+      # NOTE: Must match broadway_pgflow's dependency - use env: Mix.env() to align
+      {:ex_pgflow, in_umbrella: true, env: Mix.env(), override: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},

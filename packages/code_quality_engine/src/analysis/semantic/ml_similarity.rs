@@ -349,6 +349,12 @@ pub struct MultiModalFusion {
     complexity_weight: f32,
 }
 
+impl Default for MultiModalFusion {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MultiModalFusion {
     pub fn new() -> Self {
         Self {

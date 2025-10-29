@@ -125,6 +125,8 @@ defmodule Singularity.Search.AstGrepCodeSearch do
 
   require Logger
 
+  alias Singularity.Search.HybridCodeSearch
+
   @type searchopts :: [
           query: String.t(),
           ast_pattern: String.t() | nil,

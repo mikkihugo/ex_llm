@@ -81,7 +81,7 @@ impl LanguageParser for YamlParser {
         let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 0 {
                     let text = capture

@@ -23,9 +23,9 @@
         </button>
       </div>
 
-      <%= if get_flash(@conn, :error) do %>
+      <%= if @flash["error"] do %>
         <div class="text-red-600 text-sm text-center">
-          <%= get_flash(@conn, :error) %>
+          <%= @flash["error"] %>
         </div>
       <% end %>
     </form>

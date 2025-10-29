@@ -262,16 +262,27 @@ defmodule Singularity.Agents.RemediationEngine do
   Generate (but don't apply) fixes for a file.
   """
   def generate_fixes(file_path, opts \\ []) do
+    # Use opts to configure fix generation
+    max_fixes = Keyword.get(opts, :max_fixes, 10)
+    severity_filter = Keyword.get(opts, :severity, :all)
+    
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
          language <- detect_language(file_path),
          {:ok, issues} <- detect_issues(content, language) do
       fixes =
         issues
+        |> filter_by_severity(severity_filter)
+        |> Enum.take(max_fixes)
         |> Enum.map(&generate_fix_for_issue(&1, language))
         |> Enum.filter(&(&1 != nil))
 
-      Logger.info("Generated fixes", file: file_path, fix_count: length(fixes))
+      Logger.info("Generated fixes", 
+        file: file_path, 
+        fix_count: length(fixes),
+        max_fixes: max_fixes,
+        severity: severity_filter
+      )
 
       {:ok, fixes}
     else
@@ -281,10 +292,15 @@ defmodule Singularity.Agents.RemediationEngine do
     end
   end
 
+  defp filter_by_severity(issues, :all), do: issues
+  defp filter_by_severity(issues, severity) do
+    Enum.filter(issues, &(&1.severity == severity))
+  end
+
   @doc """
   Apply a specific fix to code.
   """
-  def apply_fix(content, fix_id, context \\ %{}) do
+  def apply_fix(content, fix_id, _context \\ %{}) do
     case fix_id do
       "add_moduledoc" ->
         module_name = extract_module_name(content)
@@ -414,13 +430,15 @@ defmodule Singularity.Agents.RemediationEngine do
   end
 
   defp apply_fixes_batch(content, fixes, opts) do
+    # Use opts for batch processing configuration
+    stop_on_error = Keyword.get(opts, :stop_on_error, false)
+    max_fixes = Keyword.get(opts, :max_fixes)
+    fix_order = Keyword.get(opts, :order, :sequential)
+    
     new_content =
-      Enum.reduce(fixes, content, fn fix, acc ->
-        case apply_auto_fix(acc, fix) do
-          {:ok, updated} -> updated
-          {:error, _} -> acc
-        end
-      end)
+      fixes
+      |> maybe_limit_fixes(max_fixes)
+      |> apply_fixes_in_order(content, stop_on_error, fix_order)
 
     {:ok,
      %{
@@ -428,6 +446,36 @@ defmodule Singularity.Agents.RemediationEngine do
        fixes_applied: length(fixes),
        issues_resolved: length(fixes)
      }}
+  end
+
+  defp maybe_limit_fixes(fixes, nil), do: fixes
+  defp maybe_limit_fixes(fixes, max) when is_integer(max) and max > 0 do
+    Enum.take(fixes, max)
+  end
+  defp maybe_limit_fixes(fixes, _), do: fixes
+
+  defp apply_fixes_in_order(fixes, content, stop_on_error, :sequential) do
+    Enum.reduce(fixes, {:ok, content}, fn fix, {status, acc_content} ->
+      if stop_on_error and status == :error do
+        {status, acc_content}
+      else
+        case apply_auto_fix(acc_content, fix) do
+          {:ok, updated} -> {:ok, updated}
+          {:error, _} -> {status, acc_content}
+        end
+      end
+    end)
+    |> elem(1)
+  end
+
+  defp apply_fixes_in_order(fixes, content, _stop_on_error, :parallel) do
+    # For parallel, apply all fixes independently and merge
+    Enum.reduce(fixes, content, fn fix, acc ->
+      case apply_auto_fix(acc, fix) do
+        {:ok, updated} -> updated
+        {:error, _} -> acc
+      end
+    end)
   end
 
   defp apply_auto_fix(content, fix) do

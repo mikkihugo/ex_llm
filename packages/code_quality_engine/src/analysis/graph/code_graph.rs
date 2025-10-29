@@ -305,7 +305,7 @@ impl CodeDependencyGraph {
         let mut clusters = Vec::new();
         let mut visited = std::collections::HashSet::new();
 
-        for (node_id, _) in &self.node_lookup {
+        for node_id in self.node_lookup.keys() {
             if !visited.contains(node_id) {
                 let similar_nodes = self.find_similar_nodes(node_id, 10);
                 let cluster: Vec<String> = similar_nodes
@@ -342,7 +342,7 @@ impl CodeDependencyGraph {
                 let pattern = Self::extract_naming_pattern(&node.name);
                 name_groups
                     .entry(pattern)
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(node_id.clone());
             }
         }
@@ -646,9 +646,7 @@ impl CodeGraphBuilder {
         let mut graph = CodeGraph::new(GraphType::SemanticGraph);
 
         // Build CodeMetadata list for vectorization
-        let metadata_list: Vec<CodeMetadata> = metadata_cache
-            .iter()
-            .map(|(_, metadata)| metadata.clone())
+        let metadata_list: Vec<CodeMetadata> = metadata_cache.values().cloned()
             .collect();
 
         // Initialize ML vectorizer with production algorithms
@@ -696,6 +694,12 @@ pub struct CodebaseCodePatterns {
     pub circular_dependencies: Vec<Vec<String>>,
     pub semantic_clusters: Vec<Vec<String>>,
     pub naming_conventions: Vec<NamingCodePattern>,
+}
+
+impl Default for CodebaseCodePatterns {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CodebaseCodePatterns {

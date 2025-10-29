@@ -41,9 +41,7 @@ fn main() {
       .expect("Path should be under templates directory");
     let path_str = relative_path.to_string_lossy();
     let function_name = path_str
-      .replace('/', "_")
-      .replace('-', "_")
-      .replace('.', "_")
+      .replace(['/', '-', '.'], "_")
       .replace("__", "_") // Remove double underscores
       .to_lowercase();
     let template_id = file_name;
@@ -118,9 +116,7 @@ fn main() {
       .expect("Path should be under templates directory");
     let path_str = relative_path.to_string_lossy();
     let function_name = path_str
-      .replace('/', "_")
-      .replace('-', "_")
-      .replace('.', "_")
+      .replace(['/', '-', '.'], "_")
       .replace("__", "_") // Remove double underscores
       .to_lowercase();
     writeln!(generated_code, "        create_{function_name}_template(),")
@@ -143,15 +139,13 @@ fn main() {
 /// Recursively collect all JSON files from a directory
 fn collect_json_files(dir: &Path, json_files: &mut Vec<std::path::PathBuf>) {
   if let Ok(entries) = fs::read_dir(dir) {
-    for entry in entries {
-      if let Ok(entry) = entry {
-        let path = entry.path();
-        if path.is_dir() {
-          // Recursively search subdirectories
-          collect_json_files(&path, json_files);
-        } else if path.extension().and_then(|s| s.to_str()) == Some("json") {
-          json_files.push(path);
-        }
+    for entry in entries.flatten() {
+      let path = entry.path();
+      if path.is_dir() {
+        // Recursively search subdirectories
+        collect_json_files(&path, json_files);
+      } else if path.extension().and_then(|s| s.to_str()) == Some("json") {
+        json_files.push(path);
       }
     }
   }

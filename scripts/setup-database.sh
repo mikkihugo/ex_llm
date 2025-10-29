@@ -208,6 +208,25 @@ SQL
 
 echo ""
 
+# Create observer database if needed
+echo -e "${GREEN}🗄️  Setting up Observer database...${NC}"
+if psql -lqt | cut -d \| -f 1 | grep -qw "observer_dev"; then
+    echo -e "${YELLOW}📊 Database 'observer_dev' already exists${NC}"
+else
+    echo -e "${GREEN}Creating database 'observer_dev'...${NC}"
+    createdb "observer_dev" -O "$DB_USER"
+    echo -e "${GREEN}✅ Observer database created${NC}"
+fi
+
+# Install extensions in observer database
+echo -e "${GREEN}📦 Installing PostgreSQL extensions in observer...${NC}"
+psql -d "observer_dev" <<SQL
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SELECT 'Extensions installed for observer';
+SQL
+
+echo ""
+
 # Run Ecto migrations
 echo -e "${GREEN}🔄 Running Ecto migrations for singularity...${NC}"
 cd "$PROJECT_ROOT/singularity"
@@ -235,6 +254,15 @@ mix ecto.migrate
 echo -e "${GREEN}✅ Genesis migrations complete${NC}"
 echo ""
 
+# Run Ecto migrations for observer
+echo -e "${GREEN}🔄 Running Ecto migrations for observer...${NC}"
+cd "$PROJECT_ROOT/observer"
+
+mix ecto.migrate
+
+echo -e "${GREEN}✅ Observer migrations complete${NC}"
+echo ""
+
 # Verify setup
 echo -e "${GREEN}🔍 Verifying database setup...${NC}"
 
@@ -257,6 +285,7 @@ echo "Databases created:"
 echo "  • $DB_NAME (Singularity)"
 echo "  • $CENTRALCLOUD_DB_NAME (CentralCloud)"
 echo "  • $GENESIS_DB_NAME (Genesis)"
+echo "  • observer_dev (Observer)"
 echo ""
 echo "Database user: $DB_USER"
 echo ""

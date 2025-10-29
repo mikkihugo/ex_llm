@@ -20,5 +20,5 @@ defmodule ObserverWeb.Gettext do
 
   See the [Gettext Docs](https://hexdocs.pm/gettext) for detailed usage.
   """
-  use Gettext, otp_app: :observer
+  use Gettext.Backend, otp_app: :observer
 end

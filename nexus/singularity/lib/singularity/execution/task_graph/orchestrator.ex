@@ -216,6 +216,15 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   def init(opts) do
     Logger.info("Starting TaskGraph.Orchestrator...")
 
+    # Use AgentSupervisor to register this orchestrator as a managed agent
+    case AgentSupervisor.register_orchestrator(__MODULE__, opts) do
+      {:ok, _} ->
+        Logger.info("TaskGraph.Orchestrator registered with AgentSupervisor")
+
+      {:error, reason} ->
+        Logger.warning("Failed to register with AgentSupervisor", reason: inspect(reason))
+    end
+
     # Register process with Registry
     case Registry.register(ProcessRegistry, __MODULE__, nil) do
       {:ok, _} ->

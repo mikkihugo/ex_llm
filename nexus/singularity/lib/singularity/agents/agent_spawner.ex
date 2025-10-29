@@ -48,31 +48,59 @@ defmodule Singularity.Agents.AgentSpawner do
 
   require Logger
 
+  alias Singularity.Agents.AgentConfigurationSchemaGenerator
+
   @doc """
   Spawn an agent from Lua configuration.
 
   Actually starts a new Agent GenServer process via DynamicSupervisor.
-  Returns the spawned agent's PID (not the spawner's PID).
+  Validates agent configuration against JSON Schema before spawning.
 
   ## Parameters
 
   - `agent_config` - Map with keys:
-    - `"role"` - Agent role (string)
+    - `"role"` - Agent role (string, required)
     - `"behavior_id"` - Optional behavior ID (string)
-    - `"config"` - Agent configuration (map)
+    - `"config"` - Agent configuration (map, optional)
 
   ## Returns
 
   - `{:ok, agent}` - Spawned agent metadata with correct PID
-  - `{:error, reason}` - Spawn failed
+  - `{:error, {:invalid_config, errors}}` - Config validation failed
+  - `{:error, {:spawn_failed, reason}}` - Agent spawn failed
+
+  ## Validation
+
+  Agent config is validated against JSON Schema before spawning. Invalid configs
+  are rejected with detailed error messages.
 
   ## Examples
 
       iex> config = %{"role" => "architect", "config" => %{}}
       iex> AgentSpawner.spawn(config)
       {:ok, %{id: "agent-xyz", pid: #PID<0.250.0>, role: "architect"}}
+
+      iex> invalid = %{"behavior_id" => "test"}  # Missing required "role"
+      iex> AgentSpawner.spawn(invalid)
+      {:error, {:invalid_config, ["Missing required field: role"]}}
   """
   def spawn(agent_config) do
+    # Validate config against schema
+    case AgentConfigurationSchemaGenerator.validate_agent_config(agent_config) do
+      :ok ->
+        spawn_validated_agent(agent_config)
+
+      {:error, :invalid_config, errors} ->
+        Logger.warning("Agent config validation failed",
+          config: agent_config,
+          errors: errors
+        )
+
+        {:error, {:invalid_config, errors}}
+    end
+  end
+
+  defp spawn_validated_agent(agent_config) do
     role = agent_config["role"] || agent_config[:role] || "code_developer"
     behavior_id = agent_config["behavior_id"] || agent_config[:behavior_id]
     config = agent_config["config"] || agent_config[:config] || %{}

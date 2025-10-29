@@ -21,7 +21,7 @@ crate-type = ["cdylib"]  # Pure NIF - parser_core provides the rlib
 parser_core = { path = "./core" }
 
 # Rustler for NIF (match Elixir mix.exs version)
-rustler = "0.37"
+rustler = "0.37.0"
 
 # Error handling
 thiserror = "1.0"
@@ -91,5 +91,4 @@ harness = false
 default = ["rca"]  # RCA metrics enabled by default
 rca = []  # Mozilla rust-code-analysis metrics
 
-[workspace]
 

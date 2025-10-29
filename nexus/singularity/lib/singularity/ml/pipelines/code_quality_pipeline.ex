@@ -24,7 +24,6 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   require Logger
 
   alias Singularity.CodeAnalysis.{QualityAnalyzer, QualityScanner}
-  alias Singularity.Repo
 
   @doc """
   Start the code quality pipeline.

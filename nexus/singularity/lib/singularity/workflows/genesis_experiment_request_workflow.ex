@@ -125,24 +125,23 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   def route_to_genesis(%{"enriched_request" => request, "agent_id" => agent_id} = context) do
     experiment_id = request["experiment_id"]
 
-    # Create a Genesis experiment processing workflow
-    # This replaces the pgmq publish to "agent.events.experiment.request.{agent_id}"
-    case Pgflow.Workflow.create_workflow(
-           Singularity.Genesis.ExperimentProcessingWorkflow,
-           %{
-             "experiment_request" => request,
-             "agent_id" => agent_id,
-             "experiment_id" => experiment_id
-           }
-         ) do
-      {:ok, genesis_workflow_id} ->
-        Logger.info("Routed experiment request to Genesis workflow",
+    # Send experiment request to Genesis via pgflow queue (Genesis consumes from job_requests queue)
+    message_payload = %{
+      "experiment_request" => request,
+      "agent_id" => agent_id,
+      "experiment_id" => experiment_id,
+      "type" => "experiment_request"
+    }
+
+    case Singularity.PgFlow.send_with_notify("job_requests", message_payload) do
+      {:ok, _msg_id} ->
+        Logger.info("Routed experiment request to Genesis via queue",
           agent_id: agent_id,
           experiment_id: experiment_id,
-          genesis_workflow_id: genesis_workflow_id
+          queue: "job_requests"
         )
 
-        {:ok, Map.put(context, "genesis_workflow_id", genesis_workflow_id)}
+        {:ok, Map.put(context, "sent_to_genesis", true)}
 
       {:error, reason} ->
         Logger.error("Failed to route experiment request to Genesis",
@@ -158,7 +157,7 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   @doc """
   Track the request for monitoring and debugging
   """
-  def track_request(%{"enriched_request" => request, "genesis_workflow_id" => genesis_workflow_id} = context) do
+  def track_request(%{"enriched_request" => request, "sent_to_genesis" => true} = context) do
     agent_id = request["agent_id"]
     experiment_id = request["experiment_id"]
 
@@ -166,7 +165,7 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
     Logger.debug("Tracking Genesis experiment request",
       agent_id: agent_id,
       experiment_id: experiment_id,
-      genesis_workflow_id: genesis_workflow_id,
+      queue: "job_requests",
       tracking_info: %{status: :routed, timestamp: DateTime.utc_now()}
     )
 
@@ -176,14 +175,14 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
       %{count: 1},
       %{
         experiment_id: experiment_id,
-        workflow_id: genesis_workflow_id,
+        queue: "job_requests",
         agent_id: agent_id
       }
     )
 
     Logger.debug("Tracked Genesis experiment request",
       experiment_id: experiment_id,
-      workflow_id: genesis_workflow_id,
+      queue: "job_requests",
       agent_id: agent_id
     )
 

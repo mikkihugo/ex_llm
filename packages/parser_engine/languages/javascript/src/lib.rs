@@ -88,7 +88,7 @@ impl LanguageParser for JavascriptParser {
         .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut captures = cursor.captures(&fn_query, root, ast.content.as_bytes());
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
             let mut body = "";
@@ -140,7 +140,7 @@ impl LanguageParser for JavascriptParser {
         .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut captures = cursor.captures(&arrow_query, root, ast.content.as_bytes());
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
             let mut body = "";

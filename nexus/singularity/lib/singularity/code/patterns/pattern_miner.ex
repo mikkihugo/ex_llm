@@ -25,7 +25,6 @@ defmodule Singularity.Code.Patterns.PatternMiner do
 
   require Logger
   alias Singularity.Learning.PatternMiner, as: LearningPatternMiner
-  alias Singularity.Embedding.Service, as: EmbeddingService
 
   @doc """
   Retrieve patterns relevant to a task using semantic search.

@@ -121,7 +121,6 @@ defmodule Singularity.Architecture.InfrastructureDetectionOrchestrator do
   """
 
   require Logger
-  alias Singularity.Architecture.InfrastructureRegistryCache
 
   @doc """
   Detect infrastructure systems in codebase.

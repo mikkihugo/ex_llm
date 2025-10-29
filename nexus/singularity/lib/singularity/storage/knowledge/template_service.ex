@@ -499,7 +499,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
     # First try local TemplateStore for fast access
     case Singularity.TemplateStore.search(query, limit: 100) do
-      {:ok, results} when length(results) > 0 ->
+      {:ok, [_head | _] = results} ->
         # Convert template results to pattern format
         patterns =
           Enum.map(results, fn template ->
@@ -578,7 +578,7 @@ defmodule Singularity.Knowledge.TemplateService do
 
     # First try local TemplateStore
     case Singularity.TemplateStore.search("", type: template_type, limit: limit) do
-      {:ok, results} when length(results) > 0 ->
+      {:ok, [_head | _] = results} ->
         template_ids = Enum.map(results, & &1.id)
         {:ok, template_ids}
 
@@ -688,7 +688,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.publish(
-           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_store),
+           "knowledge_template_store",
            Jason.encode!(request)
          ) do
       :ok ->
@@ -714,7 +714,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_get),
+           "knowledge_template_get",
            Jason.encode!(request),
            timeout: 5000
          ) do
@@ -743,7 +743,7 @@ defmodule Singularity.Knowledge.TemplateService do
     }
 
     case Singularity.Messaging.Client.request(
-           Singularity.Jobs.PgmqClient.RegistryClient.subject(:knowledge_template_list),
+           "knowledge_template_list",
            Jason.encode!(request),
            timeout: 5000
          ) do

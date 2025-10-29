@@ -290,6 +290,12 @@ pub struct LicenseDatabase {
     // PSEUDO CODE: Integration with license databases (SPDX, etc.)
 }
 
+impl Default for DependencyPatternRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DependencyPatternRegistry {
     pub fn new() -> Self {
         Self {
@@ -546,6 +552,12 @@ impl DependencyPatternRegistry {
     }
 }
 
+impl Default for FactSystemClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FactSystemClient {
     pub fn new() -> Self {
         Self {}
@@ -579,6 +591,12 @@ impl FactSystemClient {
     */
 }
 
+impl Default for VulnerabilityDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VulnerabilityDatabase {
     pub fn new() -> Self {
         Self {}
@@ -594,6 +612,12 @@ impl VulnerabilityDatabase {
         // Check for vulnerabilities in specific package version
     }
     */
+}
+
+impl Default for LicenseDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LicenseDatabase {

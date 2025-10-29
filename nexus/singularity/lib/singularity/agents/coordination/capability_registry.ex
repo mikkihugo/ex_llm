@@ -119,15 +119,63 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
     {:ok, state}
   end
 
+  alias Singularity.Agents.AgentConfigurationSchemaGenerator
+
   @doc """
   Register an agent's capabilities.
 
-  Takes agent name and attribute map, creates AgentCapability struct,
-  and indexes it for fast lookup by domain and role.
+  Takes agent name and attribute map, validates against JSON Schema,
+  creates AgentCapability struct, and indexes it for fast lookup by domain and role.
+
+  ## Validation
+
+  Capability definition is validated against JSON Schema before registration.
+  Invalid capabilities are rejected with detailed error messages.
+
+  ## Examples
+
+      iex> CapabilityRegistry.register(:architect, %{
+      ...>   role: :architect,
+      ...>   domains: [:architecture],
+      ...>   input_types: [:code, :design]
+      ...> })
+      :ok
+
+      iex> CapabilityRegistry.register(:invalid, %{bad_field: "value"})
+      {:error, {:invalid_capability, errors}}
   """
   def register(agent_name, attrs) when is_atom(agent_name) and is_map(attrs) do
-    GenServer.call(__MODULE__, {:register, agent_name, attrs})
+    # Validate capability definition (convert atom keys to string for validation)
+    validation_attrs = normalize_attrs_for_validation(attrs)
+
+    case AgentConfigurationSchemaGenerator.validate_capability(validation_attrs) do
+      :ok ->
+        GenServer.call(__MODULE__, {:register, agent_name, attrs})
+
+      {:error, :invalid_capability, errors} ->
+        require Logger
+        Logger.warning("Capability registration validation failed",
+          agent_name: agent_name,
+          attrs: attrs,
+          errors: errors
+        )
+
+        {:error, {:invalid_capability, errors}}
+    end
   end
+
+  defp normalize_attrs_for_validation(attrs) do
+    # Convert atom keys to strings for JSON Schema validation
+    Enum.into(attrs, %{}, fn
+      {k, v} when is_atom(k) -> {Atom.to_string(k), normalize_value(v)}
+      {k, v} -> {k, normalize_value(v)}
+    end)
+  end
+
+  defp normalize_value(v) when is_atom(v), do: Atom.to_string(v)
+  defp normalize_value(v) when is_list(v), do: Enum.map(v, &normalize_value/1)
+  defp normalize_value(v) when is_map(v), do: normalize_attrs_for_validation(v)
+  defp normalize_value(v), do: v
 
   @doc """
   Update agent's availability status.

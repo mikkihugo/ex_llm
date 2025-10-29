@@ -450,7 +450,7 @@ impl AstGrep {
 
         for edit in edits.into_iter().rev() {
             root.edit(edit)
-                .map_err(|err| AstGrepError::ReplacementError(err))?;
+                .map_err(AstGrepError::ReplacementError)?;
         }
 
         Ok((root.generate(), replacement_count))
@@ -673,7 +673,7 @@ fn apply_indent(content: &str, indent: &str) -> String {
     adjusted
 }
 
-fn strip_leading_whitespace<'a>(line: &'a str, mut count: usize) -> &'a str {
+fn strip_leading_whitespace(line: &str, mut count: usize) -> &str {
     if count == 0 || line.is_empty() {
         return line;
     }

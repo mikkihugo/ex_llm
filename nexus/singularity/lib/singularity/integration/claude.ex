@@ -125,7 +125,8 @@ defmodule Singularity.Integration.Claude do
 
     try do
       # Create temp file for prompt
-      {:ok, temp_file} = Temp.path()
+      tmp_dir = System.tmp_dir()
+      temp_file = Path.join(tmp_dir, "claude_prompt_#{UUID.generate()}.txt")
       File.write!(temp_file, prompt)
 
       # Build Claude CLI command

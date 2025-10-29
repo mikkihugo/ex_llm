@@ -37,8 +37,8 @@ defmodule Singularity.Execution.TodoWorkerAgent do
   require Logger
 
   alias Singularity.Execution.{TodoStore, TodoSwarmCoordinator}
-  # 5 minutes
-  @execution_timeout_ms 300_000
+  # TODO: Implement timeout monitoring (5 minutes = 300_000 ms)
+  # @execution_timeout_ms 300_000
 
   defstruct [
     :todo_id,

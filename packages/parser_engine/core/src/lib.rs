@@ -20,7 +20,6 @@
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -323,71 +322,71 @@ impl PolyglotCodeParser {
         // BEAM Languages - Functional, immutable, built on BEAM VM
         self.language_cache.insert(
             "elixir".to_string(),
-            tree_sitter_elixir::LANGUAGE.clone().into(),
+            tree_sitter_elixir::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "erlang".to_string(),
-            tree_sitter_erlang::LANGUAGE.clone().into(),
+            tree_sitter_erlang::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "gleam".to_string(),
-            tree_sitter_gleam::LANGUAGE.clone().into(),
+            tree_sitter_gleam::LANGUAGE.into(),
         );
 
         // Systems Programming Languages - For performance-critical code
         self.language_cache.insert(
             "rust".to_string(),
-            tree_sitter_rust::LANGUAGE.clone().into(),
+            tree_sitter_rust::LANGUAGE.into(),
         );
         self.language_cache
-            .insert("c".to_string(), tree_sitter_c::LANGUAGE.clone().into());
+            .insert("c".to_string(), tree_sitter_c::LANGUAGE.into());
         self.language_cache
-            .insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.clone().into());
+            .insert("cpp".to_string(), tree_sitter_cpp::LANGUAGE.into());
 
         // Web Languages - Client & server-side JavaScript ecosystem
         self.language_cache.insert(
             "javascript".to_string(),
-            tree_sitter_javascript::LANGUAGE.clone().into(),
+            tree_sitter_javascript::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "typescript".to_string(),
-            tree_sitter_typescript::LANGUAGE_TYPESCRIPT.clone().into(),
+            tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
         );
         self.language_cache.insert(
             "json".to_string(),
-            tree_sitter_json::LANGUAGE.clone().into(),
+            tree_sitter_json::LANGUAGE.into(),
         );
 
         // Dynamic Languages - Interpreted, flexible, rapid prototyping
         self.language_cache.insert(
             "python".to_string(),
-            tree_sitter_python::LANGUAGE.clone().into(),
+            tree_sitter_python::LANGUAGE.into(),
         );
         self.language_cache
-            .insert("lua".to_string(), tree_sitter_lua::LANGUAGE.clone().into());
+            .insert("lua".to_string(), tree_sitter_lua::LANGUAGE.into());
         self.language_cache.insert(
             "bash".to_string(),
-            tree_sitter_bash::LANGUAGE.clone().into(),
+            tree_sitter_bash::LANGUAGE.into(),
         );
 
         // Other Languages - Special purpose and ecosystem languages
         self.language_cache
-            .insert("go".to_string(), tree_sitter_go::LANGUAGE.clone().into());
+            .insert("go".to_string(), tree_sitter_go::LANGUAGE.into());
         self.language_cache.insert(
             "java".to_string(),
-            tree_sitter_java::LANGUAGE.clone().into(),
+            tree_sitter_java::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "csharp".to_string(),
-            tree_sitter_c_sharp::LANGUAGE.clone().into(),
+            tree_sitter_c_sharp::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "yaml".to_string(),
-            tree_sitter_yaml::LANGUAGE.clone().into(),
+            tree_sitter_yaml::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "sql".to_string(),
-            tree_sitter_sequel::LANGUAGE.clone().into(),
+            tree_sitter_sequel::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "dockerfile".to_string(),
@@ -395,11 +394,11 @@ impl PolyglotCodeParser {
         );
         self.language_cache.insert(
             "toml".to_string(),
-            tree_sitter_toml_ng::LANGUAGE.clone().into(),
+            tree_sitter_toml_ng::LANGUAGE.into(),
         );
         self.language_cache.insert(
             "markdown".to_string(),
-            tree_sitter_md::LANGUAGE.clone().into(),
+            tree_sitter_md::LANGUAGE.into(),
         );
 
         tracing::info!(

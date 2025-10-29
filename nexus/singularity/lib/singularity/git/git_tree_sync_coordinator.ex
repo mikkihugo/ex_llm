@@ -20,6 +20,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
   alias Singularity.{Autonomy, Git}
   alias Autonomy.Correlation
   alias Singularity.Git.GitStateStore
+  alias Ecto.UUID
 
   defstruct [
     :repo_path,
@@ -518,7 +519,7 @@ defmodule Singularity.Git.GitTreeSyncCoordinator do
   end
 
   defp short_uuid do
-    UUID.uuid4() |> String.slice(0..7)
+    UUID.generate() |> String.slice(0..7)
   end
 
   defp build_workspace_map(sessions) do

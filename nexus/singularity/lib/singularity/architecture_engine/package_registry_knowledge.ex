@@ -101,7 +101,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Search across known architectural patterns.
   """
   @spec search_patterns(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_patterns(query, opts \\ []) do
+  def search_patterns(query, _opts \\ []) do
     Logger.info("🔍 Searching patterns for: #{query}")
 
     # Search for architectural patterns in the knowledge base directly
@@ -151,7 +151,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   UI responsive.
   """
   @spec search_examples(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def search_examples(query, opts \\ []) do
+  def search_examples(query, _opts \\ []) do
     Logger.info("📚 Searching examples for: #{query}")
 
     # Search for code examples in the knowledge base directly
@@ -238,7 +238,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
   Return cross-ecosystem equivalents.
   """
   @spec find_equivalents(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
-  def find_equivalents(package_name, opts \\ []) do
+  def find_equivalents(package_name, _opts \\ []) do
     Logger.info("🔍 Finding equivalents for package: #{package_name}")
 
     # Search across all ecosystems for similar packages
@@ -290,7 +290,7 @@ defmodule Singularity.ArchitectureEngine.PackageRegistryKnowledge do
            artifact_type: "code_template",
            limit: 10
          ) do
-      {:ok, results} when length(results) > 0 ->
+      {:ok, [_head | _] = results} ->
         parsed_examples =
           Enum.map(results, fn result ->
             %{

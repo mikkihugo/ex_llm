@@ -94,7 +94,7 @@ impl TechStackAnalyzer {
 
         let mut frameworks = Vec::new();
         let mut libraries = Vec::new();
-        let mut build_tools = vec!["cargo".to_string()];
+        let build_tools = vec!["cargo".to_string()];
 
         // Detect web frameworks
         if contents.contains("actix-web") {
@@ -389,7 +389,7 @@ impl TechStackAnalyzer {
         let contents = std::fs::read_to_string(rebar_config)?;
 
         let mut frameworks = Vec::new();
-        let mut libraries = Vec::new();
+        let libraries = Vec::new();
 
         // Detect Cowboy
         if contents.contains("cowboy") {
@@ -407,7 +407,7 @@ impl TechStackAnalyzer {
     /// Analyze Java tech stack
     async fn analyze_java_project_tech_stack(&self, path: &Path) -> Result<TechStack> {
         let mut frameworks = Vec::new();
-        let mut libraries = Vec::new();
+        let libraries = Vec::new();
         let mut build_tools = Vec::new();
 
         // Check pom.xml (Maven)

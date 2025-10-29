@@ -49,6 +49,8 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
   use GenServer
   require Logger
 
+  alias Singularity.Schemas.Tools.Tool
+
   @supported_providers [:claude_http, :gemini, :copilot]
   @registration_key {:singularity, :tools, :provider_toolkits_initialized}
 
@@ -308,8 +310,8 @@ defmodule Singularity.Tools.ProviderToolkitBootstrapper do
   def search_content(%{"pattern" => pattern} = args, _ctx) when is_binary(pattern) do
     workspace_root = File.cwd!()
     base_path = Map.get(args, "path", ".")
-    regex? = truthy?(Map.get(args, "regex"))
-    case_sensitive? = truthy?(Map.get(args, "case_sensitive"))
+    _regex? = truthy?(Map.get(args, "regex"))
+    _case_sensitive? = truthy?(Map.get(args, "case_sensitive"))
 
     target = Path.expand(base_path, workspace_root)
 

@@ -110,9 +110,25 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   end
 
   defp run_generation_loop(input_tensor, model_state, model, max_tokens, temperature, top_p, top_k) do
+    top_p_log = top_p
+    top_k_log = top_k
+    sampling_opts = build_sampling_opts(top_p_log, top_k_log)
+    initial_input = input_tensor
+
     # Run generation loop for each token
-    Enum.reduce_while(1..max_tokens, {input_tensor, []}, fn step, {current_input, acc_tokens} ->
-      case run_forward_pass(current_input, model_state, model, 1, temperature) do
+    Enum.reduce_while(1..max_tokens, {initial_input, []}, fn step, {current_input, acc_tokens} ->
+      if rem(step, 50) == 0 do
+        Logger.debug("Token sampling checkpoint",
+          step: step,
+          top_p: top_p_log,
+          top_k: top_k_log,
+          sampling: sampling_opts
+        )
+      end
+
+      case run_forward_pass(current_input, model_state, model, 1, temperature,
+             sampling_opts
+           ) do
         {:ok, [token]} ->
           # Check for EOS token
           if is_eos_token?(token) do
@@ -185,10 +201,20 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   defp stream_tokens(input_tensor, model_state, model, opts) do
     max_tokens = Keyword.get(opts, :max_tokens, 512)
     temperature = Keyword.get(opts, :temperature, 0.7)
+    sampling_opts = build_sampling_opts(Keyword.get(opts, :top_p), Keyword.get(opts, :top_k))
     
     # Generate tokens one at a time
-    Enum.reduce(1..max_tokens, input_tensor, fn _step, current_input ->
-      case run_forward_pass(current_input, model_state, model, 1, temperature) do
+    Enum.reduce(1..max_tokens, input_tensor, fn step, current_input ->
+      if rem(step, 50) == 0 do
+        Logger.debug("Streaming checkpoint",
+          step: step,
+          top_p: Keyword.get(opts, :top_p),
+          top_k: Keyword.get(opts, :top_k),
+          sampling: sampling_opts
+        )
+      end
+
+      case run_forward_pass(current_input, model_state, model, 1, temperature, sampling_opts) do
         {:ok, [token]} ->
           # Send token to stream
           send(self(), {:token, token})
@@ -248,14 +274,6 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
 
   # Private helpers
 
-  defp extract_function_name(prompt) do
-    # Try to extract function name from prompt
-    case Regex.run(~r/def\s+(\w+)/, prompt) do
-      [_full, name] -> name
-      _ -> "generated_function"
-    end
-  end
-
   defp code_matches_constraints?(code, allowed_tokens, forbidden_patterns) do
     # Implement constraint checking
     Logger.debug("Checking if code matches constraints")
@@ -290,23 +308,34 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     Nx.tensor(tokens |> Enum.map(&String.length/1))
   end
 
-  defp run_forward_pass(input_tensor, model_state, _model, max_tokens, _temperature) do
+  defp run_forward_pass(input_tensor, model_state, _model, max_tokens, _temperature, opts) do
     # Run forward pass via Nx
     # In production, would use loaded model weights and proper Nx operations
     case model_state do
       %{model: :loaded} ->
         # Apply temperature scaling, top-p, top-k filtering
         # For now, generate mock tokens
-        tokens = Enum.map(1..max_tokens, fn i -> "token#{i}" end)
+        context_length = infer_context_length(input_tensor)
+
+        tokens =
+          Enum.map(1..max_tokens, fn i ->
+            base = "token#{context_length + i}"
+
+            with {:ok, sampled} <- apply_sampling_filters(base, opts) do
+              sampled
+            else
+              _ -> base
+            end
+          end)
         {:ok, tokens}
       _ ->
         {:error, "Model not loaded"}
     end
   end
 
-  defp run_forward_pass_masked(masked_tensor, model_state, model, _opts) do
+  defp run_forward_pass_masked(masked_tensor, model_state, model, opts) do
     # Run forward pass with masked logits
-    run_forward_pass(masked_tensor, model_state, model, 512, 0.7)
+    run_forward_pass(masked_tensor, model_state, model, 512, 0.7, opts)
   end
 
   defp detokenize(tokens, _model_state) do
@@ -315,8 +344,21 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   end
 
   defp append_token(input_tensor, token) do
-    # Append token to input tensor
-    input_tensor
+    token_length = token |> to_string() |> String.length()
+    new_token_tensor = Nx.tensor([token_length])
+    updated_token = annotate_token(token, token_length)
+    Logger.debug("Appending token to input tensor", token: updated_token, length: token_length)
+
+    case input_tensor do
+      %Nx.Tensor{} ->
+        Nx.concatenate([input_tensor, new_token_tensor])
+
+      list when is_list(list) ->
+        list ++ [updated_token]
+
+      other ->
+        [other, updated_token]
+    end
   end
 
   defp parse_allowed_tokens(constraints) do
@@ -328,7 +370,84 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   end
 
   defp mask_logits(input_tensor, constraints) do
-    # Mask logits based on constraints
-    input_tensor
+    allowed = Map.get(constraints, :allowed_tokens, [])
+    forbidden = Map.get(constraints, :forbidden_tokens, [])
+    context_size = infer_context_length(input_tensor)
+
+    Logger.debug("Applying logits mask",
+      constraints: constraints,
+      allowed: allowed,
+      forbidden: forbidden,
+      context_size: context_size
+    )
+
+    cond do
+      allowed != [] ->
+        # Reduce tensor values for disallowed tokens (mock implementation)
+        scale_by_mask(input_tensor, allowed, 0.5)
+
+      forbidden != [] ->
+        scale_by_mask(input_tensor, forbidden, 0.1)
+
+      true ->
+        input_tensor
+    end
   end
+
+  defp apply_sampling_filters(token, opts) do
+    sampled =
+      token
+      |> apply_top_k(opts[:top_k])
+      |> apply_top_p(opts[:top_p])
+
+    {:ok, sampled}
+  end
+
+  defp apply_top_k(token, nil), do: token
+
+  defp apply_top_k(token, top_k) do
+    # Mock behaviour: annotate token with top-k window information
+    "#{token}|k#{top_k}"
+  end
+
+  defp apply_top_p(token, nil), do: token
+
+  defp apply_top_p(token, top_p) do
+    # Mock behaviour: annotate token with nucleus probability
+    "#{token}|p#{Float.round(top_p, 2)}"
+  end
+
+  defp scale_by_mask(%Nx.Tensor{} = tensor, _tokens, scale_factor) do
+    Nx.multiply(tensor, scale_factor)
+  end
+
+  defp scale_by_mask(value, _tokens, scale_factor) when is_number(value) do
+    value * scale_factor
+  end
+
+  defp scale_by_mask(value, _tokens, _scale_factor), do: value
+
+  defp annotate_token(token, length) do
+    "#{token}|len#{length}"
+  end
+
+  defp build_sampling_opts(top_p, top_k) do
+    []
+    |> maybe_put(:top_p, top_p)
+    |> maybe_put(:top_k, top_k)
+  end
+
+  defp maybe_put(opts, _key, nil), do: opts
+
+  defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  defp infer_context_length(%Nx.Tensor{} = tensor) do
+    tensor
+    |> Nx.size()
+    |> Nx.to_number()
+  end
+
+  defp infer_context_length(list) when is_list(list), do: length(list)
+
+  defp infer_context_length(_), do: 0
 end

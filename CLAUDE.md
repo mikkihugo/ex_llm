@@ -20,7 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Infrastructure: AgentSpawner, AgentSupervisor, MetricsFeeder, RuntimeBootstrapper, etc.
 - **CentralCloud** - Multi-instance learning hub (pattern aggregation, consensus, framework learning) [REQUIRED]
 - **Genesis** - Autonomous improvement workflows and rule evolution [REQUIRED]
-- **Observer** - Phoenix web UI with dashboards for observability
+- **Observer** - Phoenix web UI with dashboards for observability + HITL (Human-in-the-Loop) approvals
+- **Messaging** - pgmq (PostgreSQL queues) + ex_pgflow (workflow orchestration) for durable inter-service communication
 - **Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Language Detection, Graph PageRank)
 - **Pure Elixir ML** (Embeddings via Nx: Qodo + Jina v3 multi-vector 2560-dim)
 - **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
@@ -78,7 +79,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Previously, LLM requests routed through a TypeScript ai-server service. This has been **completely removed**:
 
-- ❌ TypeScript ai-server (was: pgmq wrapper for pgflow workflows)
+- ❌ TypeScript ai-server (was: intermediary service between Elixir and ExLLM)
 - ❌ Bun runtime (was: TypeScript execution)
 - ✅ Now: Direct Elixir routing to ExLLM provider abstraction layer
 
@@ -493,7 +494,6 @@ config :singularity, :extractor_types,
 **Code Analysis**
 - `architecture_analyzer.ex`: Codebase structure analysis
 - `packages/parser_engine/`: Tree-sitter based parsing for 30+ languages (Rust NIF)
-- `packages/architecture_engine/`: Framework detection and analysis (Rust NIF)
 
 **Quality & Methodology**
 - `quality_code_generator.ex`: Generate quality-assured code
@@ -523,7 +523,6 @@ Uses PostgreSQL with:
 
 - `singularity/` - Main Elixir/Phoenix application
 - `packages/` - Publishable packages (ex_llm, ex_pgflow, + 5 Rust NIF engines)
-  - ✅ `packages/architecture_engine/` - Framework detection (Rust NIF, Moon project)
   - ✅ `packages/code_quality_engine/` - Code metrics (Rust NIF, Moon project)
   - ✅ `packages/linting_engine/` - Multi-language linting (Rust NIF, Moon project)
   - ✅ `packages/parser_engine/` - Tree-sitter parsing (Rust NIF, Moon project)

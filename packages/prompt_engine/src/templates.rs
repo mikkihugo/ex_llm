@@ -66,6 +66,12 @@ impl RegistryTemplate {
 /// Template loader for loading templates from various sources
 pub struct TemplateLoader;
 
+impl Default for TemplateLoader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemplateLoader {
     pub fn new() -> Self {
         Self

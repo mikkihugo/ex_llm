@@ -41,6 +41,12 @@ pub struct TemplatePerformanceTracker {
     alpha: f64,
 }
 
+impl Default for TemplatePerformanceTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemplatePerformanceTracker {
     pub fn new() -> Self {
         Self {

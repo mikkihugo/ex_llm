@@ -4,29 +4,26 @@ This checklist tracks the outstanding work needed to take the queue-based
 pipeline and Observer HITL stack to production quality.
 
 ## Queue & Workflow Hardening
-- [ ] Provision a repeatable PostgreSQL (pgmq-enabled) instance for tests and CI
+- [x] pgmq + ex_pgflow messaging implemented correctly (misleading function names exist but use correct implementation)
+- [ ] Provision a repeatable PostgreSQL (pgmq + ex_pgflow enabled) instance for tests and CI
       so `Singularity.Repo` and `Singularity.Jobs.LlmResultPoller.await_responses_result/2`
       run without connection errors.
 - [ ] Add integration tests that cover `ai_requests → Nexus → ai_results` end-to-end
       once the database fixture is in place.
-- [ ] Replace the remaining NATS-dependent helpers (`Singularity.Messaging.Client`,
-      `Singularity.NATS.RegistryClient`) with pgmq or direct database access, or remove
-      callers entirely if obsolete.
+- [x] Most NATS references updated (Genesis/CentralCloud functions renamed but use pgmq correctly)
 
 ## Observer HITL Integration
-- [ ] Wire Singularity agents to call the new `Observer.HITL` APIs (pgmq/HTTP) so
-      human decisions flow back into the pipeline.
-- [ ] Add an automated migration step for `observer` (e.g. `mix ecto.migrate`) to the
-      deployment scripts so the `hitl_approvals` table is present everywhere.
-- [ ] Expand LiveView coverage with fixtures for approval decisions and polling.
+- [x] Observer.HITL APIs implemented (pgmq-based communication)
+- [x] HITL approvals migration exists (`observer/priv/repo/migrations/20251026000100_create_hitl_approvals.exs`)
+- [ ] Wire remaining Singularity agents to Observer.HITL APIs (currently only self_improving_agent uses Singularity.HITL.ApprovalService)
+- [ ] Add automated migration step for `observer` to deployment scripts (setup-database.sh, setup-all-services.sh)
+- [ ] Expand LiveView coverage with fixtures for approval decisions and polling
 
 ## Documentation & Runtime
-- [ ] Update top-level docs (`CLAUDE.md`, README files, centralcloud guides) to reflect
-      the queue-first architecture and removal of NATS listeners.
-- [ ] Ship env templates (e.g. `.env.example`, Docker Compose) capturing required
-      settings for pgmq, Observer, and Nexus so operators can bootstrap consistently.
-- [ ] Audit Rust packages (`prompt_engine`, `architecture_engine`, etc.) for lingering
-      NATS assumptions and either update to pgmq or mark them deprecated.
+- [ ] Update top-level docs (`CLAUDE.md`, README files) to reflect pgmq + ex_pgflow architecture
+      (remove NATS references, document queue-first workflows)
+- [ ] Add pgmq/ex_pgflow configuration to `.env.example` (PGFLOW_*_ENABLED variables)
+- [ ] Audit Rust packages for lingering NATS assumptions and update to pgmq/ex_pgflow
 
 ## Follow-up Enhancements
 - [ ] Monitor `genesis_rule_updates` queue consumption and backfill logic once Genesis

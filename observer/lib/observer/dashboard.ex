@@ -29,10 +29,10 @@ defmodule Observer.Dashboard do
   def todos do
     safe_call(fn ->
       # Get todo statistics
-      pending_count = Singularity.Execution.TodoStore.count_by_status("pending")
-      in_progress_count = Singularity.Execution.TodoStore.count_by_status("in_progress")
-      completed_count = Singularity.Execution.TodoStore.count_by_status("completed")
-      failed_count = Singularity.Execution.TodoStore.count_by_status("failed")
+      pending_count = length(Singularity.Execution.TodoStore.get_by_status("pending"))
+      in_progress_count = length(Singularity.Execution.TodoStore.get_by_status("in_progress"))
+      completed_count = length(Singularity.Execution.TodoStore.get_by_status("completed"))
+      failed_count = length(Singularity.Execution.TodoStore.get_by_status("failed"))
       
       # Get swarm status
       swarm_status = Singularity.Execution.TodoSwarmCoordinator.get_status()

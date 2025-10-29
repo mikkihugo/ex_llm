@@ -97,6 +97,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
   alias Singularity.Analysis.PatternDetector
   alias Singularity.CodebaseSnapshots
   alias Singularity.CentralCloud
+  alias Singularity.TemplateMatcher
 
   @type detection_type :: :framework | :technology | :service_architecture
   @type detection_result :: %{
@@ -324,7 +325,7 @@ defmodule Singularity.Analysis.DetectionOrchestrator do
     end
   end
 
-  defp delegate_to_centralcloud(codebase_path, local_detections, opts) do
+  defp delegate_to_centralcloud(codebase_path, local_detections, _opts) do
     # Prepare codebase info for CentralCloud analysis
     codebase_info = %{
       path: codebase_path,

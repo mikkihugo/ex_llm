@@ -38,6 +38,15 @@ defmodule Singularity.Autonomy.Correlation do
 
   @doc """
   Get the current correlation ID from logger metadata.
+  
+  Alias for current_id/0 for backwards compatibility.
+  """
+  def current do
+    current_id()
+  end
+
+  @doc """
+  Get the current correlation ID from logger metadata.
   """
   def current_id do
     case Logger.metadata()[:correlation_id] do

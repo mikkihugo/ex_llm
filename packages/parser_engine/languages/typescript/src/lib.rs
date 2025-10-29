@@ -103,7 +103,7 @@ impl LanguageParser for TypescriptParser {
         .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut captures = cursor.captures(&fn_query, root, ast.content.as_bytes());
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             let mut name = "";
             let mut params = "";
             let mut ret = "any";

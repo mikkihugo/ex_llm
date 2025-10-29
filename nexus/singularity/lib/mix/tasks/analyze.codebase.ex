@@ -43,7 +43,6 @@ defmodule Mix.Tasks.Analyze.Codebase do
   use Mix.Task
   require Logger
 
-  alias Singularity.CodeAnalyzer
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
   import Ecto.Query

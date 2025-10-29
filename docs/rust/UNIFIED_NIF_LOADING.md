@@ -20,7 +20,7 @@ All crate names now match Elixir expectations with `*_engine` naming:
 
 Changed `skip_compilation?: true` → `skip_compilation?: false` for ALL engines:
 
-- ✅ [architecture_engine.ex:25](singularity/lib/singularity/architecture_engine.ex#L25)
+- ~~✅ [architecture_engine.ex:25](singularity/lib/singularity/architecture_engine.ex#L25)~~ _(deprecated; now pure Elixir)_
 - ✅ [code_engine.ex:16](singularity/lib/singularity/code_engine.ex#L16)
 - ✅ [quality_engine.ex:17](singularity/lib/singularity/quality_engine.ex#L17)
 - ✅ [prompt_engine.ex:357](singularity/lib/singularity/prompt_engine.ex#L357)
@@ -54,7 +54,7 @@ iex> NifLoader.health_check_all()
 %{
   parser_engine: {:ok, ["elixir", "rust", "python", ...]},
   code_engine: {:error, :no_health_check},
-  architecture_engine: {:error, :no_health_check},
+  # architecture_engine removed (pure Elixir implementation)
   quality_engine: {:error, :no_health_check},
   embedding_engine: {:ok, %{status: "healthy"}},
   prompt_engine: {:error, :no_health_check}
@@ -99,7 +99,7 @@ Singularity.Engine.NifStatus
 Or if issues:
 ```
 [info] NIF Loader: 5/6 NIFs loaded successfully
-[warning] NIF not loaded: architecture_engine ({:error, :nif_not_loaded})
+[info] architecture_engine NIF retired (pure Elixir implementation now in Singularity.ArchitectureEngine)
 ```
 
 ## Why Unified Loading?
@@ -118,7 +118,6 @@ Or if issues:
 ```
 ParserEngine loads :parser_engine
 CodeEngine loads :code_engine
-ArchitectureEngine loads :architecture_engine
 ...
 (no central visibility)
 ```
@@ -127,22 +126,21 @@ ArchitectureEngine loads :architecture_engine
 ```
 ParserEngine loads :parser_engine  ─┐
 CodeEngine loads :code_engine       ├─→ NifLoader monitors all
-ArchitectureEngine loads :arch...   ├─→ Health checks
+~~ArchitectureEngine loads :architecture_engine~~ (removed)   ├─→ _handled natively in Elixir_
 QualityEngine loads :quality_engine ├─→ Status reporting
 EmbeddingEngine loads :embedding... ├─→ Startup logging
 PromptEngine loads :prompt_engine  ─┘
 ```
 
-## Final Engine Count: 6 Rust NIFs
+## Final Engine Count: 5 Rust NIFs
 
 | # | Engine | Elixir Module | Rust Crate | Compile |
 |---|--------|---------------|------------|---------|
 | 1 | **parser_engine** | `Singularity.ParserEngine` | `parser_engine` | ✅ |
 | 2 | **code_engine** | `Singularity.RustAnalyzer` | `code_engine` | ✅ |
-| 3 | **architecture_engine** | `Singularity.ArchitectureEngine` | `architecture_engine` | ✅ |
-| 4 | **quality_engine** | `Singularity.QualityEngine` | `quality_engine` | ✅ |
-| 5 | **embedding_engine** | `Singularity.EmbeddingEngine` | `embedding_engine` | ✅ |
-| 6 | **prompt_engine** | `Singularity.PromptEngine.Native` | `prompt_engine` | ✅ |
+| 3 | **quality_engine** | `Singularity.QualityEngine` | `quality_engine` | ✅ |
+| 4 | **embedding_engine** | `Singularity.EmbeddingEngine` | `embedding_engine` | ✅ |
+| 5 | **prompt_engine** | `Singularity.PromptEngine.Native` | `prompt_engine` | ✅ |
 
 ## Three Different "Hubs"
 
@@ -206,23 +204,19 @@ If a NIF fails to load:
 
 2. **Check logs** on startup:
    ```
-   [warning] NIF not loaded: architecture_engine ({:error, :nif_not_loaded})
+   [info] architecture_engine NIF removed (pure Elixir implementation)
    ```
 
 3. **Use NifLoader**:
    ```elixir
    iex> NifLoader.health_check(:architecture_engine)
-   {:error, :nif_not_loaded}
+   {:error, :unknown_nif}
    ```
 
-4. **Verify crate name** matches Elixir:
+4. **Verify implementation**:
    ```elixir
-   # In architecture_engine.ex
-   use Rustler, crate: :architecture_engine
-
-   # In rust/architecture_engine/Cargo.toml
-   [package]
-   name = "architecture_engine"  # Must match!
+   # ArchitectureEngine no longer uses Rustler; all functionality lives in
+   # lib/singularity/engines/architecture_engine.ex (pure Elixir).
    ```
 
 ## Summary

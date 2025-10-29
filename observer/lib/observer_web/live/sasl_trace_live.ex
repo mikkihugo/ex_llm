@@ -6,6 +6,9 @@ defmodule ObserverWeb.SASLTraceLive do
     traces = assigns.data[:traces] || []
     stats = assigns.data[:stats] || %{}
     
+    assigns = assign(assigns, :traces, traces)
+    assigns = assign(assigns, :stats, stats)
+    
     ~H"""
     <div class="max-w-7xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
@@ -44,21 +47,21 @@ defmodule ObserverWeb.SASLTraceLive do
           <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm">
             <div class="text-sm font-medium text-rose-600">Errors</div>
             <div class="mt-1 text-2xl font-semibold text-rose-700">
-              <%= stats[:errors] || 0 %>
+              <%= @stats[:errors] || 0 %>
             </div>
           </div>
           
           <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
             <div class="text-sm font-medium text-amber-600">Warnings</div>
             <div class="mt-1 text-2xl font-semibold text-amber-700">
-              <%= stats[:warnings] || 0 %>
+              <%= @stats[:warnings] || 0 %>
             </div>
           </div>
           
           <div class="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div class="text-sm font-medium text-zinc-500">Crash Reports</div>
             <div class="mt-1 text-2xl font-semibold text-zinc-900">
-              <%= stats[:crash_reports] || 0 %>
+              <%= @stats[:crash_reports] || 0 %>
             </div>
           </div>
         </section>
@@ -68,19 +71,19 @@ defmodule ObserverWeb.SASLTraceLive do
           <div class="border-b border-zinc-200 px-6 py-4">
             <h2 class="text-lg font-semibold text-zinc-900">Recent Traces</h2>
             <p class="text-sm text-zinc-500 mt-1">
-              Showing <%= length(traces) %> most recent SASL events from all applications
+              Showing <%= length(@traces) %> most recent SASL events from all applications
             </p>
           </div>
           
           <div class="divide-y divide-zinc-200">
-            <%= for trace <- traces do %>
+            <%= for trace <- @traces do %>
               <div class={"px-6 py-4 hover:bg-zinc-50 transition-colors " <> severity_bg_class(trace.severity)}>
                 <div class="flex items-start justify-between">
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2">
                       <%= severity_badge(trace.type) %>
                       <span class="text-xs font-medium text-zinc-500">
-                        <%= trace.timestamp %>
+                        <%= format_timestamp(trace.timestamp) %>
                       </span>
                       <%= if trace.source do %>
                         <span class="text-xs font-medium text-zinc-400">
@@ -94,7 +97,7 @@ defmodule ObserverWeb.SASLTraceLive do
               </div>
             <% end %>
             
-            <%= if Enum.empty?(traces) do %>
+            <%= if Enum.empty?(@traces) do %>
               <div class="px-6 py-12 text-center">
                 <p class="text-sm text-zinc-500">No SASL traces found</p>
                 <p class="text-xs text-zinc-400 mt-1">
@@ -119,15 +122,14 @@ defmodule ObserverWeb.SASLTraceLive do
       _ -> {"OTHER", "bg-zinc-100 text-zinc-800"}
     end
     
-    ~H"""
-    <span class={"px-2 py-1 text-xs font-semibold rounded #{color_class}"}>
-      <%= label %>
+    Phoenix.HTML.raw("""
+    <span class="px-2 py-1 text-xs font-semibold rounded #{color_class}">
+      #{label}
     </span>
-    """
+    """)
   end
 
   defp severity_bg_class(:error), do: "bg-rose-50/50"
   defp severity_bg_class(:warning), do: "bg-amber-50/50"
   defp severity_bg_class(_), do: ""
 end
-

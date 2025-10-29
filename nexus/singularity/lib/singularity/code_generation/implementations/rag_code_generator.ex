@@ -182,6 +182,16 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
         prefer_recent,
         include_tests,
         quality_template \\ nil
+      )
+
+  def find_best_examples(
+        task,
+        language,
+        repos,
+        top_k,
+        prefer_recent,
+        include_tests,
+        quality_template
       ) do
     # 1. Create search query (semantic)
     search_query = build_search_query(task, language)
@@ -269,15 +279,6 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
     end
   end
 
-  defp build_limit_param_index(language, repos) do
-    case {language, repos} do
-      {nil, nil} -> "2"
-      {_, nil} -> "3"
-      {nil, _} -> "3"
-      {_, _} -> "4"
-    end
-  end
-
   defp filter_quality(examples, include_tests) do
     examples
     |> Enum.filter(fn ex ->
@@ -294,12 +295,12 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
       has_good_metadata =
         case metadata do
           %{"language" => lang, "complexity" => complexity} when is_number(complexity) ->
-            # Prefer code with reasonable complexity
-            complexity > 0.1 and complexity < 0.9
+            # Prefer code with reasonable complexity and matching language
+            complexity > 0.1 and complexity < 0.9 and is_binary(lang) and String.length(lang) > 0
 
-          %{"language" => _lang} ->
-            # Has language info
-            true
+          %{"language" => lang} when is_binary(lang) ->
+            # Has language info - verify it's valid
+            String.length(lang) > 0
 
           _ ->
             # No metadata or incomplete
@@ -338,7 +339,7 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
     end)
   end
 
-  defp rank_by_quality(examples, prefer_recent, quality_template \\ nil) do
+  defp rank_by_quality(examples, prefer_recent, quality_template) do
     examples
     |> Enum.sort_by(fn ex ->
       # Multi-factor ranking score
@@ -372,7 +373,9 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
     end)
   end
 
-  defp build_rag_prompt(task, examples, language, quality_template \\ nil) do
+  defp build_rag_prompt(task, examples, language, quality_template \\ nil)
+
+  defp build_rag_prompt(task, examples, language, quality_template) do
     # Build prompt with examples from best codebases
     language_hint = if language, do: language, else: "auto-detect"
 
@@ -818,7 +821,13 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
     Map.get(example, :path) || Map.get(example, "path")
   end
 
-  defp maybe_dispatch_improvement(code, opts, _metadata, false), do: {:ok, code}
+  defp maybe_dispatch_improvement(code, opts, _metadata, false) do
+    # When dispatch is disabled, still log opts for debugging
+    if Keyword.get(opts, :log_disabled_dispatch, false) do
+      Logger.debug("Improvement dispatch disabled", opts: Keyword.drop(opts, [:dispatch_agent_id, :dispatch_metadata]))
+    end
+    {:ok, code}
+  end
 
   defp maybe_dispatch_improvement(code, opts, metadata, true) do
     agent_id = Keyword.get(opts, :dispatch_agent_id, "rag-runtime")

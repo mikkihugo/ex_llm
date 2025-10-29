@@ -88,7 +88,7 @@ impl PromptTrackingStorage {
 
     /// Set NATS client for storage operations
     /// NOTE: NATS disabled - stub implementation
-    pub fn with_nats_client(mut self, _client: Client) -> Self {
+    pub fn with_nats_client(self, _client: Client) -> Self {
         // NATS client disabled
         self
     }

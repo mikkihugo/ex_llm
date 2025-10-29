@@ -92,6 +92,12 @@ pub struct CodeTokenizer {
     // Will use our parser crates for language-specific tokenization
 }
 
+impl Default for CodeTokenizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CodeTokenizer {
     pub fn new() -> Self {
         Self {}
@@ -562,7 +568,7 @@ impl CodeTokenizer {
         // Simple classification based on patterns
         if token.starts_with("get") || token.starts_with("set") || token.starts_with("is") {
             TokenType::FunctionName
-        } else if token.chars().next().map_or(false, |c| c.is_uppercase()) {
+        } else if token.chars().next().is_some_and(|c| c.is_uppercase()) {
             TokenType::ClassName
         } else if ["if", "for", "while", "class", "function", "return"].contains(&token) {
             TokenType::Keyword
@@ -619,6 +625,12 @@ impl CodeTokenizer {
 /// Prompt tokenizer for prompt structure
 pub struct PromptTokenizer {
     // Optimized for prompt sections, variables, instructions
+}
+
+impl Default for PromptTokenizer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PromptTokenizer {
@@ -697,6 +709,12 @@ impl PromptTokenizer {
 /// Fact tokenizer for entity-relationship data
 pub struct FactTokenizer {
     // Optimized for facts, entities, relationships, metrics
+}
+
+impl Default for FactTokenizer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FactTokenizer {
@@ -781,6 +799,12 @@ pub struct SnippetTokenizer {
     // Optimized for code snippets with context
 }
 
+impl Default for SnippetTokenizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SnippetTokenizer {
     pub fn new() -> Self {
         Self {}
@@ -853,6 +877,12 @@ impl SnippetTokenizer {
 /// Session tokenizer for project metadata
 pub struct SessionTokenizer {
     // Optimized for project paths, file extensions, metadata
+}
+
+impl Default for SessionTokenizer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SessionTokenizer {

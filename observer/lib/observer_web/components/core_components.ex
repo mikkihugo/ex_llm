@@ -16,10 +16,10 @@ defmodule ObserverWeb.CoreComponents do
   via `Heroicons` components. See `icon/1` for usage.
   """
   use Phoenix.Component
+  use Gettext, backend: ObserverWeb.Gettext
 
   alias Phoenix.LiveView.JS
   alias Heroicons
-  import ObserverWeb.Gettext
 
   @doc """
   Renders a modal.

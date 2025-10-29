@@ -43,7 +43,7 @@ defmodule ObserverWeb do
         layouts: [html: ObserverWeb.Layouts]
 
       import Plug.Conn
-      import ObserverWeb.Gettext
+      use Gettext, backend: ObserverWeb.Gettext
 
       unquote(verified_routes())
     end
@@ -85,7 +85,7 @@ defmodule ObserverWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import ObserverWeb.CoreComponents
-      import ObserverWeb.Gettext
+      use Gettext, backend: ObserverWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS

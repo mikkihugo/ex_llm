@@ -264,7 +264,7 @@ impl RefactoringOpportunitiesAnalyzer {
     pub fn add_opportunity(&mut self, file_path: String, opportunity: RefactoringOpportunity) {
         self.opportunities
             .entry(file_path)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(opportunity);
     }
 

@@ -10,6 +10,7 @@ defmodule Singularity.HITL.ApprovalService do
 
   alias Singularity.Database.MessageQueue
   alias Singularity.PgFlow
+  alias Ecto.UUID
 
   @approval_timeout_ms 30_000
   @poll_interval_ms 500
@@ -31,7 +32,7 @@ defmodule Singularity.HITL.ApprovalService do
     agent_id = Keyword.get(opts, :agent_id, "system")
     task_type = Keyword.get(opts, :task_type)
 
-    request_id = UUID.uuid4()
+    request_id = UUID.generate()
     response_queue = response_queue_name(request_id)
 
     payload = %{
@@ -62,7 +63,7 @@ defmodule Singularity.HITL.ApprovalService do
     agent_id = Keyword.get(opts, :agent_id, "system")
     context = Keyword.get(opts, :context, %{})
 
-    request_id = UUID.uuid4()
+    request_id = UUID.generate()
     response_queue = response_queue_name(request_id)
 
     payload = %{

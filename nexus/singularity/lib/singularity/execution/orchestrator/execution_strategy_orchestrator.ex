@@ -142,6 +142,11 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   end
 
   defp try_strategies([], _goal, opts) do
+    # Log opts for debugging failed strategy selection
+    Logger.debug("No strategy found",
+      goal: _goal,
+      available_opts: Keyword.keys(opts)
+    )
     {:error, :no_strategy_found}
   end
 

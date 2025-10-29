@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// Comprehensive Luerl runtime analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct LuerlAnalysisResult {
     /// Luerl runtime patterns detected in Elixir code
     pub runtime_patterns: LuerlRuntimePatterns,
@@ -33,6 +34,7 @@ pub struct LuerlAnalysisResult {
 
 /// Luerl runtime patterns in Elixir code
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct LuerlRuntimePatterns {
     /// Lua.new() state creation calls
     pub state_creations: Vec<StateCreationInfo>,
@@ -100,6 +102,7 @@ pub struct ApiLoadInfo {
 
 /// Pattern statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct PatternStatistics {
     pub total_lua_states: u32,
     pub total_executions: u32,
@@ -111,6 +114,7 @@ pub struct PatternStatistics {
 
 /// Lua script analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct LuaScriptAnalysis {
     /// Embedded Lua scripts (via ~LUA sigil)
     pub embedded_scripts: Vec<EmbeddedScriptInfo>,
@@ -179,6 +183,7 @@ pub struct ScriptMetrics {
 
 /// Script categories
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ScriptCategories {
     pub rule_engine_scripts: u32,
     pub htdag_scripts: u32,
@@ -188,6 +193,7 @@ pub struct ScriptCategories {
 
 /// BEAM integration analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct BeamIntegrationAnalysis {
     /// LuaRunner.execute calls
     pub execute_calls: Vec<ExecuteCallInfo>,
@@ -395,6 +401,7 @@ pub enum Priority {
 
 /// Performance analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct PerformanceAnalysis {
     /// Script execution hotspots
     pub hotspots: Vec<PerformanceHotspot>,
@@ -479,75 +486,11 @@ pub enum ImpactLevel {
 // Default Implementations
 // ============================================================================
 
-impl Default for LuerlAnalysisResult {
-    fn default() -> Self {
-        Self {
-            runtime_patterns: LuerlRuntimePatterns::default(),
-            script_analysis: LuaScriptAnalysis::default(),
-            beam_integration: BeamIntegrationAnalysis::default(),
-            safety_analysis: SafetyAnalysis::default(),
-            performance_analysis: PerformanceAnalysis::default(),
-        }
-    }
-}
 
-impl Default for LuerlRuntimePatterns {
-    fn default() -> Self {
-        Self {
-            state_creations: Vec::new(),
-            script_executions: Vec::new(),
-            context_injections: Vec::new(),
-            api_loads: Vec::new(),
-            pattern_stats: PatternStatistics::default(),
-        }
-    }
-}
 
-impl Default for PatternStatistics {
-    fn default() -> Self {
-        Self {
-            total_lua_states: 0,
-            total_executions: 0,
-            executions_with_error_handling: 0,
-            executions_with_timeout: 0,
-            total_api_loads: 0,
-            unique_apis_loaded: 0,
-        }
-    }
-}
 
-impl Default for LuaScriptAnalysis {
-    fn default() -> Self {
-        Self {
-            embedded_scripts: Vec::new(),
-            db_script_references: Vec::new(),
-            script_metrics: Vec::new(),
-            script_categories: ScriptCategories::default(),
-        }
-    }
-}
 
-impl Default for ScriptCategories {
-    fn default() -> Self {
-        Self {
-            rule_engine_scripts: 0,
-            htdag_scripts: 0,
-            prompt_scripts: 0,
-            custom_scripts: 0,
-        }
-    }
-}
 
-impl Default for BeamIntegrationAnalysis {
-    fn default() -> Self {
-        Self {
-            execute_calls: Vec::new(),
-            rule_executions: Vec::new(),
-            api_usage: Vec::new(),
-            call_patterns: CallPatterns::default(),
-        }
-    }
-}
 
 impl Default for CallPatterns {
     fn default() -> Self {
@@ -583,15 +526,6 @@ impl Default for ErrorHandlingCoverage {
     }
 }
 
-impl Default for PerformanceAnalysis {
-    fn default() -> Self {
-        Self {
-            hotspots: Vec::new(),
-            performance_metrics: PerformanceMetrics::default(),
-            optimizations: Vec::new(),
-        }
-    }
-}
 
 impl Default for PerformanceMetrics {
     fn default() -> Self {

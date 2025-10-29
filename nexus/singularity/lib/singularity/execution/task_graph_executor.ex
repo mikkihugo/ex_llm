@@ -212,9 +212,8 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
 
   # INTEGRATION: LLM execution (pgmq-based operations)
   # INTEGRATION: Code generation and quality enforcement
-  # Note: These are defined for integration documentation/interface - may be used in future
-  alias Singularity.CodeGeneration.Implementations.{RAGCodeGenerator, QualityCodeGenerator}
-  alias Singularity.Store
+  # Note: These modules are referenced in documentation but not used in code yet
+  # When needed, use full module names: Singularity.CodeGeneration.Implementations.RAGCodeGenerator
   alias Singularity.Agents.AgentSpawner
   alias Singularity.LLM.Config
 

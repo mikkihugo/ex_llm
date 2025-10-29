@@ -148,7 +148,7 @@ defmodule Singularity.Analysis.CodeQualityDashboard do
 
   Returns metrics comparison showing what improved and what regressed.
   """
-  def compare_periods(codebase_path \\ ".", period1_days \\ 30, period2_days \\ 7) do
+  def compare_periods(codebase_path \\ ".", period1_days \\ 30, _period2_days \\ 7) do
     try do
       # Get historical trend covering both periods
       trend = safe_trend_analysis(codebase_path, days: period1_days)

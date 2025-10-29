@@ -11,7 +11,6 @@ defmodule Observer.HITL.Approval do
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
-  @foreign_keys_type :binary_id
 
   @statuses [:pending, :approved, :rejected, :cancelled]
 

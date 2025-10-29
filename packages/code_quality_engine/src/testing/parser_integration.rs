@@ -207,6 +207,12 @@ impl Default for ParserCoverageThresholds {
     }
 }
 
+impl Default for ParserCoverageCollector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParserCoverageCollector {
     pub fn new() -> Self {
         Self {
@@ -350,6 +356,12 @@ impl ParserCoverageCollector {
 /// Rust parser coverage provider
 pub struct ParserEngineRustCoverageProvider;
 
+impl Default for ParserEngineRustCoverageProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParserEngineRustCoverageProvider {
     pub fn new() -> Self {
         Self {}
@@ -464,6 +476,12 @@ impl ParserCoverageProvider for ParserEngineRustCoverageProvider {
 /// JavaScript parser coverage provider
 pub struct JavascriptParserCoverageProvider;
 
+impl Default for JavascriptParserCoverageProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JavascriptParserCoverageProvider {
     pub fn new() -> Self {
         Self {}
@@ -572,6 +590,12 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
 
     fn get_coverage_thresholds(&self) -> ParserCoverageThresholds {
         ParserCoverageThresholds::default()
+    }
+}
+
+impl Default for FactSystemInterface {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

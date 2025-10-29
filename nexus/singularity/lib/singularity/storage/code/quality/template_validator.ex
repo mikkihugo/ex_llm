@@ -128,7 +128,8 @@ defmodule Singularity.Code.Quality.TemplateValidator do
 
   defp write_temp_file(code, language) do
     extension = language_extension(language)
-    {:ok, path} = Temp.path(%{suffix: extension})
+    tmp_dir = System.tmp_dir()
+    path = Path.join(tmp_dir, "#{UUID.generate()}#{extension}")
 
     case File.write(path, code) do
       :ok -> {:ok, path}

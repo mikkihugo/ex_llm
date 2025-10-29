@@ -38,8 +38,8 @@ defmodule Singularity.Execution.TaskGraph.Worker do
   alias Singularity.Execution.TodoStore
   alias Singularity.Execution.Planning.TaskGraph
   alias Singularity.Execution.TaskGraph.WorkerPool
-  # 5 minutes
-  @execution_timeout_ms 300_000
+  # TODO: Implement timeout monitoring (5 minutes = 300_000 ms)
+  # @execution_timeout_ms 300_000
 
   defstruct [
     :todo_id,
@@ -254,6 +254,7 @@ defmodule Singularity.Execution.TaskGraph.Worker do
     Logger.warning("Todo execution failed",
       worker_id: state.worker_id,
       todo_id: todo.id,
+      priority: priority_label(todo.priority),
       error: error_message
     )
 

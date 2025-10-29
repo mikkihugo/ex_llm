@@ -57,6 +57,7 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
   """
 
   require Logger
+  alias Singularity.Execution.Runners.LuaRunner
 
   @autonomous_threshold 0.9
   @collaborative_threshold 0.7
@@ -95,7 +96,7 @@ defmodule Singularity.Execution.Autonomy.RuleEngine do
 
   # Execute Lua-based rule
   defp execute_lua_rule(rule, context) do
-    case Singularity.LuaRunner.execute_rule(rule.lua_script, context) do
+    case LuaRunner.execute_rule(rule.lua_script, context) do
       {:ok, lua_result} ->
         # Lua script must return: {decision, confidence, reasoning}
         # decision = "autonomous" | "collaborative" | "escalated"

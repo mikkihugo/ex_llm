@@ -33,6 +33,8 @@ defmodule Singularity.LLM.Supervisor do
 
   @impl true
   def init(opts) do
+    # Use opts for configuration if provided
+    _opts = opts
     Logger.info("Starting LLM Supervisor...")
 
     children = [

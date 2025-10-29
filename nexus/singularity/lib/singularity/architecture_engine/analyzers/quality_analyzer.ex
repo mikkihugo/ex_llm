@@ -83,7 +83,7 @@ defmodule Singularity.Architecture.Analyzers.QualityAnalyzer do
   end
 
   @impl true
-  def analyze(codebase_path, opts \\ []) when is_binary(codebase_path) do
+  def analyze(codebase_path, _opts \\ []) when is_binary(codebase_path) do
     try do
       case AstQualityAnalyzer.analyze_codebase_quality(codebase_path) do
         {:ok, results} when is_list(results) ->

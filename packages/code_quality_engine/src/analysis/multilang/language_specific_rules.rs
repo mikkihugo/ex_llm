@@ -460,7 +460,7 @@ impl LanguageSpecificRulesAnalyzer {
     pub fn add_rule(&mut self, language_id: String, rule: LanguageSpecificRule) {
         self.rules
             .entry(language_id)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(rule);
     }
 

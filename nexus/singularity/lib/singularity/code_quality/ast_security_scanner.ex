@@ -350,7 +350,7 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
   end
 
   defp scan_for_specific_vulnerability_pattern(
-         codebase_path,
+         _codebase_path,
          language,
          pattern,
          description,
@@ -451,7 +451,7 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
   end
 
   defp scan_file_for_pattern_matches(file_path, pattern_config, language) do
-    with {:ok, content} <- File.read(file_path),
+    with {:ok, _content} <- File.read(file_path),
          {:ok, matches} <-
            ParserEngine.ast_grep_search(pattern_config.pattern, language, []) do
       if Enum.any?(matches) do
@@ -521,11 +521,6 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
       },
       scanned_at: DateTime.utc_now()
     }
-  end
-
-  defp classify_vulnerability_severity(vuln) do
-    # Already classified in patterns
-    vuln.severity
   end
 
   defp get_first_match_line(result) do

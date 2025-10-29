@@ -43,7 +43,6 @@ defmodule Singularity.Messaging.Client do
 
   require Logger
   alias Singularity.Database.MessageQueue
-  alias Singularity.Repo
 
   @doc """
   Publish a message to a subject (fire & forget).

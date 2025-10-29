@@ -195,7 +195,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
   ## Server Callbacks
 
   @impl true
-  def init(opts) do
+  def init(_opts) do
     state = %{
       pipeline_running: false,
       last_run: nil,
@@ -342,7 +342,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     |> Enum.filter(&File.regular?/1)
   end
 
-  defp get_modified_files do
+  defp _get_modified_files_unused do
     # Get files modified in the last 24 hours
     cutoff_time = DateTime.utc_now() |> DateTime.add(-24, :hour)
 
@@ -369,13 +369,8 @@ defmodule Singularity.Agents.DocumentationPipeline do
           {:ok, content} ->
             language = detect_language(file_path)
 
-            has_documentation =
-              case language do
-                :elixir -> String.contains?(content, "@moduledoc")
-                :rust -> String.contains?(content, "///")
-                :typescript -> String.contains?(content, "/**")
-                _ -> false
-              end
+            # Use the documented function for checking documentation
+            has_documentation = _has_documentation_unused?(content, language)
 
             %{file: file_path, language: language, has_documentation: has_documentation}
 
@@ -473,38 +468,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end
   end
 
-  # Internal functions for legacy API compatibility
-  defp scan_codebase_documentation_internal do
-    # Get all source files
-    files = get_all_source_files()
-
-    # Scan for documentation quality
-    results =
-      files
-      |> Enum.map(fn file_path ->
-        case File.read(file_path) do
-          {:ok, content} ->
-            language = detect_language(file_path)
-            has_docs = has_documentation?(content, language)
-            %{file: file_path, language: language, has_docs: has_docs}
-
-          {:error, _} ->
-            %{file: file_path, language: :unknown, has_docs: false}
-        end
-      end)
-
-    total_files = length(files)
-    files_with_docs = Enum.count(results, & &1.has_docs)
-    quality_score = if total_files > 0, do: files_with_docs / total_files, else: 0.0
-
-    {:ok,
-     %{
-       total_files: total_files,
-       files_with_docs: files_with_docs,
-       quality_score: quality_score,
-       results: results
-     }}
-  end
 
   defp upgrade_module_documentation_internal(module_path, opts) do
     case File.read(module_path) do
@@ -519,7 +482,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end
   end
 
-  defp has_documentation?(content, language) do
+  defp _has_documentation_unused?(content, language) do
     case language do
       :elixir -> String.contains?(content, "@moduledoc")
       :rust -> String.contains?(content, "///") or String.contains?(content, "//!")
@@ -549,20 +512,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end
   end
 
-  defp get_all_source_files do
-    [
-      "./singularity/lib/**/*.ex",
-      "./rust/**/*.rs",
-      "./observer/lib/**/*.ex",
-      "./observer/lib/**/*.heex",
-      "./packages/**/*.rs",
-      "./packages/**/*.ex"
-    ]
-    |> Enum.flat_map(fn pattern ->
-      Path.wildcard(pattern)
-    end)
-    |> Enum.filter(&File.regular?/1)
-  end
 
   defp analyze_file_documentation_internal(file_path) do
     case File.read(file_path) do

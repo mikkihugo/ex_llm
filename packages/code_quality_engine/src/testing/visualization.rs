@@ -540,6 +540,12 @@ pub trait DashboardGenerator {
     ) -> Result<CoverageDashboard>;
 }
 
+impl Default for CoverageVisualizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverageVisualizer {
     pub fn new() -> Self {
         Self {
@@ -676,6 +682,12 @@ impl CoverageVisualizer {
 /// Default dashboard generator
 pub struct DefaultDashboardGenerator;
 
+impl Default for DefaultDashboardGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultDashboardGenerator {
     pub fn new() -> Self {
         Self {}
@@ -703,6 +715,12 @@ impl DashboardGenerator for DefaultDashboardGenerator {
                 description: "Default coverage dashboard".to_string(),
             },
         })
+    }
+}
+
+impl Default for FactSystemInterface {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

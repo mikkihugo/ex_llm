@@ -97,7 +97,7 @@ impl LanguageParser for ElixirParser {
         let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut functions = Vec::new();
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let name = capture
@@ -152,7 +152,7 @@ impl LanguageParser for ElixirParser {
         let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut imports = Vec::new();
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 1 {
                     let path = capture
@@ -188,7 +188,7 @@ impl LanguageParser for ElixirParser {
         let mut captures = cursor.captures(&query, root, ast.content.as_bytes());
 
         let mut comments = Vec::new();
-        while let Some(&(ref m, _)) = captures.next() {
+        while let Some((m, _)) = captures.next() {
             for capture in m.captures {
                 if capture.index == 0 {
                     let text = capture

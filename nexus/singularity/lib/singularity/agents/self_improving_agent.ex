@@ -120,7 +120,6 @@ defmodule Singularity.SelfImprovingAgent do
   alias Singularity.DynamicCompiler
   alias Singularity.HITL.ApprovalService
   alias Singularity.Agents.Documentation.Analyzer, as: DocAnalyzer
-  alias Singularity.Agents.DocumentationPipeline, as: DocPipeline
   alias Singularity.Agents.TemplatePerformance
   alias MapSet
 

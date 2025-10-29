@@ -37,8 +37,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
           Application.get_env(:singularity, :centralcloud_sync_workflow, %{})[:retry_delay_ms] ||
             10000,
         concurrency:
-          Application.get_env(:singularity, :centralcloud_sync_workflow, %{})[:concurrency] ||
-            1
+          Application.get_env(:singularity, :centralcloud_sync_workflow, %{})[:concurrency] || 1
       },
 
       # Define workflow steps
@@ -176,27 +175,25 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
   def send_to_centralcloud(%{"encoded_data" => encoded_data, "validated_data" => data} = context) do
     sync_type = data["sync_type"]
 
-    # Create a CentralCloud ingestion workflow
-    # This replaces the PgmqClient.send_message call
-    case Pgflow.Workflow.create_workflow(
-           CentralCloud.Workflows.DataIngestionWorkflow,
-           %{
-             "data" => encoded_data,
-             "sync_type" => sync_type,
-             "source_instance" => data["instance_id"],
-             "metadata" => %{
-               "original_workflow_id" => data["workflow_id"],
-               "sync_timestamp" => data["timestamp"]
-             }
-           }
-         ) do
-      {:ok, centralcloud_workflow_id} ->
-        Logger.info("Data sent to CentralCloud workflow",
+    # Send data to CentralCloud via pgflow queue (CentralCloud has consumers processing centralcloud_updates)
+    message_payload = %{
+      "data" => encoded_data,
+      "sync_type" => sync_type,
+      "source_instance" => data["instance_id"],
+      "metadata" => %{
+        "original_workflow_id" => data["workflow_id"],
+        "sync_timestamp" => data["timestamp"]
+      }
+    }
+
+    case Singularity.PgFlow.send_with_notify("centralcloud_updates", message_payload) do
+      {:ok, _msg_id} ->
+        Logger.info("Data sent to CentralCloud via queue",
           sync_type: sync_type,
-          centralcloud_workflow_id: centralcloud_workflow_id
+          queue: "centralcloud_updates"
         )
 
-        {:ok, Map.put(context, "centralcloud_workflow_id", centralcloud_workflow_id)}
+        {:ok, Map.put(context, "sent_to_centralcloud", true)}
 
       {:error, reason} ->
         Logger.error("Failed to send data to CentralCloud",
@@ -211,7 +208,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
   @doc """
   Track the synchronization status
   """
-  def track_sync(%{"validated_data" => data, "centralcloud_workflow_id" => centralcloud_workflow_id} = context) do
+  def track_sync(%{"validated_data" => data, "sent_to_centralcloud" => true} = context) do
     sync_type = data["sync_type"]
     instance_id = data["instance_id"]
 
@@ -219,7 +216,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
     Logger.info("CentralCloud sync completed",
       sync_type: sync_type,
       instance_id: instance_id,
-      centralcloud_workflow_id: centralcloud_workflow_id,
+      queue: "centralcloud_updates",
       status: :completed
     )
 
@@ -230,14 +227,14 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
       %{
         sync_type: sync_type,
         instance_id: instance_id,
-        workflow_id: centralcloud_workflow_id
+        queue: "centralcloud_updates"
       }
     )
 
     Logger.debug("Tracked CentralCloud sync completion",
       sync_type: sync_type,
       instance_id: instance_id,
-      workflow_id: centralcloud_workflow_id
+      queue: "centralcloud_updates"
     )
 
     {:ok, Map.put(context, "sync_tracked", true)}

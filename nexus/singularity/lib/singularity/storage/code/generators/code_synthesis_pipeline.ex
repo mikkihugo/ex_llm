@@ -61,7 +61,8 @@ defmodule Singularity.CodeSynthesisPipeline do
   """
 
   require Logger
-  alias Singularity.{PatternIndexer, RAGCodeGenerator, CodeDeduplicator, CodeModel}
+  alias Singularity.{PatternIndexer, CodeDeduplicator, CodeModel}
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
 
   # ETS tables for caching
   @pattern_cache :fast_pattern_cache

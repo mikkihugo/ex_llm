@@ -417,7 +417,7 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
     b_chars = String.graphemes(b)
 
     # Initialize DP table
-    dp = for i <- 0..alen, do: for(j <- 0..blen, do: 0)
+    dp = for i <- 0..alen, do: for(_j <- 0..blen, do: 0)
 
     # Simplified: use basic approximation for performance
     # Full DP would be slower for large patterns

@@ -122,7 +122,7 @@ impl CodeIndex {
         if dir
             .file_name()
             .and_then(|n| n.to_str())
-            .map_or(false, |name| {
+            .is_some_and(|name| {
                 name.starts_with('.')
                     || name == "node_modules"
                     || name == "target"
@@ -392,21 +392,13 @@ impl CodeIndex {
         // Extract Rust function names: fn name( or pub fn name(
         let start_pos = if line.starts_with("pub fn ") { 7 } else { 3 };
         let after_fn = &line[start_pos..];
-        if let Some(paren_pos) = after_fn.find('(') {
-            Some(after_fn[..paren_pos].trim().to_string())
-        } else {
-            None
-        }
+        after_fn.find('(').map(|paren_pos| after_fn[..paren_pos].trim().to_string())
     }
 
     fn extract_python_function_name(&self, line: &str) -> Option<String> {
         // Extract Python function names: def name(
         let after_def = &line[4..];
-        if let Some(paren_pos) = after_def.find('(') {
-            Some(after_def[..paren_pos].trim().to_string())
-        } else {
-            None
-        }
+        after_def.find('(').map(|paren_pos| after_def[..paren_pos].trim().to_string())
     }
 
     fn detect_common_patterns(&self, line: &str, patterns: &mut Vec<String>) {
@@ -494,7 +486,7 @@ impl CodeIndex {
             for keyword in &metadata.keywords {
                 self.keyword_index
                     .entry(keyword.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(metadata.file_path.clone());
             }
 
@@ -502,7 +494,7 @@ impl CodeIndex {
             for pattern in &metadata.patterns {
                 self.pattern_index
                     .entry(pattern.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(metadata.file_path.clone());
             }
 
@@ -510,7 +502,7 @@ impl CodeIndex {
             for function in &metadata.functions {
                 self.function_index
                     .entry(function.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(metadata.file_path.clone());
             }
         }

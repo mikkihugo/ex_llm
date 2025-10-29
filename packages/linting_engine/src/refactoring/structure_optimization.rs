@@ -331,7 +331,7 @@ impl StructureOptimizationAnalyzer {
     pub fn add_optimization(&mut self, file_path: String, optimization: StructureOptimization) {
         self.optimizations
             .entry(file_path)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(optimization);
     }
 

@@ -56,7 +56,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   ## Relationships
 
-  - **Uses**: WebChat, Slack, TemplateRenderer
+  - **Uses**: WebChat, TemplateRenderer
   - **Integrates with**: All 6 agents (communication hub)
   - **Supervised by**: Conversation.Supervisor
 
@@ -72,9 +72,8 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   use GenServer
   require Logger
 
-  alias Singularity.Agents.Agent
   alias Singularity.AgentSupervisor
-  alias Singularity.Conversation.{WebChat, Slack, ResponsePoller}
+  alias Singularity.Conversation.{WebChat, ResponsePoller}
 
   @conversation_types [
     :clarification,
@@ -99,7 +98,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   ## Public API
 
-  def start_link(__opts) do
+  def start_link(opts) do
     GenServer.start_link(
       __MODULE__,
       %__MODULE__{
@@ -112,18 +111,18 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @doc "Agent asks a question and waits for human response"
-  def ask(question, __opts \\ []) do
-    GenServer.call(__MODULE__, {:ask, question, __opts}, :infinity)
+  def ask(question, opts \\ []) do
+    GenServer.call(__MODULE__, {:ask, question, opts}, :infinity)
   end
 
   @doc "Agent provides a recommendation for human to accept/reject"
-  def recommend(recommendation, __opts \\ []) do
-    GenServer.call(__MODULE__, {:recommend, recommendation, __opts}, :infinity)
+  def recommend(recommendation, opts \\ []) do
+    GenServer.call(__MODULE__, {:recommend, recommendation, opts}, :infinity)
   end
 
   @doc "Agent explains a decision (non-blocking)"
-  def explain(decision, __opts \\ []) do
-    GenServer.cast(__MODULE__, {:explain, decision, __opts})
+  def explain(decision, opts \\ []) do
+    GenServer.cast(__MODULE__, {:explain, decision, opts})
   end
 
   @doc "Human sends a message/command to the agent"
@@ -146,14 +145,14 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_call({:ask, question, __opts}, from, state) do
+  def handle_call({:ask, question, opts}, from, state) do
     conversation_id = generate_conversation_id()
-    urgency = Keyword.get(__opts, :urgency, :normal)
-    context = Keyword.get(__opts, :context, %{})
-    timeout = Keyword.get(__opts, :timeout, :infinity)
+    urgency = Keyword.get(opts, :urgency, :normal)
+    context = Keyword.get(opts, :context, %{})
+    timeout = Keyword.get(opts, :timeout, :infinity)
 
     conversation_type =
-      __opts
+      opts
       |> Keyword.get(:type, :clarification)
       |> normalize_conversation_type()
 
@@ -169,7 +168,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     }
 
     # Send to configured channel (default: web interface)
-    channel = Keyword.get(__opts, :channel, get_default_channel())
+    channel = Keyword.get(opts, :channel, get_default_channel())
     send_to_channel(channel, :ask_question, conversation)
 
     new_state = %{
@@ -183,7 +182,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_call({:recommend, recommendation, __opts}, from, state) do
+  def handle_call({:recommend, recommendation, opts}, from, state) do
     conversation_id = generate_conversation_id()
 
     conversation = %{
@@ -193,11 +192,11 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       asked_at: DateTime.utc_now(),
       asked_by: from,
       status: :pending,
-      default_action: Keyword.get(__opts, :default, :wait)
+      default_action: Keyword.get(opts, :default, :wait)
     }
 
-    channel = Keyword.get(__opts, :channel, get_default_channel())
-    timeout_ms = Keyword.get(__opts, :timeout, 30_000)
+    channel = Keyword.get(opts, :channel, get_default_channel())
+    timeout_ms = Keyword.get(opts, :timeout, 30_000)
 
     # Send approval request and get response queue
     case send_to_channel_with_response(channel, :ask_approval, conversation) do
@@ -232,9 +231,9 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   end
 
   @impl true
-  def handle_cast({:explain, decision, __opts}, state) do
+  def handle_cast({:explain, decision, opts}, state) do
     # Non-blocking explanation
-    channel = Keyword.get(__opts, :channel, get_default_channel())
+    channel = Keyword.get(opts, :channel, get_default_channel())
     send_to_channel(channel, :notify, format_decision(decision))
 
     {:noreply, %{state | conversation_history: [decision | state.conversation_history]}}
@@ -1135,17 +1134,21 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     end
   end
 
-  # Helper: Validate goal has required fields
+  # Helper: Validate goal before enqueueing (more detailed validation)
   defp validate_goal(goal) do
     cond do
-      is_map(goal) and Map.has_key?(goal, :description) and String.length(goal.description) > 0 ->
-        :ok
+      is_nil(goal.description) or goal.description == "" ->
+        {:error, :missing_description}
 
-      is_map(goal) and Map.has_key?(goal, :priority) and is_integer(goal.priority) ->
-        :ok
+      is_nil(goal.priority) or not is_integer(goal.priority) or goal.priority < 1 or
+          goal.priority > 10 ->
+        {:error, :invalid_priority}
+
+      is_nil(goal.type) ->
+        {:error, :missing_type}
 
       true ->
-        :invalid_goal
+        :ok
     end
   end
 
@@ -1219,23 +1222,6 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     end
   end
 
-  # Helper: Validate goal before enqueueing
-  defp validate_goal(goal) do
-    cond do
-      is_nil(goal.description) or goal.description == "" ->
-        {:error, :missing_description}
-
-      is_nil(goal.priority) or not is_integer(goal.priority) or goal.priority < 1 or
-          goal.priority > 10 ->
-        {:error, :invalid_priority}
-
-      is_nil(goal.type) ->
-        {:error, :missing_type}
-
-      true ->
-        :ok
-    end
-  end
 
   # Helper: Store goal locally for tracking
   defp store_goal_locally(goal_id, goal, message_id) do
@@ -1319,30 +1305,32 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp get_notification_channels do
     # In production, this would read from configuration
     # For now, return default channels
-    [:web_chat, :slack]
+    [:web_chat]
   end
 
   # Helper: Send message to a specific channel
-  defp send_to_channel(channel, message_type, payload) do
-    case channel do
-      :web_chat ->
-        # Use WebChat module for web notifications
-        case WebChat.send_notification(message_type, payload) do
-          {:ok, response} -> {:ok, response}
-          {:error, reason} -> {:error, reason}
-        end
-
-      :slack ->
-        # Use Slack module for Slack notifications
-        case Slack.send_notification(message_type, payload) do
-          {:ok, response} -> {:ok, response}
-          {:error, reason} -> {:error, reason}
-        end
-
+  defp send_to_channel(:google_chat, :ask_question, data), do: WebChat.ask_question(data)
+  defp send_to_channel(:google_chat, :ask_approval, data), do: WebChat.ask_approval(data)
+  defp send_to_channel(:google_chat, :notify, data), do: WebChat.notify(data)
+  defp send_to_channel(:google_chat, :daily_summary, data), do: WebChat.daily_summary(data)
+  defp send_to_channel(:google_chat, :deployment, data), do: WebChat.deployment_notification(data)
+  defp send_to_channel(:google_chat, :policy_change, data), do: WebChat.policy_change(data)
+  defp send_to_channel(:web_chat, message_type, payload) do
+    case message_type do
+      :notify -> WebChat.notify(payload)
+      :ask_approval -> WebChat.ask_approval(payload)
+      :ask_question -> WebChat.ask_question(payload)
+      :daily_summary -> WebChat.daily_summary(payload)
+      :deployment -> WebChat.deployment_notification(payload)
+      :policy_change -> WebChat.policy_change(payload)
       _ ->
-        Logger.warning("Unknown notification channel: #{inspect(channel)}")
-        {:error, :unknown_channel}
+        Logger.warning("Unknown message type for web_chat: #{inspect(message_type)}")
+        {:error, :unknown_message_type}
     end
+  end
+  defp send_to_channel(unknown_channel, action, _data) do
+    Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")
+    {:error, :unknown_channel}
   end
 
   defp format_conversation_history(history) do
@@ -1362,36 +1350,14 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
   defp get_default_channel do
     # Configure default channel via environment variable
-    # CHAT_CHANNEL=slack or CHAT_CHANNEL=google_chat
+    # CHAT_CHANNEL=google_chat
     case System.get_env("CHAT_CHANNEL") do
-      "slack" -> :slack
       "google_chat" -> :google_chat
       # Default to web interface
       _ -> :google_chat
     end
   end
 
-  defp send_to_channel(:slack, :ask_question, data), do: Slack.ask_question(data)
-  defp send_to_channel(:slack, :ask_approval, data), do: Slack.ask_approval(data)
-  defp send_to_channel(:slack, :notify, data), do: Slack.notify(data)
-  defp send_to_channel(:slack, :daily_summary, data), do: Slack.daily_summary(data)
-  defp send_to_channel(:slack, :deployment, data), do: Slack.deployment_notification(data)
-  defp send_to_channel(:slack, :policy_change, data), do: Slack.policy_change(data)
-
-  defp send_to_channel(:google_chat, :ask_question, data), do: WebChat.ask_question(data)
-  defp send_to_channel(:google_chat, :ask_approval, data), do: WebChat.ask_approval(data)
-  defp send_to_channel(:google_chat, :notify, data), do: WebChat.notify(data)
-  defp send_to_channel(:google_chat, :daily_summary, data), do: WebChat.daily_summary(data)
-
-  defp send_to_channel(:google_chat, :deployment, data),
-    do: WebChat.deployment_notification(data)
-
-  defp send_to_channel(:google_chat, :policy_change, data), do: WebChat.policy_change(data)
-
-  defp send_to_channel(unknown_channel, action, _data) do
-    Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")
-    {:error, :unknown_channel}
-  end
 
   # Helper: Send to channel and capture response queue for approvals
   defp send_to_channel_with_response(channel, message_type, payload) do

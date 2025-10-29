@@ -27,7 +27,7 @@ defmodule Broadway.PgflowProducer.Workflow do
   def fetch(state) do
     state = init_state(state)
 
-    %{demand: demand, batch_size: batch_size, queue_name: queue_name, resource_hints: _hints} = state
+    %{demand: demand, batch_size: _batch_size, queue_name: queue_name, resource_hints: _hints} = state
 
     import Ecto.Query
 
@@ -113,7 +113,6 @@ defmodule Broadway.PgflowProducer.Workflow do
 
     # Map job ids and resource requirements from state.jobs
     jobs = Map.get(state, :jobs, [])
-    job_map = Map.new(jobs, &{&1.id, &1})
     ids = Enum.map(jobs, & &1.id)
 
     # Determine distinct resource keys required for this batch
@@ -127,27 +126,19 @@ defmodule Broadway.PgflowProducer.Workflow do
 
     multi = Ecto.Multi.new()
 
-    # For each distinct resource_key, add a reservation step that performs a single update_all
-    # to mark the resource as held. The step returns the token on success.
+    # For each distinct resource_key, use acquire_hint to get reservation
+    # This demonstrates the helper function usage
     multi =
       Enum.reduce(resource_keys, multi, fn resource_key, m ->
         key_str = to_string(resource_key)
         step = String.to_atom("reserve_#{String.replace(key_str, ~r/[^A-Za-z0-9_]/, "_")}")
 
-        # generate a token deterministically for the transaction (will be returned by the run)
-        token = generate_token()
-
         m
         |> Ecto.Multi.run(step, fn repo, _changes ->
-          query =
-            from(r in "resources",
-              where: r.key == ^key_str and r.status == "available",
-              update: [set: [status: "held", holder: ^inspect(workflow_pid), token: ^token, locked_at: fragment("NOW()")]]
-            )
-
-          case repo.update_all(query, []) do
-            {count, _} when count > 0 -> {:ok, token}
-            _ -> {:error, {:resource_unavailable, resource_key}}
+          # Use acquire_hint logic within transaction
+          case acquire_hint_in_transaction(repo, state, resource_key) do
+            {:ok, token} -> {:ok, token}
+            {:error, reason} -> {:error, reason}
           end
         end)
       end)
@@ -249,15 +240,10 @@ defmodule Broadway.PgflowProducer.Workflow do
         multi =
           Ecto.Multi.new()
           |> Ecto.Multi.run(:release_resource, fn repo, _ ->
-            query =
-              from(r in "resources",
-                where: r.key == ^resource_key and r.token == ^token,
-                update: [set: [status: "available", holder: nil, token: nil, locked_at: nil]]
-              )
-
-            case repo.update_all(query, []) do
-              {count, _} -> {:ok, count}
-              other -> {:error, other}
+            # Use release_hint logic within transaction
+            case release_hint_in_transaction(repo, state, resource_key, token) do
+              {:ok, _} -> {:ok, :released}
+              {:error, reason} -> {:error, reason}
             end
           end)
           |> Ecto.Multi.run(:mark_completed, fn repo, _ ->
@@ -286,10 +272,8 @@ defmodule Broadway.PgflowProducer.Workflow do
     end
   end
 
-  @doc """
-  Handle requeue: release resource hint and mark job failed/requeued.
-  Current behavior: always release hint on requeue to avoid stale holds.
-  """
+  # Handle requeue: release resource hint and mark job failed/requeued.
+  # Current behavior: always release hint on requeue to avoid stale holds.
   def handle_update(:requeue, %{id: job_id, reason: reason}, state) do
     state = init_state(state)
 
@@ -299,20 +283,16 @@ defmodule Broadway.PgflowProducer.Workflow do
         {:ok, %{state | retries: Map.get(state, :retries, 0) + 1}}
 
       {resource_key, token} ->
+        # Release resource and mark job failed in a single transaction
         import Ecto.Query
 
         multi =
           Ecto.Multi.new()
           |> Ecto.Multi.run(:release_resource, fn repo, _ ->
-            query =
-              from(r in "resources",
-                where: r.key == ^resource_key and r.token == ^token,
-                update: [set: [status: "available", holder: nil, token: nil, locked_at: nil]]
-              )
-
-            case repo.update_all(query, []) do
-              {count, _} -> {:ok, count}
-              other -> {:error, other}
+            # Use release_hint logic within transaction
+            case release_hint_in_transaction(repo, state, resource_key, token) do
+              {:ok, _} -> {:ok, :released}
+              {:error, reason} -> {:error, reason}
             end
           end)
           |> Ecto.Multi.run(:mark_failed, fn repo, _ ->
@@ -344,9 +324,18 @@ defmodule Broadway.PgflowProducer.Workflow do
   # Public (private to module) helpers for reservation semantics.
   # Note: these helpers are intentionally simple and deterministic.
 
-  # Try to obtain a reservation for resource_key and cache it in the workflow state.
-  # Returns {:ok, token, new_state} or {:error, reason, state}
-  defp acquire_hint(state, resource_key, opts \\ []) do
+  @doc """
+  Acquire a resource hint for external resource management.
+  
+  This is the public API for acquiring resource hints outside of workflow transactions.
+  Use this when you need to manage resources independently of workflow execution.
+  
+  ## Examples
+  
+      {:ok, token, new_state} = acquire_hint(state, "gpu", [])
+      {:error, :not_available, state} = acquire_hint(state, "busy_resource", [])
+  """
+  def acquire_hint(state, resource_key, _opts \\ []) do
     state = init_state(state)
     key_str = to_string(resource_key)
     current_holder = inspect(state.workflow_pid || self())
@@ -379,9 +368,18 @@ defmodule Broadway.PgflowProducer.Workflow do
     end
   end
 
-  # Release a held hint: validate token matches and mark DB row available.
-  # Returns {:ok, new_state} | {:error, reason, state}
-  defp release_hint(state, resource_key, token) do
+  @doc """
+  Release a held resource hint.
+  
+  This is the public API for releasing resource hints outside of workflow transactions.
+  Use this when you need to manually release resources acquired via acquire_hint/3.
+  
+  ## Examples
+  
+      {:ok, new_state} = release_hint(state, "gpu", token)
+      {:error, :token_mismatch, state} = release_hint(state, "gpu", "wrong_token")
+  """
+  def release_hint(state, resource_key, token) do
     state = init_state(state)
     key_str = to_string(resource_key)
 
@@ -406,6 +404,60 @@ defmodule Broadway.PgflowProducer.Workflow do
 
       _ ->
         {:error, :token_mismatch, state}
+    end
+  end
+
+  # Acquire hint within a transaction context (uses transaction's repo instead of module-level repo/0).
+  # Returns {:ok, token} | {:error, reason} (no state update - handled by caller).
+  defp acquire_hint_in_transaction(repo, state, resource_key) do
+    key_str = to_string(resource_key)
+    current_holder = inspect(state.workflow_pid || self())
+
+    # If already held by this workflow, return existing token
+    case Map.get(state.resource_hints, key_str) do
+      %{holder: holder} = hint when holder == current_holder ->
+        {:ok, hint.token}
+
+      _ ->
+        token = generate_token()
+
+        import Ecto.Query
+
+        query =
+          from(r in "resources",
+            where: r.key == ^key_str and r.status == "available",
+            update: [set: [status: "held", holder: ^inspect(state.workflow_pid || self()), token: ^token, locked_at: fragment("NOW()")]]
+          )
+
+        case repo.update_all(query, []) do
+          {count, _} when count > 0 -> {:ok, token}
+          _ -> {:error, :not_available}
+        end
+    end
+  end
+
+  # Release hint within a transaction context (uses transaction's repo instead of module-level repo/0).
+  # Returns {:ok, :released} | {:error, reason} (no state update - handled by caller).
+  defp release_hint_in_transaction(repo, state, resource_key, token) do
+    key_str = to_string(resource_key)
+
+    case Map.get(state.resource_hints, key_str) do
+      %{token: ^token} ->
+        import Ecto.Query
+
+        query =
+          from(r in "resources",
+            where: r.key == ^key_str and r.token == ^token,
+            update: [set: [status: "available", holder: nil, token: nil, locked_at: nil]]
+          )
+
+        case repo.update_all(query, []) do
+          {count, _} when count >= 0 -> {:ok, :released}
+          other -> {:error, other}
+        end
+
+      _ ->
+        {:error, :token_mismatch}
     end
   end
 

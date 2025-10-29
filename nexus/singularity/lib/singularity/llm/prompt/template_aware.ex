@@ -16,7 +16,8 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
 
   require Logger
 
-  alias Singularity.{TechnologyTemplateLoader, RAGCodeGenerator}
+  alias Singularity.TechnologyTemplateLoader
+  alias Singularity.CodeGeneration.Implementations.RAGCodeGenerator
   alias Singularity.LLM.{Service, PromptCache, Config}
 
   @doc """

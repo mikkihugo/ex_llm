@@ -102,10 +102,24 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   @impl true
   def analyze(agent_id, opts \\ []) when is_binary(agent_id) do
     try do
+      # Use opts to configure analysis parameters
+      limit = Keyword.get(opts, :limit, 100)
+      time_range = Keyword.get(opts, :time_range, "7 days")
+      
+      # Use Repo to get historical performance data for better analysis
+      historical_data = Repo.query(
+        "SELECT success_rate, avg_latency, error_count FROM agent_metrics WHERE agent_id = $1 AND created_at > NOW() - INTERVAL '#{time_range}' ORDER BY created_at DESC LIMIT $2",
+        [agent_id, limit]
+      )
+      
       case Analyzer.analyze_agent(agent_id) do
         {:ok, analysis} ->
+          # Enhance analysis with historical data and opts
+          enhanced_analysis = enhance_with_historical_data(analysis, historical_data)
+          # Apply any additional processing based on opts
+          final_analysis = apply_analysis_options(enhanced_analysis, opts)
           # Convert analysis to standard format
-          format_analysis_results(analysis)
+          format_analysis_results(final_analysis)
 
         {:error, _reason} ->
           []
@@ -116,6 +130,87 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
         []
     end
   end
+
+  defp enhance_with_historical_data(analysis, historical_data) do
+    # Enhance analysis with historical performance trends
+    case historical_data do
+      {:ok, %{rows: rows}} when rows != [] ->
+        trends = calculate_performance_trends(rows)
+        Map.put(analysis, :historical_trends, trends)
+      
+      _ ->
+        analysis
+    end
+  end
+
+  defp calculate_performance_trends(rows) do
+    # Calculate performance trends from historical data
+    %{
+      success_rate_trend: calculate_trend(rows, 0), # success_rate column
+      latency_trend: calculate_trend(rows, 1),      # avg_latency column
+      error_trend: calculate_trend(rows, 2)         # error_count column
+    }
+  end
+
+  defp calculate_trend(rows, column_index) do
+    values = Enum.map(rows, &Enum.at(&1, column_index))
+    case length(values) do
+      0 -> :stable
+      1 -> :stable
+      _ ->
+        first_half = Enum.take(values, div(length(values), 2))
+        second_half = Enum.drop(values, div(length(values), 2))
+        
+        avg_first = Enum.sum(first_half) / length(first_half)
+        avg_second = Enum.sum(second_half) / length(second_half)
+        
+        cond do
+          avg_second > avg_first * 1.1 -> :improving
+          avg_second < avg_first * 0.9 -> :declining
+          true -> :stable
+        end
+    end
+  end
+
+  defp apply_analysis_options(analysis, opts) do
+    # Apply additional processing based on opts
+    analysis
+    |> maybe_filter_by_confidence(Keyword.get(opts, :min_confidence))
+    |> maybe_include_trends(Keyword.get(opts, :include_trends, true))
+    |> maybe_apply_filters(Keyword.get(opts, :filters, []))
+  end
+
+  defp maybe_filter_by_confidence(analysis, nil), do: analysis
+  defp maybe_filter_by_confidence(analysis, min_confidence) do
+    Map.update(analysis, :suggestions, [], fn suggestions ->
+      Enum.filter(suggestions, &(&1.confidence >= min_confidence))
+    end)
+  end
+
+  defp maybe_include_trends(analysis, false), do: Map.delete(analysis, :historical_trends)
+  defp maybe_include_trends(analysis, true), do: analysis
+
+  defp maybe_apply_filters(analysis, []), do: analysis
+  defp maybe_apply_filters(analysis, filters) do
+    # Apply custom filters to analysis results
+    Enum.reduce(filters, analysis, fn filter, acc ->
+      apply_filter(acc, filter)
+    end)
+  end
+
+  defp apply_filter(analysis, {:type, type}) do
+    Map.update(analysis, :suggestions, [], fn suggestions ->
+      Enum.filter(suggestions, &(&1.type == type))
+    end)
+  end
+
+  defp apply_filter(analysis, {:severity, severity}) do
+    Map.update(analysis, :suggestions, [], fn suggestions ->
+      Enum.filter(suggestions, &(&1.severity == severity))
+    end)
+  end
+
+  defp apply_filter(analysis, _), do: analysis
 
   @impl true
   def learn_pattern(result) do

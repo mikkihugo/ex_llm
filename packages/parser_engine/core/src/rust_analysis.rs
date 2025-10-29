@@ -33,6 +33,7 @@ pub struct RustAnalysisResult {
 
 /// Ownership and borrowing patterns
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct OwnershipPatterns {
     /// Move semantics usage
     pub moves: Vec<MovePattern>,
@@ -132,6 +133,7 @@ pub enum SmartPointerType {
 
 /// Trait system analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TraitAnalysis {
     /// Trait definitions
     pub trait_definitions: Vec<TraitDefinition>,
@@ -182,6 +184,7 @@ pub struct TraitObject {
 
 /// Async/await analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AsyncAnalysis {
     /// Async functions
     pub async_functions: Vec<AsyncFunction>,
@@ -231,6 +234,7 @@ pub enum AsyncRuntime {
 
 /// Macro analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct MacroAnalysis {
     /// Declarative macros (macro_rules!)
     pub declarative_macros: Vec<DeclarativeMacro>,
@@ -289,6 +293,7 @@ pub struct DeriveMacro {
 
 /// Unsafe code analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct UnsafeAnalysis {
     /// Unsafe blocks
     pub unsafe_blocks: Vec<UnsafeBlock>,
@@ -354,6 +359,7 @@ pub struct FfiUsage {
 
 /// Error handling analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ErrorHandlingAnalysis {
     /// Result type usage
     pub result_usage: Vec<ResultUsage>,
@@ -643,71 +649,8 @@ impl RustAnalyzer {
 
 // Default implementations
 
-impl Default for OwnershipPatterns {
-    fn default() -> Self {
-        Self {
-            moves: Vec::new(),
-            borrows: Vec::new(),
-            mutable_borrows: Vec::new(),
-            reference_counting: Vec::new(),
-            smart_pointers: Vec::new(),
-        }
-    }
-}
 
-impl Default for TraitAnalysis {
-    fn default() -> Self {
-        Self {
-            trait_definitions: Vec::new(),
-            trait_implementations: Vec::new(),
-            generic_bounds: Vec::new(),
-            trait_objects: Vec::new(),
-        }
-    }
-}
 
-impl Default for AsyncAnalysis {
-    fn default() -> Self {
-        Self {
-            async_functions: Vec::new(),
-            await_expressions: Vec::new(),
-            futures: Vec::new(),
-            runtime: None,
-        }
-    }
-}
 
-impl Default for MacroAnalysis {
-    fn default() -> Self {
-        Self {
-            declarative_macros: Vec::new(),
-            procedural_macros: Vec::new(),
-            macro_invocations: Vec::new(),
-            derive_macros: Vec::new(),
-        }
-    }
-}
 
-impl Default for UnsafeAnalysis {
-    fn default() -> Self {
-        Self {
-            unsafe_blocks: Vec::new(),
-            unsafe_functions: Vec::new(),
-            unsafe_trait_impls: Vec::new(),
-            raw_pointers: Vec::new(),
-            ffi_usage: Vec::new(),
-        }
-    }
-}
 
-impl Default for ErrorHandlingAnalysis {
-    fn default() -> Self {
-        Self {
-            result_usage: Vec::new(),
-            option_usage: Vec::new(),
-            error_propagation: Vec::new(),
-            match_expressions: Vec::new(),
-            panic_usage: Vec::new(),
-        }
-    }
-}

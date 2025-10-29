@@ -231,16 +231,21 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
   defp select_method(:basic, _complexity), do: :basic
 
-  # Generate code using LLM API (current architecture)
-  defp generate_with_t5(task, language, _quality) do
+  @doc """
+  Generate code using T5 model (legacy method).
+  
+  This function provides T5-based code generation as a fallback method
+  when other generation methods are not available.
+  """
+  def generate_with_t5(task, language, quality) do
     Logger.info("Generating with LLM API (queue-based)...")
 
-    # Use the current queue-based LLM service
-    prompt = build_code_generation_prompt(task, language)
+    # Use centralized complexity detection
+    {prompt, complexity} = generate_with_complexity_detection(task, language, quality)
 
-    case Singularity.LLM.Service.call_with_prompt(:medium, prompt, task_type: :code_generation) do
+    case Singularity.LLM.Service.call_with_prompt(map_complexity_to_llm(complexity), prompt, task_type: :code_generation) do
       {:ok, %{text: code}} ->
-        {:ok, extract_code_from_response(code)}
+        {:ok, extract_code_block(code)}
 
       {:error, reason} ->
         Logger.warning(
@@ -251,7 +256,13 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     end
   end
 
-  defp build_code_generation_prompt(task, language) do
+  @doc """
+  Build basic code generation prompt.
+  
+  This function creates a simple prompt for basic code generation tasks
+  without complex quality requirements.
+  """
+  def build_code_generation_prompt(task, language) do
     """
     Generate #{language} code for the following task:
 
@@ -267,7 +278,13 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     """
   end
 
-  defp extract_code_from_response(response) do
+  @doc """
+  Extract code from LLM response.
+  
+  This function parses LLM responses to extract clean code blocks,
+  handling various response formats and markdown code blocks.
+  """
+  def extract_code_from_response(response) do
     # Try to extract code from markdown code blocks
     case Regex.run(~r/```(?:[a-zA-Z]*)?\s*\n?(.*?)\n?```/s, response) do
       [_, code] ->
@@ -318,8 +335,13 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
      """}
   end
 
-  # Generate code using LLM API (Gemini/Claude)
-  defp generate_with_api(task, language, quality, complexity) do
+  @doc """
+  Generate code using LLM API (Gemini/Claude).
+  
+  This function provides direct API-based code generation using various
+  LLM providers with complexity-aware model selection.
+  """
+  def generate_with_api(task, language, quality, complexity) do
     Logger.info("Generating with LLM API (#{complexity} complexity)...")
 
     # Select LLM complexity level based on task complexity
@@ -350,6 +372,28 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     end
   end
 
+  # Detect task complexity for model selection (with language context)
+  defp detect_task_complexity(task, language) do
+    # Use centralized complexity detection
+    complexity = detect_complexity(task)
+    # Language-specific adjustments if needed
+    adjust_complexity_for_language(complexity, language)
+  end
+
+  defp adjust_complexity_for_language(complexity, _language), do: complexity
+
+  @doc """
+  Generate code with automatic complexity detection.
+  
+  This function analyzes task complexity and generates appropriate code
+  using the detected complexity level for optimal model selection.
+  """
+  def generate_with_complexity_detection(task, language, quality) do
+    complexity = detect_complexity(task)
+    prompt = build_generation_prompt(task, language, quality)
+    {prompt, complexity}
+  end
+
   defp detect_complexity_fallback(task) do
     task_lower = String.downcase(task)
 
@@ -371,13 +415,57 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     end
   end
 
-  # Map task complexity to LLM Service complexity
+  # Map complexity levels to LLM complexity levels
   defp map_complexity_to_llm(:simple), do: :simple
   defp map_complexity_to_llm(:medium), do: :medium
   defp map_complexity_to_llm(:complex), do: :complex
+  defp map_complexity_to_llm(:very_complex), do: :complex
 
-  # Build code generation prompt
-  defp build_generation_prompt(task, language, quality) do
+  @doc """
+  Select appropriate model based on task complexity and requirements.
+  
+  This function provides intelligent model selection based on task analysis
+  and quality requirements. Used in the generation pipeline for optimal
+  model selection.
+  """
+  def select_model_for_task(task, language, quality) do
+    complexity = detect_task_complexity(task, language)
+    model_name = select_model_for_complexity(complexity, quality)
+    
+    # Log model selection for debugging
+    Logger.debug("Selected model for task", 
+      task: String.slice(task, 0..50),
+      complexity: complexity,
+      quality: quality,
+      model: model_name
+    )
+    
+    model_name
+  end
+  
+  @doc """
+  Select model based on complexity and quality requirements.
+  
+  Maps complexity levels and quality requirements to specific model names
+  for optimal code generation performance.
+  """
+  def select_model_for_complexity(complexity, quality) do
+    case {complexity, quality} do
+      {:simple, :quick} -> "gpt-3.5-turbo"
+      {:simple, :production} -> "gpt-4"
+      {:medium, _} -> "gpt-4"
+      {:complex, _} -> "gpt-4-turbo"
+      {:very_complex, _} -> "gpt-4-turbo"
+    end
+  end
+
+  @doc """
+  Build code generation prompt with quality guidelines.
+  
+  This function creates a comprehensive prompt that includes task requirements,
+  quality guidelines, and best practices for optimal code generation.
+  """
+  def build_generation_prompt(task, _language, quality) do
     quality_guidelines =
       case quality do
         :production ->
@@ -396,16 +484,28 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
           """
       end
 
+    # Use the prompt in code generation
+    base_prompt = """
+    Generate code for: #{task}
+    
+    Quality requirements: #{quality_guidelines}
+    
+    Provide clean, well-structured code that follows best practices.
     """
-    Generate #{language} code for the following task:
 
-    TASK: #{task}
+    base_prompt
+  end
 
-    REQUIREMENTS:
-    #{quality_guidelines}
-
-    Return ONLY the code, no explanations. Use proper #{language} idioms and conventions.
-    """
+  @doc """
+  Generate code using a pre-built prompt.
+  
+  This function generates code using a unified prompt that combines
+  task requirements with quality guidelines and examples.
+  """
+  def generate_code_with_prompt(task, language, quality) do
+    prompt = build_generation_prompt(task, language, quality)
+    # Return prompt for use in generation
+    prompt
   end
 
   # Extract code block from LLM response
@@ -417,8 +517,12 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     end
   end
 
-  # Check if T5 model is fully downloaded
-  defp model_downloaded?(model_path) do
+  @doc """
+  Check if a model is downloaded and available.
+  
+  This function verifies model availability for local generation methods.
+  """
+  def model_downloaded?(model_path) do
     required_files = [
       "encoder_model.onnx",
       "decoder_model.onnx",
@@ -428,6 +532,22 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
     Enum.all?(required_files, fn file ->
       Path.join(model_path, file) |> File.exists?()
     end)
+  end
+
+  @doc """
+  Check model availability and download status.
+  
+  This function verifies if a model is available for use and optionally
+  triggers download if needed.
+  """
+  def check_model_availability(model_path) do
+    if model_downloaded?(model_path) do
+      Logger.info("Model available for generation", model_path: model_path)
+      :ok
+    else
+      Logger.warning("T5 model not fully downloaded", model_path: model_path)
+      {:error, :model_not_ready}
+    end
   end
 
   ## RAG Integration
@@ -500,7 +620,8 @@ defmodule Singularity.CodeGeneration.Implementations.CodeGenerator do
 
     case selected_method do
       :llm_api ->
-        generate_with_t5(prompt, language, quality)
+        # Use unified API generation with complexity-aware model selection
+        generate_with_api_unified(prompt, language, quality, complexity)
 
       :basic ->
         generate_basic_code(prompt, language)

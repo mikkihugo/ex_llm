@@ -76,6 +76,7 @@ pub enum DependencyHealthStatus {
 
 /// Dependency metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct DependencyMetadata {
     pub description: Option<String>,
     pub homepage: Option<String>,
@@ -95,6 +96,7 @@ pub struct DependencyMetadata {
 
 /// Dependency usage
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct DependencyUsage {
     pub files_using: Vec<String>,
     pub functions_using: Vec<String>,
@@ -248,6 +250,12 @@ pub struct HealthMetadata {
 /// Dependency health analyzer (no local databases - queries CentralCloud)
 pub struct DependencyHealthAnalyzer {
     // No local databases - all data from CentralCloud via NATS
+}
+
+impl Default for DependencyHealthAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DependencyHealthAnalyzer {
@@ -564,38 +572,7 @@ impl DependencyHealthAnalyzer {
 }
 
 // Default implementations
-impl Default for DependencyMetadata {
-    fn default() -> Self {
-        Self {
-            description: None,
-            homepage: None,
-            repository: None,
-            license: None,
-            author: None,
-            maintainers: vec![],
-            keywords: vec![],
-            created_date: None,
-            last_updated: None,
-            download_count: None,
-            star_count: None,
-            fork_count: None,
-            issue_count: None,
-            pull_request_count: None,
-        }
-    }
-}
 
-impl Default for DependencyUsage {
-    fn default() -> Self {
-        Self {
-            files_using: vec![],
-            functions_using: vec![],
-            classes_using: vec![],
-            usage_frequency: 0,
-            usage_context: vec![],
-        }
-    }
-}
 
 impl Default for DependencyImpact {
     fn default() -> Self {

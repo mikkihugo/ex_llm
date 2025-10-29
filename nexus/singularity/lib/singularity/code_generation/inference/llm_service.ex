@@ -201,6 +201,13 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
     # Run forward pass through model
     # In production, would use Nx with loaded model weights
     # For now, return error to trigger fallback
+    context_tokens = infer_context_tokens(input_tensor)
+    sampling_budget = max(0, max_tokens - context_tokens)
+    Logger.debug("LLM forward pass invoked",
+      context_tokens: context_tokens,
+      requested_tokens: max_tokens,
+      sampling_budget: sampling_budget
+    )
     {:error, "Model forward pass not implemented"}
   end
 
@@ -221,4 +228,13 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
 
     {:ok, results}
   end
+
+  defp infer_context_tokens(%Nx.Tensor{} = tensor) do
+    tensor
+    |> Nx.size()
+    |> Nx.to_number()
+  end
+
+  defp infer_context_tokens(tokens) when is_list(tokens), do: length(tokens)
+  defp infer_context_tokens(_), do: 0
 end

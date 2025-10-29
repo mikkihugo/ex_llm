@@ -3,12 +3,12 @@ defmodule ObserverWeb.WebChatLive do
   Real-time chat interface for Singularity agents.
 
   Displays messages and notifications from ChatConversationAgent in real-time
-  using Phoenix LiveView and pubsub. Users can respond to approval requests
+  using Phoenix LiveView and pgflow notifications. Users can respond to approval requests
   and answer agent questions directly in the web UI.
 
   ## Features
 
-  - Real-time message updates via pubsub
+  - Real-time message updates via pgflow
   - Display notifications from agents
   - Show pending approvals and questions
   - Respond to approval/rejection requests
@@ -16,24 +16,24 @@ defmodule ObserverWeb.WebChatLive do
   - Rich formatting with emojis and status badges
   """
 
-  use Phoenix.LiveView
+  use ObserverWeb, :live_view
 
   require Logger
 
   alias Observer.HITL
+  alias Observer.Pgmq
   alias Singularity.Conversation.WebChat
-  alias ObserverWeb.Components.CoreComponents
-
-  @topic "agent_notifications"
   @messages_limit 100
-  @global_notifications_queue "global_notifications"
+  @notification_queue "global_notifications"
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    # Start listening for PGMQ + NOTIFY events
-    if connected?(socket) do
-      start_pgmq_listener(socket)
-    end
+    socket =
+      if connected?(socket) do
+        start_pgmq_listener(socket)
+      else
+        assign(socket, :pgmq_listener, nil)
+      end
 
     # Load initial messages and pending approvals
     messages = load_messages(0, @messages_limit)
@@ -47,24 +47,19 @@ defmodule ObserverWeb.WebChatLive do
      |> assign(:approval_history, [])
      |> assign(:approval_summary, %{})
      |> assign(:auto_scroll, true)
-     |> assign(:filter, "all")
-     |> assign(:pgmq_listener, nil)}
+     |> assign(:filter, "all")}
   end
 
   @impl Phoenix.LiveView
-  def handle_info({:notification, notification}, socket) do
-    # New notification received from agent
-    message = %{
-      id: generate_id(),
-      type: :notification,
-      content: notification.message,
-      timestamp: DateTime.utc_now(),
-      metadata: notification.metadata || %{}
-    }
+  def handle_info({:notification, listener_pid, _channel, message_id}, %{assigns: assigns} = socket) do
+    case Map.get(assigns, :pgmq_listener) do
+      ^listener_pid ->
+        send(self(), {:pgmq_notification, message_id})
+        {:noreply, socket}
 
-    new_messages = [message | socket.assigns.messages] |> Enum.take(@messages_limit)
-
-    {:noreply, assign(socket, :messages, new_messages)}
+      _other ->
+        {:noreply, socket}
+    end
   end
 
   @impl Phoenix.LiveView
@@ -72,8 +67,10 @@ defmodule ObserverWeb.WebChatLive do
     # PGMQ NOTIFY received, poll for the actual message
     case poll_pgmq_message(message_id) do
       {:ok, message} ->
+        message_type = extract_type(message, :unknown)
+
         # Process the message based on its type
-        case message.type do
+        case message_type do
           :notification ->
             handle_notification_message(message, socket)
           :approval_created ->
@@ -81,7 +78,8 @@ defmodule ObserverWeb.WebChatLive do
           _ ->
             {:noreply, socket}
         end
-      {:error, _reason} ->
+      {:error, reason} ->
+        Logger.warning("WebChatLive pgmq notification failed: #{inspect(reason)}")
         {:noreply, socket}
     end
   end
@@ -177,7 +175,10 @@ defmodule ObserverWeb.WebChatLive do
 
   @impl Phoenix.LiveView
   def handle_event("select_approval", %{"id" => id}, socket) do
-    case HITL.get_approval!(id) do
+    case HITL.get_approval(id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Approval not found")}
+
       approval ->
         # Load conversation history for this approval
         history = case WebChat.get_conversation_history(id) do
@@ -195,9 +196,6 @@ defmodule ObserverWeb.WebChatLive do
          |> assign(:selected_approval, approval)
          |> assign(:approval_history, history)
          |> assign(:approval_summary, summary)}
-
-      nil ->
-        {:noreply, put_flash(socket, :error, "Approval not found")}
     end
   end
 
@@ -320,7 +318,7 @@ defmodule ObserverWeb.WebChatLive do
       phx-value-id={@approval.id}
       class={[
         "p-4 cursor-pointer transition",
-        @selected ? "bg-blue-50" : "hover:bg-zinc-50"
+        if(@selected, do: "bg-blue-50", else: "hover:bg-zinc-50")
       ]}
     >
       <div class="flex items-start justify-between">
@@ -437,7 +435,8 @@ defmodule ObserverWeb.WebChatLive do
             <div>
               <h4 class="font-medium text-sm text-zinc-900 mb-2">Additional Metadata</h4>
               <pre class="text-xs bg-zinc-900 text-zinc-100 p-3 rounded overflow-auto">
-<%= Jason.encode!(@approval.metadata, pretty: true) %></pre>
+                <%= Jason.encode!(@approval.metadata, pretty: true) %>
+              </pre>
             </div>
           <% end %>
 
@@ -515,7 +514,7 @@ defmodule ObserverWeb.WebChatLive do
                   <span class="text-sm text-zinc-600">Decision:</span>
                   <span class={[
                     "text-sm font-medium",
-                    @approval.status == :approved ? "text-green-600" : "text-red-600"
+                    if(@approval.status == :approved, do: "text-green-600", else: "text-red-600")
                   ]}>
                     <%= String.upcase(to_string(@approval.status)) %>
                   </span>
@@ -588,12 +587,10 @@ defmodule ObserverWeb.WebChatLive do
   end
 
   defp format_time(nil), do: "Unknown"
-
-  defp format_time(datetime) do
-    datetime
-    |> DateTime.shift_zone!("Etc/UTC")
-    |> Calendar.strftime("%H:%M:%S")
-  end
+  defp format_time(%DateTime{} = datetime), do: Calendar.strftime(datetime, "%H:%M:%S UTC")
+  defp format_time(%NaiveDateTime{} = datetime), do: datetime |> DateTime.from_naive!("Etc/UTC") |> format_time()
+  defp format_time(value) when is_binary(value), do: value
+  defp format_time(_other), do: "Unknown"
 
   defp shorten(id) when is_binary(id) do
     String.slice(id, 0..7)
@@ -605,7 +602,7 @@ defmodule ObserverWeb.WebChatLive do
     "msg-#{System.unique_integer([:positive, :monotonic])}"
   end
 
-  defp load_messages(offset, limit) do
+  defp load_messages(_offset, _limit) do
     # Load messages from some persistent store or cache
     # For now, return empty list - can be extended to load from DB
     []
@@ -640,7 +637,7 @@ defmodule ObserverWeb.WebChatLive do
     HITL.reject(approval, attrs)
   end
 
-  defp apply_decision(approval, status, decided_by, reason) do
+  defp apply_decision(approval, _status, decided_by, reason) do
     attrs = %{
       decided_by: decided_by,
       decision_reason: reason
@@ -653,45 +650,88 @@ defmodule ObserverWeb.WebChatLive do
 
   defp start_pgmq_listener(socket) do
     # Start listening for notifications
-    case Pgflow.Notifications.listen("observer_notifications", Observer.Repo) do
+    case Pgflow.Notifications.listen(@notification_queue, Observer.Repo) do
       {:ok, pid} ->
-        # Start a process to handle NOTIFY events
-        Task.start(fn -> listen_for_pgmq_notifications(pid, socket) end)
         assign(socket, :pgmq_listener, pid)
       {:error, reason} ->
         Logger.error("Failed to start PGMQ listener: #{inspect(reason)}")
-        socket
+        assign(socket, :pgmq_listener, nil)
     end
   end
 
-  defp listen_for_pgmq_notifications(pid, socket) do
-    receive do
-      {:notification, ^pid, channel, message_id} ->
-        # Send message to LiveView process
-        send(self(), {:pgmq_notification, message_id})
-        listen_for_pgmq_notifications(pid, socket)
-    after
-      30_000 ->  # Timeout after 30 seconds
-        Logger.debug("PGMQ listener timeout, restarting...")
-        start_pgmq_listener(socket)
-    end
+  @impl Phoenix.LiveView
+  def terminate(_reason, %{assigns: %{pgmq_listener: pid}}) when is_pid(pid) do
+    Pgflow.Notifications.unlisten(pid, Observer.Repo)
+    :ok
   end
+
+  def terminate(_reason, _socket), do: :ok
 
   defp poll_pgmq_message(message_id) do
-    # Poll PGMQ for the actual message
-    case Pgflow.Repo.read_message("observer_notifications", message_id, Observer.Repo) do
-      {:ok, message} -> {:ok, message}
-      {:error, reason} -> {:error, reason}
+    with {:ok, {msg_id, payload}} <- Pgmq.peek_message(@notification_queue, message_id),
+         :ok <- Pgmq.ack_message(@notification_queue, msg_id) do
+      {:ok, normalize_message(payload)}
     end
   end
+
+  defp normalize_message(payload) when is_map(payload), do: payload
+  defp normalize_message(_), do: %{}
+
+  defp extract_type(message, default) do
+    message
+    |> get_message_attr(:type)
+    |> normalize_type(default)
+  end
+
+  defp normalize_type(nil, default), do: default
+  defp normalize_type(type, _default) when is_atom(type), do: type
+
+  defp normalize_type(type, default) when is_binary(type) do
+    case String.downcase(type) do
+      "notification" -> :notification
+      "approval_created" -> :approval_created
+      "approval" -> :approval
+      "decision" -> :decision
+      other when byte_size(other) > 0 ->
+        try do
+          String.to_existing_atom(other)
+        rescue
+          ArgumentError -> default
+        end
+      _ -> default
+    end
+  rescue
+    ArgumentError -> default
+  end
+
+  defp get_message_attr(nil, _key), do: nil
+
+  defp get_message_attr(message, key) when is_map(message) do
+    Map.get(message, key) || Map.get(message, Atom.to_string(key))
+  end
+
+  defp get_message_attr(_message, _key), do: nil
+
+  defp get_message_content(message) do
+    get_message_attr(message, :message) ||
+      get_message_attr(message, :content) ||
+      get_message_attr(message, :text) ||
+      ""
+  end
+
+  defp get_payload_attr(payload, key) when is_map(payload) do
+    Map.get(payload, key) || Map.get(payload, Atom.to_string(key))
+  end
+
+  defp get_payload_attr(_payload, _key), do: nil
 
   defp handle_notification_message(message, socket) do
     chat_message = %{
       id: generate_id(),
-      type: :notification,
-      content: message.message,
-      timestamp: message.timestamp,
-      metadata: message.metadata || %{}
+      type: extract_type(message, :notification),
+      content: get_message_content(message),
+      timestamp: get_message_attr(message, :timestamp),
+      metadata: get_message_attr(message, :metadata) || %{}
     }
 
     new_messages = [chat_message | socket.assigns.messages] |> Enum.take(@messages_limit)
@@ -699,18 +739,28 @@ defmodule ObserverWeb.WebChatLive do
   end
 
   defp handle_approval_message(message, socket) do
-    approval = message.approval
-    
+    approval = get_message_attr(message, :approval) || %{}
+    payload = get_message_attr(approval, :payload) || %{}
+    request_id = get_message_attr(approval, :request_id)
+    task_type = get_message_attr(approval, :task_type)
+    agent_id = get_message_attr(approval, :agent_id)
+    inserted_at = get_message_attr(approval, :inserted_at)
+
+    content =
+      get_payload_attr(payload, :description) ||
+        get_payload_attr(payload, :title) ||
+        "Approval requested"
+
     # Add as message and update pending approvals
     chat_message = %{
-      id: approval.request_id,
+      id: request_id || generate_id(),
       type: :approval,
-      content: approval.payload["description"] || approval.payload["title"] || "Approval requested",
-      timestamp: approval.inserted_at,
+      content: content,
+      timestamp: inserted_at,
       metadata: %{
-        request_id: approval.request_id,
-        task_type: approval.task_type,
-        agent_id: approval.agent_id
+        request_id: request_id,
+        task_type: task_type,
+        agent_id: agent_id
       }
     }
 

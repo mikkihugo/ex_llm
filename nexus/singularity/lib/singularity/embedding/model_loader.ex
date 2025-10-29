@@ -23,6 +23,7 @@ defmodule Singularity.Embedding.ModelLoader do
 
   require Logger
   alias Singularity.Embedding.NxService
+  alias Ortex
 
   @doc """
   Load model with specified device
@@ -482,23 +483,27 @@ defmodule Singularity.Embedding.ModelLoader do
 
   defp load_onnx_model(model, onnx_path, device) do
     try do
-      # Load ONNX model using Ortex
-      case Code.ensure_loaded?(Ortex) do
+      # Load ONNX model using Ortex (optional dependency)
+      case Code.ensure_loaded?(Ortex) and function_exported?(Ortex, :create_session, 1) do
         true ->
           # Use Ortex for ONNX inference
-          {:ok, session} = Ortex.create_session(onnx_path)
+          case Ortex.create_session(onnx_path) do
+            {:ok, session} ->
+              model_state = %{
+                model: model,
+                path: onnx_path,
+                device: device,
+                session: session,
+                type: :onnx,
+                loaded_at: DateTime.utc_now()
+              }
 
-          model_state = %{
-            model: model,
-            path: onnx_path,
-            device: device,
-            session: session,
-            type: :onnx,
-            loaded_at: DateTime.utc_now()
-          }
+              Logger.info("✅ ONNX model loaded via Ortex: #{model}")
+              {:ok, model_state}
 
-          Logger.info("✅ ONNX model loaded via Ortex: #{model}")
-          {:ok, model_state}
+            error ->
+              throw({:ortex_error, error})
+          end
 
         false ->
           # Fallback to basic ONNX state

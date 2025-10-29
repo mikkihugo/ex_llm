@@ -533,7 +533,7 @@ impl LanguageRegistry {
     pub fn languages_by_family(&self, family: &str) -> Vec<&LanguageInfo> {
         self.languages
             .values()
-            .filter(|lang| lang.family.as_ref().map_or(false, |f| f == family))
+            .filter(|lang| lang.family.as_ref().is_some_and(|f| f == family))
             .collect()
     }
 
