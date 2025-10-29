@@ -168,6 +168,65 @@ defmodule Singularity.Infrastructure.Resilience do
   end
 
   @doc """
+  Execute a function with combined timeout enforcement and retry semantics.
+
+  The supplied zero-arity function should either return `{:ok, value}` or raise on failure.
+
+  ## Options
+
+    * `:timeout_ms` – timeout applied to each attempt (defaults to #{@default_timeout_ms})
+    * `:retry_opts` – keyword list forwarded to `with_retry/2`
+    * `:operation` – label used for logging
+  """
+  @spec with_timeout_retry((-> term()), keyword()) ::
+          {:ok, term()} | {:error, term()}
+  def with_timeout_retry(fun, opts \\ []) when is_function(fun, 0) do
+    timeout_ms = Keyword.get(opts, :timeout_ms, @default_timeout_ms)
+    retry_opts = Keyword.get(opts, :retry_opts, [])
+    operation = Keyword.get(opts, :operation, :operation)
+    max_retries = Keyword.get(retry_opts, :max_retries, @default_max_retries)
+
+    wrapped_fun = fn ->
+      case with_timeout(fun, timeout_ms: timeout_ms) do
+        {:ok, {:ok, value}} ->
+          {:ok, value}
+
+        {:ok, {:error, reason}} ->
+          {:error, reason}
+
+        {:ok, value} ->
+          value
+
+        {:error, :timeout} ->
+          raise RuntimeError, "operation #{operation} timed out after #{timeout_ms}ms"
+      end
+    end
+
+    case with_retry(wrapped_fun, retry_opts) do
+      {:ok, {:ok, value}} ->
+        {:ok, value}
+
+      {:ok, {:error, reason}} ->
+        {:error, reason}
+
+      {:ok, value} ->
+        {:ok, value}
+
+      {:error, {:max_retries_exceeded, error}} = failure ->
+        Logger.error("Operation #{operation} failed after #{max_retries} retries",
+          operation: operation,
+          retries: max_retries,
+          reason: inspect(error)
+        )
+
+        failure
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Create a circuit breaker for protecting external service calls.
 
   Returns {:ok, circuit_breaker_ref} that can be used with execute/2.

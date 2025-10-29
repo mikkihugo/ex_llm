@@ -147,7 +147,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
     retry_opts = [max_retries: 3, base_delay_ms: 500, max_delay_ms: 5_000]
 
-    case execute_with_resilience(
+    case Resilience.with_timeout_retry(
            fn -> {:ok, collect_training_data_impl(task_data)} end,
            timeout_ms: 60_000,
            retry_opts: retry_opts,
@@ -167,7 +167,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     training_data = context[:data_collection].result
     task_data = context.input
 
-    case execute_with_resilience(
+    case Resilience.with_timeout_retry(
            fn -> {:ok, prepare_training_data_impl(training_data, task_data.model_type)} end,
            timeout_ms: 45_000,
            retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
@@ -187,7 +187,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     prepared_data = context[:data_preparation].result
     task_data = context.input
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn ->
              case train_model_impl(task_data.model_type, prepared_data) do
                {:ok, trained_model, metrics} ->
@@ -218,7 +218,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     task_data = context.input
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn -> {:ok, validate_model_impl(trained_model, task_data.model_type)} end,
            timeout_ms: 45_000,
            retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
@@ -238,7 +238,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     task_data = context.input
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn ->
              case deploy_model_impl(trained_model, task_data.model_type) do
                {:ok, model_path} ->
@@ -428,3 +428,4 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
       "def different_function() do\n  # Different code\nend"
     end
   end
+end

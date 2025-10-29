@@ -16,6 +16,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
   use Pgflow.Workflow
 
   alias Singularity.Architecture.{PatternDetector, FrameworkDetector}
+  alias Singularity.Infrastructure.Resilience
   alias Singularity.Repo
 
   @doc """
@@ -145,7 +146,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
     task_data = context.input
     codebase_path = Map.get(task_data, :codebase_path)
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn ->
              case PatternDetector.detect(codebase_path) do
                {:ok, patterns} ->
@@ -178,7 +179,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
 
     discovery_data = context[:pattern_discovery].result
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn ->
              analyzed_patterns =
                discovery_data.patterns
@@ -211,7 +212,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
 
     analysis_data = context[:pattern_analysis].result
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn ->
              case train_architecture_model_impl(analysis_data) do
                {:ok, model, metrics} ->
@@ -243,7 +244,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
 
     %{trained_model: trained_model} = context[:model_training].result
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn -> {:ok, validate_model_impl(trained_model)} end,
            timeout_ms: 45_000,
            retry_opts: [max_retries: 2, base_delay_ms: 750, max_delay_ms: 7_500],
@@ -263,7 +264,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
     %{trained_model: trained_model} = context[:model_training].result
     validation_result = context[:model_validation].result
 
-    case run_with_resilience(
+    case Resilience.with_timeout_retry(
            fn -> deploy_architecture_model_impl(trained_model, validation_result) end,
            timeout_ms: 60_000,
            retry_opts: [max_retries: 2, base_delay_ms: 1_000, max_delay_ms: 10_000],
