@@ -13,7 +13,7 @@ use std::path::Path;
 
 /// Code analysis result structure
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.CodeEngine.CodeAnalysisResult"]
+#[module = "Singularity.CodeAnalyzer.CodeAnalysisResult"]
 pub struct CodeAnalysisResult {
     pub complexity_score: f64,
     pub maintainability_score: f64,
@@ -24,7 +24,7 @@ pub struct CodeAnalysisResult {
 
 /// Quality metrics structure
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.CodeEngine.QualityMetrics"]
+#[module = "Singularity.CodeAnalyzer.QualityMetrics"]
 pub struct QualityMetrics {
     pub cyclomatic_complexity: u32,
     pub lines_of_code: u32,
@@ -227,15 +227,19 @@ pub fn analyze_code_nif(
     let mut maintainability_score = language_analysis.quality_score;
     if analyzer.has_rca_support(&language_analysis.language_id) {
         if let Ok(rca) = analyzer.get_rca_metrics(&code, &language_analysis.language_id) {
-            if rca.maintainability_index > 0.0 {
-                maintainability_score = (rca.maintainability_index / 100.0).clamp(0.0, 1.0);
+            if let Ok(mi) = rca.maintainability_index.parse::<f64>() {
+                if mi > 0.0 {
+                    maintainability_score = (mi / 100.0).clamp(0.0, 1.0);
+                }
             }
 
-            if rca.cyclomatic_complexity > 15.0 {
-                performance_issues.push(format!(
-                    "Cyclomatic complexity {:.1} exceeds recommended threshold; refactor to reduce branching.",
-                    rca.cyclomatic_complexity
-                ));
+            if let Ok(cc) = rca.cyclomatic_complexity.parse::<f64>() {
+                if cc > 15.0 {
+                    performance_issues.push(format!(
+                        "Cyclomatic complexity {:.1} exceeds recommended threshold; refactor to reduce branching.",
+                        cc
+                    ));
+                }
             }
         }
     }
@@ -314,8 +318,10 @@ pub fn calculate_quality_metrics_nif(
 
     if !code_str.is_empty() && analyzer.has_rca_support(&language) {
         if let Ok(rca) = analyzer.get_rca_metrics(&code_str, &language) {
-            if rca.cyclomatic_complexity > 0.0 {
-                cyclomatic = rca.cyclomatic_complexity;
+            if let Ok(cc) = rca.cyclomatic_complexity.parse::<f64>() {
+                if cc > 0.0 {
+                    cyclomatic = cc;
+                }
             }
             if rca.source_lines_of_code > 0 {
                 lines_of_code = rca.source_lines_of_code as u32;
@@ -416,7 +422,7 @@ pub fn query_asset_nif(id: String) -> NifResult<Option<String>> {
 
 /// Parsed file result structure
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
-#[module = "Singularity.CodeEngine.ParsedFile"]
+#[module = "Singularity.CodeAnalyzer.ParsedFile"]
 pub struct ParsedFileResult {
     pub file_path: String,
     pub language: String,
@@ -470,12 +476,48 @@ pub fn parse_file_nif(file_path: String) -> NifResult<ParsedFileResult> {
 
 /// NIF: Get list of supported languages
 #[rustler::nif]
-pub fn supported_languages_nif() -> NifResult<Vec<String>> {
+pub fn supported_languages() -> NifResult<Vec<String>> {
     match CodebaseAnalyzer::new() {
         Ok(analyzer) => Ok(analyzer.supported_languages()),
         Err(e) => Err(Error::Term(Box::new(format!(
             "Failed to create analyzer: {e}"
         )))),
+    }
+}
+
+#[rustler::nif]
+pub fn rca_supported_languages() -> NifResult<Vec<String>> {
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => Ok(analyzer.rca_supported_languages()),
+        Err(e) => Err(Error::Term(Box::new(format!(
+            "Failed to create analyzer: {e}"
+        )))),
+    }
+}
+
+#[rustler::nif]
+pub fn ast_grep_supported_languages() -> NifResult<Vec<String>> {
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => Ok(analyzer.ast_grep_supported_languages()),
+        Err(e) => Err(Error::Term(Box::new(format!(
+            "Failed to create analyzer: {e}"
+        )))),
+    }
+}
+
+#[rustler::nif]
+pub fn has_rca_support(language_id: String) -> bool {
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.has_rca_support(&language_id),
+        Err(_) => false,
+    }
+}
+
+#[rustler::nif]
+pub fn has_ast_grep_support(language_id: String) -> bool {
+    match CodebaseAnalyzer::new() {
+        Ok(analyzer) => analyzer.has_ast_grep_support(&language_id),
+        Err(_) => false,
     }
 }
 
@@ -603,4 +645,4 @@ pub fn detect_language_by_manifest_nif(
 //
 // NOTE: Rustler 0.34+ auto-detects exported functions
 //       No need for explicit function list anymore
-rustler::init!("Elixir.Singularity.CodeEngineNif");
+rustler::init!("Elixir.Singularity.CodeAnalyzer.Native");

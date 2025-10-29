@@ -42,7 +42,7 @@ defmodule Nexus.Integration.CodexIntegrationTest do
   setup do
     # Clean up any existing tokens
     OAuthToken.delete("codex")
-    
+
     :ok
   end
 
@@ -76,7 +76,8 @@ defmodule Nexus.Integration.CodexIntegrationTest do
       expired_token = %{
         access_token: "expired_token",
         refresh_token: "refresh_token",
-        expires_at: DateTime.utc_now() |> DateTime.add(-3600, :second), # 1 hour ago
+        # 1 hour ago
+        expires_at: DateTime.utc_now() |> DateTime.add(-3600, :second),
         scopes: ["openai.user.read"]
       }
 
@@ -87,7 +88,8 @@ defmodule Nexus.Integration.CodexIntegrationTest do
       valid_token = %{
         access_token: "valid_token",
         refresh_token: "refresh_token",
-        expires_at: DateTime.utc_now() |> DateTime.add(3600, :second), # 1 hour from now
+        # 1 hour from now
+        expires_at: DateTime.utc_now() |> DateTime.add(3600, :second),
         scopes: ["openai.user.read"]
       }
 
@@ -127,7 +129,7 @@ defmodule Nexus.Integration.CodexIntegrationTest do
     test "configured? returns false when no token exists" do
       # Ensure no token exists
       OAuthToken.delete("codex")
-      
+
       assert Codex.configured?() == false
     end
 
@@ -141,16 +143,16 @@ defmodule Nexus.Integration.CodexIntegrationTest do
       }
 
       {:ok, _token} = OAuthToken.upsert("codex", token_attrs)
-      
+
       assert Codex.configured?() == true
     end
 
     test "list_models works with real database" do
       models = Codex.list_models()
-      
+
       assert is_list(models)
       assert length(models) == 3
-      
+
       # Check all required models exist
       ids = Enum.map(models, & &1.id)
       assert "gpt-5" in ids
@@ -166,9 +168,9 @@ defmodule Nexus.Integration.CodexIntegrationTest do
     test "chat returns error when no token available" do
       # Ensure no token exists
       OAuthToken.delete("codex")
-      
+
       messages = [%{role: "user", content: "Hello"}]
-      
+
       {:error, reason} = Codex.chat(messages)
       assert reason == :not_found
     end
@@ -178,7 +180,7 @@ defmodule Nexus.Integration.CodexIntegrationTest do
     test "gpt-5 model has correct properties" do
       models = Codex.list_models()
       gpt5 = Enum.find(models, fn m -> m.id == "gpt-5" end)
-      
+
       assert gpt5 != nil
       assert gpt5.name == "GPT-5"
       assert gpt5.context_window == 400_000
@@ -193,7 +195,7 @@ defmodule Nexus.Integration.CodexIntegrationTest do
     test "gpt-5-codex model has correct properties" do
       models = Codex.list_models()
       codex = Enum.find(models, fn m -> m.id == "gpt-5-codex" end)
-      
+
       assert codex != nil
       assert codex.name == "GPT-5 Codex"
       assert codex.context_window == 400_000
@@ -209,13 +211,14 @@ defmodule Nexus.Integration.CodexIntegrationTest do
     test "codex-mini-latest model has correct properties" do
       models = Codex.list_models()
       mini = Enum.find(models, fn m -> m.id == "codex-mini-latest" end)
-      
+
       assert mini != nil
       assert mini.name == "Codex Mini Latest"
       assert mini.context_window == 200_000
       assert mini.max_output_tokens == 100_000
       assert :code_generation in mini.capabilities
-      assert mini.thinking_levels == nil  # No thinking capability
+      # No thinking capability
+      assert mini.thinking_levels == nil
       assert mini.cost == :free
       assert mini.pricing == "Free with volume limits"
       assert mini.quota_usage == %{default: 1.0}

@@ -99,7 +99,7 @@ defmodule Nexus.Core.OAuthTokenTest do
   describe "expired?/1" do
     test "returns true for expired token" do
       expired_time = DateTime.utc_now() |> DateTime.add(-3600, :second)
-      
+
       token = %OAuthToken{
         expires_at: expired_time
       }
@@ -108,8 +108,9 @@ defmodule Nexus.Core.OAuthTokenTest do
     end
 
     test "returns true for token expiring within 5 minutes" do
-      expiring_soon = DateTime.utc_now() |> DateTime.add(240, :second) # 4 minutes
-      
+      # 4 minutes
+      expiring_soon = DateTime.utc_now() |> DateTime.add(240, :second)
+
       token = %OAuthToken{
         expires_at: expiring_soon
       }
@@ -118,8 +119,9 @@ defmodule Nexus.Core.OAuthTokenTest do
     end
 
     test "returns false for token with more than 5 minutes remaining" do
-      valid_time = DateTime.utc_now() |> DateTime.add(600, :second) # 10 minutes
-      
+      # 10 minutes
+      valid_time = DateTime.utc_now() |> DateTime.add(600, :second)
+
       token = %OAuthToken{
         expires_at: valid_time
       }
@@ -139,11 +141,10 @@ defmodule Nexus.Core.OAuthTokenTest do
     end
   end
 
-
   describe "to_ex_llm_format/1" do
     test "converts token to ex_llm format" do
       expires_at = DateTime.utc_now() |> DateTime.add(3600, :second)
-      
+
       token = %OAuthToken{
         access_token: "access_123",
         refresh_token: "refresh_123",
@@ -163,7 +164,7 @@ defmodule Nexus.Core.OAuthTokenTest do
 
     test "handles nil refresh_token" do
       expires_at = DateTime.utc_now() |> DateTime.add(3600, :second)
-      
+
       token = %OAuthToken{
         access_token: "access_123",
         refresh_token: nil,
@@ -185,7 +186,7 @@ defmodule Nexus.Core.OAuthTokenTest do
       ex_llm_tokens = %{
         access_token: "access_123",
         refresh_token: "refresh_123",
-        expires_at: 1234567890,
+        expires_at: 1_234_567_890,
         token_type: "Bearer",
         scope: "read write"
       }
@@ -203,7 +204,7 @@ defmodule Nexus.Core.OAuthTokenTest do
       ex_llm_tokens = %{
         access_token: "access_123",
         refresh_token: "refresh_123",
-        expires_at: 1234567890,
+        expires_at: 1_234_567_890,
         token_type: "Bearer",
         scope: nil
       }
@@ -217,7 +218,7 @@ defmodule Nexus.Core.OAuthTokenTest do
       ex_llm_tokens = %{
         access_token: "access_123",
         refresh_token: "refresh_123",
-        expires_at: 1234567890,
+        expires_at: 1_234_567_890,
         token_type: "Bearer",
         scope: ""
       }
@@ -233,7 +234,7 @@ defmodule Nexus.Core.OAuthTokenTest do
       ex_llm_tokens = %{
         access_token: "access_123",
         refresh_token: "refresh_123",
-        expires_at: 1234567890,
+        expires_at: 1_234_567_890,
         token_type: "Bearer",
         scope: ["read", "write"]
       }
@@ -247,7 +248,7 @@ defmodule Nexus.Core.OAuthTokenTest do
       ex_llm_tokens = %{
         access_token: "access_123",
         refresh_token: "refresh_123",
-        expires_at: 1234567890,
+        expires_at: 1_234_567_890,
         scope: "read write"
       }
 
@@ -256,5 +257,4 @@ defmodule Nexus.Core.OAuthTokenTest do
       assert attrs.token_type == "Bearer"
     end
   end
-
 end

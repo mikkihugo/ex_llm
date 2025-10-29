@@ -186,6 +186,7 @@ defmodule Nexus.QueueConsumer do
           msg_id: msg_id,
           error: inspect(reason)
         )
+
         # Optionally: publish error result or retry
     end
   end
@@ -194,21 +195,22 @@ defmodule Nexus.QueueConsumer do
     # Convert string keys to atom keys for router
     api_version = Map.get(request, "api_version", "responses")
 
-    router_request = %{
-      complexity: string_to_atom(Map.get(request, "complexity")),
-      messages: Map.get(request, "messages", []),
-      task_type: string_to_atom(Map.get(request, "task_type")),
-      api_version: api_version,
-      max_tokens: Map.get(request, "max_tokens"),
-      temperature: Map.get(request, "temperature"),
-      previous_response_id: Map.get(request, "previous_response_id"),
-      mcp_servers: Map.get(request, "mcp_servers"),
-      store: Map.get(request, "store"),
-      tools: Map.get(request, "tools")
-    }
-    # Remove nil values for cleaner request
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Map.new()
+    router_request =
+      %{
+        complexity: string_to_atom(Map.get(request, "complexity")),
+        messages: Map.get(request, "messages", []),
+        task_type: string_to_atom(Map.get(request, "task_type")),
+        api_version: api_version,
+        max_tokens: Map.get(request, "max_tokens"),
+        temperature: Map.get(request, "temperature"),
+        previous_response_id: Map.get(request, "previous_response_id"),
+        mcp_servers: Map.get(request, "mcp_servers"),
+        store: Map.get(request, "store"),
+        tools: Map.get(request, "tools")
+      }
+      # Remove nil values for cleaner request
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
 
     Nexus.LLMRouter.route(router_request)
   end

@@ -37,13 +37,12 @@ defmodule Nexus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-
       # HTTP client for OAuth2 and API calls
       {:req, "~> 0.5.0"},
 
       # JSON encoding/decoding
       {:jason, "~> 1.4"},
-      
+
       # TOML parsing for Codex config
       {:toml, "~> 0.7"},
 

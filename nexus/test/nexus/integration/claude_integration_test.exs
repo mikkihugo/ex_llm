@@ -42,7 +42,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
   setup do
     # Clean up any existing tokens
     OAuthToken.delete("claude_code")
-    
+
     :ok
   end
 
@@ -76,7 +76,8 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
       expired_token = %{
         access_token: "expired_token",
         refresh_token: "refresh_token",
-        expires_at: DateTime.utc_now() |> DateTime.add(-3600, :second), # 1 hour ago
+        # 1 hour ago
+        expires_at: DateTime.utc_now() |> DateTime.add(-3600, :second),
         scopes: ["user:inference"]
       }
 
@@ -87,7 +88,8 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
       valid_token = %{
         access_token: "valid_token",
         refresh_token: "refresh_token",
-        expires_at: DateTime.utc_now() |> DateTime.add(3600, :second), # 1 hour from now
+        # 1 hour from now
+        expires_at: DateTime.utc_now() |> DateTime.add(3600, :second),
         scopes: ["user:inference"]
       }
 
@@ -127,7 +129,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "configured? returns false when no token exists" do
       # Ensure no token exists
       OAuthToken.delete("claude_code")
-      
+
       assert Claude.configured?() == false
     end
 
@@ -141,16 +143,16 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
       }
 
       {:ok, _token} = OAuthToken.upsert("claude_code", token_attrs)
-      
+
       assert Claude.configured?() == true
     end
 
     test "list_models works with real database" do
       models = Claude.list_models()
-      
+
       assert is_list(models)
       assert length(models) == 3
-      
+
       # Check all required models exist
       ids = Enum.map(models, & &1.id)
       assert "claude-3-5-sonnet-20241022" in ids
@@ -166,9 +168,9 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "chat returns error when no token available" do
       # Ensure no token exists
       OAuthToken.delete("claude_code")
-      
+
       messages = [%{role: "user", content: "Hello"}]
-      
+
       {:error, reason} = Claude.chat(messages)
       assert reason == :not_found
     end
@@ -183,7 +185,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
       }
 
       {:ok, _token} = OAuthToken.upsert("claude_code", token_attrs)
-      
+
       # Should attempt refresh but fail (no real refresh token)
       messages = [%{role: "user", content: "Hello"}]
       {:error, reason} = Claude.chat(messages)
@@ -195,7 +197,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "OAuth2 module is loaded and functional" do
       # Test that OAuth2 module exists and has expected functions
       assert Code.ensure_loaded?(OAuth2)
-      
+
       # Test authorization URL generation (should work without config)
       {:ok, url} = OAuth2.authorization_url()
       assert String.starts_with?(url, "https://claude.ai/oauth/authorize")
@@ -219,7 +221,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
       }
 
       {:ok, token} = OAuthToken.upsert("claude_code", token_attrs)
-      
+
       # Refresh should fail with fake token
       {:error, reason} = OAuth2.refresh(token)
       assert reason in [:refresh_failed, :not_found, :not_configured]
@@ -230,7 +232,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "claude-3-5-sonnet model has correct properties" do
       models = Claude.list_models()
       sonnet = Enum.find(models, fn m -> m.id == "claude-3-5-sonnet-20241022" end)
-      
+
       assert sonnet != nil
       assert sonnet.name == "Claude 3.5 Sonnet"
       assert sonnet.context_window == 200_000
@@ -245,7 +247,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "claude-3-5-haiku model has correct properties" do
       models = Claude.list_models()
       haiku = Enum.find(models, fn m -> m.id == "claude-3-5-haiku-20241022" end)
-      
+
       assert haiku != nil
       assert haiku.name == "Claude 3.5 Haiku"
       assert haiku.context_window == 200_000
@@ -260,7 +262,7 @@ defmodule Nexus.Integration.ClaudeIntegrationTest do
     test "claude-3-opus model has correct properties" do
       models = Claude.list_models()
       opus = Enum.find(models, fn m -> m.id == "claude-3-opus-20240229" end)
-      
+
       assert opus != nil
       assert opus.name == "Claude 3 Opus"
       assert opus.context_window == 200_000

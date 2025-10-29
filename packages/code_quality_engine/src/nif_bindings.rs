@@ -16,7 +16,7 @@ use crate::graph::{CodeDependencyGraph, GraphType};
 
 /// Result returned to Elixir (maps to Elixir struct)
 #[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
-#[module = "Singularity.RustAnalyzer.ControlFlowResult"]
+#[module = "Singularity.CodeAnalyzer.ControlFlowResult"]
 pub struct ControlFlowResult {
     pub dead_ends: Vec<DeadEndInfo>,
     pub unreachable_code: Vec<UnreachableCodeInfo>,
@@ -28,7 +28,7 @@ pub struct ControlFlowResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
-#[module = "Singularity.RustAnalyzer.DeadEnd"]
+#[module = "Singularity.CodeAnalyzer.DeadEnd"]
 pub struct DeadEndInfo {
     pub node_id: String,
     pub function_name: String,
@@ -37,7 +37,7 @@ pub struct DeadEndInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
-#[module = "Singularity.RustAnalyzer.UnreachableCode"]
+#[module = "Singularity.CodeAnalyzer.UnreachableCode"]
 pub struct UnreachableCodeInfo {
     pub node_id: String,
     pub line_number: usize,

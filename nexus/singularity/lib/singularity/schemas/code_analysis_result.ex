@@ -8,7 +8,7 @@ defmodule Singularity.Schemas.CodeAnalysisResult do
     "module": "Singularity.Schemas.CodeAnalysisResult",
     "layer": "data",
     "purpose": "Persist code analysis results for historical tracking and trend analysis",
-    "data_source": "Singularity.CodeAnalysis.Analyzer",
+    "data_source": "Singularity.CodeAnalyzer",
     "storage": "PostgreSQL with JSONB",
     "primary_use_case": "Quality tracking, regression detection, performance monitoring"
   }
@@ -33,7 +33,7 @@ defmodule Singularity.Schemas.CodeAnalysisResult do
   ## JSONB Fields
 
   ### analysis_data
-  Full analysis result from CodeAnalysis.Analyzer.analyze_language/2
+  Full analysis result from CodeAnalyzer.analyze_language/2
 
   ### functions
   Array of function definitions from extract_functions/2:

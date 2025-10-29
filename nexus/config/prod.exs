@@ -2,11 +2,12 @@ import Config
 
 # Production configuration
 # Database URL should be provided via environment variable
-database_url = System.get_env("DATABASE_URL") ||
-  raise """
-  environment variable DATABASE_URL is missing.
-  For example: ecto://USER:PASS@HOST/DATABASE
-  """
+database_url =
+  System.get_env("DATABASE_URL") ||
+    raise """
+    environment variable DATABASE_URL is missing.
+    For example: ecto://USER:PASS@HOST/DATABASE
+    """
 
 config :nexus, Nexus.Repo,
   url: database_url,

@@ -1,6 +1,6 @@
 defmodule Singularity.Jobs.CacheClearWorker do
   @moduledoc """
-  Clear CodeAnalysis.Analyzer cache (Oban scheduled job)
+  Clear Singularity.CodeAnalyzer cache (Oban scheduled job)
 
   Scheduled: Daily at 3:00 AM UTC
 
@@ -16,15 +16,15 @@ defmodule Singularity.Jobs.CacheClearWorker do
 
   @impl Oban.Worker
   def perform(_job) do
-    Logger.info("Clearing CodeAnalysis.Analyzer cache...")
+    Logger.info("Clearing Singularity.CodeAnalyzer cache...")
 
-    case Process.whereis(Singularity.CodeAnalysis.Analyzer.Cache) do
+    case Process.whereis(Singularity.CodeAnalyzer.Cache) do
       nil ->
         Logger.warning("Cache not running - skipping clear")
         :ok
 
       _pid ->
-        :ok = Singularity.CodeAnalysis.Analyzer.Cache.clear()
+        :ok = Singularity.CodeAnalyzer.Cache.clear()
         Logger.info("✅ Cache cleared successfully")
         :ok
     end

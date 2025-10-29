@@ -72,6 +72,8 @@ defmodule Singularity.CodeAnalyzer.Cache do
   use GenServer
   require Logger
 
+  alias Singularity.CodeAnalyzer
+
   # Default configuration
   @default_max_size 1000
   # 1 hour in seconds
@@ -211,7 +213,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
     # Create ETS table
     :ets.new(@table_name, [:named_table, :set, :public, read_concurrency: true])
 
-    Logger.info("CodeAnalysis.Analyzer.Cache started with max_size=#{max_size}, ttl=#{ttl}s")
+    Logger.info("CodeAnalyzer.Cache started with max_size=#{max_size}, ttl=#{ttl}s")
 
     state = %{
       max_size: max_size,
@@ -269,7 +271,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
   @impl true
   def handle_call(:clear, _from, state) do
     :ets.delete_all_objects(@table_name)
-    Logger.info("CodeAnalysis.Analyzer.Cache cleared")
+    Logger.info("CodeAnalyzer.Cache cleared")
 
     # Reset stats
     state = %{state | hits: 0, misses: 0}

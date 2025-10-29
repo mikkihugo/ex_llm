@@ -1,6 +1,6 @@
-defmodule Singularity.CodeEngineNif do
+defmodule Singularity.CodeAnalyzer.Native do
   @moduledoc """
-  Code Engine NIF - Direct bindings to Rust multi-language code analysis engine.
+  Native bridge to the Rust code_quality_engine crate for multi-language code analysis.
 
   This module loads the Rust NIF from `rust/code_quality_engine` which provides:
   - Multi-language code analysis (20+ languages)
@@ -14,7 +14,7 @@ defmodule Singularity.CodeEngineNif do
 
   ```json
   {
-    "module": "Singularity.CodeEngineNif",
+    "module": "Singularity.CodeAnalyzer.Native",
     "type": "NIF wrapper",
     "purpose": "Elixir bindings to Rust code_quality_engine NIF for multi-language analysis",
     "rust_crate": "code_quality_engine",
@@ -67,26 +67,26 @@ defmodule Singularity.CodeEngineNif do
   ## Examples
 
       # Multi-language analysis
-      iex> Singularity.RustAnalyzer.analyze_language("def hello, do: :world", "elixir")
+      iex> Singularity.CodeAnalyzer.analyze_language("def hello, do: :world", "elixir")
       {:ok, %{language_id: "elixir", complexity_score: 0.1, quality_score: 0.9}}
 
       # RCA metrics
-      iex> Singularity.RustAnalyzer.get_rca_metrics(rust_code, "rust")
+      iex> Singularity.CodeAnalyzer.get_rca_metrics(rust_code, "rust")
       {:ok, %{cyclomatic_complexity: "5", maintainability_index: "75"}}
 
       # AST extraction
-      iex> Singularity.RustAnalyzer.extract_functions(code, "python")
+      iex> Singularity.CodeAnalyzer.extract_functions(code, "python")
       {:ok, [%{name: "process_data", line_start: 10, parameters: ["data"]}]}
 
       # Language support
-      iex> Singularity.RustAnalyzer.supported_languages()
+      iex> Singularity.CodeAnalyzer.supported_languages()
       ["elixir", "rust", "python", "javascript", ...]
 
   ## Anti-Patterns
 
   **DO NOT create these duplicates:**
   - ❌ `CodeAnalysisNIF` - This IS the NIF module
-  - ❌ `RustAnalyzer` - Old name (renamed to CodeEngineNif)
+  - ❌ `RustAnalyzer` - Deprecated name (use Singularity.CodeAnalyzer.Native)
   - ❌ Direct NIF calls - Use `Singularity.CodeAnalyzer` wrapper instead
 
   **DO NOT call this module directly:**
@@ -99,7 +99,7 @@ defmodule Singularity.CodeEngineNif do
   halstead-metrics, ast-extraction, pattern-detection, rustler, nif-bindings
   """
 
-  # use Rustler, otp_app: :singularity, crate: "code_quality_engine", path: "../packages/code_quality_engine"
+  use Rustler, otp_app: :singularity, crate: "code_quality_engine", path: "../../packages/code_quality_engine"
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)
   # ===========================

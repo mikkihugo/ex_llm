@@ -1,10 +1,10 @@
 defmodule Mix.Tasks.Analyze.Codebase do
-  @shortdoc "Analyze entire codebase using CodeAnalysis.Analyzer with 20-language support"
+  @shortdoc "Analyze entire codebase using Singularity.CodeAnalyzer with 20-language support"
 
   @moduledoc """
   Analyzes an entire codebase with multi-language support.
 
-  Uses Singularity.CodeAnalysis.Analyzer to analyze all files in a codebase from the database.
+  Uses Singularity.CodeAnalyzer to analyze all files in a codebase from the database.
 
   ## Usage
 
@@ -43,7 +43,7 @@ defmodule Mix.Tasks.Analyze.Codebase do
   use Mix.Task
   require Logger
 
-  alias Singularity.CodeAnalysis.Analyzer
+  alias Singularity.CodeAnalyzer
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
   import Ecto.Query

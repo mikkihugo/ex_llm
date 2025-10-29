@@ -108,7 +108,7 @@ defmodule Singularity.CodeAnalyzer do
   ```yaml
   CodeAnalyzer:
     calls:
-      - Singularity.RustAnalyzer (NIF)
+      - Native (NIF)
       - Singularity.Repo (database access)
     called_by:
       - StartupCodeIngestion (for module analysis)
@@ -130,6 +130,8 @@ defmodule Singularity.CodeAnalyzer do
   20-language-support, tree-sitter, rust-nif
   """
 
+  alias Singularity.CodeAnalyzer.Native
+  alias Cache
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 
@@ -159,7 +161,7 @@ defmodule Singularity.CodeAnalyzer do
     use_cache = Keyword.get(opts, :cache, cache_enabled?())
 
     if use_cache do
-      Singularity.CodeAnalyzer.Cache.get_or_analyze(code, language_hint, fn ->
+      Cache.get_or_analyze(code, language_hint, fn ->
         do_analyze_language(code, language_hint)
       end)
     else
@@ -168,7 +170,7 @@ defmodule Singularity.CodeAnalyzer do
   end
 
   defp do_analyze_language(code, language_hint) do
-    case Singularity.CodeEngineNif.analyze_language(code, language_hint) do
+    case Native.analyze_language(code, language_hint) do
       {:ok, analysis} ->
         {:ok, analysis}
 
@@ -179,7 +181,7 @@ defmodule Singularity.CodeAnalyzer do
   end
 
   defp cache_enabled? do
-    Process.whereis(Singularity.CodeAnalyzer.Cache) != nil
+    Process.whereis(Cache) != nil
   end
 
   @doc """
@@ -195,7 +197,7 @@ defmodule Singularity.CodeAnalyzer do
   """
   def check_language_rules(code, language_hint)
       when is_binary(code) and is_binary(language_hint) do
-    case Singularity.CodeEngineNif.check_language_rules(code, language_hint) do
+    case Native.check_language_rules(code, language_hint) do
       {:ok, violations} ->
         {:ok, violations}
 
@@ -223,7 +225,7 @@ defmodule Singularity.CodeAnalyzer do
   - `{:error, reason}` - If language unsupported or analysis fails
   """
   def get_rca_metrics(code, language_hint) when is_binary(code) and is_binary(language_hint) do
-    case Singularity.CodeEngineNif.get_rca_metrics(code, language_hint) do
+    case Native.get_rca_metrics(code, language_hint) do
       {:ok, metrics} ->
         {:ok, metrics}
 
@@ -244,7 +246,7 @@ defmodule Singularity.CodeAnalyzer do
   - `{:ok, functions}` - List of function metadata
   """
   def extract_functions(code, language_hint) when is_binary(code) and is_binary(language_hint) do
-    case Singularity.CodeEngineNif.extract_functions(code, language_hint) do
+    case Native.extract_functions(code, language_hint) do
       {:ok, functions} ->
         {:ok, functions}
 
@@ -261,7 +263,7 @@ defmodule Singularity.CodeAnalyzer do
   - `{:ok, classes}` - List of class metadata
   """
   def extract_classes(code, language_hint) when is_binary(code) and is_binary(language_hint) do
-    case Singularity.CodeEngineNif.extract_classes(code, language_hint) do
+    case Native.extract_classes(code, language_hint) do
       {:ok, classes} ->
         {:ok, classes}
 
@@ -279,7 +281,7 @@ defmodule Singularity.CodeAnalyzer do
   """
   def extract_imports_exports(code, language_hint)
       when is_binary(code) and is_binary(language_hint) do
-    case Singularity.CodeEngineNif.extract_imports_exports(code, language_hint) do
+    case Native.extract_imports_exports(code, language_hint) do
       {:ok, {imports, exports}} ->
         {:ok, {imports, exports}}
 
@@ -303,7 +305,7 @@ defmodule Singularity.CodeAnalyzer do
   - `{:ok, patterns}` - Detected cross-language patterns with confidence scores
   """
   def detect_cross_language_patterns(files) when is_list(files) do
-    case Singularity.CodeEngineNif.detect_cross_language_patterns(files) do
+    case Native.detect_cross_language_patterns(files) do
       {:ok, patterns} ->
         {:ok, patterns}
 
@@ -324,7 +326,7 @@ defmodule Singularity.CodeAnalyzer do
   - List of language IDs
   """
   def supported_languages do
-    Singularity.CodeEngineNif.supported_languages()
+    Native.supported_languages()
   end
 
   @doc """
@@ -334,7 +336,7 @@ defmodule Singularity.CodeAnalyzer do
   - List of language IDs with RCA metrics support
   """
   def rca_supported_languages do
-    Singularity.CodeEngineNif.rca_supported_languages()
+    Native.rca_supported_languages()
   end
 
   @doc """
@@ -344,7 +346,7 @@ defmodule Singularity.CodeAnalyzer do
   - List of language IDs with AST-Grep support
   """
   def ast_grep_supported_languages do
-    Singularity.CodeEngineNif.ast_grep_supported_languages()
+    Native.ast_grep_supported_languages()
   end
 
   @doc """
@@ -354,7 +356,7 @@ defmodule Singularity.CodeAnalyzer do
   - `true` if RCA metrics available, `false` otherwise
   """
   def has_rca_support?(language_id) when is_binary(language_id) do
-    Singularity.CodeEngineNif.has_rca_support(language_id)
+    Native.has_rca_support(language_id)
   end
 
   @doc """
@@ -364,7 +366,7 @@ defmodule Singularity.CodeAnalyzer do
   - `true` if AST-Grep available, `false` otherwise
   """
   def has_ast_grep_support?(language_id) when is_binary(language_id) do
-    Singularity.CodeEngineNif.has_ast_grep_support(language_id)
+    Native.has_ast_grep_support(language_id)
   end
 
   # ===========================

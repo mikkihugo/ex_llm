@@ -5,11 +5,11 @@ IO.puts("Testing CodeEngine NIF (simple test, no bootstrap)...")
 IO.puts("")
 
 # Test 1: Load the NIF module directly
-IO.puts("Test 1: Checking if RustAnalyzer NIF loads...")
+IO.puts("Test 1: Checking if CodeAnalyzer Native loads...")
 
 try do
-  case Singularity.RustAnalyzer.supported_languages() do
-    {:ok, languages} ->
+  case Singularity.CodeAnalyzer.Native.supported_languages() do
+    languages when is_list(languages) ->
       IO.puts("✓ NIF loaded! Supported languages: #{inspect(languages)}")
     error ->
       IO.puts("✗ Failed: #{inspect(error)}")

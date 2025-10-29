@@ -4,7 +4,7 @@ defmodule Nexus.Providers.Claude do
 
   This provider handles authentication, model selection, and API calls
   to the Claude API using OAuth2 tokens from Claude Code.
-  
+
   Uses OAuth2 tokens from Claude Code authentication flow.
   """
 
@@ -41,7 +41,7 @@ defmodule Nexus.Providers.Claude do
 
   @doc """
   Check if Claude is configured (has valid OAuth tokens).
-  
+
   Uses OAuth2 tokens from Claude Code authentication.
   """
   def configured? do
@@ -137,6 +137,7 @@ defmodule Nexus.Providers.Claude do
       {:ok, new_tokens} ->
         attrs = OAuthToken.from_ex_llm_format(new_tokens)
         token_repository().upsert("claude_code", attrs)
+
       {:error, reason} ->
         Logger.error("Failed to refresh Claude token: #{inspect(reason)}")
         {:error, :refresh_failed}
@@ -146,7 +147,7 @@ defmodule Nexus.Providers.Claude do
   defp call_api(messages, token, opts) do
     model = opts[:model] || @default_model
     max_tokens = opts[:max_tokens] || 4_096
-    
+
     request = %{
       model: model,
       max_tokens: max_tokens,
@@ -162,9 +163,11 @@ defmodule Nexus.Providers.Claude do
     case http_client().post("#{@base_url}/messages", request, headers: headers) do
       {:ok, %{status: 200, body: body}} ->
         {:ok, body}
+
       {:ok, %{status: status, body: body}} ->
         Logger.error("Claude API error: #{status} - #{inspect(body)}")
         {:error, {:api_error, status, body}}
+
       {:error, reason} ->
         Logger.error("Claude API request failed: #{inspect(reason)}")
         {:error, {:request_failed, reason}}
@@ -178,16 +181,18 @@ defmodule Nexus.Providers.Claude do
 
   defp parse_response(%{"content" => content}) when is_list(content) do
     # Extract text from content array
-    text = content
-    |> Enum.filter(&(&1["type"] == "text"))
-    |> Enum.map(&(&1["text"]))
-    |> Enum.join("")
-    
+    text =
+      content
+      |> Enum.filter(&(&1["type"] == "text"))
+      |> Enum.map(& &1["text"])
+      |> Enum.join("")
+
     %{
       content: text,
       model: @default_model,
       usage: %{
-        prompt_tokens: 0,  # Claude doesn't return usage in response
+        # Claude doesn't return usage in response
+        prompt_tokens: 0,
         completion_tokens: 0,
         total_tokens: 0
       }

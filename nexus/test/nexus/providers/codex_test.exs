@@ -53,7 +53,8 @@ defmodule Nexus.Providers.CodexTest do
       models = Codex.list_models()
 
       assert is_list(models)
-      assert length(models) >= 3  # At least 3 models: gpt-5, gpt-5-codex, codex-mini-latest
+      # At least 3 models: gpt-5, gpt-5-codex, codex-mini-latest
+      assert length(models) >= 3
     end
 
     test "each model has required fields" do
@@ -64,9 +65,15 @@ defmodule Nexus.Providers.CodexTest do
         assert is_map(model)
         assert Map.has_key?(model, :id), "Model missing :id - #{inspect(model)}"
         assert Map.has_key?(model, :name), "Model missing :name - #{inspect(model)}"
-        assert Map.has_key?(model, :context_window), "Model missing :context_window - #{inspect(model)}"
-        assert Map.has_key?(model, :max_output_tokens), "Model missing :max_output_tokens - #{inspect(model)}"
-        assert Map.has_key?(model, :capabilities), "Model missing :capabilities - #{inspect(model)}"
+
+        assert Map.has_key?(model, :context_window),
+               "Model missing :context_window - #{inspect(model)}"
+
+        assert Map.has_key?(model, :max_output_tokens),
+               "Model missing :max_output_tokens - #{inspect(model)}"
+
+        assert Map.has_key?(model, :capabilities),
+               "Model missing :capabilities - #{inspect(model)}"
       end)
     end
 
@@ -88,7 +95,10 @@ defmodule Nexus.Providers.CodexTest do
       Enum.each(models, fn model ->
         assert model.context_window > 0, "context_window must be > 0"
         assert model.max_output_tokens > 0, "max_output_tokens must be > 0"
-        assert model.max_output_tokens < model.context_window, "max_output_tokens must be < context_window"
+
+        assert model.max_output_tokens < model.context_window,
+               "max_output_tokens must be < context_window"
+
         assert Enum.all?(model.capabilities, &is_atom/1), "capabilities must be atoms"
       end)
     end

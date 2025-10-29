@@ -47,7 +47,7 @@ defmodule Singularity.Engine.NifLoader do
   # Map of NIF name to its Elixir module
   @nif_modules %{
     parser_engine: Singularity.ParserEngine,
-    code_quality_engine: Singularity.CodeEngineNif,
+    code_quality_engine: Singularity.CodeAnalyzer.Native,
     architecture_engine: Singularity.ArchitectureEngine,
     linting_engine: Singularity.LintingEngine,
     embedding_engine: Singularity.EmbeddingEngine,
@@ -57,6 +57,7 @@ defmodule Singularity.Engine.NifLoader do
   # Health check functions per NIF (optional, module must export these)
   @health_check_functions %{
     parser_engine: :supported_languages,
+    code_quality_engine: :supported_languages,
     embedding_engine: :health_check
   }
 

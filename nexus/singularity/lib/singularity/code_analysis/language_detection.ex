@@ -32,8 +32,8 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
   ```yaml
   LanguageDetection:
     calls:
-      - RustAnalyzer.detect_language_by_extension_nif/1  # NIF for file detection
-      - RustAnalyzer.detect_language_by_manifest_nif/1   # NIF for project detection
+      - CodeAnalyzer.Native.detect_language_by_extension_nif/1  # NIF for file detection
+      - CodeAnalyzer.Native.detect_language_by_manifest_nif/1   # NIF for project detection
     called_by:
       - CodeSession                      # Tech stack detection
       - CodeSynthesisPipeline            # Context detection

@@ -8,7 +8,11 @@ defmodule Nexus.IDTest do
 
       assert is_binary(id)
       assert String.length(id) == 36
-      assert String.match?(id, ~r/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+
+      assert String.match?(
+               id,
+               ~r/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+             )
     end
 
     test "generates unique IDs" do
@@ -20,11 +24,12 @@ defmodule Nexus.IDTest do
 
     test "generates sortable IDs" do
       # Generate multiple IDs with small delays
-      ids = for _ <- 1..5 do
-        id = Nexus.ID.generate()
-        Process.sleep(1)
-        id
-      end
+      ids =
+        for _ <- 1..5 do
+          id = Nexus.ID.generate()
+          Process.sleep(1)
+          id
+        end
 
       # UUIDv7 should be sortable by generation time
       assert Enum.sort(ids) == ids

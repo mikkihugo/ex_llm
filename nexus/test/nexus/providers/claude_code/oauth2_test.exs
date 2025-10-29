@@ -78,7 +78,12 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2Test do
       assert String.contains?(url, "response_type=code")
       assert String.contains?(url, "code_challenge=")
       assert String.contains?(url, "code_challenge_method=S256")
-      assert String.contains?(url, "redirect_uri=https%3A%2F%2Fconsole.anthropic.com%2Foauth%2Fcode%2Fcallback")
+
+      assert String.contains?(
+               url,
+               "redirect_uri=https%3A%2F%2Fconsole.anthropic.com%2Foauth%2Fcode%2Fcallback"
+             )
+
       assert String.contains?(url, "scope=")
       assert String.contains?(url, "state=")
     end
@@ -363,7 +368,8 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2Test do
         "state" => "boundary_state",
         "code_verifier" => "boundary_verifier",
         "timestamp" => now - 100,
-        "expires_at" => now - 1  # Expired 1 second ago
+        # Expired 1 second ago
+        "expires_at" => now - 1
       }
 
       Application.put_env(:nexus, :claude_code_pkce_state, state_data)

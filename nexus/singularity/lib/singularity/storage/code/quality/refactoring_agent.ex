@@ -224,12 +224,12 @@ defmodule Singularity.RefactoringAgent do
   end
 
   defp detect_schema_migrations_needed(analysis) do
-    # TODO: Implement N+1 query detection using CodeEngineNif
+    # TODO: Implement N+1 query detection using CodeAnalyzer.Native
     # Implementation plan:
-    # 1. Parse Ecto queries from code AST using CodeEngineNif.analyze_language/2
+    # 1. Parse Ecto queries from code AST using CodeAnalyzer.Native.analyze_language/2
     # 2. Detect repeated queries in loops (preload candidates)
     # 3. Suggest schema changes or query optimization
-    # 4. Use Singularity.CodeEngineNif.analyze_language("elixir", code)
+    # 4. Use Singularity.CodeAnalyzer.Native.analyze_language("elixir", code)
 
     case analysis do
       %{queries: queries} when length(queries) > 5 ->

@@ -33,17 +33,17 @@ defmodule Nexus.Providers.ClaudeTest do
     # Configure mock dependencies
     Application.put_env(:nexus, :http_client, MockReq)
     Application.put_env(:nexus, :token_repository, MockOAuthToken)
-    
+
     :ok
   end
 
   describe "list_models/0" do
     test "returns list of Claude models" do
       models = Claude.list_models()
-      
+
       assert is_list(models)
       assert length(models) == 3
-      
+
       # Check all required models exist
       ids = Enum.map(models, & &1.id)
       assert "claude-3-5-sonnet-20241022" in ids
@@ -53,7 +53,7 @@ defmodule Nexus.Providers.ClaudeTest do
 
     test "models have correct structure" do
       models = Claude.list_models()
-      
+
       Enum.each(models, fn model ->
         assert Map.has_key?(model, :id)
         assert Map.has_key?(model, :name)
@@ -69,7 +69,7 @@ defmodule Nexus.Providers.ClaudeTest do
     test "claude-3-5-sonnet has thinking capabilities" do
       models = Claude.list_models()
       sonnet = Enum.find(models, fn m -> m.id == "claude-3-5-sonnet-20241022" end)
-      
+
       assert sonnet != nil
       assert :thinking in sonnet.capabilities
       assert sonnet.thinking_levels == [:low, :medium, :high]
@@ -79,7 +79,7 @@ defmodule Nexus.Providers.ClaudeTest do
     test "claude-3-5-haiku has no thinking capabilities" do
       models = Claude.list_models()
       haiku = Enum.find(models, fn m -> m.id == "claude-3-5-haiku-20241022" end)
-      
+
       assert haiku != nil
       assert :thinking not in haiku.capabilities
       assert haiku.thinking_levels == nil
@@ -112,16 +112,21 @@ defmodule Nexus.Providers.ClaudeTest do
             inserted_at: DateTime.utc_now(),
             updated_at: DateTime.utc_now()
           }
+
           {:ok, token}
         end
+
         def get(_), do: {:error, :not_found}
         def upsert(_, _), do: {:ok, %{}}
-        def expired?(%{expires_at: expires_at}), do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
+        def expired?(%{expires_at: expires_at}),
+          do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
         def expired?(_), do: false
       end
 
       Application.put_env(:nexus, :token_repository, MockOAuthTokenWithToken)
-      
+
       configured = Claude.configured?()
       assert configured == true
     end
@@ -140,7 +145,7 @@ defmodule Nexus.Providers.ClaudeTest do
   describe "chat/2 - with mocked dependencies" do
     test "returns error when token not available" do
       messages = [%{role: "user", content: "Hello"}]
-      
+
       {:error, reason} = Claude.chat(messages)
       assert reason == :not_found
     end
@@ -162,11 +167,16 @@ defmodule Nexus.Providers.ClaudeTest do
             inserted_at: DateTime.utc_now(),
             updated_at: DateTime.utc_now()
           }
+
           {:ok, token}
         end
+
         def get(_), do: {:error, :not_found}
         def upsert(_, _), do: {:ok, %{}}
-        def expired?(%Nexus.OAuthToken{expires_at: expires_at}), do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
+        def expired?(%Nexus.OAuthToken{expires_at: expires_at}),
+          do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
         def expired?(_), do: false
       end
 
@@ -179,9 +189,9 @@ defmodule Nexus.Providers.ClaudeTest do
 
       Application.put_env(:nexus, :token_repository, MockOAuthTokenWithValidToken)
       Application.put_env(:nexus, :http_client, MockReqWithError)
-      
+
       messages = [%{role: "user", content: "Hello"}]
-      
+
       {:error, reason} = Claude.chat(messages)
       assert reason == {:request_failed, :network_error}
     end
@@ -203,11 +213,16 @@ defmodule Nexus.Providers.ClaudeTest do
             inserted_at: DateTime.utc_now(),
             updated_at: DateTime.utc_now()
           }
+
           {:ok, token}
         end
+
         def get(_), do: {:error, :not_found}
         def upsert(_, _), do: {:ok, %{}}
-        def expired?(%Nexus.OAuthToken{expires_at: expires_at}), do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
+        def expired?(%Nexus.OAuthToken{expires_at: expires_at}),
+          do: DateTime.compare(DateTime.utc_now(), expires_at) == :gt
+
         def expired?(_), do: false
       end
 
@@ -219,15 +234,16 @@ defmodule Nexus.Providers.ClaudeTest do
               %{"type" => "text", "text" => "Hello! How can I help you today?"}
             ]
           }
+
           {:ok, %{status: 200, body: api_response}}
         end
       end
 
       Application.put_env(:nexus, :token_repository, MockOAuthTokenWithValidToken)
       Application.put_env(:nexus, :http_client, MockReqWithSuccess)
-      
+
       messages = [%{role: "user", content: "Hello"}]
-      
+
       {:ok, response} = Claude.chat(messages)
       assert response.content == "Hello! How can I help you today?"
       assert response.model == "claude-3-5-sonnet-20241022"
@@ -238,7 +254,7 @@ defmodule Nexus.Providers.ClaudeTest do
     test "returns error when no token available" do
       messages = [%{role: "user", content: "Hello"}]
       callback = fn _ -> :ok end
-      
+
       {:error, reason} = Claude.stream(messages, callback)
       assert reason == :not_found
     end

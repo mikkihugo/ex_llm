@@ -84,14 +84,16 @@ defmodule Nexus.Providers.Codex do
 
   @doc """
   Check if Codex is configured (has valid OAuth tokens).
-  
+
   First checks ~/.codex directory for real configuration,
   then falls back to database-stored tokens.
   """
   def configured? do
     # First try to use real Codex configuration
     case ConfigLoader.configured?() do
-      true -> true
+      true ->
+        true
+
       false ->
         # Fall back to database-stored tokens
         case token_repository().get("codex") do
@@ -105,10 +107,10 @@ defmodule Nexus.Providers.Codex do
   Get the provider name.
   """
   def provider_name, do: "codex"
-  
+
   @doc """
   Get OAuth tokens from real Codex configuration.
-  
+
   Returns tokens from ~/.codex/auth.json if available,
   otherwise falls back to database-stored tokens.
   """
@@ -119,13 +121,14 @@ defmodule Nexus.Providers.Codex do
         access_token = tokens["access_token"]
         refresh_token = tokens["refresh_token"]
         account_id = tokens["account_id"]
-        
+
         # Parse expiration from JWT token
-        expires_at = case parse_jwt_expiration(access_token) do
-          {:ok, exp} -> exp
-          {:error, _} -> DateTime.utc_now() |> DateTime.add(3600, :second)
-        end
-        
+        expires_at =
+          case parse_jwt_expiration(access_token) do
+            {:ok, exp} -> exp
+            {:error, _} -> DateTime.utc_now() |> DateTime.add(3600, :second)
+          end
+
         token_data = %{
           access_token: access_token,
           refresh_token: refresh_token,
@@ -134,14 +137,15 @@ defmodule Nexus.Providers.Codex do
           token_type: "Bearer",
           metadata: %{"account_id" => account_id}
         }
-        
+
         {:ok, token_data}
+
       {:error, _reason} ->
         # Fall back to database
         token_repository().get("codex")
     end
   end
-  
+
   # Parse JWT expiration from access token
   defp parse_jwt_expiration(token) do
     try do
@@ -214,7 +218,9 @@ defmodule Nexus.Providers.Codex do
   defp get_valid_token do
     # First try to get real tokens from ~/.codex
     case get_real_tokens() do
-      {:ok, token} -> {:ok, token}
+      {:ok, token} ->
+        {:ok, token}
+
       {:error, _} ->
         # Fall back to database tokens
         with {:ok, token} <- token_repository().get("codex"),
@@ -298,6 +304,7 @@ defmodule Nexus.Providers.Codex do
       usage: parse_usage(response["usage"])
     }
   end
+
   defp parse_response(response) do
     %{
       text: extract_text(response),
@@ -312,6 +319,7 @@ defmodule Nexus.Providers.Codex do
       total_tokens: prompt + completion
     }
   end
+
   defp parse_usage(_), do: nil
 
   defp extract_text(%{"message" => %{"content" => content}}), do: content

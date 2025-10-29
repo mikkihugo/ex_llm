@@ -41,28 +41,28 @@ defmodule Nexus.OAuthToken do
   alias Nexus.Repo
 
   @type t :: %__MODULE__{
-    id: integer(),
-    provider: String.t(),
-    user_identifier: String.t() | nil,
-    access_token: String.t(),
-    refresh_token: String.t() | nil,
-    expires_at: DateTime.t(),
-    scopes: [String.t()],
-    token_type: String.t(),
-    metadata: map(),
-    inserted_at: DateTime.t(),
-    updated_at: DateTime.t()
-  }
+          id: integer(),
+          provider: String.t(),
+          user_identifier: String.t() | nil,
+          access_token: String.t(),
+          refresh_token: String.t() | nil,
+          expires_at: DateTime.t(),
+          scopes: [String.t()],
+          token_type: String.t(),
+          metadata: map(),
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
+        }
 
   schema "oauth_tokens" do
-    field :provider, :string
-    field :user_identifier, :string
-    field :access_token, :string
-    field :refresh_token, :string
-    field :expires_at, :utc_datetime
-    field :scopes, {:array, :string}, default: []
-    field :token_type, :string, default: "Bearer"
-    field :metadata, :map, default: %{}
+    field(:provider, :string)
+    field(:user_identifier, :string)
+    field(:access_token, :string)
+    field(:refresh_token, :string)
+    field(:expires_at, :utc_datetime)
+    field(:scopes, {:array, :string}, default: [])
+    field(:token_type, :string, default: "Bearer")
+    field(:metadata, :map, default: %{})
 
     timestamps()
   end
@@ -93,14 +93,17 @@ defmodule Nexus.OAuthToken do
   """
   @spec get(String.t(), String.t() | nil) :: {:ok, t()} | {:error, :not_found}
   def get(provider, user_identifier \\ nil) do
-    query = from t in __MODULE__,
-      where: t.provider == ^provider
+    query =
+      from(t in __MODULE__,
+        where: t.provider == ^provider
+      )
 
-    query = if user_identifier do
-      where(query, [t], t.user_identifier == ^user_identifier)
-    else
-      where(query, [t], is_nil(t.user_identifier))
-    end
+    query =
+      if user_identifier do
+        where(query, [t], t.user_identifier == ^user_identifier)
+      else
+        where(query, [t], is_nil(t.user_identifier))
+      end
 
     case Repo.one(query) do
       nil -> {:error, :not_found}
@@ -139,7 +142,8 @@ defmodule Nexus.OAuthToken do
   @spec expired?(t()) :: boolean()
   def expired?(%__MODULE__{expires_at: expires_at}) do
     # Consider expired if less than 5 minutes remaining
-    buffer = 300  # 5 minutes
+    # 5 minutes
+    buffer = 300
     DateTime.compare(expires_at, DateTime.utc_now() |> DateTime.add(buffer, :second)) == :lt
   end
 
@@ -179,11 +183,12 @@ defmodule Nexus.OAuthToken do
   """
   @spec from_ex_llm_format(map()) :: map()
   def from_ex_llm_format(tokens) do
-    scopes = case tokens[:scope] do
-      nil -> []
-      scope when is_binary(scope) -> String.split(scope, " ")
-      scopes when is_list(scopes) -> scopes
-    end
+    scopes =
+      case tokens[:scope] do
+        nil -> []
+        scope when is_binary(scope) -> String.split(scope, " ")
+        scopes when is_list(scopes) -> scopes
+      end
 
     %{
       access_token: tokens.access_token,

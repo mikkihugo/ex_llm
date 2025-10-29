@@ -37,13 +37,16 @@ defmodule Nexus.Workflows.LLMRequestWorkflowTest do
       steps = LLMRequestWorkflow.__workflow_steps__()
 
       # Build a map of step name to dependencies
-      step_map = Enum.map(steps, fn
-        {name, _func, opts} when is_list(opts) ->
-          deps = Keyword.get(opts, :depends_on, [])
-          {name, deps}
-        {name, _func, _func2} ->
-          {name, []}
-      end) |> Map.new()
+      step_map =
+        Enum.map(steps, fn
+          {name, _func, opts} when is_list(opts) ->
+            deps = Keyword.get(opts, :depends_on, [])
+            {name, deps}
+
+          {name, _func, _func2} ->
+            {name, []}
+        end)
+        |> Map.new()
 
       # validate has no dependencies
       assert step_map[:validate] == [] or step_map[:validate] == nil
@@ -140,7 +143,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflowTest do
 
     test "validates complexity values" do
       valid_complexities = ["simple", "medium", "complex"]
-      
+
       Enum.each(valid_complexities, fn complexity ->
         request = %{
           "request_id" => "req-123",
@@ -155,7 +158,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflowTest do
 
     test "validates task_type values" do
       valid_task_types = ["classifier", "coder", "architect", "planner"]
-      
+
       Enum.each(valid_task_types, fn task_type ->
         request = %{
           "request_id" => "req-123",
@@ -314,7 +317,6 @@ defmodule Nexus.Workflows.LLMRequestWorkflowTest do
       assert is_nil(result)
     end
   end
-
 
   describe "integration tests" do
     test "workflow step structure is correct" do

@@ -21,14 +21,15 @@ defmodule Nexus.Providers.Codex.OAuth2 do
     scopes = opts[:scopes] || config(:scopes) || ["openai.user.read", "model.request"]
     state = opts[:state] || generate_state()
 
-    query = URI.encode_query(%{
-      client_id: client_id,
-      redirect_uri: redirect_uri,
-      response_type: "code",
-      scope: Enum.join(scopes, " "),
-      state: state,
-      access_type: "offline"
-    })
+    query =
+      URI.encode_query(%{
+        client_id: client_id,
+        redirect_uri: redirect_uri,
+        response_type: "code",
+        scope: Enum.join(scopes, " "),
+        state: state,
+        access_type: "offline"
+      })
 
     {:ok, "#{@auth_base_url}/authorize?#{query}"}
   end
@@ -64,11 +65,12 @@ defmodule Nexus.Providers.Codex.OAuth2 do
   Refresh access token.
   """
   def refresh(token) do
-    refresh_token = case token do
-      %OAuthToken{} -> token.refresh_token
-      %{refresh_token: rt} -> rt
-      rt when is_binary(rt) -> rt
-    end
+    refresh_token =
+      case token do
+        %OAuthToken{} -> token.refresh_token
+        %{refresh_token: rt} -> rt
+        rt when is_binary(rt) -> rt
+      end
 
     body = %{
       client_id: config(:client_id),
@@ -102,7 +104,8 @@ defmodule Nexus.Providers.Codex.OAuth2 do
 
     case Req.post("#{@auth_base_url}/revoke", json: body) do
       {:ok, %{status: 200}} -> :ok
-      {:ok, _} -> :ok  # Consider successful even on error
+      # Consider successful even on error
+      {:ok, _} -> :ok
       {:error, _} -> :ok
     end
   end

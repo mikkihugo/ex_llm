@@ -52,15 +52,16 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
     # Save PKCE data for token exchange
     save_pkce_state(state, code_verifier)
 
-    query = URI.encode_query(%{
-      client_id: @client_id,
-      response_type: "code",
-      redirect_uri: @redirect_uri,
-      scope: Enum.join(scopes, " "),
-      code_challenge: code_challenge,
-      code_challenge_method: "S256",
-      state: state
-    })
+    query =
+      URI.encode_query(%{
+        client_id: @client_id,
+        response_type: "code",
+        redirect_uri: @redirect_uri,
+        scope: Enum.join(scopes, " "),
+        code_challenge: code_challenge,
+        code_challenge_method: "S256",
+        state: state
+      })
 
     {:ok, "#{@auth_url}?#{query}"}
   end
@@ -117,12 +118,14 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
   Returns {:error, "No refresh token"} for nil or invalid inputs.
   """
   def refresh(token) do
-    refresh_token = case token do
-      %OAuthToken{} -> token.refresh_token
-      %{refresh_token: rt} -> rt
-      rt when is_binary(rt) -> rt
-      _ -> nil  # Catch-all for nil, invalid types, etc.
-    end
+    refresh_token =
+      case token do
+        %OAuthToken{} -> token.refresh_token
+        %{refresh_token: rt} -> rt
+        rt when is_binary(rt) -> rt
+        # Catch-all for nil, invalid types, etc.
+        _ -> nil
+      end
 
     if !refresh_token do
       Logger.error("No refresh token available for Claude Code")
@@ -202,13 +205,13 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
 
   defp save_tokens(provider, tokens) do
     case token_repository().upsert(provider, %{
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      expires_at: tokens.expires_at,
-      token_type: tokens.token_type,
-      scopes: tokens.scopes,
-      metadata: tokens.metadata
-    }) do
+           access_token: tokens.access_token,
+           refresh_token: tokens.refresh_token,
+           expires_at: tokens.expires_at,
+           token_type: tokens.token_type,
+           scopes: tokens.scopes,
+           metadata: tokens.metadata
+         }) do
       {:ok, _} ->
         Logger.info("Claude Code tokens saved successfully")
         :ok
@@ -240,7 +243,8 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
       "state" => state,
       "code_verifier" => code_verifier,
       "timestamp" => System.system_time(:second),
-      "expires_at" => System.system_time(:second) + 600  # 10 minutes
+      # 10 minutes
+      "expires_at" => System.system_time(:second) + 600
     }
 
     # Store in a temporary file or memory - for now use application env

@@ -6,8 +6,8 @@ IO.puts("")
 
 # Test 1: Supported languages
 IO.puts("Test 1: Checking supported languages...")
-case Singularity.RustAnalyzer.supported_languages() do
-  {:ok, languages} ->
+case Singularity.CodeAnalyzer.Native.supported_languages() do
+  languages when is_list(languages) ->
     IO.puts("✓ NIF loaded! Supported languages: #{inspect(languages)}")
   error ->
     IO.puts("✗ Failed to load NIF: #{inspect(error)}")

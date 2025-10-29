@@ -132,21 +132,22 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
     # state contains output from all previous steps
     request = state["validate"] || state
 
-    router_request = %{
-      complexity: string_to_atom(request["complexity"]),
-      messages: request["messages"],
-      task_type: string_to_atom(request["task_type"]),
-      max_tokens: request["max_tokens"],
-      temperature: request["temperature"],
-      api_version: request["api_version"] || "responses",
-      previous_response_id: request["previous_response_id"],
-      mcp_servers: request["mcp_servers"],
-      store: request["store"],
-      tools: request["tools"]
-    }
-    # Remove nil values for cleaner request
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Map.new()
+    router_request =
+      %{
+        complexity: string_to_atom(request["complexity"]),
+        messages: request["messages"],
+        task_type: string_to_atom(request["task_type"]),
+        max_tokens: request["max_tokens"],
+        temperature: request["temperature"],
+        api_version: request["api_version"] || "responses",
+        previous_response_id: request["previous_response_id"],
+        mcp_servers: request["mcp_servers"],
+        store: request["store"],
+        tools: request["tools"]
+      }
+      # Remove nil values for cleaner request
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
 
     Logger.info("Routing LLM request",
       request_id: request["request_id"],
@@ -218,6 +219,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
           request_id: result_message.request_id,
           msg_id: msg_id
         )
+
         {:ok, Map.put(result, :published, true)}
 
       {:error, reason} ->
@@ -225,6 +227,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
           request_id: result_message.request_id,
           error: inspect(reason)
         )
+
         {:error, reason}
     end
   end
@@ -241,6 +244,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
 
     try do
       result = Nexus.Repo.query!(query)
+
       case result.rows do
         [[msg_id]] -> {:ok, msg_id}
         _ -> {:error, "Failed to publish message"}
