@@ -7,6 +7,7 @@ defmodule Singularity.Learning.PatternMiner do
   require Logger
 
   alias Singularity.Analysis
+  alias Singularity.Execution.Runners.Runner
 
   @doc "Mine patterns from trial directories"
   def mine_patterns_from_trials(trial_directories) do
@@ -286,7 +287,7 @@ defmodule Singularity.Learning.PatternMiner do
     Logger.info("Analyzing trial: #{trial_dir}")
 
     # Use Runner for Singularity Code Analyzer (rust-analyzer) execution
-    case Singularity.Runner.execute_task(%{
+    case Runner.execute_task(%{
            type: :analysis,
            args: %{path: trial_dir, tool: "analysis-suite"}
          }) do

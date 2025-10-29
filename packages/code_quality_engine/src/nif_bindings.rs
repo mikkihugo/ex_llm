@@ -523,3 +523,8 @@ pub fn has_ast_grep_support(language_id: String) -> bool {
 
 // NOTE: rustler::init! moved to src/nif/mod.rs to avoid duplicate nif_init symbol
 // This file only exports the NIF function - initialization happens in nif/mod.rs
+
+/*
+Removed legacy #[allow(dead_code)] and unimplemented NIF stubs.
+Production code must provide real implementations or handle NIF loading errors gracefully.
+*/

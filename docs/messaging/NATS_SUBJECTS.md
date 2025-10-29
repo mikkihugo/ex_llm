@@ -1,167 +1,169 @@
-# NATS Subject Architecture
+# pgflow Queue Architecture
 
-This document defines the NATS subject hierarchy for Singularity's distributed architecture.
+This document defines the pgflow queue patterns for Singularity's distributed architecture.
 
-## Subject Hierarchy
+**Note:** This document has been updated from NATS subjects to pgflow queues as part of the migration from NATS to pgflow-based messaging.
 
-### Unified NATS Server (Single Entry Point)
+## Queue Hierarchy
+
+### Unified pgflow Queues (PostgreSQL-based)
 ```
-nats.request                # All requests go here (unified entry point)
-nats.response               # All responses come back
-nats.request.simple         # Simple complexity requests
-nats.request.medium         # Medium complexity requests  
-nats.request.complex        # Complex complexity requests
-nats.request.direct         # Direct routing bypass (internal use)
+pgflow_requests             # All requests go here (unified entry point)
+pgflow_responses            # All responses come back
+pgflow_request_simple       # Simple complexity requests
+pgflow_request_medium       # Medium complexity requests  
+pgflow_request_complex      # Complex complexity requests
+pgflow_request_direct       # Direct routing bypass (internal use)
 ```
 
 ### LLM Communication
 ```
-llm.request                 # All LLM requests from Elixir to LLM Server
-llm.response                # LLM responses from LLM Server to Elixir
-llm.error                   # LLM errors from LLM Server to Elixir
-llm.stream                  # Streaming LLM requests
-llm.tools.execute           # LLM tool execution requests
-llm.tools.result            # LLM tool execution results
+llm_request                 # All LLM requests from Elixir to LLM Server
+llm_response                # LLM responses from LLM Server to Elixir
+llm_error                   # LLM errors from LLM Server to Elixir
+llm_stream                  # Streaming LLM requests
+llm_tools_execute           # LLM tool execution requests
+llm_tools_result            # LLM tool execution results
 
-# HTDAG Self-Evolution LLM (NATS-first architecture)
-llm.req.<model_id>          # Model-specific LLM completion requests
-llm.resp.<run_id>.<node_id> # Direct reply subject for LLM responses
-llm.tokens.<run_id>.<node_id> # Token streaming for real-time feedback
-llm.health                  # LLM worker heartbeat and status updates
+# HTDAG Self-Evolution LLM (pgflow-first architecture)
+llm_req_<model_id>          # Model-specific LLM completion requests
+llm_resp_<run_id>_<node_id> # Direct reply queue for LLM responses
+llm_tokens_<run_id>_<node_id> # Token streaming for real-time feedback
+llm_health                  # LLM worker heartbeat and status updates
 ```
 
 ### Framework Detection (Consolidated)
 ```
-detector.analyze            # Framework detection requests
-detector.analyze.simple     # Simple detection (file patterns)
-detector.analyze.medium     # Medium detection (pattern matching)
-detector.analyze.complex    # Complex detection (LLM analysis)
-detector.match.patterns     # Pattern matching only
-detector.llm.analyze        # LLM analysis for unknown frameworks
+detector_analyze            # Framework detection requests
+detector_analyze_simple     # Simple detection (file patterns)
+detector_analyze_medium     # Medium detection (pattern matching)
+detector_analyze_complex    # Complex detection (LLM analysis)
+detector_match_patterns     # Pattern matching only
+detector_llm_analyze        # LLM analysis for unknown frameworks
 ```
 
 ### Code Analysis & Processing
 ```
-code.analysis.parse         # Code parsing requests
-code.analysis.parse.result  # Code parsing results
-code.analysis.embed         # Embedding generation requests
-code.analysis.embed.result  # Embedding generation results
-code.analysis.search        # Semantic code search requests
-code.analysis.search.result # Semantic code search results
-code.analysis.quality       # Code quality analysis requests
-code.analysis.quality.result # Code quality analysis results
+code_analysis_parse         # Code parsing requests
+code_analysis_parse_result  # Code parsing results
+code_analysis_embed         # Embedding generation requests
+code_analysis_embed_result  # Embedding generation results
+code_analysis_search        # Semantic code search requests
+code_analysis_search_result # Semantic code search results
+code_analysis_quality       # Code quality analysis requests
+code_analysis_quality_result # Code quality analysis results
 ```
 
 ### Knowledge Management
 ```
-knowledge.facts.framework_patterns    # Framework pattern updates
-knowledge.facts.technology_detected   # Technology detection events
-knowledge.templates.sync              # Template synchronization
-knowledge.templates.update            # Template updates
-knowledge.artifacts.update            # Knowledge base updates
-knowledge.artifacts.embed             # Artifact embedding requests
+knowledge_facts_framework_patterns    # Framework pattern updates
+knowledge_facts_technology_detected   # Technology detection events
+knowledge_templates_sync              # Template synchronization
+knowledge_templates_update            # Template updates
+knowledge_artifacts_update            # Knowledge base updates
+knowledge_artifacts_embed             # Artifact embedding requests
 ```
 
 ### Pattern Mining & Clustering
 ```
-patterns.mined.completed              # Pattern mining completion
-patterns.mined.failed                 # Pattern mining failure
-patterns.cluster.updated              # Pattern cluster updates
+patterns_mined_completed              # Pattern mining completion
+patterns_mined_failed                 # Pattern mining failure
+patterns_cluster_updated              # Pattern cluster updates
 ```
 
 ### Prompt Tracking Storage (NIF-based)
 ```
-prompt.tracking.store                 # Store prompt execution data
-prompt.tracking.store.result          # Store operation results
-prompt.tracking.query                 # Query prompt tracking data
-prompt.tracking.query.result          # Query operation results
-prompt.generate                       # Generate prompts (legacy)
-prompt.generate.request               # Generate prompts (request)
-prompt.optimize.request               # Optimize prompts (request)
+prompt_tracking_store                 # Store prompt execution data
+prompt_tracking_store_result          # Store operation results
+prompt_tracking_query                 # Query prompt tracking data
+prompt_tracking_query_result          # Query operation results
+prompt_generate                       # Generate prompts (legacy)
+prompt_generate_request               # Generate prompts (request)
+prompt_optimize_request               # Optimize prompts (request)
 ```
 
 ### Code Generation & ML Training
 ```
-code.t5.generate                      # T5 model code generation
-ml.training.t5.completed             # T5 training completion
-ml.training.t5.failed                # T5 training failure
-ml.training.vocabulary.completed      # Vocabulary training completion
-ml.training.vocabulary.failed         # Vocabulary training failure
+code_t5_generate                      # T5 model code generation
+ml_training_t5_completed             # T5 training completion
+ml_training_t5_failed                # T5 training failure
+ml_training_vocabulary_completed      # Vocabulary training completion
+ml_training_vocabulary_failed         # Vocabulary training failure
 ```
 
 ### Intelligence Hub (Central Communication)
 **Purpose:** All engines send intelligence data to central_cloud for aggregation and storage.
 
 ```
-intelligence.hub.*.analysis          # Analysis results from any engine
-intelligence.hub.*.artifact          # Artifacts from any engine
-intelligence.hub.package.index       # Package indexing
-intelligence.hub.package.query       # Package query (request/reply)
-intelligence.hub.knowledge.cache     # Knowledge caching
-intelligence.hub.knowledge.request   # Knowledge retrieval (request/reply)
-intelligence.hub.embeddings          # Vector embeddings storage
+intelligence_hub_analysis          # Analysis results from any engine
+intelligence_hub_artifacts          # Artifacts from any engine
+intelligence_hub_package_index       # Package indexing
+intelligence_hub_package_query       # Package query (request/reply)
+intelligence_hub_knowledge_cache     # Knowledge caching
+intelligence_hub_knowledge_request   # Knowledge retrieval (request/reply)
+intelligence_hub_embeddings          # Vector embeddings storage
 ```
 
-**Engine-specific analysis subjects:**
+**Engine-specific analysis queues:**
 ```
-intelligence.hub.architecture.analysis  # Architecture analysis results
-intelligence.hub.code.analysis         # Code analysis results
-intelligence.hub.embedding.analysis    # Embedding analysis results
-intelligence.hub.generator.analysis    # Code generation results
-intelligence.hub.parser.analysis       # Parsing results
-intelligence.hub.prompt.analysis       # Prompt optimization results
-intelligence.hub.quality.analysis      # Quality analysis results
-intelligence.hub.knowledge.analysis    # Knowledge extraction results
+intelligence_hub_architecture_analysis  # Architecture analysis results
+intelligence_hub_code_analysis         # Code analysis results
+intelligence_hub_embedding_analysis    # Embedding analysis results
+intelligence_hub_generator_analysis    # Code generation results
+intelligence_hub_parser_analysis       # Parsing results
+intelligence_hub_prompt_analysis       # Prompt optimization results
+intelligence_hub_quality_analysis      # Quality analysis results
+intelligence_hub_knowledge_analysis    # Knowledge extraction results
 ```
 
 ### Central Services (Direct Engine Communication)
 **Purpose:** Direct communication between central_cloud and individual engines.
 
 ```
-central.parser.capabilities          # Parser engine capabilities query
-central.parser.recommendations       # Parser engine recommendations
-central.embedding.models             # Embedding engine model info
-central.embedding.recommendations    # Embedding engine recommendations
-central.quality.rules                # Quality engine rules query
-central.quality.recommendations      # Quality engine recommendations
+central_parser_capabilities          # Parser engine capabilities query
+central_parser_recommendations       # Parser engine recommendations
+central_embedding_models             # Embedding engine model info
+central_embedding_recommendations    # Embedding engine recommendations
+central_quality_rules                # Quality engine rules query
+central_quality_recommendations      # Quality engine recommendations
 ```
 
 ### Agent Management
 ```
-agents.spawn                # Spawn new agents
-agents.spawn.result         # Agent spawn results
-agents.status               # Agent status updates
-agents.status.query         # Agent status queries
-agents.result               # Agent execution results
-agents.improve              # Agent improvement events
-agents.stop                 # Stop agent requests
-agents.stop.result          # Agent stop results
+agents_spawn                # Spawn new agents
+agents_spawn_result         # Agent spawn results
+agents_status               # Agent status updates
+agents_status_query         # Agent status queries
+agents_result               # Agent execution results
+agents_improve              # Agent improvement events
+agents_stop                 # Stop agent requests
+agents_stop_result          # Agent stop results
 ```
 
 ### Tool Execution
 ```
-tools.execute               # Tool execution requests
-tools.execute.result        # Tool execution results
-tools.execute.status        # Tool execution status
-tools.quality.check         # Code quality check requests
-tools.quality.check.result  # Code quality check results
-tools.analysis.run          # Code analysis tool requests
-tools.analysis.run.result   # Code analysis tool results
-tools.generation.create     # Code generation tool requests
-tools.generation.create.result # Code generation tool results
+tools_execute               # Tool execution requests
+tools_execute_result        # Tool execution results
+tools_execute_status        # Tool execution status
+tools_quality_check         # Code quality check requests
+tools_quality_check_result  # Code quality check results
+tools_analysis_run          # Code analysis tool requests
+tools_analysis_run_result   # Code analysis tool results
+tools_generation_create     # Code generation tool requests
+tools_generation_create_result # Code generation tool results
 ```
 
 ### System Management
 ```
-system.health               # Health check requests
-system.health.result        # Health check results
-system.health.engines       # Engine health check (all engines)
-system.metrics              # Metrics collection
-system.metrics.query        # Metrics query requests
-system.events               # System-wide events
-system.config               # Configuration updates
-system.config.query         # Configuration query requests
-system.shutdown             # System shutdown requests
+system_health               # Health check requests
+system_health_result        # Health check results
+system_health_engines       # Engine health check (all engines)
+system_metrics              # Metrics collection
+system_metrics_query        # Metrics query requests
+system_events               # System-wide events
+system_config               # Configuration updates
+system_config_query         # Configuration query requests
+system_shutdown             # System shutdown requests
 ```
 
 ### Engine Discovery (Introspection/Autonomy)
@@ -169,10 +171,10 @@ system.shutdown             # System shutdown requests
 Enables autonomous agents to query "what can I do?" without hard-coded knowledge.
 
 ```
-system.engines.list                  # List all engines (architecture, code, prompt, quality, generator)
-system.engines.get.<engine_id>       # Get specific engine details (e.g., system.engines.get.prompt)
-system.capabilities.list             # List all capabilities (flat index across engines)
-system.capabilities.available        # List only available capabilities
+system_engines_list                  # List all engines (architecture, code, prompt, quality, generator)
+system_engines_get_<engine_id>       # Get specific engine details (e.g., system_engines_get_prompt)
+system_capabilities_list             # List all capabilities (flat index across engines)
+system_capabilities_available        # List only available capabilities
 ```
 
 **Use Cases:**
@@ -183,8 +185,8 @@ system.capabilities.available        # List only available capabilities
 
 **Example: Agent discovering what it can do**
 ```elixir
-# Agent sends NATS request
-{:ok, response} = Gnat.request(conn, "system.capabilities.available", %{})
+# Agent sends pgflow request
+{:ok, response} = Pgflow.send_with_notify("system_capabilities_available", %{}, Repo)
 
 # Response shows all available capabilities
 %{
@@ -201,29 +203,29 @@ system.capabilities.available        # List only available capabilities
 
 ### Planning & Work Management (SAFe 6.0)
 ```
-planning.strategic_theme.create    # Create strategic theme
-planning.strategic_theme.update    # Update strategic theme
-planning.strategic_theme.delete    # Delete strategic theme
-planning.epic.create               # Create epic
-planning.epic.update               # Update epic
-planning.epic.delete               # Delete epic
-planning.feature.create            # Create feature
-planning.feature.update            # Update feature
-planning.feature.delete            # Delete feature
-planning.story.create              # Create story
-planning.story.update              # Update story
-planning.story.delete              # Delete story
-planning.task.create               # Create task
-planning.task.update               # Update task
-planning.task.delete               # Delete task
-planning.next_work.get             # Get next work item
+planning_strategic_theme_create    # Create strategic theme
+planning_strategic_theme_update    # Update strategic theme
+planning_strategic_theme_delete    # Delete strategic theme
+planning_epic_create               # Create epic
+planning_epic_update               # Update epic
+planning_epic_delete               # Delete epic
+planning_feature_create            # Create feature
+planning_feature_update            # Update feature
+planning_feature_delete            # Delete feature
+planning_story_create              # Create story
+planning_story_update              # Update story
+planning_story_delete              # Delete story
+planning_task_create               # Create task
+planning_task_update               # Update task
+planning_task_delete               # Delete task
+planning_next_work_get             # Get next work item
 ```
 
 ## Message Formats
 
 ### LLM Request/Response
 ```json
-// llm.request
+// llm_request
 {
   "model": "claude-sonnet-4.5",
   "provider": "claude",
@@ -233,7 +235,7 @@ planning.next_work.get             # Get next work item
   "stream": false
 }
 
-// llm.response
+// llm_response
 {
   "text": "Hello! How can I help you?",
   "model": "claude-sonnet-4.5",
@@ -245,7 +247,7 @@ planning.next_work.get             # Get next work item
 
 ### Code Analysis Request/Response
 ```json
-// code.analysis.parse
+// code_analysis_parse
 {
   "file_path": "lib/my_module.ex",
   "content": "defmodule MyModule do...",
@@ -253,7 +255,7 @@ planning.next_work.get             # Get next work item
   "options": {"include_ast": true}
 }
 
-// code.analysis.parse.result
+// code_analysis_parse_result
 {
   "file_path": "lib/my_module.ex",
   "language": "elixir",
@@ -273,7 +275,7 @@ planning.next_work.get             # Get next work item
   "correlation_id": "agent_123"
 }
 
-// agents.spawn.result
+// agents_spawn_result
 {
   "agent_id": "agent_123",
   "pid": "0.123.0",
@@ -291,7 +293,7 @@ planning.next_work.get             # Get next work item
   "correlation_id": "tool_456"
 }
 
-// tools.execute.result
+// tools_execute_result
 {
   "tool_name": "quality_check",
   "result": {...},
@@ -319,7 +321,7 @@ planning.next_work.get             # Get next work item
   "correlation_id": "store_789"
 }
 
-// prompt.tracking.store.result
+// prompt_tracking_store_result
 {
   "fact_id": "fact_123",
   "success": true,
@@ -336,7 +338,7 @@ planning.next_work.get             # Get next work item
   "correlation_id": "query_101"
 }
 
-// prompt.tracking.query.result
+// prompt_tracking_query_result
 {
   "results": [
     {

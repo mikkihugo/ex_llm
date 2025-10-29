@@ -166,9 +166,11 @@ result = :singularity@rule_engine.evaluate_rule(rule, context)
 
 ### Development Commands
 
+> **Tip:** `mix` is provisioned via the Nix dev shell. Either run `nix develop` once and stay inside that shell, or prefix commands with `nix develop -c`.
+
 ```bash
 # Compile both Elixir and Gleam
-mix compile
+nix develop -c mix compile
 
 # Type-check Gleam only (fast)
 gleam check
@@ -183,7 +185,7 @@ gleam deps download      # Just Gleam deps
 
 ### Mix + Nix Quickstart (recommended)
 
-- Enter dev shell: `nix develop`
+- Enter dev shell: `nix develop` (all `mix` invocations must run inside this shell)
 - Fetch deps: `cd singularity && mix deps.get`
 - Compile (Gleam via mix_gleam): `mix compile`
 

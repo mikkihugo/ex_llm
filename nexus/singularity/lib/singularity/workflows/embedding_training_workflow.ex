@@ -26,7 +26,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
   def workflow_definition do
     %{
       name: "embedding_training",
-      version: "1.0.0",
+      version: Singularity.BuildInfo.version(),
       description: "ML pipeline for training embedding models (Qodo + Jina)",
 
       # Workflow-level configuration

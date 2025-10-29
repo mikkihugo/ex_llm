@@ -1,7 +1,7 @@
 defmodule CentralCloud.Application do
   @moduledoc """
   Central Cloud Application
-  
+
   The global Elixir service that coordinates all Singularity instances.
   Central Cloud now runs primarily on BEAM processes, with optional Rust
   engines accessed over NATS only when needed for heavy workloads.
@@ -34,9 +34,12 @@ defmodule CentralCloud.Application do
       {Oban, oban_config()},
 
       # Always-on services (don't depend on NATS)
-      CentralCloud.KnowledgeCache,      # ETS-based cache
-      CentralCloud.TemplateService,     # Template management
-      CentralCloud.TemplateLoader,      # Lua template loading and rendering
+      # ETS-based cache
+      CentralCloud.KnowledgeCache,
+      # Template management
+      CentralCloud.TemplateService,
+      # Lua template loading and rendering
+      CentralCloud.TemplateLoader,
 
       # Task Learning: Aggregates task-specialized routing metrics every 60 seconds
       CentralCloud.ModelLearning.TaskMetricsAggregator,
@@ -51,7 +54,14 @@ defmodule CentralCloud.Application do
       {PGFlow.WorkflowSupervisor,
        workflow: CentralCloud.Workflows.ComplexityTrainingWorkflow,
        name: ComplexityTrainingWorkflowSupervisor,
-       enabled: Application.get_env(:centralcloud, :complexity_training_pipeline, %{})[:pgflow_enabled] || false},
+       enabled:
+         Application.get_env(:centralcloud, :complexity_training_pipeline, %{})[:pgflow_enabled] ||
+           false},
+      {PGFlow.WorkflowSupervisor,
+       workflow: CentralCloud.Workflows.LLMTeamWorkflow,
+       name: LLMTeamWorkflowSupervisor,
+       enabled:
+         Application.get_env(:centralcloud, :llm_team_workflow, %{})[:pgflow_enabled] || true},
 
       # pgmq Consumers: Read from distributed queues
       # Pattern Learning: Consumes pattern discoveries and learned patterns from instances
@@ -61,7 +71,6 @@ defmodule CentralCloud.Application do
        poll_interval_ms: 1000,
        batch_size: 10,
        name: :pattern_consumer_1},
-
       {CentralCloud.PgmqConsumer,
        queue_name: "patterns_learned_published",
        handler_module: CentralCloud.Consumers.PatternLearningConsumer,
@@ -76,7 +85,6 @@ defmodule CentralCloud.Application do
        poll_interval_ms: 2000,
        batch_size: 20,
        name: :perf_stats_consumer_1},
-
       {CentralCloud.PgmqConsumer,
        queue_name: "execution_metrics_aggregated",
        handler_module: CentralCloud.Consumers.PerformanceStatsConsumer,
@@ -90,7 +98,7 @@ defmodule CentralCloud.Application do
        handler_module: CentralCloud.Consumers.InfrastructureRegistryConsumer,
        poll_interval_ms: 500,
        batch_size: 1,
-       name: :infrastructure_registry_consumer},
+       name: :infrastructure_registry_consumer}
     ]
   end
 
@@ -102,7 +110,7 @@ defmodule CentralCloud.Application do
           Logger.info("[App] ✅ Shared Queue initialized by CentralCloud")
 
         {:error, reason} ->
-          Logger.warn("[App] ⚠️  Shared Queue initialization failed: #{inspect(reason)}")
+          Logger.warning("[App] ⚠️  Shared Queue initialization failed: #{inspect(reason)}")
       end
     else
       Logger.info("[App] ℹ️  Shared Queue disabled in configuration")
@@ -115,10 +123,14 @@ defmodule CentralCloud.Application do
       []
     else
       [
-        CentralCloud.FrameworkLearningAgent,  # Learn from external packages
-        CentralCloud.IntelligenceHub,     # Aggregate intelligence from all instances
-        CentralCloud.TemplateIntelligence,  # Template intelligence (Phase 3: cross-instance learning)
-        CentralCloud.Infrastructure.IntelligenceEndpoint,  # Phase 8: Infrastructure registry NATS endpoint
+        # Learn from external packages
+        CentralCloud.FrameworkLearningAgent,
+        # Aggregate intelligence from all instances
+        CentralCloud.IntelligenceHub,
+        # Template intelligence (Phase 3: cross-instance learning)
+        CentralCloud.TemplateIntelligence,
+        # Phase 8: Infrastructure registry NATS endpoint
+        CentralCloud.Infrastructure.IntelligenceEndpoint
       ]
     end
   end

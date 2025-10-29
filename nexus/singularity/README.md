@@ -229,7 +229,7 @@ Autonomous coordination:
 - `Singularity.force_improvement/2` flips a flag that forces the next evaluation
   cycle to enqueue a new strategy—handy for manual experiments while keeping the
   same pipeline.
-- `Singularity.Control.publish_improvement/2` still broadcasts a payload across
+- `Singularity.Execution.Runners.Control.publish_improvement/2` still broadcasts a payload across
   the cluster when you need to coordinate multiple nodes manually. It falls back
   to a direct cast if no listeners have joined yet.
 

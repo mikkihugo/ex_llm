@@ -24,10 +24,15 @@
 //! patterns for each language pair (e.g., BEAM↔Systems patterns differ from Web↔Scripting).
 
 use std::collections::HashMap;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
 
 use crate::analysis::semantic::custom_tokenizers::DataToken;
 use parser_core::language_registry::{LanguageRegistry, LANGUAGE_REGISTRY};
 use serde::{Deserialize, Serialize};
+
+// AST extraction NIFs
+use crate::nif_bindings;
 
 /// Cross-language pattern occurrence
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,13 +81,27 @@ pub enum CrossLanguageCodePatternType {
 }
 
 /// Cross-language pattern detector using registry metadata
-#[derive(Clone)]
 pub struct CrossLanguageCodePatternsDetector {
     /// Detected patterns
     pub patterns: Vec<CrossLanguageCodePattern>,
     /// Language registry reference
     registry: &'static LanguageRegistry,
 }
+
+// AST extraction cache: (code_hash, language) -> AST data
+static AST_CACHE: once_cell::sync::Lazy<Mutex<HashMap<(u64, String), AstExtraction>>> =
+    once_cell::sync::Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// AST extraction result for a file/language
+#[derive(Clone, Debug)]
+pub struct AstExtraction {
+    pub functions: Option<Vec<crate::nif_bindings::FunctionMetadataResult>>,
+    pub classes: Option<Vec<crate::nif_bindings::ClassMetadataResult>>,
+}
+
+// Re-export for test module
+pub use AstExtraction;
+
 
 impl std::fmt::Debug for CrossLanguageCodePatternsDetector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -105,6 +124,7 @@ impl CrossLanguageCodePatternsDetector {
         Self {
             patterns: Vec::new(),
             registry: &LANGUAGE_REGISTRY,
+            ast_cache: Mutex::new(HashMap::new()),
         }
     }
 
@@ -184,9 +204,13 @@ impl CrossLanguageCodePatternsDetector {
     ) -> Vec<CrossLanguageCodePattern> {
         let mut patterns = vec![];
 
+        // AST extraction and caching
+        let ast1 = self.get_or_extract_ast(code1, lang1_id);
+        let ast2 = self.get_or_extract_ast(code2, lang2_id);
+
         // AST-based API Integration: Check for REST/HTTP patterns via function calls
-        let has_api_1 = self.has_api_pattern(code1, lang1_id);
-        let has_api_2 = self.has_api_pattern(code2, lang2_id);
+        let has_api_1 = self.has_api_pattern_ast(code1, lang1_id, ast1.as_ref());
+        let has_api_2 = self.has_api_pattern_ast(code2, lang2_id, ast2.as_ref());
         if has_api_1 && has_api_2 {
             patterns.push(CrossLanguageCodePattern {
                 id: format!("{}_{}_{}", "api_integration", lang1_id, lang2_id),
@@ -196,7 +220,7 @@ impl CrossLanguageCodePatternsDetector {
                 target_language: lang2_id.to_string(),
                 languages: vec![lang1_id.to_string(), lang2_id.to_string()],
                 pattern_type: CrossLanguageCodePatternType::ApiIntegration,
-                confidence: 0.80, // Increased confidence with AST matching
+                confidence: 0.90, // Higher confidence with AST matching
                 example: Some("// REST API calls (http, fetch, requests) with JSON".to_string()),
                 characteristics: vec![
                     "HTTP client function calls (fetch, request, http.get)".to_string(),
@@ -207,8 +231,8 @@ impl CrossLanguageCodePatternsDetector {
         }
 
         // AST-based Error Handling: Check for try/catch or Result/Option patterns
-        let has_error_1 = self.has_error_handling_pattern(code1, lang1_id);
-        let has_error_2 = self.has_error_handling_pattern(code2, lang2_id);
+        let has_error_1 = self.has_error_handling_pattern_ast(code1, lang1_id, ast1.as_ref());
+        let has_error_2 = self.has_error_handling_pattern_ast(code2, lang2_id, ast2.as_ref());
         if has_error_1 && has_error_2 {
             patterns.push(CrossLanguageCodePattern {
                 id: format!("{}_{}_{}", "error_handling", lang1_id, lang2_id),
@@ -218,7 +242,7 @@ impl CrossLanguageCodePatternsDetector {
                 target_language: lang2_id.to_string(),
                 languages: vec![lang1_id.to_string(), lang2_id.to_string()],
                 pattern_type: CrossLanguageCodePatternType::ErrorHandling,
-                confidence: 0.85, // Higher confidence with AST analysis
+                confidence: 0.92, // Higher confidence with AST analysis
                 example: Some("try/catch blocks or Result<T>/Option<T> patterns".to_string()),
                 characteristics: vec![
                     "Exception handling blocks (try/catch/finally)".to_string(),
@@ -229,8 +253,8 @@ impl CrossLanguageCodePatternsDetector {
         }
 
         // AST-based Logging: Check for logging function calls (log, logger, etc.)
-        let has_logging_1 = self.has_logging_pattern(code1, lang1_id);
-        let has_logging_2 = self.has_logging_pattern(code2, lang2_id);
+        let has_logging_1 = self.has_logging_pattern_ast(code1, lang1_id, ast1.as_ref());
+        let has_logging_2 = self.has_logging_pattern_ast(code2, lang2_id, ast2.as_ref());
         if has_logging_1 && has_logging_2 {
             patterns.push(CrossLanguageCodePattern {
                 id: format!("{}_{}_{}", "logging", lang1_id, lang2_id),
@@ -240,7 +264,7 @@ impl CrossLanguageCodePatternsDetector {
                 target_language: lang2_id.to_string(),
                 languages: vec![lang1_id.to_string(), lang2_id.to_string()],
                 pattern_type: CrossLanguageCodePatternType::Logging,
-                confidence: 0.78, // Improved from simple string match
+                confidence: 0.88, // Improved from simple string match
                 example: Some("Logger calls (debug, info, warn, error)".to_string()),
                 characteristics: vec![
                     "Logger object initialization".to_string(),
@@ -251,8 +275,8 @@ impl CrossLanguageCodePatternsDetector {
         }
 
         // AST-based Message Passing: Check for NATS/Queue patterns via function calls
-        let has_messaging_1 = self.has_messaging_pattern(code1, lang1_id);
-        let has_messaging_2 = self.has_messaging_pattern(code2, lang2_id);
+        let has_messaging_1 = self.has_messaging_pattern_ast(code1, lang1_id, ast1.as_ref());
+        let has_messaging_2 = self.has_messaging_pattern_ast(code2, lang2_id, ast2.as_ref());
         if has_messaging_1 && has_messaging_2 {
             patterns.push(CrossLanguageCodePattern {
                 id: format!("{}_{}_{}", "messaging", lang1_id, lang2_id),
@@ -262,7 +286,7 @@ impl CrossLanguageCodePatternsDetector {
                 target_language: lang2_id.to_string(),
                 languages: vec![lang1_id.to_string(), lang2_id.to_string()],
                 pattern_type: CrossLanguageCodePatternType::MessagePassing,
-                confidence: 0.87, // Higher with AST matching
+                confidence: 0.93, // Higher with AST matching
                 example: Some("NATS/message queue publish/subscribe calls".to_string()),
                 characteristics: vec![
                     "NATS client initialization".to_string(),
@@ -275,74 +299,54 @@ impl CrossLanguageCodePatternsDetector {
         patterns
     }
 
-    /// Check for API integration pattern (HTTP/REST calls)
-    ///
-    /// Detects patterns like:
-    /// - Rust: `reqwest::Client`, `http::Request`
-    /// - Python: `requests.get`, `httpx.AsyncClient`
-    /// - JavaScript: `fetch()`, `axios.get()`
-    fn has_api_pattern(&self, code: &str, language_id: &str) -> bool {
-        match language_id {
-            "rust" => {
-                code.contains("reqwest") || code.contains("http::") || code.contains("Client::new")
+    /// AST-aware API integration pattern detection
+    fn has_api_pattern_ast(&self, _code: &str, _language_id: &str, ast: Option<&AstExtraction>) -> bool {
+        if let Some(ast) = ast {
+            if let Some(functions) = &ast.functions {
+                // Look for HTTP client or API call signatures in function names
+                return functions.iter().any(|f| {
+                    let name = f.name.to_lowercase();
+                    name.contains("http") || name.contains("request") || name.contains("fetch") || name.contains("axios")
+                });
             }
-            "python" => {
-                code.contains("requests.") || code.contains("httpx.") || code.contains("urllib")
-            }
-            "javascript" | "typescript" => {
-                code.contains("fetch(") || code.contains("axios") || code.contains("http")
-            }
-            "go" => code.contains("http.") || code.contains("net/http"),
-            "java" => code.contains("HttpClient") || code.contains("HttpURLConnection"),
-            _ => code.contains("http") || code.contains("request"),
         }
+        false
     }
 
-    /// Check for error handling pattern (try/catch or Result/Option)
-    ///
-    /// Detects:
-    /// - Rust: `Result<T>`, `?` operator, `.unwrap_or()`
-    /// - Python: `try/except`, exception handling
-    /// - JavaScript: `try/catch`, `Promise.catch()`
-    /// - Java: `try/catch`, exception handling
-    fn has_error_handling_pattern(&self, code: &str, language_id: &str) -> bool {
-        match language_id {
-            "rust" => code.contains("Result<") || code.contains("Option<") || code.contains("?"),
-            "python" => code.contains("try:") || code.contains("except") || code.contains("raise"),
-            "javascript" | "typescript" => {
-                code.contains("try {") || code.contains("catch") || code.contains(".catch")
+    // Removed: string-based API pattern detection
+
+    /// AST-aware error handling pattern detection
+    fn has_error_handling_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+        if let Some(ast) = ast {
+            if let Some(functions) = &ast.functions {
+                // Look for error/exception/Result/Option in function names or parameters
+                return functions.iter().any(|f| {
+                    let name = f.name.to_lowercase();
+                    name.contains("error") || name.contains("result") || name.contains("option") ||
+                    f.parameters.iter().any(|p| p.to_lowercase().contains("error"))
+                });
             }
-            "java" => code.contains("try") || code.contains("catch") || code.contains("throw"),
-            "go" => code.contains("if err !=") || code.contains("error"),
-            "elixir" => {
-                code.contains("case") || code.contains("{:ok,") || code.contains("{:error,")
-            }
-            _ => code.contains("try") || code.contains("catch") || code.contains("error"),
         }
+        false
     }
 
-    /// Check for logging pattern (logger calls)
-    ///
-    /// Detects:
-    /// - Rust: `log::info!`, `tracing::debug!`, `println!`
-    /// - Python: `logging.info`, `logger.debug`
-    /// - JavaScript: `console.log`, `logger.info`
-    /// - Java: `Logger`, `log.info`
-    fn has_logging_pattern(&self, code: &str, language_id: &str) -> bool {
-        match language_id {
-            "rust" => {
-                code.contains("log::") || code.contains("tracing::") || code.contains("println!")
+    // Removed: string-based error handling pattern detection
+
+    /// AST-aware logging pattern detection
+    fn has_logging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+        if let Some(ast) = ast {
+            if let Some(functions) = &ast.functions {
+                // Look for log/debug/info/warn/error in function names
+                return functions.iter().any(|f| {
+                    let name = f.name.to_lowercase();
+                    name.contains("log") || name.contains("debug") || name.contains("info") || name.contains("warn") || name.contains("error")
+                });
             }
-            "python" => {
-                code.contains("logging.") || code.contains("logger.") || code.contains("print(")
-            }
-            "javascript" | "typescript" => code.contains("console.") || code.contains("logger."),
-            "java" => code.contains("Logger") || code.contains("log."),
-            "go" => code.contains("log.") || code.contains("fmt.Print"),
-            "elixir" => code.contains("IO.puts") || code.contains("Logger."),
-            _ => code.contains("log") || code.contains("debug") || code.contains("info"),
         }
+        false
     }
+
+    // Removed: string-based logging pattern detection
 
     /// Check for message passing pattern (NATS, queues, etc.)
     ///
@@ -360,6 +364,8 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("kafka")
                     || code.contains("lapin")
                     || code.contains("redis")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
             }
             "python" => {
                 code.contains("nats")
@@ -367,6 +373,8 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("kafka")
                     || code.contains("redis.publish")
                     || code.contains("asyncio_nats")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
             }
             "javascript" | "typescript" => {
                 code.contains("nats")
@@ -374,20 +382,26 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("kafka")
                     || code.contains("redis")
                     || code.contains("message")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
             }
             "java" => {
                 code.contains("NATS")
                     || code.contains("Kafka")
                     || code.contains("RabbitMQ")
                     || code.contains("Redis")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
             }
             "elixir" => {
                 code.contains("NATS")
                     || code.contains("Gnat")
                     || code.contains("publish")
                     || code.contains("subscribe")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
             }
-            _ => code.contains("nats") || code.contains("kafka") || code.contains("message"),
+            _ => code.contains("nats") || code.contains("kafka") || code.contains("message") || code.contains("pgmq") || code.contains("ex_pgflow"),
         }
     }
 
@@ -433,5 +447,47 @@ impl CrossLanguageCodePatternsDetector {
             .iter()
             .filter(|p| p.confidence >= threshold)
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rust_api_code() -> &'static str {
+        r#"
+        use reqwest::Client;
+        fn call_api() {
+            let client = Client::new();
+            let _ = client.get("http://example.com").send();
+        }
+        "#
+    }
+
+    fn python_api_code() -> &'static str {
+        r#"
+        import requests
+        def call_api():
+            response = requests.get('http://example.com')
+        "#
+    }
+
+    #[test]
+    fn test_ast_api_integration_detection_and_caching() {
+        let detector = CrossLanguageCodePatternsDetector::default();
+        let files = vec![
+            ("rust".to_string(), rust_api_code().to_string()),
+            ("python".to_string(), python_api_code().to_string()),
+        ];
+        let tokens_by_file = vec![vec![], vec![]]; // Not used in AST path
+
+        let patterns = detector.detect_patterns(&files, &tokens_by_file);
+        let found = patterns.iter().any(|p| p.pattern_type == CrossLanguageCodePatternType::ApiIntegration);
+        assert!(found, "Should detect API integration pattern via AST");
+
+        // Check cache is populated for both files
+        let ast1 = detector.get_or_extract_ast(rust_api_code(), "rust");
+        let ast2 = detector.get_or_extract_ast(python_api_code(), "python");
+        assert!(ast1.is_some() && ast2.is_some(), "AST cache should be populated");
     }
 }

@@ -324,6 +324,7 @@ pub struct ControlFlowAnalysis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::graph::{CodeDependencyGraph, GraphEdge, GraphNode, GraphType};
 
     #[test]
     fn test_dead_end_detection() {

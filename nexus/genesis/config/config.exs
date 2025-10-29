@@ -44,7 +44,13 @@ config :genesis, :shared_queue,
 
 # Genesis-specific configuration
 config :genesis,
-  sandbox_dir: Path.join([System.get_env("HOME", "/tmp"), ".genesis", "sandboxes"]),
+  sandbox_dir: 
+    System.get_env("GENESIS_SANDBOX_DIR") ||
+    Path.join([
+      System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
+      ".genesis",
+      "sandboxes"
+    ]),
   experiment_timeout_ms: 3_600_000,
   max_experiments_concurrent: 5,
   auto_rollback_on_regression: true,

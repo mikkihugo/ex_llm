@@ -304,7 +304,7 @@ mod tests {
 
         let cap1 = CodeCapability::new(
             "parser::rust",
-            "Rust Parser",
+            "ParserEngine Rust Parser",
             CapabilityKind::Parser { language: "rust".to_string() },
             "fn parse_rust() -> Result<()>",
             CapabilityLocation {
@@ -320,6 +320,6 @@ mod tests {
         // Search
         let results = storage.search("rust").await.unwrap();
         assert!(!results.is_empty());
-        assert_eq!(results[0].capability.name, "Rust Parser");
+        assert_eq!(results[0].capability.name, "ParserEngine Rust Parser");
     }
 }

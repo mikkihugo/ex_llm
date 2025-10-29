@@ -86,98 +86,19 @@ defmodule Singularity.Execution.TodoExtractor do
   - `# SAMPLE: This is sample code`
   """
 
-  alias Singularity.Execution.TodoStore
+  alias Singularity.Execution.{TodoPatterns, TodoStore}
   alias Singularity.CodeQuality.AstQualityAnalyzer
 
   require Logger
   require Ecto.Query
 
-  # Production-ready comment patterns - only extract actionable items
-  @default_patterns [
-    {"elixir", "# TODO: $$$", "TODO comment - incomplete work"},
-    {"elixir", "# FIXME: $$$", "FIXME comment - needs fixing"},
-    {"rust", "// TODO: $$$", "TODO comment - incomplete work"},
-    {"rust", "// FIXME: $$$", "FIXME comment - needs fixing"},
-    {"javascript", "// TODO: $$$", "TODO comment - incomplete work"},
-    {"javascript", "// FIXME: $$$", "FIXME comment - needs fixing"},
-    {"python", "# TODO: $$$", "TODO comment - incomplete work"},
-    {"python", "# FIXME: $$$", "FIXME comment - needs fixing"}
-  ]
-
-  # Patterns to EXCLUDE (only pure documentation, not actionable code smells)
-  @excluded_patterns [
-    # Pure documentation (not actionable)
-    {"elixir", "# NOTE: $$$", "NOTE comment - pure documentation"},
-    {"elixir", "# INFO: $$$", "INFO comment - pure information"},
-    {"elixir", "# DOC: $$$", "DOC comment - pure documentation"},
-    {"elixir", "# COMMENT: $$$", "COMMENT comment - pure explanation"},
-
-    # Test/example code (not actionable in production)
-    {"elixir", "# TEST: $$$", "TEST comment - test code"},
-    {"elixir", "# EXAMPLE: $$$", "EXAMPLE comment - example code"},
-    {"elixir", "# SAMPLE: $$$", "SAMPLE comment - sample code"},
-
-    # Rust equivalents
-    {"rust", "// NOTE: $$$", "NOTE comment - pure documentation"},
-    {"rust", "// INFO: $$$", "INFO comment - pure information"},
-    {"rust", "// DOC: $$$", "DOC comment - pure documentation"},
-    {"rust", "// COMMENT: $$$", "COMMENT comment - pure explanation"},
-    {"rust", "// TEST: $$$", "TEST comment - test code"},
-    {"rust", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
-    {"rust", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
-
-    # JavaScript equivalents
-    {"javascript", "// NOTE: $$$", "NOTE comment - pure documentation"},
-    {"javascript", "// INFO: $$$", "INFO comment - pure information"},
-    {"javascript", "// DOC: $$$", "DOC comment - pure documentation"},
-    {"javascript", "// COMMENT: $$$", "COMMENT comment - pure explanation"},
-    {"javascript", "// TEST: $$$", "TEST comment - test code"},
-    {"javascript", "// EXAMPLE: $$$", "EXAMPLE comment - example code"},
-    {"javascript", "// SAMPLE: $$$", "SAMPLE comment - sample code"},
-
-    # Python equivalents
-    {"python", "# NOTE: $$$", "NOTE comment - pure documentation"},
-    {"python", "# INFO: $$$", "INFO comment - pure information"},
-    {"python", "# DOC: $$$", "DOC comment - pure documentation"},
-    {"python", "# COMMENT: $$$", "COMMENT comment - pure explanation"},
-    {"python", "# TEST: $$$", "TEST comment - test code"},
-    {"python", "# EXAMPLE: $$$", "EXAMPLE comment - example code"},
-    {"python", "# SAMPLE: $$$", "SAMPLE comment - sample code"}
-  ]
-
-  # Priority mapping for comment types
-  @priority_map %{
-    # Critical - needs fixing
-    "FIXME" => 1,
-    # High - incomplete work
-    "TODO" => 2,
-    # High - placeholder code
-    "STUB" => 3,
-    # Medium - temporary solution
-    "HACK" => 4,
-    # Medium - debugging code
-    "DEBUG" => 5,
-    # Medium - dead code
-    "DEAD" => 6,
-    # Medium - unused code
-    "UNUSED" => 7,
-    # Medium - deprecated code
-    "DEPRECATED" => 8,
-    # Medium - code to remove
-    "REMOVE" => 9,
-    # Low - temporary fix
-    "WORKAROUND" => 10,
-    # Low - quick fix
-    "QUICKFIX" => 11,
-    # Low - temporary code
-    "TEMP" => 12,
-    # Low - temporary code
-    "TEMPORARY" => 13,
-    # Low - placeholder code
-    "PLACEHOLDER" => 14,
-    # Low - hidden todo or important info
-    "NOTE" => 15
-  }
+  @excluded_patterns TodoPatterns.excluded_patterns()
+  @priority_map TodoPatterns.priority_map()
+  @comment_tags Map.keys(@priority_map)
+  @comment_prefix_regex Regex.compile!(
+                           "^\\s*(#|//)\\s*(?:#{Enum.join(@comment_tags, "|")}):\\s*",
+                           "i"
+                         )
 
   @doc """
   Extract TODO comments from a single file and create todos.
@@ -192,7 +113,6 @@ defmodule Singularity.Execution.TodoExtractor do
   """
   @spec extract_from_file(String.t(), keyword()) :: {:ok, [map()]} | {:error, term()}
   def extract_from_file(file_path, opts \\ []) do
-    _patterns = Keyword.get(opts, :patterns, @default_patterns)
     create_todos = Keyword.get(opts, :create_todos, true)
 
     case AstQualityAnalyzer.find_todo_and_fixme_comments(file_path) do
@@ -261,7 +181,7 @@ defmodule Singularity.Execution.TodoExtractor do
 
     # Check if this comment matches any excluded pattern
     Enum.any?(@excluded_patterns, fn {_lang, excluded_pattern, _desc} ->
-      String.contains?(pattern, excluded_pattern)
+      pattern == excluded_pattern or String.contains?(pattern, excluded_pattern)
     end)
   end
 
@@ -270,22 +190,7 @@ defmodule Singularity.Execution.TodoExtractor do
     matched_text = comment[:matched_text] || ""
 
     # Must be any code smell marker (not excluded)
-    is_code_smell =
-      String.contains?(pattern, "TODO:") or
-        String.contains?(pattern, "FIXME:") or
-        String.contains?(pattern, "NOTE:") or
-        String.contains?(pattern, "STUB:") or
-        String.contains?(pattern, "HACK:") or
-        String.contains?(pattern, "DEBUG:") or
-        String.contains?(pattern, "DEAD:") or
-        String.contains?(pattern, "UNUSED:") or
-        String.contains?(pattern, "DEPRECATED:") or
-        String.contains?(pattern, "REMOVE:") or
-        String.contains?(pattern, "WORKAROUND:") or
-        String.contains?(pattern, "QUICKFIX:") or
-        String.contains?(pattern, "TEMP:") or
-        String.contains?(pattern, "TEMPORARY:") or
-        String.contains?(pattern, "PLACEHOLDER:")
+    is_code_smell = comment_marker(comment) != nil
 
     # Must have meaningful content (not just the marker)
     has_content = String.length(String.trim(matched_text)) > 10
@@ -321,8 +226,7 @@ defmodule Singularity.Execution.TodoExtractor do
 
     # Remove the comment prefix and clean up
     text
-    |> String.replace(~r/^#\s*(TODO|FIXME|HACK|NOTE):\s*/, "")
-    |> String.replace(~r/^\s*\/\/\s*(TODO|FIXME|HACK|NOTE):\s*/, "")
+    |> Regex.replace(@comment_prefix_regex, "")
     |> String.trim()
     |> case do
       "" -> "TODO item from #{Path.basename(comment[:file_path] || "")}"
@@ -331,17 +235,13 @@ defmodule Singularity.Execution.TodoExtractor do
   end
 
   defp determine_priority(comment) do
-    pattern = comment[:pattern] || ""
+    comment_type =
+      case comment_marker(comment) do
+        nil -> nil
+        tag -> String.upcase(tag)
+      end
 
-    case String.split(pattern, ":") do
-      [prefix, _] ->
-        comment_type = String.trim(prefix) |> String.replace(~r/^[#\/\s]+/, "")
-        Map.get(@priority_map, comment_type, 3)
-
-      _ ->
-        # Default to medium priority
-        3
-    end
+    Map.get(@priority_map, comment_type, 3)
   end
 
   defp determine_complexity(todo_text) do
@@ -351,6 +251,26 @@ defmodule Singularity.Execution.TodoExtractor do
       String.contains?(todo_text, ["fix", "bug", "error", "issue"]) -> :medium
       true -> :medium
     end
+  end
+
+  defp comment_marker(comment) do
+    pattern =
+      comment[:pattern]
+      |> case do
+        nil -> ""
+        value -> String.upcase("#{value}")
+      end
+
+    matched_text =
+      comment[:matched_text]
+      |> case do
+        nil -> ""
+        value -> String.upcase("#{value}")
+      end
+
+    Enum.find(@comment_tags, fn tag ->
+      String.contains?(pattern, "#{tag}:") or String.contains?(matched_text, tag)
+    end)
   end
 
   # UUID handling functions

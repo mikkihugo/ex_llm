@@ -21,7 +21,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineTest do
     NxService
     |> stub(:embed, fn _text, _opts ->
       # Return a mock 1024-dimension embedding
-      {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5))}
+      {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5 end))}
     end)
 
     %{artifacts: artifacts}

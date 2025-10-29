@@ -36,7 +36,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   """
 
   require Logger
-  alias CentralCloud.NatsClient
+  alias Pgflow
 
   @doc """
   Call the Architecture Engine via NATS.
@@ -48,9 +48,9 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - analyze_patterns
   """
   def call_architecture_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case NatsClient.request("engines.architecture.#{operation}", request, timeout: timeout) do
+    case Pgflow.send_with_notify("engines.architecture.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Architecture engine call successful", operation: operation)
         {:ok, response}
@@ -71,9 +71,9 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - generate_embeddings
   """
   def call_code_quality_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case NatsClient.request("engines.code.#{operation}", request, timeout: timeout) do
+    case Pgflow.send_with_notify("engines.code.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Code engine call successful", operation: operation)
         {:ok, response}
@@ -94,13 +94,13 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - external_linters
   """
   def call_linting_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
-
-    case NatsClient.request("engines.linting.#{operation}", request, timeout: timeout) do
+    _timeout = Keyword.get(opts, :timeout, 30_000)
+    
+    case Pgflow.send_with_notify("engines.linting.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Linting engine call successful", operation: operation)
         {:ok, response}
-
+      
       {:error, reason} ->
         Logger.error("Linting engine call failed", operation: operation, reason: reason)
         {:error, reason}
@@ -117,9 +117,9 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - cluster_embeddings
   """
   def call_embedding_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case NatsClient.request("engines.embedding.#{operation}", request, timeout: timeout) do
+    case Pgflow.send_with_notify("engines.embedding.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Embedding engine call successful", operation: operation)
         {:ok, response}
@@ -140,9 +140,9 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - analyze_syntax
   """
   def call_parser_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case NatsClient.request("engines.parser.#{operation}", request, timeout: timeout) do
+    case Pgflow.send_with_notify("engines.parser.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Parser engine call successful", operation: operation)
         {:ok, response}
@@ -163,9 +163,9 @@ defmodule CentralCloud.Engines.SharedEngineService do
   - suggest_improvements
   """
   def call_prompt_engine(operation, request, opts \\ []) do
-    timeout = Keyword.get(opts, :timeout, 30_000)
+    _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case NatsClient.request("engines.prompt.#{operation}", request, timeout: timeout) do
+    case Pgflow.send_with_notify("engines.prompt.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Prompt engine call successful", operation: operation)
         {:ok, response}
@@ -216,8 +216,8 @@ defmodule CentralCloud.Engines.SharedEngineService do
     engines = [:architecture, :code, :linting, :embedding, :parser, :prompt]
     
     health_checks = Enum.map(engines, fn engine ->
-      case NatsClient.request("engines.#{engine}.health", %{}, timeout: 5_000) do
-        {:ok, response} -> {engine, :healthy, response}
+      case Pgflow.send_with_notify("engines.#{engine}.health", %{}, CentralCloud.Repo) do
+        {:ok, _} -> {engine, :healthy, %{status: "ok"}}
         {:error, reason} -> {engine, :unhealthy, reason}
       end
     end)

@@ -1,4 +1,4 @@
-//! Rust parser backed by tree-sitter for use with the parser framework.
+//! ParserEngine Rust parser backed by tree-sitter for use with the parser framework.
 
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
@@ -7,11 +7,11 @@ use std::convert::Into;
 use std::sync::Mutex;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator};
 
-pub struct RustParser {
+pub struct ParserEngineRust {
     parser: Mutex<Parser>,
 }
 
-impl RustParser {
+impl ParserEngineRust {
     pub fn new() -> Result<Self, ParseError> {
         let mut parser = Parser::new();
         parser
@@ -23,13 +23,13 @@ impl RustParser {
     }
 }
 
-impl Default for RustParser {
+impl Default for ParserEngineRust {
     fn default() -> Self {
         Self::new().expect("Rust parser initialisation must succeed")
     }
 }
 
-impl LanguageParser for RustParser {
+impl LanguageParser for ParserEngineRust {
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = self.parser.lock().expect("parser mutex poisoned");
         let tree = parser

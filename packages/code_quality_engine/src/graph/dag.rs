@@ -1583,7 +1583,6 @@ impl VectorIntegration {
           "MONOLITHIC_CONTEXT: Working with monolithic architecture. Consider code organization, module boundaries, and refactoring opportunities.".to_string(),
         );
             }
-            _ => {}
         }
 
         // CodePattern-specific prompts
@@ -1609,7 +1608,6 @@ impl VectorIntegration {
               .to_string(),
           );
                 }
-                _ => {}
             }
         }
 

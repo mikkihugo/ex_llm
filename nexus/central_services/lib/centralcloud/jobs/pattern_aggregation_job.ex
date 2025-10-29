@@ -1,25 +1,40 @@
 defmodule CentralCloud.Jobs.PatternAggregationJob do
   @moduledoc """
-  Oban job for global pattern aggregation.
+  CentralCloud.Jobs.PatternAggregationJob
 
-  Aggregates patterns learned by all Singularity instances into
-  consolidated global insights.
+  Oban worker for aggregating patterns learned across all Singularity instances.
 
-  Runs every 1 hour via Oban Cron.
+  Consolidates local patterns into global insights, enabling cross-instance learning
+  and best practice identification. Runs hourly via Oban Cron.
+
+  ## Features
+
+  - Aggregates code, architecture, and framework patterns
+  - Clusters similar patterns using simple grouping
+  - Ranks by frequency, success rate, and confidence
+  - Stores results in pg_cache for fast retrieval
+  - Publishes insights via NATS to all instances
+
+  ## Architecture
+
+  Singularity Instances → NATS → PatternAggregationJob → pg_cache → NATS Broadcast
 
   ## Data Flow
 
-  1. Query all patterns from all instances (via NATS subscriptions)
-  2. Group by pattern type (code, architecture, framework)
-  3. Cluster similar patterns across instances
-  4. Rank by frequency and success rate
-  5. Store aggregated patterns in centralcloud DB
-  6. Publish aggregated insights via NATS to all instances
+  1. Query patterns from IntelligenceHub and package usage
+  2. Group by type (code, architecture, framework)
+  3. Cluster and rank patterns
+  4. Store top patterns in cache
+  5. Publish aggregated insights
 
-  This enables:
-  - Cross-instance learning ("instance 3 solved this with pattern X")
-  - Global best practices ("80% of instances use this pattern")
-  - Knowledge sharing (instances download aggregate models)
+  ## Examples
+
+  ```elixir
+  # Scheduled via Oban Cron: every hour
+  CentralCloud.Jobs.PatternAggregationJob.aggregate_patterns()
+  ```
+
+  This job enables global knowledge sharing without disrupting local operations.
   """
 
   use Oban.Worker,
@@ -29,7 +44,7 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
 
   require Logger
   import Ecto.Query
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
 
   @impl Oban.Worker
@@ -46,9 +61,16 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
   end
 
   @doc """
-  Aggregate patterns from all Singularity instances.
+  Aggregate patterns from all Singularity instances into global insights.
+
+  Queries patterns from IntelligenceHub, packages, and code snippets.
+  Clusters, ranks, stores in cache, and publishes via NATS.
 
   Called every 1 hour via Oban Cron.
+
+  ## Returns
+
+  `:ok` on success, or continues on error (retries next hour).
   """
   def aggregate_patterns do
     Logger.debug("📊 Starting pattern aggregation from all instances...")
@@ -276,8 +298,8 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
       }
     }
 
-    NatsClient.publish("intelligence.insights.aggregated", payload)
-    Logger.debug("Published aggregated insights to intelligence.insights.aggregated")
+    Pgflow.send_with_notify("intelligence.insights.aggregated", payload, CentralCloud.Repo)
+    Logger.debug("Published aggregated insights to intelligence.insights.aggregated via PgFlow")
   end
 
   defp count_active_instances do

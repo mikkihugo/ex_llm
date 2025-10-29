@@ -146,6 +146,12 @@ defmodule Genesis.IsolationManager do
   end
 
   defp sandbox_base_path do
-    Path.join([System.get_env("HOME", "/tmp"), ".genesis", "sandboxes"])
+    # Use XDG_DATA_HOME if available, otherwise fall back to HOME
+    base_dir = 
+      System.get_env("GENESIS_SANDBOX_DIR") ||
+      System.get_env("XDG_DATA_HOME") ||
+      System.get_env("HOME", "/tmp")
+    
+    Path.join([base_dir, ".genesis", "sandboxes"])
   end
 end

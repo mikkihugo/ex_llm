@@ -3,6 +3,8 @@
 //! PSEUDO CODE: How parsers provide coverage data to analysis-suite.
 
 use anyhow::Result;
+use std::path::Path;
+use parser_core::language_registry::detect_language;
 use serde::{Deserialize, Serialize};
 
 /// Coverage data collection result
@@ -507,29 +509,9 @@ impl CoverageDataCollector {
 
     /// Determine parser for file
     fn determine_parser_for_file(&self, file_path: &str) -> Result<String> {
-        // PSEUDO CODE:
-        /*
-        let extension = file_path.split('.').last()
-            .ok_or_else(|| anyhow::anyhow!("No file extension found"))?;
-
-        match extension {
-            "rs" => Ok("rust".to_string()),
-            "js" => Ok("javascript".to_string()),
-            "ts" => Ok("typescript".to_string()),
-            "py" => Ok("python".to_string()),
-            "go" => Ok("go".to_string()),
-            "java" => Ok("java".to_string()),
-            "cs" => Ok("csharp".to_string()),
-            "c" => Ok("c".to_string()),
-            "cpp" | "cc" | "cxx" => Ok("cpp".to_string()),
-            "erl" => Ok("erlang".to_string()),
-            "ex" | "exs" => Ok("elixir".to_string()),
-            "gleam" => Ok("gleam".to_string()),
-            _ => Err(anyhow::anyhow!("Unsupported file type: {}", extension)),
-        }
-        */
-
-        Ok("rust".to_string())
+        // Use centralized LanguageRegistry for detection
+        let lang = detect_language(Path::new(file_path))?;
+        Ok(lang.id.to_string())
     }
 
     /// Generate recommendations

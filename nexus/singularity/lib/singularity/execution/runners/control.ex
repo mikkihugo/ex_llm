@@ -33,7 +33,7 @@ defmodule Singularity.Execution.Runners.Control do
 
   ## Examples
 
-      iex> Singularity.Control.publish_improvement("agent-123", %{code: "def hello, do: :world"})
+      iex> Singularity.Execution.Runners.Control.publish_improvement("agent-123", %{code: "def hello, do: :world"})
       :ok
   """
   @spec publish_improvement(String.t(), map()) :: :ok
@@ -53,7 +53,7 @@ defmodule Singularity.Execution.Runners.Control do
 
   ## Examples
 
-      iex> Singularity.Control.broadcast_event(:agent_started, %{agent_id: "agent-123"})
+      iex> Singularity.Execution.Runners.Control.broadcast_event(:agent_started, %{agent_id: "agent-123"})
       :ok
   """
   @spec broadcast_event(atom(), map()) :: :ok

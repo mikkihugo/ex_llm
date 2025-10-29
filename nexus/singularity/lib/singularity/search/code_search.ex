@@ -37,8 +37,16 @@ defmodule Singularity.CodeSearch do
   This function is kept for backward compatibility.
   All tables are automatically created when you run `mix ecto.migrate`.
   """
+  @doc """
+  Create unified schema for code search.
+  
+  @since v2.6.0
+  @example
+  mix ecto.migrate  # Run migrations for schema
+  """
   def create_unified_schema(_db_conn) do
-    Logger.info("create_unified_schema deprecated - use migrations instead: mix ecto.migrate")
+    # Schema creation handled by Ecto migrations
+    # Run: mix ecto.migrate
     :ok
   end
 

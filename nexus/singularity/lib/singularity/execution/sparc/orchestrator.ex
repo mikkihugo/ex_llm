@@ -234,6 +234,26 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
   def handle_call({:execute, goal, opts}, _from, state) do
     Logger.info("Starting orchestrated execution for: #{inspect(goal)}")
 
+    # Create PgFlow workflow for SPARC execution
+    workflow_id = "sparc_execution_#{:erlang.unique_integer([:positive])}"
+    workflow_attrs = %{
+      workflow_id: workflow_id,
+      type: "sparc_execution",
+      status: "pending",
+      payload: %{
+        goal: goal,
+        opts: opts,
+        started_at: :erlang.system_time(:millisecond)
+      }
+    }
+
+    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+      {:ok, _workflow} ->
+        Logger.info("Created SPARC execution workflow", workflow_id: workflow_id)
+      {:error, reason} ->
+        Logger.warning("Failed to create SPARC execution workflow", reason: reason)
+    end
+
     # 1. Get best template from Template Performance DAG
     task_type = extract_task_type(goal)
     language = Keyword.get(opts, :language, "elixir")
@@ -288,6 +308,18 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
           # Keep last 100
           |> Enum.take(100)
     }
+
+    # Send execution completion notification via PgFlow
+    notification = %{
+      type: "sparc_execution_completed",
+      workflow_id: workflow_id,
+      goal: goal,
+      template_id: template_id,
+      result: result,
+      metrics: metrics,
+      completed_at: :erlang.system_time(:millisecond)
+    }
+    Singularity.PgFlow.send_with_notify("sparc_execution_notifications", notification)
 
     {:reply, {:ok, result, metrics}, new_state}
   end

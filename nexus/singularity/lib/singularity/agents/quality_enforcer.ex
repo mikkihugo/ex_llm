@@ -224,7 +224,7 @@ defmodule Singularity.Agents.QualityEnforcer do
       estimated_cost: 300,
       success_rate: 0.92,
       tags: [:async_safe, :idempotent, :deterministic],
-      metadata: %{"version" => "2.2.0"}
+      metadata: %{"version" => Singularity.BuildInfo.version()}
     })
 
     {:noreply, state}

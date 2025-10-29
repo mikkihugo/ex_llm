@@ -28,7 +28,7 @@ defmodule CentralCloud.Jobs.StatisticsJob do
 
   require Logger
   import Ecto.Query
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
 
   @impl Oban.Worker
@@ -353,8 +353,8 @@ defmodule CentralCloud.Jobs.StatisticsJob do
       knowledge_growth: statistics.knowledge_growth
     }
 
-    NatsClient.publish("intelligence.statistics.global", summary)
-    Logger.debug("Published global statistics summary to intelligence.statistics.global")
+    Pgflow.send_with_notify("intelligence.statistics.global", summary, CentralCloud.Repo)
+    Logger.debug("Published global statistics summary to intelligence.statistics.global via PgFlow")
   end
 
   defp get_cached_value(cache_key) do

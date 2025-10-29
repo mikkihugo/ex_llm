@@ -260,42 +260,6 @@ config :singularity, :sasl,
     rust_acceleration: true
   }
 
-# =============================================================================
-# CentralCloud Complexity Training Pipeline Configuration
-# =============================================================================
-# PGFlow migration for complexity training pipeline with canary rollout support
-config :centralcloud, :complexity_training_pipeline,
-  # Enable PGFlow mode (canary rollout)
-  pgflow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
-  # Canary rollout percentage (0-100)
-  canary_percentage: String.to_integer(System.get_env("COMPLEXITY_TRAINING_CANARY_PERCENT", "10"))
-
-# PGFlow workflow configuration for complexity training
-config :centralcloud, :complexity_training_workflow,
-  # Workflow-level timeouts and retries
-  timeout_ms: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_TIMEOUT_MS", "300000")),
-  retries: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_RETRIES", "3")),
-  retry_delay_ms: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_RETRY_DELAY_MS", "5000")),
-  # Concurrency settings
-  concurrency: String.to_integer(System.get_env("COMPLEXITY_WORKFLOW_CONCURRENCY", "1")),
-  # Step-specific timeouts
-  step_timeouts: %{
-    data_collection:
-      String.to_integer(System.get_env("COMPLEXITY_DATA_COLLECTION_TIMEOUT_MS", "60000")),
-    feature_engineering:
-      String.to_integer(System.get_env("COMPLEXITY_FEATURE_ENGINEERING_TIMEOUT_MS", "30000")),
-    model_training:
-      String.to_integer(System.get_env("COMPLEXITY_MODEL_TRAINING_TIMEOUT_MS", "180000")),
-    model_evaluation:
-      String.to_integer(System.get_env("COMPLEXITY_MODEL_EVALUATION_TIMEOUT_MS", "30000")),
-    model_deployment:
-      String.to_integer(System.get_env("COMPLEXITY_MODEL_DEPLOYMENT_TIMEOUT_MS", "60000"))
-  },
-  # Resource allocation hints
-  resource_hints: %{
-    model_training: %{gpu: true, single_worker: true}
-  }
-
 config :libcluster,
   topologies: []
 
@@ -320,7 +284,13 @@ config :singularity, :git_coordinator,
 # Named "claude-recovery" to avoid collision with NPM Claude SDK
 # Install with: ./scripts/install_claude_native.sh
 emergency_claude_path =
-  Path.expand(System.get_env("SINGULARITY_EMERGENCY_BIN") || "~/.singularity/emergency/bin")
+  (System.get_env("SINGULARITY_EMERGENCY_BIN") ||
+   Path.join([
+     System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
+     ".singularity",
+     "emergency",
+     "bin"
+   ]))
   |> Path.join("claude-recovery")
 
 config :singularity, :claude,
@@ -347,7 +317,7 @@ config :singularity, :claude,
   }
 
 # Import broadway_pgflow package defaults for PGFlow configuration
-import_config Path.expand("../../../packages/broadway_pgflow/config/config.exs", __DIR__)
+# import_config Path.expand("../../../packages/broadway_pgflow/config/config.exs", __DIR__)
 
 import_config "#{config_env()}.exs"
 

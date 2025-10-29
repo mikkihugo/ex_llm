@@ -273,7 +273,7 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
     end
   end
 
-  defp log_sync_completion(sync_type, identifier, status) do
+  defp log_sync_completion(sync_type, _identifier, status) do
     try do
       Repo.query("""
       INSERT INTO sync_log (
@@ -289,7 +289,7 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
     end
   end
 
-  defp log_sync_completion(sync_type, identifier, status, error) do
+  defp log_sync_completion(sync_type, _identifier, status, error) do
     try do
       Repo.query("""
       INSERT INTO sync_log (

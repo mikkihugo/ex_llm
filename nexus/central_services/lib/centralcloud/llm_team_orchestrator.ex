@@ -1,238 +1,106 @@
 defmodule CentralCloud.LLMTeamOrchestrator do
   @moduledoc """
-  Orchestrates multi-agent LLM team for pattern validation.
+  High-level façade for running the CentralCloud multi-agent LLM workflow.
 
-  Workflow:
-  1. Analyst discovers pattern (Claude Opus)
-  2. Validator validates technical correctness (GPT-4.1)
-  3. Critic finds weaknesses (Gemini 2.5 Pro)
-  4. Researcher validates against industry (Claude Sonnet)
-  5. Coordinator builds consensus (GPT-5-mini)
-
-  All agents run sequentially, with each agent seeing previous assessments.
-  Returns final consensus with production-readiness decision.
+  Instead of manually chaining model calls, we enqueue a PGFlow workflow
+  (`CentralCloud.Workflows.LLMTeamWorkflow`) that models the entire discussion.
+  The workflow automatically picks the right crew (fast/default/thorough), runs
+  the required specialists, and returns a consensus payload with trace data.
   """
 
   require Logger
-  alias CentralCloud.TemplateLoader
-  alias CentralCloud.Repo
-  alias CentralCloud.PatternValidation
+  alias CentralCloud.Workflows.LLMTeamWorkflow
+  alias PGFlow.Workflow
 
   @doc """
-  Run full LLM team validation on codebase.
+  Validate a codebase pattern by delegating to the PGFlow crew workflow.
 
-  Returns consensus result with all agent assessments.
-
-  ## Examples
-
-      {:ok, consensus} = LLMTeamOrchestrator.validate_pattern(
-        "mikkihugo/singularity",
-        code_samples
-      )
-
-  ## Options
-
-  - `:pattern_type` - "architecture" | "quality" (default: "architecture")
-  - `:skip_cache` - Skip cached validations (default: false)
+  Options:
+  * `:mode` – force a crew (`:fast | :default | :thorough`)
+  * `:initial_confidence` – heuristic from local analysis (0.0-1.0)
+  * `:metadata` – additional information (map)
+  * `:request_id` – correlation id for upstream tracking
+  * `:skip_cache` – skip cache lookups (future)
   """
-  def validate_pattern(codebase_id, code_samples, opts \\ []) do
+  @spec validate_pattern(String.t(), list(String.t()), keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def validate_pattern(codebase_id, code_samples, opts \\ []) when is_list(code_samples) do
     pattern_type = Keyword.get(opts, :pattern_type, "architecture")
-    skip_cache = Keyword.get(opts, :skip_cache, false)
+    initial_confidence = clamp(Keyword.get(opts, :initial_confidence, 0.5))
+    mode = Keyword.get(opts, :mode)
+    metadata = Keyword.get(opts, :metadata, %{})
+    request_id = Keyword.get(opts, :request_id, generate_request_id())
 
-    Logger.info("Starting LLM Team validation for #{codebase_id} (#{pattern_type})")
+    payload = %{
+      codebase_id: codebase_id,
+      code_samples: code_samples,
+      pattern_type: pattern_type,
+      mode: mode,
+      initial_confidence: initial_confidence,
+      metadata: metadata,
+      request_id: request_id
+    }
 
-    # Check cache first (unless skip_cache = true)
-    cached_result =
-      if !skip_cache do
-        case get_cached_validation(codebase_id, pattern_type) do
-          {:ok, cached} ->
-            Logger.info("Using cached validation for #{codebase_id}")
-            {:ok, cached}
+    Logger.info("[LLMTeam] Enqueuing PGFlow workflow", codebase: codebase_id, mode: mode || :auto)
 
-          :not_found ->
-            nil
-        end
-      end
+    timeout = Keyword.get(opts, :timeout, 180_000)
 
-    # Return cached result if found
-    if cached_result, do: cached_result, else: run_full_validation(codebase_id, code_samples, pattern_type)
-  end
-
-  defp run_full_validation(codebase_id, code_samples, pattern_type) do
-    # Run full LLM team workflow
-    with {:ok, analyst_result} <- run_analyst(code_samples, codebase_id, pattern_type),
-         {:ok, validator_result} <- run_validator(analyst_result, codebase_id),
-         {:ok, critic_result} <- run_critic(analyst_result, validator_result, codebase_id),
-         {:ok, researcher_result} <-
-           run_researcher(analyst_result, validator_result, critic_result, codebase_id),
-         {:ok, consensus} <-
-           run_coordinator(
-             analyst_result,
-             validator_result,
-             critic_result,
-             researcher_result,
-             codebase_id
-           ) do
-      # Store results in database
-      store_validation_results(
-        codebase_id,
-        analyst_result,
-        validator_result,
-        critic_result,
-        researcher_result,
-        consensus
-      )
-
-      {:ok, consensus}
+    with {:ok, run_id} <- PGFlow.Workflow.execute(LLMTeamWorkflow, payload),
+         {:ok, result} <- PGFlow.Workflow.await(run_id, timeout: timeout) do
+      store_validation_results(codebase_id, result)
+      {:ok, result}
     else
-      {:error, reason} = error ->
-        Logger.error("LLM Team validation failed: #{inspect(reason)}")
-        error
+      {:error, :timeout} ->
+        Logger.error("[LLMTeam] Workflow execution timed out", codebase: codebase_id)
+        {:error, :timeout}
+
+      {:error, reason} ->
+        Logger.error("[LLMTeam] Workflow execution failed",
+          codebase: codebase_id,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
     end
   end
 
-  ## Private Functions - Agent Runners
+  # ────────────────────────────────────────────────────────────────
+  # Helpers
+  # ────────────────────────────────────────────────────────────────
 
-  defp run_analyst(code_samples, codebase_id, pattern_type) do
-    Logger.info("Running Pattern Analyst (Claude Opus)...")
+  defp store_validation_results(codebase_id, %{specialists: specialists} = result) do
+    Logger.info("[LLMTeam] Storing validation results",
+      codebase: codebase_id,
+      final_confidence: result.final_confidence
+    )
 
-    with {:ok, prompt} <-
-           TemplateLoader.load("architecture/llm_team/analyst-discover-pattern.lua", %{
-             pattern_type: pattern_type,
-             code_samples: code_samples,
-             codebase_id: codebase_id
-           }),
-         {:ok, result} <- call_llm_via_nats(prompt, :claude_opus, :pattern_analyzer) do
-      {:ok, result}
-    end
-  end
+    summary =
+      specialists
+      |> Enum.map(fn specialist ->
+        "#{specialist.role}: #{format_confidence(specialist.confidence)}"
+      end)
+      |> Enum.join(" | ")
 
-  defp run_validator(analyst_result, codebase_id) do
-    Logger.info("Running Pattern Validator (GPT-4.1)...")
+    Logger.debug("[LLMTeam] Specialist summary", summary: summary)
 
-    pattern = get_first_pattern(analyst_result)
-
-    with {:ok, prompt} <-
-           TemplateLoader.load("architecture/llm_team/validator-validate-pattern.lua", %{
-             pattern: pattern,
-             analyst_assessment: analyst_result,
-             codebase_id: codebase_id
-           }),
-         {:ok, result} <- call_llm_via_nats(prompt, :gpt4_1, :pattern_validator) do
-      {:ok, result}
-    end
-  end
-
-  defp run_critic(analyst_result, validator_result, codebase_id) do
-    Logger.info("Running Pattern Critic (Gemini 2.5 Pro)...")
-
-    pattern = get_first_pattern(analyst_result)
-
-    with {:ok, prompt} <-
-           TemplateLoader.load("architecture/llm_team/critic-critique-pattern.lua", %{
-             pattern: pattern,
-             analyst_assessment: analyst_result,
-             validator_assessment: validator_result,
-             codebase_id: codebase_id
-           }),
-         {:ok, result} <- call_llm_via_nats(prompt, :gemini_2_5_pro, :pattern_critic) do
-      {:ok, result}
-    end
-  end
-
-  defp run_researcher(analyst_result, validator_result, critic_result, codebase_id) do
-    Logger.info("Running Pattern Researcher (Claude Sonnet)...")
-
-    pattern = get_first_pattern(analyst_result)
-
-    with {:ok, prompt} <-
-           TemplateLoader.load("architecture/llm_team/researcher-research-pattern.lua", %{
-             pattern: pattern,
-             analyst_assessment: analyst_result,
-             validator_assessment: validator_result,
-             critic_assessment: critic_result,
-             codebase_id: codebase_id
-           }),
-         {:ok, result} <- call_llm_via_nats(prompt, :claude_sonnet, :pattern_researcher) do
-      {:ok, result}
-    end
-  end
-
-  defp run_coordinator(analyst_result, validator_result, critic_result, researcher_result, codebase_id) do
-    Logger.info("Running Team Coordinator (GPT-5-mini)...")
-
-    pattern = get_first_pattern(analyst_result)
-
-    with {:ok, prompt} <-
-           TemplateLoader.load("architecture/llm_team/coordinator-build-consensus.lua", %{
-             pattern: pattern,
-             analyst_assessment: analyst_result,
-             validator_assessment: validator_result,
-             critic_assessment: critic_result,
-             researcher_assessment: researcher_result,
-             codebase_id: codebase_id
-           }),
-         {:ok, result} <- call_llm_via_nats(prompt, :gpt5_mini, :consensus_builder) do
-      {:ok, result}
-    end
-  end
-
-  ## Private Functions - LLM Integration
-
-  defp call_llm_via_nats(prompt, provider, task_type) do
-    # TODO: Call Singularity LLM service via NATS
-    # For now, return placeholder
-    Logger.warn("TODO: Call LLM via NATS (provider: #{provider}, task: #{task_type})")
-
-    # Placeholder response
-    {:ok,
-     %{
-       "status" => "placeholder",
-       "message" => "LLM call via NATS not yet implemented",
-       "prompt_preview" => String.slice(prompt, 0, 200),
-       "provider" => provider,
-       "task_type" => task_type
-     }}
-  end
-
-  ## Private Functions - Helpers
-
-  defp get_first_pattern(analyst_result) when is_map(analyst_result) do
-    case Map.get(analyst_result, "patterns_discovered") do
-      [first | _] -> first
-      _ -> %{}
-    end
-  end
-
-  defp get_first_pattern(_), do: %{}
-
-  defp get_cached_validation(codebase_id, pattern_type) do
-    # TODO: Query database for recent validation
-    # For now, always return not_found
-    :not_found
-  end
-
-  defp store_validation_results(
-         codebase_id,
-         analyst_result,
-         validator_result,
-         critic_result,
-         researcher_result,
-         consensus
-       ) do
-    Logger.info("Storing validation results for #{codebase_id}")
-
-    # TODO: Store in pattern_validations table
-    # For now, just log
-    Logger.debug("""
-    Validation results:
-    - Analyst score: #{get_in(analyst_result, ["overall_score"]) || "N/A"}
-    - Validator score: #{get_in(validator_result, ["technical_score"]) || "N/A"}
-    - Critic score: #{get_in(critic_result, ["critical_score"]) || "N/A"}
-    - Researcher score: #{get_in(researcher_result, ["evidence_score"]) || "N/A"}
-    - Consensus score: #{get_in(consensus, ["consensus_score"]) || "N/A"}
-    """)
-
+    # TODO: persist into analytics tables once schema is defined
     :ok
   end
+
+  defp store_validation_results(codebase_id, result) do
+    Logger.info("[LLMTeam] Storing validation results (no specialists payload)",
+      codebase: codebase_id
+    )
+
+    Logger.debug("[LLMTeam] Result", result: result)
+    :ok
+  end
+
+  defp generate_request_id, do: :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
+
+  defp clamp(value) when is_number(value), do: value |> max(0.0) |> min(1.0)
+  defp clamp(value), do: value
+
+  defp format_confidence(nil), do: "n/a"
+  defp format_confidence(value), do: :io_lib.format("~.2f", [value]) |> IO.iodata_to_binary()
 end

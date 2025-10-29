@@ -29,7 +29,7 @@ defmodule Singularity.Execution.Autonomy.Decider do
   - `{:improve_local, payload, context, state}` for low-risk Type 1 improvements (applied directly)
   - `{:improve_experimental, payload, context, state}` for high-risk Type 3 improvements (sent to Genesis)
 
-  The `payload` is ready to hand to `Singularity.Control.publish_improvement/2` and
+  The `payload` is ready to hand to `Singularity.Execution.Runners.Control.publish_improvement/2` and
   the `context` map captures the trigger metadata (reason, score, samples, risk_level, etc.).
   """
   @spec decide(agent_state) :: decision

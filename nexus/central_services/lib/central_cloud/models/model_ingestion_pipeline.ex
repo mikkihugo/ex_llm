@@ -129,7 +129,7 @@ defmodule CentralCloud.Models.ModelIngestionPipeline do
 
   defp fetch_models_dev do
     # Fetch from models.dev API
-    case :httpc.request(:get, {'https://models.dev/api.json', []}, [], []) do
+    case :httpc.request(:get, {"https://models.dev/api.json", []}, [], []) do
       {:ok, {{_, 200, _}, _, body}} ->
         case Jason.decode(body) do
           {:ok, models} -> {:ok, models}
@@ -280,7 +280,7 @@ defmodule CentralCloud.Models.ModelIngestionPipeline do
     []
   end
 
-  defp load_yaml_file(yaml_file) do
+  defp load_yaml_file(_yaml_file) do
     # Load and parse YAML file
     # This would use YAML parsing library
     {:ok, %{}}

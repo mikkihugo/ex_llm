@@ -24,7 +24,7 @@ defmodule CentralCloud.TemplateService do
   require Logger
   import Ecto.Query
 
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
   alias CentralCloud.Schemas.PromptTemplate
 
   # ===========================
@@ -124,11 +124,31 @@ defmodule CentralCloud.TemplateService do
   # ===========================
 
   defp subscribe_to_template_requests do
-    # Subscribe to template request subjects
-    NatsClient.subscribe("central.template.get", &handle_template_get/1)
-    NatsClient.subscribe("central.template.search", &handle_template_search/1)
-    NatsClient.subscribe("central.template.store", &handle_template_store/1)
-    NatsClient.subscribe("template.analytics", &handle_template_analytics/1)
+    # Listen for PgFlow notifications (replaces NATS subscribe)
+    {:ok, _pid} = Pgflow.listen("central.template.get", CentralCloud.Repo)
+    {:ok, _pid} = Pgflow.listen("central.template.search", CentralCloud.Repo)
+    {:ok, _pid} = Pgflow.listen("central.template.store", CentralCloud.Repo)
+    {:ok, _pid} = Pgflow.listen("template.analytics", CentralCloud.Repo)
+
+    # Handle PgFlow notifications
+    spawn(fn ->
+      handle_pgflow_template_notifications()
+    end)
+  end
+
+  defp handle_pgflow_template_notifications do
+    receive do
+      {:notification, _listener_pid, channel, payload} ->
+        Logger.debug("PGFlow template notification received",
+          channel: channel,
+          payload: payload
+        )
+
+        handle_pgflow_template_notifications()
+    after
+      5_000 ->
+        handle_pgflow_template_notifications()
+    end
   end
 
   defp handle_template_get(message) do
@@ -136,9 +156,9 @@ defmodule CentralCloud.TemplateService do
     
     case get_template_from_database(template_id) do
       {:ok, template} ->
-        NatsClient.publish(message.reply_to, Jason.encode!(%{template: template}))
+        Pgflow.send_with_notify(message.reply_to, %{template: template}, CentralCloud.Repo)
       {:error, reason} ->
-        NatsClient.publish(message.reply_to, Jason.encode!(%{error: reason}))
+        Pgflow.send_with_notify(message.reply_to, %{error: reason}, CentralCloud.Repo)
     end
   end
 
@@ -147,9 +167,9 @@ defmodule CentralCloud.TemplateService do
     
     case search_templates_in_database(query, opts) do
       {:ok, templates} ->
-        NatsClient.publish(message.reply_to, Jason.encode!(%{templates: templates}))
+        Pgflow.send_with_notify(message.reply_to, %{templates: templates}, CentralCloud.Repo)
       {:error, reason} ->
-        NatsClient.publish(message.reply_to, Jason.encode!(%{error: reason}))
+        Pgflow.send_with_notify(message.reply_to, %{error: reason}, CentralCloud.Repo)
     end
   end
 
@@ -159,9 +179,9 @@ defmodule CentralCloud.TemplateService do
     case store_template_in_database(template_data) do
       {:ok, template} ->
         broadcast_template_update(template)
-        NatsClient.publish(message.reply_to, Jason.encode!(%{template: template}))
+        Pgflow.send_with_notify(message.reply_to, %{template: template}, CentralCloud.Repo)
       {:error, reason} ->
-        NatsClient.publish(message.reply_to, Jason.encode!(%{error: reason}))
+        Pgflow.send_with_notify(message.reply_to, %{error: reason}, CentralCloud.Repo)
     end
   end
 
@@ -170,25 +190,36 @@ defmodule CentralCloud.TemplateService do
     record_usage_analytics(analytics)
   end
 
+  defp templates_dir do
+    # Auto-detect templates directory from git root
+    repo_root = 
+      case System.cmd("git", ["rev-parse", "--show-toplevel"], stderr_to_stdout: true) do
+        {root, 0} -> String.trim(root)
+        _ -> Path.expand("../..", File.cwd!())
+      end
+    
+    Path.join([repo_root, "templates_data"])
+  end
+  
   defp load_templates_from_disk do
     Logger.info("Loading templates from templates_data/ directory...")
     
-    templates_dir = Path.join([File.cwd!(), "..", "templates_data"])
+    dir = templates_dir()
     
-    if File.exists?(templates_dir) do
-      templates_dir
+    if File.exists?(dir) do
+      dir
       |> File.ls!()
       |> Enum.filter(&String.ends_with?(&1, ".json"))
       |> Enum.each(&load_template_file/1)
       
       Logger.info("Template loading complete")
     else
-      Logger.warning("templates_data/ directory not found, skipping template loading")
+      Logger.warning("templates_data/ directory not found at #{dir}, skipping template loading")
     end
   end
-
+  
   defp load_template_file(filename) do
-    file_path = Path.join([File.cwd!(), "..", "templates_data", filename])
+    file_path = Path.join([templates_dir(), filename])
     
     case File.read(file_path) do
       {:ok, content} ->
@@ -239,6 +270,6 @@ defmodule CentralCloud.TemplateService do
 
   defp broadcast_template_update(template) do
     subject = "template.updated.#{template.template_type}.#{template.template_name}"
-    NatsClient.publish(subject, Jason.encode!(template))
+    Pgflow.send_with_notify(subject, template, CentralCloud.Repo)
   end
 end

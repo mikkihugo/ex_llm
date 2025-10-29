@@ -72,7 +72,7 @@ defmodule CentralCloud.Consumers.InfrastructureRegistryConsumer do
           send_response(systems)
 
         {:error, :no_systems_found} ->
-          Logger.warn("[InfrastructureRegistry] No infrastructure systems found for request",
+          Logger.warning("[InfrastructureRegistry] No infrastructure systems found for request",
             query_type: request["query_type"]
           )
           send_error_response("No infrastructure systems found matching criteria")

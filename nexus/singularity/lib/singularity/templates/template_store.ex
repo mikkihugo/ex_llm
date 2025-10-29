@@ -51,7 +51,16 @@ defmodule Singularity.TemplateStore do
   # alias Singularity.PackageRegistryKnowledge  # Unused for now
   alias Singularity.Schemas.Template
 
-  @templates_dir Path.join([File.cwd!(), "..", "templates_data"])
+  defp templates_dir do
+    # Auto-detect templates directory from git root or current working directory
+    repo_root = 
+      case System.cmd("git", ["rev-parse", "--show-toplevel"], stderr_to_stdout: true) do
+        {root, 0} -> String.trim(root)
+        _ -> File.cwd!()
+      end
+    
+    Path.join([repo_root, "templates_data"])
+  end
 
   ## Client API
 
@@ -335,7 +344,7 @@ defmodule Singularity.TemplateStore do
   defp do_sync(opts) do
     force = Keyword.get(opts, :force, false)
 
-    Logger.info("Syncing templates from #{@templates_dir}")
+    Logger.info("Syncing templates from #{templates_dir()}")
 
     with {:ok, files} <- find_all_template_files(),
          {:ok, templates} <- load_and_validate_templates(files),
@@ -351,7 +360,7 @@ defmodule Singularity.TemplateStore do
 
   defp find_all_template_files do
     files =
-      @templates_dir
+      templates_dir()
       |> Path.join("**/*.json")
       |> Path.wildcard()
       |> Enum.reject(&String.ends_with?(&1, "schema.json"))

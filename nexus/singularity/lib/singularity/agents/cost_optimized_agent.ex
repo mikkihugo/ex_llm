@@ -214,7 +214,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
       estimated_cost: 200,
       success_rate: 0.90,
       tags: [:cost_efficient, :rule_based, :async_safe],
-      metadata: %{"version" => "2.1.0"}
+      metadata: %{"version" => Singularity.BuildInfo.version()}
     })
 
     {:noreply, state}

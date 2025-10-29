@@ -479,11 +479,11 @@ impl VectorIntegration {
             cyclomatic: self.calculate_cyclomatic_complexity(content),
             cognitive: self.calculate_cognitive_complexity(content),
             maintainability: self.calculate_maintainability_index(content),
-            function_count: content.matches("def ").count(),
-            class_count: content.matches("class ").count(),
-            halstead_volume: 0.0,
-            halstead_difficulty: 0.0,
-            halstead_effort: 0.0,
+            function_count: result.functions.len(),
+            class_count: result.classes.len(),
+            halstead_volume: result.complexity_metrics.get("halstead_volume").copied().unwrap_or(0.0),
+            halstead_difficulty: result.complexity_metrics.get("halstead_difficulty").copied().unwrap_or(0.0),
+            halstead_effort: result.complexity_metrics.get("halstead_effort").copied().unwrap_or(0.0),
             total_lines: content.lines().count(),
             code_lines: content
                 .lines()
@@ -1441,9 +1441,13 @@ impl VectorIntegration {
         let ms_patterns = self.detect_microservice_patterns(content);
         let architecture_type = self.determine_architecture_type(&ms_patterns);
 
-        // Generate context-aware prompts
-        let prompts =
-            self.generate_microservice_prompts(&ms_patterns, architecture_type, related_files);
+        // Generate context-aware prompts with file path context
+        let prompts = self.generate_microservice_prompts(
+            &ms_patterns, 
+            architecture_type, 
+            related_files,
+            file_path
+        );
 
         // Inject prompts into SPARC system
         for prompt in prompts {
@@ -1529,8 +1533,12 @@ impl VectorIntegration {
         patterns: &[MicroserviceCodePattern],
         architecture_type: ArchitectureType,
         related_files: &[(String, f64)],
+        file_path: &str,
     ) -> Vec<String> {
         let mut prompts = Vec::new();
+
+        // Add file-specific context
+        prompts.push(format!("FILE_CONTEXT: Analyzing file: {}", file_path));
 
         // Architecture-specific prompts
         match architecture_type {
@@ -1550,7 +1558,6 @@ impl VectorIntegration {
           "MONOLITHIC_CONTEXT: Working with monolithic architecture. Consider code organization, module boundaries, and refactoring opportunities.".to_string(),
         );
             }
-            _ => {}
         }
 
         // CodePattern-specific prompts
@@ -1576,7 +1583,6 @@ impl VectorIntegration {
               .to_string(),
           );
                 }
-                _ => {}
             }
         }
 

@@ -10,11 +10,8 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
   5. Task completion times
   """
 
-  alias CentralCloud.Models.{ModelCache, ComplexityScorer}
-  alias Nexus.Repo
+  alias CentralCloud.Models.ComplexityScorer
   
-  # Import Axon for real ML training
-  import Axon
 
   @doc """
   Train the complexity prediction model using historical data.
@@ -137,9 +134,6 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
 
   # Missing Axon-based functions for real ML training
 
-  @doc """
-  Build the DNN model architecture using Axon.
-  """
   defp build_dnn_model do
     # Input layer for features (task complexity, cost, performance metrics, etc.)
     input = Axon.input("features", shape: {nil, 10})
@@ -160,9 +154,6 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
     output
   end
 
-  @doc """
-  Prepare training data for Axon by converting to tensors.
-  """
   defp prepare_training_data_axon(training_data) do
     # Extract features and labels from training data
     features = Enum.map(training_data, fn sample ->
@@ -191,10 +182,7 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
     {x_train, y_train}
   end
 
-  @doc """
-  Train the model using Axon.
-  """
-  defp train_model_axon(model, x_train, y_train) do
+  defp train_model_axon(_model, x_train, y_train) do
     try do
       # Define loss function (mean squared error for regression)
       loss_fn = &Axon.Losses.mean_squared_error(&1, &2, reduction: :mean)
@@ -227,17 +215,17 @@ defmodule CentralCloud.Models.MLComplexityTrainer do
     end
   end
 
-  defp simulate_training(data, architecture) do
+  defp simulate_training(_data, _architecture) do
     # Simulate training metrics
     %{
       accuracy: 0.85 + :rand.uniform() * 0.1,  # 0.85-0.95
       loss: 0.1 + :rand.uniform() * 0.05,      # 0.1-0.15
       epochs: 50,
-      weights: generate_random_weights(architecture)
+      weights: generate_random_weights([64, 32, 16])
     }
   end
 
-  defp generate_random_weights(architecture) do
+  defp generate_random_weights(_architecture) do
     # Generate random weights for the DNN
     # In real implementation, this would be actual trained weights
     %{

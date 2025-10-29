@@ -303,7 +303,7 @@ defmodule Singularity.Graph.AgeQueries do
 
       iex> AgeQueries.find_module_dependencies_cypher("Singularity.SystemStatusMonitor")
       {:ok, [
-        %{name: "Singularity.Runner", dependency_type: "internal"},
+        %{name: "Singularity.Execution.Runners.Runner", dependency_type: "internal"},
         %{name: "Ecto.Query", dependency_type: "external"}
       ]}
 

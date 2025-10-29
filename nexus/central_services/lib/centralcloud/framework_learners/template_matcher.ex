@@ -33,9 +33,8 @@ defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
   @behaviour CentralCloud.FrameworkLearner
 
   require Logger
-  alias CentralCloud.Repo
+  alias CentralCloud.{Repo, TemplateService}
   alias CentralCloud.Schemas.Package
-  alias CentralCloud.NatsClient
 
   # ===========================
   # FrameworkLearner Behavior Callbacks
@@ -89,6 +88,7 @@ defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
           Logger.debug("Recorded template matcher success for #{package_id}",
             framework: framework[:name]
           )
+
           :ok
 
         {:error, reason} ->
@@ -96,6 +96,7 @@ defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
             package_id: package_id,
             reason: inspect(reason)
           )
+
           {:error, reason}
       end
     else
@@ -142,12 +143,8 @@ defmodule CentralCloud.FrameworkLearners.TemplateMatcher do
   end
 
   defp fetch_templates_from_knowledge_cache do
-    case NatsClient.request("central.template.search", %{
-      artifact_type: "framework",
-      limit: 100
-    }, timeout: 10_000) do
-      {:ok, response} ->
-        templates = response["templates"] || []
+    case TemplateService.search_templates("", template_type: "framework", limit: 100) do
+      {:ok, templates} ->
         Logger.debug("Template matcher: Loaded #{length(templates)} framework templates")
         templates
 

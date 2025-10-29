@@ -1,11 +1,13 @@
-# NATS Message Format Specification
+# pgflow Message Format Specification
 
-Complete specification for NATS subject naming and message formats in Singularity's distributed architecture.
+Complete specification for pgflow queue naming and message formats in Singularity's distributed architecture.
+
+**Note:** This document has been updated from NATS subjects to pgflow queues as part of the migration from NATS to pgflow-based messaging.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Subject Naming Convention](#subject-naming-convention)
+2. [Queue Naming Convention](#queue-naming-convention)
 3. [Message Format Standards](#message-format-standards)
 4. [Intelligence Hub Messages](#intelligence-hub-messages)
 5. [Pattern Learning Messages](#pattern-learning-messages)
@@ -20,7 +22,7 @@ Complete specification for NATS subject naming and message formats in Singularit
 
 ## Overview
 
-Singularity uses **NATS** for distributed messaging between:
+Singularity uses **pgflow** (PostgreSQL-based messaging) for distributed messaging between:
 
 - **Singularity instances** (local development environments)
 - **Central Cloud** (global aggregation service)

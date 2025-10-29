@@ -7,9 +7,8 @@ config :logger, level: :warning
 # Run jobs inline for deterministic testing
 config :centralcloud, Oban, testing: :inline
 
-# Test NATS Configuration
-# Disable NATS subscribers in test mode to avoid connection errors
-config :centralcloud, CentralCloud.NatsClient,
-  host: "localhost",
-  port: 4222,
-  enable_subscribers: false
+# Test PgFlow Configuration
+# All messaging uses PgFlow with PGMQ + NOTIFY
+config :centralcloud, Pgflow,
+  repo: CentralCloud.Repo,
+  pgmq_extension: true

@@ -23,7 +23,7 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
   def workflow_definition do
     %{
       name: "code_metrics_pipeline",
-      version: "1.0.0",
+      version: Singularity.BuildInfo.version(),
       description: "Compute AI-powered code metrics with enrichment.",
       config: %{
         timeout_ms: 120_000,

@@ -402,7 +402,7 @@ mod tests {
             ),
         ];
 
-        let vectorizer = AdvancedVectorizer::new(&documents, 50).unwrap();
+        let vectorizer = MLVectorizer::new(&documents, 50).unwrap();
         let vector = vectorizer
             .create_advanced_vector(
                 "test".to_string(),
@@ -417,7 +417,7 @@ mod tests {
 
     #[test]
     fn test_semantic_features() {
-        let features = AdvancedVectorizer::extract_semantic_features(
+        let features = MLVectorizer::extract_semantic_features(
             "function complex_algorithm if for while",
         );
         assert_eq!(features.word_count, 5);

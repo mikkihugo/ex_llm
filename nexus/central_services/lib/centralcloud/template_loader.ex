@@ -1,34 +1,62 @@
 defmodule CentralCloud.TemplateLoader do
   @moduledoc """
-  Loads and renders Lua prompt templates from templates_data/.
+  CentralCloud.TemplateLoader
 
-  Supports:
-  - Dynamic variable injection
-  - Workspace integration (glob, grep, read_file) via Lua
-  - Template caching for performance
+  Loads and renders Lua prompt templates from templates_data/ for LLM operations.
+
+  Manages template caching, variable injection, and Lua execution for dynamic prompt generation.
+  Integrates with workspace tools (glob, grep, read_file) via Lua scripts.
+
+  ## Features
+
+  - Loads templates from `templates_data/prompt_library/`
+  - Dynamic variable substitution and Lua execution
+  - ETS-based caching for performance
+  - Metadata extraction (version, model, agent)
+  - Test mode for template validation
+
+  ## Architecture
+
+  File System → TemplateLoader (GenServer) → Lua Renderer → LLM Prompt
 
   ## Examples
 
-      iex> TemplateLoader.load("architecture/llm_team/analyst-discover-pattern.lua", %{
-        pattern_type: "architecture",
-        code_samples: samples,
-        codebase_id: "mikkihugo/singularity"
-      })
-      {:ok, "rendered prompt string"}
+  ```elixir
+  iex> TemplateLoader.load("architecture/llm_team/analyst-discover-pattern.lua", %{
+    pattern_type: "architecture",
+    code_samples: samples,
+    codebase_id: "mikkihugo/singularity"
+  })
+  {:ok, "rendered prompt string"}
+  ```
+
+  ## Integration
+
+  Used by LLMTeamOrchestrator for multi-agent workflows and pattern validation.
   """
 
   use GenServer
   require Logger
 
-  @templates_root Path.join([
-                    File.cwd!(),
-                    "..",
-                    "templates_data",
-                    "prompt_library"
-                  ])
+  defp templates_root do
+    # Auto-detect templates directory from git root
+    repo_root = 
+      case System.cmd("git", ["rev-parse", "--show-toplevel"], stderr_to_stdout: true) do
+        {root, 0} -> String.trim(root)
+        _ -> Path.expand("../..", File.cwd!())
+      end
+    
+    Path.join([repo_root, "templates_data", "prompt_library"])
+  end
 
   ## Client API
 
+  @doc """
+  Starts the TemplateLoader GenServer.
+
+  ## Options
+  - `:name` - GenServer name (default: __MODULE__)
+  """
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -68,7 +96,7 @@ defmodule CentralCloud.TemplateLoader do
 
   @impl true
   def init(_opts) do
-    Logger.info("TemplateLoader starting with templates_root: #{@templates_root}")
+    Logger.info("TemplateLoader starting with templates_root: #{templates_root()}")
 
     state = %{
       cache: %{},
@@ -108,7 +136,7 @@ defmodule CentralCloud.TemplateLoader do
   ## Private Functions
 
   defp get_or_load_template(template_path, state) do
-    full_path = Path.join(@templates_root, template_path)
+    full_path = Path.join(templates_root(), template_path)
 
     case Map.get(state.cache, template_path) do
       nil ->

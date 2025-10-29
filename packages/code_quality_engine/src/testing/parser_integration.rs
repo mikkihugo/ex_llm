@@ -3,6 +3,8 @@
 //! PSEUDO CODE: How parsers provide coverage data to analysis-suite.
 
 use anyhow::Result;
+use std::path::Path;
+use parser_core::language_registry::detect_language;
 use serde::{Deserialize, Serialize};
 
 /// Parser coverage data
@@ -218,7 +220,7 @@ impl ParserCoverageCollector {
         // PSEUDO CODE:
         /*
         // Register all parsers
-        self.parsers.insert("rust".to_string(), Box::new(RustParserCoverageProvider::new()));
+        self.parsers.insert("rust".to_string(), Box::new(ParserEngineRustCoverageProvider::new()));
         self.parsers.insert("javascript".to_string(), Box::new(JavascriptParserCoverageProvider::new()));
         self.parsers.insert("typescript".to_string(), Box::new(TypescriptParserCoverageProvider::new()));
         self.parsers.insert("python".to_string(), Box::new(PythonParserCoverageProvider::new()));
@@ -279,8 +281,12 @@ impl ParserCoverageCollector {
                 parser_version: "1.0.0".to_string(),
                 analysis_time: chrono::Utc::now(),
                 file_size: 0,
-                language: "unknown".to_string(),
-                parser_type: ParserType::Rust,
+                language: self
+                    .determine_language_id(file_path)
+                    .unwrap_or_else(|_| "unknown".to_string()),
+                parser_type: self
+                    .determine_parser_type(file_path)
+                    .unwrap_or(ParserType::Rust),
                 test_execution_time_ms: 0,
             },
         })
@@ -288,29 +294,38 @@ impl ParserCoverageCollector {
 
     /// Determine parser type from file path
     fn determine_parser_type(&self, file_path: &str) -> Result<ParserType> {
-        // PSEUDO CODE:
-        /*
-        let extension = file_path.split('.').last()
-            .ok_or_else(|| anyhow::anyhow!("No file extension found"))?;
+        let info = detect_language(Path::new(file_path))?;
+        let id = &info.id;
+        let parser_type = match id.as_str() {
+            "rust" => ParserType::Rust,
+            "javascript" => ParserType::JavaScript,
+            "typescript" => ParserType::TypeScript,
+            "python" => ParserType::Python,
+            "go" => ParserType::Go,
+            "java" => ParserType::Java,
+            "csharp" => ParserType::CSharp,
+            "c" => ParserType::C,
+            "cpp" => ParserType::Cpp,
+            "erlang" => ParserType::Erlang,
+            "elixir" => ParserType::Elixir,
+            "gleam" => ParserType::Gleam,
+            other => {
+                // Try aliases if the registry gave a specific alias
+                let lowered = other.to_lowercase();
+                match lowered.as_str() {
+                    "js" => ParserType::JavaScript,
+                    "ts" => ParserType::TypeScript,
+                    "py" => ParserType::Python,
+                    _ => ParserType::Rust,
+                }
+            }
+        };
+        Ok(parser_type)
+    }
 
-        match extension {
-            "rs" => Ok(ParserType::Rust),
-            "js" => Ok(ParserType::JavaScript),
-            "ts" => Ok(ParserType::TypeScript),
-            "py" => Ok(ParserType::Python),
-            "go" => Ok(ParserType::Go),
-            "java" => Ok(ParserType::Java),
-            "cs" => Ok(ParserType::CSharp),
-            "c" => Ok(ParserType::C),
-            "cpp" | "cc" | "cxx" => Ok(ParserType::Cpp),
-            "erl" => Ok(ParserType::Erlang),
-            "ex" | "exs" => Ok(ParserType::Elixir),
-            "gleam" => Ok(ParserType::Gleam),
-            _ => Err(anyhow::anyhow!("Unsupported file type: {}", extension)),
-        }
-        */
-
-        Ok(ParserType::Rust)
+    fn determine_language_id(&self, file_path: &str) -> Result<String> {
+        let info = detect_language(Path::new(file_path))?;
+        Ok(info.id.to_string())
     }
 
     /// Get parser name for type
@@ -333,15 +348,15 @@ impl ParserCoverageCollector {
 }
 
 /// Rust parser coverage provider
-pub struct RustParserCoverageProvider;
+pub struct ParserEngineRustCoverageProvider;
 
-impl RustParserCoverageProvider {
+impl ParserEngineRustCoverageProvider {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl ParserCoverageProvider for RustParserCoverageProvider {
+impl ParserCoverageProvider for ParserEngineRustCoverageProvider {
     fn get_parser_name(&self) -> &str {
         "rust"
     }

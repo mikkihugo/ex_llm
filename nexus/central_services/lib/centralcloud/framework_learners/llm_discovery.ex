@@ -37,7 +37,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   @behaviour CentralCloud.FrameworkLearner
 
   require Logger
-  alias CentralCloud.NatsClient
+  alias Pgflow
 
   # ===========================
   # FrameworkLearner Behavior Callbacks
@@ -94,7 +94,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
 
   defp load_framework_discovery_prompt do
     # Prompts CAN be cached (they change less frequently than frameworks)
-    case NatsClient.kv_get("templates", "prompt:framework-discovery") do
+    case fetch_prompt_from_cache("prompt:framework-discovery") do
       {:ok, prompt} ->
         Logger.debug("LLM discovery: Loaded prompt from cache")
         prompt
@@ -105,16 +105,16 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   end
 
   defp fetch_prompt_from_knowledge_cache(prompt_id) do
-    case NatsClient.request("central.template.get", %{
+    case Pgflow.send_with_notify("central.template.get", %{
       artifact_type: "prompt_template",
       artifact_id: prompt_id
-    }, timeout: 5_000) do
+    }, CentralCloud.Repo, timeout: 5_000) do
       {:ok, response} ->
         prompt = response["template"] || %{}
 
         # Cache prompts for future use (they change less often)
-        # TODO: Add TTL support to JetStream KV
-        spawn(fn -> NatsClient.kv_put("templates", "prompt:#{prompt_id}", prompt) end)
+        # Cache in DB
+        spawn(fn -> cache_prompt(prompt_id, prompt) end)
 
         Logger.debug("LLM discovery: Loaded and cached prompt: #{prompt_id}")
         prompt
@@ -137,7 +137,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
       samples_count: length(code_samples)
     )
 
-    case NatsClient.request(CentralCloud.NatsRegistry.subject(:llm_request), %{
+    case Pgflow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",
@@ -153,7 +153,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
         framework_name: package_id,
         code_samples: code_samples
       }
-    }, timeout: 120_000) do
+    }, CentralCloud.Repo, timeout: 120_000) do
       {:ok, llm_response} ->
         parse_llm_framework_response(llm_response)
 
@@ -247,5 +247,15 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
 
   defp generate_request_id do
     :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
+  end
+
+  defp cache_prompt(prompt_id, prompt) do
+    # TODO: Implement actual caching logic
+    Logger.debug("Cached prompt: #{prompt_id}")
+  end
+
+  defp fetch_prompt_from_cache(cache_key) do
+    # TODO: Implement actual cache lookup
+    {:error, :not_found}
   end
 end

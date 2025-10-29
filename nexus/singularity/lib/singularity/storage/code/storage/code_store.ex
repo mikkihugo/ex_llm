@@ -115,17 +115,12 @@ defmodule Singularity.CodeStore do
          :ok <- ensure_dir(versions),
          :ok <- ensure_dir(queues),
          :ok <- ensure_dir(analyses) do
-      # Initialize with default codebases
+      # Initialize with default codebases (auto-detect from git)
       codebases = %{
         "singularity" => %{
-          path: "/home/mhugo/code/singularity",
+          path: detect_repo_root(),
           type: :singularity,
           metadata: %{description: "Current singularity codebase"}
-        },
-        "singularity-engine" => %{
-          path: "/home/mhugo/code/singularity-engine",
-          type: :singularity_engine,
-          metadata: %{description: "Target singularity-engine architecture"}
         }
       }
 
@@ -2337,5 +2332,19 @@ defmodule Singularity.CodeStore do
     Regex.scan(regex, content)
     |> Enum.map(&List.first/1)
     |> Enum.map(&String.trim/1)
+  end
+
+  defp detect_repo_root do
+    # Try to detect git root automatically
+    case System.cmd("git", ["rev-parse", "--show-toplevel"], cd: __DIR__ |> Path.expand() |> Path.join("../../../../..")) do
+      {root, 0} -> String.trim(root)
+      _ -> 
+        # Fallback: use current working directory or CODE_ROOT env var
+        System.get_env("CODE_ROOT") || 
+        Path.expand(System.cwd!()) ||
+        File.cwd!()
+    end
+  rescue
+    _ -> File.cwd!()
   end
 end

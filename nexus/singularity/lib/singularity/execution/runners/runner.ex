@@ -28,17 +28,17 @@ defmodule Singularity.Execution.Runners.Runner do
   ## Usage
 
       # Start the runner
-      {:ok, runner} = Singularity.Runner.start_link()
+      {:ok, runner} = Singularity.Execution.Runners.Runner.start_link()
 
       # Execute concurrent tasks
-      {:ok, results} = Singularity.Runner.execute_concurrent([
+      {:ok, results} = Singularity.Execution.Runners.Runner.execute_concurrent([
         %{type: :analysis, args: %{path: "/codebase"}},
         %{type: :tool, args: %{tool: "linter", path: "/src"}},
         %{type: :agent_task, args: %{agent_id: "agent1", task: task}}
       ])
 
       # Stream execution with backpressure
-      Singularity.Runner.stream_execution(tasks, max_concurrency: 10)
+      Singularity.Execution.Runners.Runner.stream_execution(tasks, max_concurrency: 10)
       |> Stream.map(fn result -> process_result(result) end)
       |> Enum.to_list()
 

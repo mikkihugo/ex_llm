@@ -15,6 +15,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
 
   use Pgflow.Workflow
 
+  require Logger
   alias Singularity.Architecture.{PatternDetector, FrameworkDetector}
   alias Singularity.Infrastructure.Resilience
   alias Singularity.Repo
@@ -25,7 +26,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
   def workflow_definition do
     %{
       name: "architecture_learning",
-      version: "1.0.0",
+      version: Singularity.BuildInfo.version(),
       description: "ML pipeline for training architecture learning models",
 
       # Workflow-level configuration

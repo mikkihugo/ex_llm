@@ -456,13 +456,36 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     updates_id = Keyword.get(opts, :updates)
     relates_to = Keyword.get(opts, :relates_to)
 
+    # Create PgFlow workflow for work item processing
+    workflow_id = "work_item_#{:erlang.unique_integer([:positive])}"
+    workflow_attrs = %{
+      workflow_id: workflow_id,
+      type: "work_item_processing",
+      status: "pending",
+      payload: %{
+        text: text,
+        approved_by: approved_by,
+        updates_id: updates_id,
+        relates_to: relates_to,
+        created_at: :erlang.system_time(:millisecond)
+      }
+    }
+
+    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+      {:ok, _workflow} ->
+        Logger.info("Created work item workflow", workflow_id: workflow_id)
+      {:error, reason} ->
+        Logger.warning("Failed to create work item workflow", reason: reason)
+    end
+
     # Analyze chunk using LLM
     analysis = analyze_chunk(state, text, relates_to, updates_id)
 
     Logger.info("Vision chunk analyzed",
       level: analysis.level,
       action: analysis.action,
-      relates_to: analysis.relates_to
+      relates_to: analysis.relates_to,
+      workflow_id: workflow_id
     )
 
     # Validate using RuleEngine if it's an epic or feature
@@ -490,6 +513,18 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         new_state = apply_chunk_changes(state, analysis, approved_by, updates_id)
+        
+        # Send success notification via PgFlow
+        notification = %{
+          type: "work_item_processed",
+          workflow_id: workflow_id,
+          level: analysis.level,
+          action: analysis.action,
+          status: "completed",
+          confidence: validation_result |> elem(1) |> Map.get(:confidence)
+        }
+        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        
         {:reply, {:ok, analysis}, new_state}
 
       {:collaborative, result} ->
@@ -501,6 +536,19 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         notify_approval_needed(analysis, result)
+        
+        # Send approval needed notification via PgFlow
+        notification = %{
+          type: "work_item_approval_needed",
+          workflow_id: workflow_id,
+          level: analysis.level,
+          action: analysis.action,
+          status: "pending_approval",
+          confidence: result.confidence,
+          reasoning: result.reasoning
+        }
+        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        
         {:reply, {:needs_approval, result}, state}
 
       {:escalated, result} ->
@@ -512,6 +560,19 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         notify_escalation(analysis, result)
+        
+        # Send escalation notification via PgFlow
+        notification = %{
+          type: "work_item_escalated",
+          workflow_id: workflow_id,
+          level: analysis.level,
+          action: analysis.action,
+          status: "escalated",
+          confidence: result.confidence,
+          reasoning: result.reasoning
+        }
+        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        
         {:reply, {:escalated, result}, state}
     end
   end
@@ -554,6 +615,16 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   def handle_call({:complete_item, item_id, level}, _from, state) do
     new_state = mark_complete(state, item_id, level)
     CodeStore.save_vision(serialize_state(new_state))
+    
+    # Send completion notification via PgFlow
+    notification = %{
+      type: "work_item_completed",
+      item_id: item_id,
+      level: level,
+      completed_at: :erlang.system_time(:millisecond)
+    }
+    Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+    
     {:reply, :ok, new_state}
   end
 

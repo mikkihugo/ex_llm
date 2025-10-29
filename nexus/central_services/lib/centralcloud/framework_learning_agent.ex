@@ -37,7 +37,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
   alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
-  alias CentralCloud.NatsClient
+  alias Pgflow
 
   # ===========================
   # Public API
@@ -185,10 +185,10 @@ defmodule CentralCloud.FrameworkLearningAgent do
   defp fetch_templates_from_knowledge_cache do
     # Request latest framework templates from knowledge_cache
     # knowledge_cache syncs with templates_data/ which gets updated frequently
-    case NatsClient.request("central.template.search", %{
+    case Pgflow.send_with_notify("central.template.search", %{
       artifact_type: "framework",
       limit: 100
-    }, timeout: 10_000) do
+    }, CentralCloud.Repo, timeout: 10_000) do
       {:ok, response} ->
         templates = response["templates"] || []
         Logger.debug("Loaded #{length(templates)} latest framework templates from knowledge_cache")
@@ -203,7 +203,8 @@ defmodule CentralCloud.FrameworkLearningAgent do
   defp load_framework_discovery_prompt do
     # Prompts CAN be cached (they change less frequently than frameworks)
     # Use JetStream KV with TTL for prompts
-    case NatsClient.kv_get("templates", "prompt:framework-discovery") do
+    # Replace NATS KV with PgFlow or DB lookup
+    case fetch_prompt_from_cache("prompt:framework-discovery") do
       {:ok, prompt} ->
         Logger.debug("Loaded framework_discovery prompt from JetStream KV cache")
         prompt
@@ -214,16 +215,16 @@ defmodule CentralCloud.FrameworkLearningAgent do
   end
 
   defp fetch_prompt_from_knowledge_cache(prompt_id) do
-    case NatsClient.request("central.template.get", %{
+    case Pgflow.send_with_notify("central.template.get", %{
       artifact_type: "prompt_template",
       artifact_id: prompt_id
-    }, timeout: 5_000) do
+    }, CentralCloud.Repo, timeout: 5_000) do
       {:ok, response} ->
         prompt = response["template"] || %{}
 
         # Cache prompts for 1 hour (they change less often)
-        # TODO: Add TTL support to JetStream KV
-        spawn(fn -> NatsClient.kv_put("templates", "prompt:#{prompt_id}", prompt) end)
+        # Cache in DB or PgFlow
+        spawn(fn -> cache_prompt(prompt_id, prompt) end)
 
         Logger.debug("Loaded and cached prompt: #{prompt_id}")
         prompt
@@ -240,7 +241,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
     Logger.info("Calling LLM for #{package.name}, request_id=#{request_id}")
 
-    case NatsClient.request(CentralCloud.NatsRegistry.subject(:llm_request), %{
+    case Pgflow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",
@@ -257,7 +258,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
         ecosystem: package.ecosystem,
         code_samples: code_samples
       }
-    }, timeout: 120_000) do
+    }, CentralCloud.Repo, timeout: 120_000) do
       {:ok, llm_response} ->
         parse_llm_framework_response(llm_response)
 
@@ -313,5 +314,15 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
   defp generate_request_id do
     :crypto.strong_rand_bytes(16) |> Base.url_encode64(padding: false)
+  end
+
+  defp cache_prompt(prompt_id, prompt) do
+    # TODO: Implement actual caching logic
+    Logger.debug("Cached prompt: #{prompt_id}")
+  end
+
+  defp fetch_prompt_from_cache(cache_key) do
+    # TODO: Implement actual cache lookup
+    {:error, :not_found}
   end
 end

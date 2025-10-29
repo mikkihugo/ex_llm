@@ -1,5 +1,26 @@
 import Config
 
+# Helper function for auto-detecting redirect URI
+defmodule Nexus.ConfigHelpers do
+  def build_redirect_uri do
+    port = System.get_env("PORT", "4000")
+    hostname = detect_hostname()
+    scheme = if System.get_env("HTTPS") == "true", do: "https", else: "http"
+    "#{scheme}://#{hostname}:#{port}/auth/codex/callback"
+  end
+  
+  defp detect_hostname do
+    case System.get_env("HOSTNAME") do
+      nil -> 
+        case :inet.gethostname() do
+          {:ok, h} -> List.to_string(h)
+          _ -> System.get_env("COMPUTERNAME") || "localhost"
+        end
+      hostname -> hostname
+    end
+  end
+end
+
 # Database configuration for Nexus
 config :nexus, Nexus.Repo,
   database: System.get_env("NEXUS_DB_NAME") || "nexus_dev",
@@ -18,7 +39,8 @@ config :nexus, :codex,
   client_id: System.get_env("CODEX_CLIENT_ID"),
   client_secret: System.get_env("CODEX_CLIENT_SECRET"),
   redirect_uri:
-    System.get_env("CODEX_REDIRECT_URI") || "http://localhost:4000/auth/codex/callback",
+    System.get_env("CODEX_REDIRECT_URI") ||
+    Nexus.ConfigHelpers.build_redirect_uri(),
   scopes: ["openai.user.read", "model.request", "model.read"]
 
 # Gemini Code Assist configuration

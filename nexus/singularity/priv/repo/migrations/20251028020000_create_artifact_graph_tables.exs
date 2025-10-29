@@ -18,8 +18,8 @@ defmodule Singularity.Repo.Migrations.CreateArtifactGraphTables do
     # Artifact relationships (edges)
     create_if_not_exists table(:artifact_graph_edges, primary_key: false) do
       add :id, :uuid, primary_key: true, default: fragment("gen_random_uuid()")
-      add :source_id, references(:artifact_graph_nodes, type: :uuid, on_delete: :cascade), null: false
-      add :target_id, references(:artifact_graph_nodes, type: :uuid, on_delete: :cascade), null: false
+      add :source_id, references(:artifact_graph_nodes, type: :uuid, on_delete: :delete_all), null: false
+      add :target_id, references(:artifact_graph_nodes, type: :uuid, on_delete: :delete_all), null: false
       add :relationship_type, :string, null: false, comment: "implements, governs, mentions, uses, related_to, etc."
       add :confidence, :float, default: 0.5, comment: "0.0 to 1.0 confidence score"
       add :bidirectional, :boolean, default: false

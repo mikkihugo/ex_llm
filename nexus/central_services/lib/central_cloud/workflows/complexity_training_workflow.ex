@@ -24,7 +24,11 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
   def workflow_definition do
     %{
       name: "complexity_training",
-      version: "1.0.0",
+      version: 
+        case Application.spec(:central_services, :vsn) do
+          version when is_binary(version) -> version
+          _ -> "0.1.0"
+        end,
       description: "ML pipeline for training model complexity prediction models",
 
       # Workflow-level configuration
@@ -256,7 +260,7 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
   def evaluate_model(context) do
     Logger.info("✅ Evaluating complexity model performance")
 
-    %{trained_model: trained_model} = context[:model_training].result
+    %{trained_model: _trained_model} = context[:model_training].result
     features = context[:feature_engineering].result
 
     run_with_resilience(

@@ -102,7 +102,8 @@ defmodule Singularity.CodeAnalyzer.Native do
   use Rustler,
     otp_app: :singularity,
     crate: "code_quality_engine",
-    path: "../../packages/code_quality_engine"
+    path: "../../packages/code_quality_engine",
+    skip_compilation?: true
 
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)

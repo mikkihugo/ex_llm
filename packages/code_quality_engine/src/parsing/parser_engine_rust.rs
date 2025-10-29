@@ -1,4 +1,4 @@
-//! # Rust Parser
+//! # ParserEngine Rust Parser
 //!
 //! @category rust-parser @safe large-solution @mvp core @complexity high @since 1.0.0
 //! @graph-nodes: [rust-parser, syn-analysis, ownership-patterns, memory-safety, concurrency-analysis]
@@ -136,9 +136,9 @@ pub trait PolyglotCodeParser: Send + Sync {
 }
 
 /// Rust parser implementation using syn (official Rust parser)
-pub struct RustParser;
+pub struct ParserEngineRust;
 
-impl RustParser {
+impl ParserEngineRust {
   /// Create new Rust parser
   pub fn new() -> Result<Self> {
     Ok(Self)
@@ -1133,7 +1133,7 @@ impl RustParser {
 }
 
 #[async_trait]
-impl PolyglotCodeParser for RustParser {
+impl PolyglotCodeParser for ParserEngineRust {
   type Config = HashMap<String, serde_json::Value>;
   type LanguageSpecific = serde_json::Value;
 
@@ -1155,7 +1155,7 @@ impl PolyglotCodeParser for RustParser {
 
   fn get_metadata(&self) -> ParserMetadata {
     ParserMetadata {
-      parser_name: "Rust Parser (syn)".to_string(),
+      parser_name: "ParserEngine Rust (syn)".to_string(),
       version: env!("CARGO_PKG_VERSION").to_string(),
       supported_languages: vec![Language::Rust],
       supported_extensions: vec!["rs".to_string()],

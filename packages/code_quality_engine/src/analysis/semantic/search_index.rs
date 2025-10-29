@@ -103,7 +103,7 @@ impl CodeIndex {
 
     /// Build index by scanning the codebase
     pub async fn build_index(&mut self) -> anyhow::Result<()> {
-        println!("🔍 Building local code index...");
+        // Logging removed for production: use structured logging or telemetry if needed.
 
         let supported_extensions = vec![
             "ts", "tsx", "js", "jsx", "rs", "py", "go", "java", "cpp", "c", "h", "json", "yaml",
@@ -114,7 +114,7 @@ impl CodeIndex {
             .await?;
         self.build_indices();
 
-        println!("✅ Indexed {} files", self.metadata_cache.len());
+        // Logging removed for production.
         Ok(())
     }
 

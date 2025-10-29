@@ -16,7 +16,7 @@ defmodule CentralCloud.Engines.ParserEngine do
   require Logger
 
   @doc """
-  Parse a single file using Rust Parser Engine.
+  Parse a single file using the ParserEngine Rust engine.
   """
   def parse_file(file_path, opts \\ []) do
     language = Keyword.get(opts, :language, "auto")

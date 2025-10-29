@@ -51,8 +51,9 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   ast-grep quality, clean code, best practices, code standards
   """
 
-  alias Singularity.Search.AstGrepCodeSearch
+  alias Singularity.Execution.TodoPatterns
   alias Singularity.ParserEngine
+  alias Singularity.Search.AstGrepCodeSearch
 
   require Logger
 
@@ -122,12 +123,7 @@ defmodule Singularity.CodeQuality.AstQualityAnalyzer do
   """
   @spec find_todo_and_fixme_comments(String.t()) :: {:ok, [map()]}
   def find_todo_and_fixme_comments(codebase_path) do
-    patterns = [
-      {"elixir", "# TODO: $$$", "TODO comment - incomplete work"},
-      {"elixir", "# FIXME: $$$", "FIXME comment - needs fixing"},
-      {"rust", "// TODO: $$$", "TODO comment - incomplete work"},
-      {"javascript", "// TODO: $$$", "TODO comment - incomplete work"}
-    ]
+    patterns = TodoPatterns.actionable_patterns()
 
     scan_for_quality_issue_patterns(codebase_path, patterns, :info, "technical_debt")
   end

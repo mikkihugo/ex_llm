@@ -1,8 +1,8 @@
 defmodule CentralCloud.IntelligenceHubSubscriber do
   @moduledoc """
-  NATS subscriber for receiving intelligence data from Singularity engines.
+  pgflow subscriber for receiving intelligence data from Singularity engines.
   
-  Subscribes to all intelligence hub subjects and stores data in PostgreSQL:
+  Subscribes to all intelligence hub queues and stores data in PostgreSQL:
   - Analysis results from all 8 engines
   - Artifacts and generated code
   - Package intelligence indexing
@@ -12,22 +12,22 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   ## Architecture
   
   ```
-  Engine → NATS → This Subscriber → PostgreSQL (centralcloud)
+  Engine → pgflow → This Subscriber → PostgreSQL (centralcloud)
   ```
   
-  ## Subscriptions
+  ## Queues
   
-  - `intelligence.hub.*.analysis` - All engine analysis results
-  - `intelligence.hub.*.artifact` - All engine artifacts
-  - `intelligence.hub.package.index` - Package indexing
-  - `intelligence.hub.knowledge.cache` - Knowledge caching
-  - `intelligence.hub.embeddings` - Vector embeddings
+  - `intelligence_hub_analysis` - All engine analysis results
+  - `intelligence_hub_artifacts` - All engine artifacts
+  - `intelligence_hub_package_index` - Package indexing
+  - `intelligence_hub_knowledge_cache` - Knowledge caching
+  - `intelligence_hub_embeddings` - Vector embeddings
   """
   
   use GenServer
   require Logger
   
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
   alias CentralCloud.Schemas.{AnalysisResult, Package, PromptTemplate, CodeSnippet}
   
   def start_link(opts \\ []) do
@@ -38,62 +38,63 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   def init(_opts) do
     Logger.info("Starting Intelligence Hub Subscriber...")
     
-    # Subscribe to all intelligence hub subjects
-    subscriptions = [
-      "intelligence.hub.*.analysis",
-      "intelligence.hub.*.artifact",
-      "intelligence.hub.package.index",
-      "intelligence.hub.package.query",
-      "intelligence.hub.knowledge.cache",
-      "intelligence.hub.knowledge.request",
-      "intelligence.hub.embeddings"
+    # Subscribe to all intelligence hub queues
+    queues = [
+      "intelligence_hub_analysis",
+      "intelligence_hub_artifacts", 
+      "intelligence_hub_package_index",
+      "intelligence_hub_package_query",
+      "intelligence_hub_knowledge_cache",
+      "intelligence_hub_knowledge_request",
+      "intelligence_hub_embeddings"
     ]
     
-    Enum.each(subscriptions, fn subject ->
-      case NatsClient.subscribe(subject, callback: {__MODULE__, :handle_message, []}) do
-        {:ok, _sid} ->
-          Logger.info("Subscribed to: #{subject}")
+    Enum.each(queues, fn queue ->
+      case Pgflow.listen(queue, CentralCloud.Repo) do
+        {:ok, _pid} ->
+          Logger.info("Subscribed to: #{queue}")
         {:error, reason} ->
-          Logger.error("Failed to subscribe to #{subject}: #{inspect(reason)}")
+          Logger.error("Failed to subscribe to #{queue}: #{inspect(reason)}")
       end
     end)
     
-    {:ok, %{subscriptions: subscriptions}}
+    {:ok, %{queues: queues}}
   end
   
   ## Message Handlers
   
   @doc """
-  Handle incoming NATS messages from engines.
+  Handle incoming pgflow messages from engines.
   """
-  def handle_message(%{reply_to: reply_to} = msg) do
-    Logger.debug("Received request on #{msg.subject}")
+  def handle_message(%{queue: queue, data: data} = msg) do
+    Logger.debug("Received message on #{queue}")
 
     response =
-      case Jason.decode(msg.data) do
-        {:ok, payload} -> handle_payload(msg.subject, payload)
+      case Jason.decode(data) do
+        {:ok, payload} -> handle_payload(queue, payload)
         {:error, reason} ->
           Logger.error("Failed to decode request: #{inspect(reason)}")
           {:error, :bad_request}
       end
 
-    NatsClient.publish(reply_to, Jason.encode!(response))
+    # No reply needed for one-way intelligence data
+    :ok
   end
 
-  def handle_message(%{subject: subject, data: data}) do
-    Logger.debug("Received message on #{subject}")
+  def handle_message(%{queue: queue, data: data}) do
+    Logger.debug("Received message on #{queue}")
     
     case Jason.decode(data) do
       {:ok, payload} ->
-        handle_payload(subject, payload)
+        handle_payload(queue, payload)
       {:error, reason} ->
         Logger.error("Failed to decode message: #{inspect(reason)}")
     end
   end
   
   # Handle analysis results
-  defp handle_payload("intelligence.hub." <> rest, %{"type" => "analysis"} = payload) do
-    [engine | _] = String.split(rest, ".")
+  defp handle_payload("intelligence_hub_analysis", %{"type" => "analysis"} = payload) do
+    engine = payload["engine"] || "unknown"
     
     Logger.info("Storing analysis from #{engine} engine")
     
@@ -116,8 +117,8 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle artifacts
-  defp handle_payload("intelligence.hub." <> rest, %{"type" => "artifact"} = payload) do
-    [engine | _] = String.split(rest, ".")
+  defp handle_payload("intelligence_hub_artifacts", %{"type" => "artifact"} = payload) do
+    engine = payload["engine"] || "unknown"
     
     Logger.info("Storing artifact from #{engine} engine")
     
@@ -144,7 +145,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle package indexing
-  defp handle_payload("intelligence.hub.package.index", %{"type" => "package_index"} = payload) do
+  defp handle_payload("intelligence_hub_package_index", %{"type" => "package_index"} = payload) do
     Logger.info("Indexing package: #{payload["package"]["name"]}")
     
     package_data = payload["package"]
@@ -173,7 +174,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle package queries (request/reply)
-  defp handle_payload("intelligence.hub.package.query", %{"type" => "package_query"} = payload) do
+  defp handle_payload("intelligence_hub_package_query", %{"type" => "package_query"} = payload) do
     Logger.debug("Package query: #{payload["package_name"]}")
     
     case Repo.get_by(Package, name: payload["package_name"], language: payload["language"]) do
@@ -185,7 +186,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle knowledge cache
-  defp handle_payload("intelligence.hub.knowledge.cache", %{"type" => "knowledge_cache"} = payload) do
+  defp handle_payload("intelligence_hub_knowledge_cache", %{"type" => "knowledge_cache"} = payload) do
     Logger.info("Caching knowledge: #{payload["knowledge"]["id"]}")
     
     knowledge = payload["knowledge"]
@@ -204,7 +205,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle knowledge requests (request/reply)
-  defp handle_payload("intelligence.hub.knowledge.request", %{"type" => "knowledge_request"} = payload) do
+  defp handle_payload("intelligence_hub_knowledge_request", %{"type" => "knowledge_request"} = payload) do
     Logger.debug("Knowledge request: #{payload["knowledge_id"]}")
     
     # Query from various tables
@@ -224,7 +225,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   end
   
   # Handle embeddings
-  defp handle_payload("intelligence.hub.embeddings", %{"type" => "embedding"} = payload) do
+  defp handle_payload("intelligence_hub_embeddings", %{"type" => "embedding"} = payload) do
     Logger.debug("Storing embedding")
     
     embedding_data = payload["data"]

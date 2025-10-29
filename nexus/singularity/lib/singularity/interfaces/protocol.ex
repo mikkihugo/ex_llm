@@ -9,8 +9,11 @@ defprotocol Singularity.Interfaces.Protocol do
 
   ## Example
 
-      # HTTP interface
-      interface = %Singularity.Interfaces.HTTP{url: "http://localhost:4000"}
+      # HTTP interface (auto-detected URL)
+      interface = %Singularity.Interfaces.HTTP{
+        url: System.get_env("WEB_URL") || 
+            "http://#{Singularity.BuildInfo.hostname()}:#{System.get_env("PORT", "4000")}"
+      }
       Singularity.Interfaces.Protocol.execute_tool(interface, tool_call)
 
   ## Interface Responsibilities

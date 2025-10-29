@@ -1,6 +1,6 @@
 defmodule Singularity.EmbeddingEngine do
   @moduledoc """
-  EmbeddingEngine - Alias for local ONNX embedding inference.
+  EmbeddingEngine - Unified interface for local embedding inference.
 
   This module provides a unified interface to Singularity's embedding infrastructure,
   delegating to Embedding.NxService for actual inference.
@@ -35,7 +35,7 @@ defmodule Singularity.EmbeddingEngine do
   ## Implementation Note
 
   This module delegates to `Singularity.Embedding.NxService` which provides
-  the actual ONNX runtime inference via Erlang NIF for performance.
+  the actual ONNX runtime inference using Nx for performance.
 
   ## AI Navigation Metadata
 
@@ -44,7 +44,7 @@ defmodule Singularity.EmbeddingEngine do
   ```json
   {
     "module": "Singularity.EmbeddingEngine",
-    "purpose": "Unified interface for local ONNX embedding inference (Qodo + Jina v3)",
+    "purpose": "Unified interface for local embedding inference (Qodo + Jina v3)",
     "role": "service",
     "layer": "infrastructure",
     "key_responsibilities": [
@@ -69,7 +69,7 @@ defmodule Singularity.EmbeddingEngine do
   calls_out:
     - module: Singularity.Embedding.NxService
       function: embed/1, embed_batch/1, similarity/2, finetune/2
-      purpose: Local ONNX inference
+      purpose: Local embedding inference
       critical: true
       pattern: "Delegation to specialized inference service"
 
@@ -115,7 +115,7 @@ defmodule Singularity.EmbeddingEngine do
 
   depends_on:
     - Singularity.Embedding.NxService (MUST be available)
-    - Erlang NIF for ONNX inference (MUST be compiled)
+    - Nx library for tensor operations (MUST be available)
     - ONNX model files (MUST exist in models directory)
   ```
 
@@ -154,13 +154,13 @@ defmodule Singularity.EmbeddingEngine do
   # ❌ WRONG - External API call
   {:ok, embedding} = OpenAI.Embeddings.embed("text")
 
-  # ✅ CORRECT - Local ONNX inference
+  # ✅ CORRECT - Local embedding inference
   {:ok, embedding} = EmbeddingEngine.embed("text")
   ```
 
   ### Search Keywords
 
-  embedding, ONNX inference, Qodo-Embed, Jina v3, local inference, vector embeddings,
+  embedding, Nx inference, Qodo-Embed, Jina v3, local inference, vector embeddings,
   code embeddings, semantic search, multi-vector, concatenated embeddings, fine-tuning,
   GPU acceleration, batch processing, pgvector, embeddings
   """
@@ -172,7 +172,7 @@ defmodule Singularity.EmbeddingEngine do
   @type similarity :: float()
 
   @doc """
-  Generate embedding for a single text using local ONNX models.
+  Generate embedding for a single text using local models.
 
   Returns a Pgvector of 2560 dimensions (Qodo 1536 + Jina v3 1024 concatenated).
 
@@ -295,7 +295,7 @@ defmodule Singularity.EmbeddingEngine do
   def label, do: "EmbeddingEngine"
 
   @doc false
-  def description, do: "Local ONNX embedding service (Qodo + Jina v3)"
+  def description, do: "Local embedding service (Qodo + Jina v3)"
 
   @doc false
   def capabilities, do: [:embed, :batch_embed, :similarity, :finetune]

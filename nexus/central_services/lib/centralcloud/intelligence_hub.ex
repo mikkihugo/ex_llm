@@ -9,20 +9,20 @@ defmodule CentralCloud.IntelligenceHub do
   2. **Architectural Intelligence** - System design, component relationships
   3. **Data Intelligence** - Database schemas, data flows, data architecture
 
-  ## NATS Subjects
+  ## pgflow Queues
 
-  - `intelligence.code.pattern.learned` - Code patterns from instances
-  - `intelligence.architecture.pattern.learned` - Architectural patterns
-  - `intelligence.data.schema.learned` - Data schemas
-  - `intelligence.insights.query` - Query aggregated intelligence
-  - `intelligence.quality.aggregate` - Quality metrics aggregation
+  - `intelligence_code_patterns_learned` - Code patterns from instances
+  - `intelligence_architecture_patterns_learned` - Architectural patterns
+  - `intelligence_data_schemas_learned` - Data schemas
+  - `intelligence_insights_query` - Query aggregated intelligence
+  - `intelligence_quality_aggregate` - Quality metrics aggregation
   """
 
   use GenServer
   require Logger
   import Ecto.Query
 
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
 
   # ===========================
   # Public API
@@ -54,8 +54,8 @@ defmodule CentralCloud.IntelligenceHub do
   def init(_opts) do
     Logger.info("IntelligenceHub starting - aggregating patterns from all instances")
 
-    # Subscribe to intelligence subjects
-    :ok = subscribe_to_subjects()
+    # Subscribe to intelligence queues
+    :ok = subscribe_to_queues()
 
     state = %{
       code_patterns: 0,
@@ -65,7 +65,7 @@ defmodule CentralCloud.IntelligenceHub do
       started_at: DateTime.utc_now()
     }
 
-    Logger.info("IntelligenceHub ready - listening on intelligence.* subjects")
+    Logger.info("IntelligenceHub ready - listening on intelligence queues")
     {:ok, state}
   end
 
@@ -100,25 +100,37 @@ defmodule CentralCloud.IntelligenceHub do
   # Private Functions
   # ===========================
 
-  defp subscribe_to_subjects do
-    # TODO: Convert one-way broadcasts to pgmq consumers via Oban:
-    # - intelligence.code.pattern.learned → pgmq: patterns_learned_published
-    # - intelligence.architecture.pattern.learned → pgmq: patterns_learned_published
-    # - intelligence.data.schema.learned → pgmq: patterns_learned_published
-    # - intelligence.quality.aggregate → pgmq: execution_metrics_aggregated
-    # - system.instance.dependencies.report → pgmq: pattern_discoveries_published
+  defp subscribe_to_queues do
+    # Subscribe to intelligence pattern learning queues
+    intelligence_queues = [
+      "intelligence_code_patterns_learned",
+      "intelligence_architecture_patterns_learned", 
+      "intelligence_data_schemas_learned",
+      "intelligence_quality_aggregate",
+      "intelligence_insights_query",
+      "intelligence_query_request",
+      "central_analyze_codebase",
+      "central_learn_patterns",
+      "central_get_global_stats",
+      "central_train_models",
+      "central_get_cross_instance_insights",
+      "framework_pattern_query",
+      "framework_pattern_search"
+    ]
 
-    # KEEP: Request-reply patterns on NATS (need synchronous responses)
-    # TODO: Decide if these should move to HTTP endpoints or async pgmq + client polling
-    NatsClient.subscribe("intelligence.insights.query", &handle_insights_query/1)
-    NatsClient.subscribe("intelligence.query.request", &handle_intelligence_query/1)
-    NatsClient.subscribe("central.analyze_codebase", &handle_analyze_codebase/1)
-    NatsClient.subscribe("central.learn_patterns", &handle_learn_patterns/1)
-    NatsClient.subscribe("central.get_global_stats", &handle_get_global_stats/1)
-    NatsClient.subscribe("central.train_models", &handle_train_models/1)
-    NatsClient.subscribe("central.get_cross_instance_insights", &handle_get_cross_instance_insights/1)
-    NatsClient.subscribe("framework.pattern.query", &handle_framework_pattern_query/1)
-    NatsClient.subscribe("framework.pattern.search", &handle_framework_pattern_search/1)
+    Enum.each(intelligence_queues, fn queue ->
+      case Pgflow.listen(queue, CentralCloud.Repo) do
+        {:ok, _pid} ->
+          Logger.info("Subscribed to intelligence queue: #{queue}")
+        {:error, reason} ->
+          Logger.error("Failed to subscribe to #{queue}: #{inspect(reason)}")
+      end
+    end)
+
+    # Handle PgFlow notifications (receive loop in separate process or supervisor)
+    spawn(fn ->
+      handle_pgflow_notifications()
+    end)
 
     :ok
   end
@@ -183,7 +195,7 @@ defmodule CentralCloud.IntelligenceHub do
 
         # Reply with insights (TODO: implement query logic)
         reply = %{insights: [], status: "ok"}
-        NatsClient.publish(msg.reply_to, Jason.encode!(reply))
+        Pgflow.send_with_notify(msg.reply_to, reply, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode insights query: #{inspect(reason)}")
@@ -222,12 +234,12 @@ defmodule CentralCloud.IntelligenceHub do
       {:ok, query} ->
         # Process query and return enriched context
         response = process_intelligence_query(query)
-        NatsClient.publish(msg.reply_to, Jason.encode!(response))
+        Pgflow.send_with_notify(msg.reply_to, response, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode intelligence query: #{inspect(reason)}")
         error_response = %{error: "invalid_query", reason: inspect(reason)}
-        NatsClient.publish(msg.reply_to, Jason.encode!(error_response))
+        Pgflow.send_with_notify(msg.reply_to, error_response, CentralCloud.Repo)
     end
   end
 
@@ -397,7 +409,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp handle_dependency_report(msg) do
-    Logger.info("📦 Received dependency report from instance")
+    Logger.info("?? Received dependency report from instance")
 
     case Jason.decode(msg.payload) do
       {:ok, %{"instance_id" => instance_id, "dependencies" => dependencies}} ->
@@ -415,7 +427,7 @@ defmodule CentralCloud.IntelligenceHub do
   # ===========================
 
   defp handle_analyze_codebase(msg) do
-    Logger.info("🔍 Received codebase analysis request from Singularity")
+    Logger.info("?? Received codebase analysis request from Singularity")
     
     case Jason.decode(msg.payload) do
       {:ok, request} ->
@@ -429,7 +441,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp handle_learn_patterns(msg) do
-    Logger.info("🧠 Received pattern learning request from Singularity")
+    Logger.info("?? Received pattern learning request from Singularity")
     
     case Jason.decode(msg.payload) do
       {:ok, request} ->
@@ -443,7 +455,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp handle_get_global_stats(msg) do
-    Logger.info("📊 Received global stats request from Singularity")
+    Logger.info("?? Received global stats request from Singularity")
     
     case Jason.decode(msg.payload) do
       {:ok, request} ->
@@ -457,7 +469,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp handle_train_models(msg) do
-    Logger.info("🤖 Received model training request from Singularity")
+    Logger.info("?? Received model training request from Singularity")
     
     case Jason.decode(msg.payload) do
       {:ok, request} ->
@@ -471,7 +483,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   defp handle_get_cross_instance_insights(msg) do
-    Logger.info("🔗 Received cross-instance insights request from Singularity")
+    Logger.info("?? Received cross-instance insights request from Singularity")
     
     case Jason.decode(msg.payload) do
       {:ok, request} ->
@@ -491,7 +503,7 @@ defmodule CentralCloud.IntelligenceHub do
   # Handle framework pattern queries from Singularity instances
   # Used when Singularity detects unknown framework and needs enrichment
   defp handle_framework_pattern_query(msg) do
-    Logger.info("🔍 Framework pattern query from Singularity instance")
+    Logger.info("?? Framework pattern query from Singularity instance")
 
     case Jason.decode(msg.payload) do
       {:ok, query} ->
@@ -507,7 +519,7 @@ defmodule CentralCloud.IntelligenceHub do
   # Handle framework pattern search requests
   # Search across all known frameworks by name, category, or other criteria
   defp handle_framework_pattern_search(msg) do
-    Logger.info("🔎 Framework pattern search from instance")
+    Logger.info("?? Framework pattern search from instance")
 
     case Jason.decode(msg.payload) do
       {:ok, search_params} ->
@@ -712,7 +724,7 @@ defmodule CentralCloud.IntelligenceHub do
   end
 
   # Trigger FrameworkLearningOrchestrator to discover unknown framework
-  # Uses config-driven learners (template matcher → LLM discovery → custom strategies)
+  # Uses config-driven learners (template matcher ? LLM discovery ? custom strategies)
   defp trigger_framework_discovery(framework_name, query) do
     Logger.info("Triggering framework discovery for: #{framework_name}")
 
@@ -773,7 +785,7 @@ defmodule CentralCloud.IntelligenceHub do
   # ===========================
 
   defp analyze_codebase_implementation(request) do
-    Logger.info("🔍 Starting comprehensive codebase analysis", 
+    Logger.info("?? Starting comprehensive codebase analysis", 
       codebase_id: request["codebase_info"]["codebase_id"],
       instance_id: request["instance_id"]
     )
@@ -812,7 +824,11 @@ defmodule CentralCloud.IntelligenceHub do
         "analyzed_at" => DateTime.utc_now(),
         "instance_id" => instance_id,
         "engines_used" => ["architecture_engine", "code_quality_engine", "quality_engine", "embedding_engine"],
-        "analysis_version" => "1.0.0"
+        "analysis_version" => 
+          case Application.spec(:central_services, :vsn) do
+            version when is_binary(version) -> version
+            _ -> "0.1.0"
+          end
       }
     }
   end
@@ -1248,8 +1264,7 @@ defmodule CentralCloud.IntelligenceHub do
         Logger.warning("No reply_to in message, cannot send response")
         :ok
       reply_to ->
-        encoded_response = Jason.encode!(response)
-        NatsClient.publish(reply_to, encoded_response)
+        Pgflow.send_with_notify(reply_to, response, CentralCloud.Repo)
         Logger.debug("Sent response to #{reply_to}")
     end
   end

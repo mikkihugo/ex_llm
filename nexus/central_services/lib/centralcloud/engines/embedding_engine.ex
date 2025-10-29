@@ -9,7 +9,6 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
   """
 
   require Logger
-  alias CentralCloud.NATS.NatsClient
 
   @doc """
   Request embedding from Singularity for a text query.
@@ -23,7 +22,7 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
       model: model
     }
 
-    with :ok <- NatsClient.publish("embedding.request", Jason.encode!(request)) do
+    with :ok <- Pgflow.send_with_notify("embedding.request", request, CentralCloud.Repo) do
       wait_for_embedding_response(timeout)
     else
       {:error, reason} ->
@@ -92,7 +91,7 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
 
   # Private helpers
 
-  defp wait_for_embedding_response(timeout) do
+  defp wait_for_embedding_response(_timeout) do
     # TODO: Implement proper request/reply pattern with distributed tracking
     # For now, return mock response for testing
     case :timer.sleep(100) do

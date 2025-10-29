@@ -33,7 +33,7 @@ defmodule CentralCloud.Jobs.PackageSyncJob do
 
   require Logger
   import Ecto.Query
-  alias CentralCloud.{Repo, NatsClient}
+  alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
 
   # Registry API endpoints

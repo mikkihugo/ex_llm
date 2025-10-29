@@ -33,5 +33,6 @@ pub mod types;
 pub mod vectors;
 
 // Re-export main types for easy access
-pub use graph::*;
-pub use types::*;
+pub use graph::{Graph, CodeGraphBuilder, CodeInsightsEngine};
+pub use nif::{CodeAnalysisResult, QualityMetrics};
+pub use domain::ComplexityMetrics;

@@ -6,7 +6,7 @@ defmodule Singularity.RunnerTest do
   use ExUnit.Case, async: false
   require Logger
 
-  alias Singularity.Runner
+  alias Singularity.Execution.Runners.Runner
 
   @moduletag :integration
 

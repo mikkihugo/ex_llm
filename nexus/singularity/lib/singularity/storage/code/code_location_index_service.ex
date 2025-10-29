@@ -13,6 +13,7 @@ defmodule Singularity.Storage.Code.CodeLocationIndexService do
   alias Singularity.Repo
   alias Singularity.Schemas.CodeLocationIndex
   alias Singularity.CodePatternExtractor
+  alias Singularity.TechnologyDetector
 
   require Logger
 

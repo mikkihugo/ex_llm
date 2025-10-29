@@ -12,7 +12,7 @@ defmodule Singularity.Repo.Migrations.CreatePatternCachingTables do
       add :pattern_data, :text  # JSON-encoded pattern
       add :instance_id, :string
       add :expires_at, :utc_datetime
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: fragment("'{}'::jsonb")
 
       timestamps()
     end
@@ -27,7 +27,7 @@ defmodule Singularity.Repo.Migrations.CreatePatternCachingTables do
       add :instance_id, :string
       add :confidence_score, :float
       add :detected_at, :utc_datetime
-      add :metadata, :jsonb, default: %{}
+      add :metadata, :jsonb, default: fragment("'{}'::jsonb")
 
       timestamps()
     end
@@ -41,7 +41,6 @@ defmodule Singularity.Repo.Migrations.CreatePatternCachingTables do
       add :total_instances, :integer
       add :average_confidence, :float
       add :consensus_level, :string
-      add :updated_at, :utc_datetime
 
       timestamps()
     end

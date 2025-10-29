@@ -7,7 +7,8 @@ pub mod coverage_collection;
 pub mod parser_integration;
 pub mod visualization;
 
-pub use coverage::*;
-pub use coverage_collection::*;
-pub use parser_integration::*;
-pub use visualization::*;
+// Re-export specific types to avoid conflicts
+pub use coverage::{CoverageAnalyzer, CoverageReport, CoverageAnalysis};
+pub use coverage_collection::{CoverageDataCollector};
+pub use parser_integration::{ParserCoverageCollector, ParserCoverageData};
+pub use visualization::{CoverageVisualizer, ChartGenerator, MapGenerator, DashboardGenerator};

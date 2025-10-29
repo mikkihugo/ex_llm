@@ -27,7 +27,7 @@ defmodule CentralCloud.Engines.PromptEngine do
   """
 
   require Logger
-  alias CentralCloud.NatsClient
+  alias CentralCloud.Engines.SharedEngineService
 
   @doc """
   Generate AI prompts using Singularity's Prompt Engine via NATS.
@@ -36,12 +36,13 @@ defmodule CentralCloud.Engines.PromptEngine do
 
   ## Parameters
 
-  - `context` - The task or context for the prompt
-  - `language` - Programming language or domain (e.g., "elixir", "general")
+  - `context` - The context or task description
+  - `language` - Target programming language
   - `opts` - Optional keyword arguments:
-    - `:template` - Template name (default: "default")
-    - `:optimization_level` - "balanced", "concise", "detailed"
+    - `:template` - Template to use (default: "default")
+    - `:optimization_level` - Optimization level (default: "balanced")
     - `:max_length` - Maximum prompt length
+    - `:timeout` - Request timeout in milliseconds
 
   ## Returns
 
@@ -57,23 +58,7 @@ defmodule CentralCloud.Engines.PromptEngine do
       "max_length" => Keyword.get(opts, :max_length, nil)
     }
 
-    case NatsClient.request_nats(
-      "prompt.generate",
-      request,
-      timeout: 30_000
-    ) do
-      {:ok, response} ->
-        Logger.debug("Prompt generated via NATS",
-          language: language,
-          length: byte_size(Map.get(response, "prompt", ""))
-        )
-        {:ok, response}
-
-      {:error, reason} ->
-        Logger.warn("Prompt generation failed via NATS", reason: inspect(reason))
-        # Fallback to simple template if NATS unavailable
-        {:ok, local_generate_prompt(context, language, opts)}
-    end
+    SharedEngineService.call_prompt_engine("generate", request, opts)
   end
 
   @doc """
@@ -102,23 +87,7 @@ defmodule CentralCloud.Engines.PromptEngine do
       "language" => Keyword.get(opts, :language, "general")
     }
 
-    case NatsClient.request_nats(
-      "prompt.optimize",
-      request,
-      timeout: 30_000
-    ) do
-      {:ok, response} ->
-        Logger.debug("Prompt optimized via NATS",
-          original_length: String.length(prompt),
-          optimized_length: String.length(Map.get(response, "optimized_prompt", ""))
-        )
-        {:ok, response}
-
-      {:error, reason} ->
-        Logger.warn("Prompt optimization failed via NATS", reason: inspect(reason))
-        # Fallback to returning original with notes
-        {:ok, %{"optimized_prompt" => prompt, "note" => "NATS unavailable, returned original"}}
-    end
+    SharedEngineService.call_prompt_engine("optimize", request, opts)
   end
 
   @doc """
@@ -127,77 +96,40 @@ defmodule CentralCloud.Engines.PromptEngine do
   Returns a list of available templates for prompt generation.
   """
   def list_templates do
-    case NatsClient.request_nats(
-      "prompt.list_templates",
-      %{},
-      timeout: 10_000
-    ) do
-      {:ok, response} ->
-        Logger.debug("Retrieved prompt templates from Singularity")
-        {:ok, Map.get(response, "templates", [])}
-
-      {:error, _reason} ->
-        # Return local defaults
-        {:ok, @local_templates}
-    end
+    SharedEngineService.call_prompt_engine("list_templates", %{}, [])
   end
 
   # ============================================================================
   # Local Fallback Templates
   # ============================================================================
 
-  @local_templates [
-    %{
-      id: "general-command",
-      category: "commands",
-      language: "general",
-      skeleton: """
-      ## Task
-      {{context}}
-
-      ## Expectations
-      - Provide clear, idiomatic code
-      - Include documentation where helpful
-      """
-    },
-    %{
-      id: "architecture",
-      category: "architecture",
-      language: "general",
-      skeleton: """
-      You are designing a system for {{context}}.
-
-      Please outline:
-      1. Key components
-      2. Data flow
-      3. Dependencies
-      4. Operational considerations
-      """
-    }
-  ]
-
-  @spec local_generate_prompt(String.t(), String.t(), keyword()) :: map()
-  defp local_generate_prompt(context, language, opts) do
-    template_id = Keyword.get(opts, :template, "general-command")
-
-    template = Enum.find(@local_templates, fn t -> t.id == template_id end)
-
-    if template do
-      prompt = String.replace(template.skeleton, "{{context}}", context)
-      %{
-        "prompt" => prompt,
-        "template_used" => template_id,
-        "fallback" => true,
-        "language" => language
-      }
-    else
-      # Final fallback - very basic
-      %{
-        "prompt" => "Task: #{context}\n\nPlease provide a solution in #{language}.",
-        "template_used" => "minimal-fallback",
-        "fallback" => true,
-        "language" => language
-      }
-    end
-  end
+  # @local_templates [
+  #   %{
+  #     id: "general-command",
+  #     category: "commands",
+  #     language: "general",
+  #     skeleton: """
+  #     ## Task
+  #     {{context}}
+  #
+  #     ## Expectations
+  #     - Provide clear, idiomatic code
+  #     - Include documentation where helpful
+  #     """
+  #   },
+  #   %{
+  #     id: "architecture",
+  #     category: "architecture",
+  #     language: "general",
+  #     skeleton: """
+  #     ## Architecture Task
+  #     {{context}}
+  #
+  #     ## Requirements
+  #     - Design scalable, maintainable solution
+  #     - Consider performance and security
+  #     - Document design decisions
+  #     """
+  #   }
+  # ]
 end

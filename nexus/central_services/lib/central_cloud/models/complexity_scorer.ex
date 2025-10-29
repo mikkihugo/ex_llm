@@ -9,7 +9,6 @@ defmodule CentralCloud.Models.ComplexityScorer do
   4. Cost-performance optimization
   """
 
-  alias CentralCloud.Models.ModelCache
 
   @doc """
   Calculate complexity score for a model.
@@ -59,7 +58,7 @@ defmodule CentralCloud.Models.ComplexityScorer do
   @doc """
   Find best model for task complexity and budget.
   """
-  def find_optimal_model(task_complexity, max_cost \\ nil, capabilities \\ []) do
+  def find_optimal_model(_task_complexity, _max_cost \\ nil, _capabilities \\ []) do
     # This would query the database for models matching criteria
     # For now, return mock logic
     %{
@@ -138,7 +137,7 @@ defmodule CentralCloud.Models.ComplexityScorer do
     end
   end
 
-  defp calculate_task_adjustment(model, task_type) do
+  defp calculate_task_adjustment(_model, task_type) do
     # Adjust complexity based on task type
     case task_type do
       :simple -> -0.2  # Reduce complexity for simple tasks

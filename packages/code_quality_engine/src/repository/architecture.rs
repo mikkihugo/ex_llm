@@ -436,6 +436,7 @@ pub struct InfrastructureAnalysis {
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
+    use serde_json::json;
 
     use super::*;
 
@@ -467,8 +468,8 @@ mod tests {
             .collect();
 
         // Phase 6.4: Create dynamic MessageBroker struct (not enum variant)
-        let mut kafka_config = HashMap::new();
-        kafka_config.insert("topics".to_string(), json!(vec![]));
+        let mut kafka_config: HashMap<String, serde_json::Value> = HashMap::new();
+        kafka_config.insert("topics".to_string(), json!([]));
         kafka_config.insert("partitions".to_string(), json!(3));
 
         let infrastructure = InfrastructureAnalysis {

@@ -32,7 +32,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
     NxService
     |> stub(:embed, fn _text, _opts ->
       # Return a mock 1024-dimension embedding
-      {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5))}
+      {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5 end))}
     end)
 
     %{artifacts: artifacts}
@@ -85,7 +85,7 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       NxService
       |> expect(:embed, 2, fn _text, _opts -> {:error, :temporary_failure} end)
       |> expect(:embed, 1, fn _text, _opts ->
-        {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5))}
+        {:ok, Nx.tensor(Enum.map(1..1024, fn _ -> :rand.uniform() - 0.5 end))}
       end)
 
       artifacts = [%{id: 1, artifact_id: "retry_test"}]

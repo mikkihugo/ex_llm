@@ -56,7 +56,19 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   alias Singularity.Knowledge.ArtifactStore
   alias Singularity.LLM.Service
 
-  @production_template_path "/home/mhugo/code/singularity/templates_data/quality_standards/elixir/production.json"
+  defp production_template_path do
+    # Auto-detect templates directory from git root
+    repo_root = 
+      case System.cmd("git", ["rev-parse", "--show-toplevel"], stderr_to_stdout: true) do
+        {root, 0} -> String.trim(root)
+        _ -> 
+          # Fallback: try to find templates_data relative to current file
+          Path.join([__DIR__, "..", "..", "..", "..", "templates_data"])
+          |> Path.expand()
+      end
+    
+    Path.join([repo_root, "templates_data", "quality_standards", "elixir", "production.json"])
+  end
 
   ## Public API
 
@@ -272,7 +284,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
              quality_level: to_string(quality_level),
              relationships: relationships,
              similar_code: similar_code,
-             template_path: @production_template_path
+             template_path: production_template_path()
            },
            complexity: :complex,
            task_type: :coder
@@ -452,7 +464,7 @@ defmodule Singularity.Bootstrap.CodeQualityEnforcer do
   end
 
   defp load_production_template do
-    case File.read(@production_template_path) do
+    case File.read(production_template_path()) do
       {:ok, content} ->
         Jason.decode!(content)
 

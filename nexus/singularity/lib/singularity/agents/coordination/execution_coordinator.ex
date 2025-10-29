@@ -36,6 +36,25 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
       task_count: length(tasks)
     )
 
+    # Create PgFlow workflow for agent coordination
+    workflow_attrs = %{
+      workflow_id: execution_id,
+      type: "agent_coordination",
+      status: "pending",
+      payload: %{
+        tasks: tasks,
+        opts: opts,
+        started_at: :erlang.system_time(:millisecond)
+      }
+    }
+
+    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+      {:ok, _workflow} ->
+        Logger.info("Created agent coordination workflow", execution_id: execution_id)
+      {:error, reason} ->
+        Logger.warning("Failed to create agent coordination workflow", reason: reason)
+    end
+
     timeout = Keyword.get(opts, :timeout, 300_000)
 
     try do
@@ -57,6 +76,15 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             task_count: length(final_results)
           )
 
+          # Send completion notification via PgFlow
+          notification = %{
+            type: "agent_coordination_completed",
+            execution_id: execution_id,
+            task_count: length(final_results),
+            completed_at: :erlang.system_time(:millisecond)
+          }
+          Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
+
           {:ok, final_results}
 
         {:error, reason} ->
@@ -64,6 +92,15 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             execution_id: execution_id,
             reason: inspect(reason)
           )
+
+          # Send failure notification via PgFlow
+          notification = %{
+            type: "agent_coordination_failed",
+            execution_id: execution_id,
+            reason: inspect(reason),
+            failed_at: :erlang.system_time(:millisecond)
+          }
+          Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
 
           {:error, reason}
       end
