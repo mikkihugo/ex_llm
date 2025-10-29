@@ -74,6 +74,9 @@ proc-macro2 = "1.0"
 sha2 = { workspace = true }
 seahash = "4.1"
 
+# Lazy static initialization
+once_cell = "1.19"
+
 # NIF support (optional - only when used from Elixir)
 rustler = { workspace = true, optional = true }
 

@@ -124,7 +124,6 @@ impl CrossLanguageCodePatternsDetector {
         Self {
             patterns: Vec::new(),
             registry: &LANGUAGE_REGISTRY,
-            ast_cache: Mutex::new(HashMap::new()),
         }
     }
 
