@@ -730,6 +730,165 @@ defmodule Singularity.CodeAnalyzer do
     end)
   end
 
+  # ===========================
+  # AI Calculation Functions (NEW)
+  # ===========================
+
+  @doc """
+  Calculate AI-optimized complexity score for learning.
+
+  ## Parameters
+  - `code` - Source code string
+  - `language` - Language identifier
+
+  ## Returns
+  - `{:ok, score}` - AI complexity score (0.0-10.0)
+  - `{:error, reason}` - Calculation failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.calculate_ai_complexity_score("def hello, do: :world", "elixir")
+      {:ok, 1.2}
+
+      iex> CodeAnalyzer.calculate_ai_complexity_score(complex_rust_code, "rust")
+      {:ok, 7.8}
+  """
+  def calculate_ai_complexity_score(code, language) when is_binary(code) and is_binary(language) do
+    Native.calculate_ai_complexity_score(code, language)
+  end
+
+  @doc """
+  Extract comprehensive complexity features from code.
+
+  ## Parameters
+  - `code` - Source code string
+  - `language` - Language identifier
+
+  ## Returns
+  - `{:ok, features}` - Complexity features map
+  - `{:error, reason}` - Extraction failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.extract_complexity_features(code, "elixir")
+      {:ok, %{
+        "total_lines" => 50,
+        "function_count" => 8,
+        "cyclomatic_complexity" => 3.2,
+        "comment_ratio" => 0.15
+      }}
+  """
+  def extract_complexity_features(code, language) when is_binary(code) and is_binary(language) do
+    Native.extract_complexity_features(code, language)
+  end
+
+  @doc """
+  Calculate code evolution trends for AI learning.
+
+  ## Parameters
+  - `before_metrics` - Previous code metrics
+  - `after_metrics` - Current code metrics
+
+  ## Returns
+  - `{:ok, trends}` - Evolution trend analysis
+  - `{:error, reason}` - Calculation failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.calculate_evolution_trends(before_metrics, after_metrics)
+      {:ok, %{
+        "complexity_trend" => "Improving",
+        "maintainability_trend" => "Stable",
+        "quality_trend" => "Improving"
+      }}
+  """
+  def calculate_evolution_trends(before_metrics, after_metrics) when is_map(before_metrics) and is_map(after_metrics) do
+    Native.calculate_evolution_trends(before_metrics, after_metrics)
+  end
+
+  @doc """
+  Predict AI-generated code quality.
+
+  ## Parameters
+  - `code_features` - Code features map
+  - `language` - Language identifier
+  - `model_name` - AI model name
+
+  ## Returns
+  - `{:ok, prediction}` - Quality prediction with confidence and risk factors
+  - `{:error, reason}` - Prediction failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.predict_ai_code_quality(features, "elixir", "claude-3.5-sonnet")
+      {:ok, %{
+        "predicted_quality" => 0.85,
+        "confidence" => 0.92,
+        "risk_factors" => [%{"factor_type" => "HighComplexity", "severity" => "Medium"}]
+      }}
+  """
+  def predict_ai_code_quality(code_features, language, model_name) when is_map(code_features) and is_binary(language) and is_binary(model_name) do
+    Native.predict_ai_code_quality(code_features, language, model_name)
+  end
+
+  @doc """
+  Calculate pattern effectiveness for AI learning.
+
+  ## Parameters
+  - `pattern` - Code pattern string
+  - `metrics` - Complexity metrics
+
+  ## Returns
+  - `{:ok, effectiveness}` - Pattern effectiveness score (0.0-1.0)
+  - `{:error, reason}` - Calculation failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.calculate_pattern_effectiveness("defmodule", metrics)
+      {:ok, 0.75}
+  """
+  def calculate_pattern_effectiveness(pattern, metrics) when is_binary(pattern) and is_map(metrics) do
+    Native.calculate_pattern_effectiveness(pattern, metrics)
+  end
+
+  @doc """
+  Calculate supervision complexity for BEAM languages.
+
+  ## Parameters
+  - `modules` - List of module names
+
+  ## Returns
+  - `{:ok, complexity}` - Supervision complexity score
+  - `{:error, reason}` - Calculation failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.calculate_supervision_complexity(["MyApp.Supervisor", "MyApp.Worker"])
+      {:ok, 2.1}
+  """
+  def calculate_supervision_complexity(modules) when is_list(modules) do
+    Native.calculate_supervision_complexity(modules)
+  end
+
+  @doc """
+  Calculate actor complexity for BEAM languages.
+
+  ## Parameters
+  - `functions` - List of function names
+
+  ## Returns
+  - `{:ok, complexity}` - Actor complexity score
+  - `{:error, reason}` - Calculation failed
+
+  ## Examples
+
+      iex> CodeAnalyzer.calculate_actor_complexity(["spawn", "send", "receive"])
+      {:ok, 1.5}
+  """
+  def calculate_actor_complexity(functions) when is_list(functions) do
+    Native.calculate_actor_complexity(functions)
+  end
+
   # Helper: Put value in map only if not nil
   defp maybe_put(map, _key, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)

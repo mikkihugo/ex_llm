@@ -72,8 +72,8 @@ defmodule Singularity.MixProject do
       # Each module has: use Rustler, otp_app: :singularity, crate: :engine_name
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
       # Engines are now in packages/ as standalone Moon projects (publishable)
-      {:code_quality_engine,
-       path: "../../packages/code_quality_engine", runtime: false, compile: false, app: false},
+      {:singularity_code_analysis,
+       path: "../../packages/singularity-code-analysis", runtime: false, compile: false, app: false},
       {:parser_engine,
        path: "../../packages/parser_engine",
        runtime: false,

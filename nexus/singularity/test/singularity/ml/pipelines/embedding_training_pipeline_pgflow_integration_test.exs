@@ -181,13 +181,14 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
         EmbeddingTrainingPipeline,
         [
           name: EmbeddingTrainingPipeline,
-          producer: [
-            module: {BroadwayPGMQ.Producer, _},
-            _
-          ],
-          processors: _,
-          batchers: _
-        ] ->
+          producer: producer_opts,
+          processors: processors,
+          batchers: batchers
+        ] = _args ->
+          assert match?([module: {BroadwayPGMQ.Producer, _} | _], producer_opts)
+          assert is_list(processors)
+          assert is_list(batchers)
+
           {:ok, self()}
       end)
 

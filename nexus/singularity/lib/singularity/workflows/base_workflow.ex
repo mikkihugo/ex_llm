@@ -91,6 +91,8 @@ defmodule Singularity.Workflows.BaseWorkflow do
   - Include step information in error messages
   """
 
+  require Logger
+
   @doc false
   def __workflow_steps__ do
     raise "workflow modules must implement __workflow_steps__/0"
@@ -119,8 +121,8 @@ defmodule Singularity.Workflows.BaseWorkflow do
   """
   def execute_workflow(input) do
     try do
-      steps = __workflow_steps__()
-      execute_steps(input, steps, [])
+      input
+      |> execute_steps(__workflow_steps__(), [])
     rescue
       error ->
         handle_error("workflow_execution", error, input)

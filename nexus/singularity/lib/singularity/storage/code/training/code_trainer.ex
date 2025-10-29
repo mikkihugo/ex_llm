@@ -212,24 +212,20 @@ defmodule Singularity.CodeTrainer do
   end
 
   defp calculate_complexity(content) do
-    # Simple complexity calculation based on code structure
+    # Use SCA for sophisticated complexity calculation instead of string matching
+    case Singularity.CodeAnalyzer.calculate_ai_complexity_score(content, "elixir") do
+      {:ok, score} -> score
+      {:error, _reason} -> 
+        # Fallback to basic calculation only if SCA completely fails
+        basic_complexity_fallback(content)
+    end
+  end
+
+  defp basic_complexity_fallback(content) do
+    # Minimal fallback - just line count if SCA fails
     lines = String.split(content, "\n")
     non_empty_lines = Enum.filter(lines, fn line -> String.trim(line) != "" end)
-
-    complexity_factors = [
-      # Function count
-      length(String.split(content, "def ")) - 1,
-      # Case statements
-      length(String.split(content, "case ")) - 1,
-      # If statements
-      length(String.split(content, "if ")) - 1,
-      # Loops
-      length(String.split(content, "for ")) - 1,
-      # Total lines
-      length(non_empty_lines)
-    ]
-
-    Enum.sum(complexity_factors) / 10.0
+    length(non_empty_lines) / 10.0
   end
 
   defp split_code_for_training(content, "elixir") do

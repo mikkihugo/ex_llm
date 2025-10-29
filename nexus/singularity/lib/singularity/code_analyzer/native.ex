@@ -99,7 +99,7 @@ defmodule Singularity.CodeAnalyzer.Native do
   halstead-metrics, ast-extraction, pattern-detection, rustler, nif-bindings
   """
 
-  use Rustler, otp_app: :singularity, crate: "code_quality_engine", path: "../../packages/code_quality_engine"
+  use Rustler, otp_app: :singularity, crate: "singularity_code_analysis", path: "../../packages/singularity-code-analysis"
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)
   # ===========================
@@ -341,6 +341,100 @@ defmodule Singularity.CodeAnalyzer.Native do
   - `{:error, reason}` - Query failed
   """
   def query_asset_nif(_id), do: :erlang.nif_error(:nif_not_loaded)
+
+  # ===========================
+  # AI Calculation NIFs (NEW)
+  # ===========================
+
+  @doc """
+  Calculate AI-optimized complexity score for learning.
+
+  ## Parameters
+  - `code` - Source code string
+  - `language_hint` - Language ID
+
+  ## Returns
+  - `{:ok, score}` - AI complexity score (0.0-10.0)
+  - `{:error, reason}` - Calculation failed
+  """
+  def calculate_ai_complexity_score(_code, _language_hint), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Extract complexity features from code.
+
+  ## Parameters
+  - `code` - Source code string
+  - `language_hint` - Language ID
+
+  ## Returns
+  - `{:ok, features}` - Complexity features map
+  - `{:error, reason}` - Extraction failed
+  """
+  def extract_complexity_features(_code, _language_hint), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Calculate code evolution trends.
+
+  ## Parameters
+  - `before_metrics` - Previous code metrics
+  - `after_metrics` - Current code metrics
+
+  ## Returns
+  - `{:ok, trends}` - Evolution trend analysis
+  - `{:error, reason}` - Calculation failed
+  """
+  def calculate_evolution_trends(_before_metrics, _after_metrics), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Predict AI-generated code quality.
+
+  ## Parameters
+  - `code_features` - Code features map
+  - `language_hint` - Language ID
+  - `model_name` - AI model name
+
+  ## Returns
+  - `{:ok, prediction}` - Quality prediction
+  - `{:error, reason}` - Prediction failed
+  """
+  def predict_ai_code_quality(_code_features, _language_hint, _model_name), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Calculate pattern effectiveness for AI learning.
+
+  ## Parameters
+  - `pattern` - Code pattern string
+  - `metrics` - Complexity metrics
+
+  ## Returns
+  - `{:ok, effectiveness}` - Pattern effectiveness score (0.0-1.0)
+  - `{:error, reason}` - Calculation failed
+  """
+  def calculate_pattern_effectiveness(_pattern, _metrics), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Calculate supervision complexity for BEAM languages.
+
+  ## Parameters
+  - `modules` - List of module names
+
+  ## Returns
+  - `{:ok, complexity}` - Supervision complexity score
+  - `{:error, reason}` - Calculation failed
+  """
+  def calculate_supervision_complexity(_modules), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc """
+  Calculate actor complexity for BEAM languages.
+
+  ## Parameters
+  - `functions` - List of function names
+
+  ## Returns
+  - `{:ok, complexity}` - Actor complexity score
+  - `{:error, reason}` - Calculation failed
+  """
+  def calculate_actor_complexity(_functions), do: :erlang.nif_error(:nif_not_loaded)
 
   # ===========================
   # Language Detection NIFs

@@ -97,7 +97,7 @@ defmodule Singularity.BeamAnalysisEngine do
           # CodeEngine failed - return error instead of continuing with degraded analysis
           {:error, "BEAM analysis failed: #{reason}"}
 
-        beam_analysis ->
+        {:ok, beam_analysis} ->
           # Extract language-specific features
           elixir_features = extract_elixir_features(ast, code, file_path)
 
@@ -137,7 +137,7 @@ defmodule Singularity.BeamAnalysisEngine do
           # CodeEngine failed - return error instead of continuing with degraded analysis
           {:error, "BEAM analysis failed: #{reason}"}
 
-        beam_analysis ->
+        {:ok, beam_analysis} ->
           # Extract language-specific features
           erlang_features = extract_erlang_features(ast, code, file_path)
 
@@ -172,28 +172,30 @@ defmodule Singularity.BeamAnalysisEngine do
       {:ok, ast} = parse_gleam_code(code)
 
       # Perform comprehensive BEAM analysis
-      beam_analysis = analyze_gleam_beam_patterns(ast, code, file_path)
+      case analyze_gleam_beam_patterns(ast, code, file_path) do
+        {:ok, beam_analysis} ->
+          gleam_features = extract_gleam_features(ast, code, file_path)
 
-      # Extract language-specific features
-      gleam_features = extract_gleam_features(ast, code, file_path)
+          analysis_result = %{
+            language: "gleam",
+            file_path: file_path,
+            otp_patterns: beam_analysis.otp_patterns,
+            actor_analysis: beam_analysis.actor_analysis,
+            fault_tolerance: beam_analysis.fault_tolerance,
+            beam_metrics: beam_analysis.beam_metrics,
+            language_features: %{
+              elixir: nil,
+              erlang: nil,
+              gleam: gleam_features
+            },
+            analysis_timestamp: DateTime.utc_now()
+          }
 
-      # Combine results
-      analysis_result = %{
-        language: "gleam",
-        file_path: file_path,
-        otp_patterns: beam_analysis.otp_patterns,
-        actor_analysis: beam_analysis.actor_analysis,
-        fault_tolerance: beam_analysis.fault_tolerance,
-        beam_metrics: beam_analysis.beam_metrics,
-        language_features: %{
-          elixir: nil,
-          erlang: nil,
-          gleam: gleam_features
-        },
-        analysis_timestamp: DateTime.utc_now()
-      }
+          {:ok, analysis_result}
 
-      {:ok, analysis_result}
+        {:error, reason} ->
+          {:error, "BEAM analysis failed: #{reason}"}
+      end
     rescue
       error ->
         Logger.error("Failed to analyze Gleam code: #{inspect(error)}")
@@ -204,14 +206,12 @@ defmodule Singularity.BeamAnalysisEngine do
   # Elixir-specific analysis
 
   defp parse_elixir_code(code) do
-    # Use CodeEngine for tree-sitter parsing
-    case Singularity.CodeEngine.analyze_code(code, "elixir") do
-      {:ok, analysis} ->
-        # Extract AST from analysis result
-        {:ok, analysis.ast || %{}}
+    case Code.string_to_quoted(code) do
+      {:ok, ast} ->
+        {:ok, ast}
 
-      {:error, reason} ->
-        {:error, "CodeEngine failed for Elixir parsing: #{inspect(reason)}"}
+      {:error, {line, error, token}} ->
+        {:error, "Elixir parsing error on line #{line}: #{inspect(error)} #{inspect(token)}"}
     end
   end
 
@@ -219,104 +219,438 @@ defmodule Singularity.BeamAnalysisEngine do
     Logger.debug("BeamAnalysisEngine: Analyzing Elixir BEAM patterns for #{file_path}")
 
     # Use CodeEngine for comprehensive BEAM analysis
-    case CodeEngine.analyze_language("elixir", code) do
+    case CodeEngine.analyze_language(code, "elixir") do
       {:ok, analysis} ->
         # Record successful analysis
         # TODO: track timing
         CodeEngineHealthTracker.record_success("elixir", file_path, 0)
 
         # Extract OTP patterns from CodeEngine analysis
-        otp_patterns = extract_otp_patterns_from_analysis(analysis, "elixir")
-        actor_analysis = extract_actor_analysis_from_analysis(analysis, "elixir")
-        fault_tolerance = extract_fault_tolerance_from_analysis(analysis, "elixir")
-        beam_metrics = calculate_beam_metrics_from_analysis(analysis, code)
-
-        # Enhance with AST-based analysis for additional patterns
+        otp_patterns = build_elixir_otp_patterns(analysis, code)
+        actor_analysis = build_elixir_actor_analysis(analysis, code)
+        fault_tolerance = build_elixir_fault_tolerance(analysis, code)
+        beam_metrics = build_elixir_beam_metrics(analysis, code)
         ast_patterns = extract_beam_patterns_from_ast(ast)
 
-        %{
-          otp_patterns: otp_patterns,
-          actor_analysis: actor_analysis,
-          fault_tolerance: fault_tolerance,
-          beam_metrics: beam_metrics,
-          ast_patterns: ast_patterns
-        }
+        {:ok,
+         %{
+           otp_patterns: otp_patterns,
+           actor_analysis: actor_analysis,
+           fault_tolerance: fault_tolerance,
+           beam_metrics: beam_metrics,
+           ast_patterns: ast_patterns
+         }}
 
       {:error, reason} ->
         Logger.error("🚨 CodeEngine analysis FAILED for #{file_path}: #{inspect(reason)}")
-        Logger.error("💥 FALLBACK - Using AST analysis for BEAM patterns")
-        CodeEngineHealthTracker.record_fallback("elixir", file_path, reason)
-
-        # Fallback to AST-based analysis
-        ast_patterns = extract_beam_patterns_from_ast(ast)
-
-        %{
-          otp_patterns: [],
-          actor_analysis: %{},
-          fault_tolerance: %{},
-          beam_metrics: %{},
-          ast_patterns: ast_patterns
-        }
+        CodeEngineHealthTracker.record_failure("elixir", file_path, reason)
+        Logger.debug("[BeamAnalysis] SCA analysis failed - no fallback available")
+        {:error, "SCA analysis failed for Elixir: #{inspect(reason)}. Please ensure singularity-code-analysis NIF is properly configured."}
     end
   end
 
   defp extract_elixir_features(_ast, code, file_path) do
     Logger.debug("BeamAnalysisEngine: Extracting Elixir features from #{file_path}")
 
-    # Basic code analysis
-    lines_of_code = code |> String.split("\n") |> length()
-    has_use_macro = String.contains?(code, "use ")
-    has_import_macro = String.contains?(code, "import ")
-    has_alias_macro = String.contains?(code, "alias ")
+    controllers = modules_using(code, ~r/use\s+Phoenix\.Controller/)
+    views = modules_using(code, ~r/use\s+Phoenix\.View/)
+    templates = lines_to_strings(match_lines(code, ~r/render\s+\(?["']/))
+    channels = modules_using(code, ~r/use\s+Phoenix\.Channel/)
+    live_views = modules_using(code, ~r/use\s+Phoenix\.LiveView/)
 
-    Logger.debug(
-      "BeamAnalysisEngine: #{lines_of_code} lines, use: #{has_use_macro}, import: #{has_import_macro}, alias: #{has_alias_macro}"
-    )
+    ecto_schemas = modules_using(code, ~r/use\s+Ecto\.Schema/)
+    ecto_migrations = modules_using(code, ~r/use\s+Ecto\.Migration/)
+    ecto_queries = lines_to_strings(match_lines(code, ~r/\bRepo\./))
 
-    # TODO: Use CodeEngine for comprehensive feature extraction
-    # Current: Mock features with basic analysis
-    # Target: CodeEngine.extract_functions("elixir", ast) + extract_imports_exports("elixir", ast)
+    live_components = modules_using(code, ~r/use\s+Phoenix\.LiveComponent/)
+
+    nerves_target =
+      case Regex.run(~r/config\s+:nerves,\s*target:\s*:(\w+)/, code) do
+        [_, target] -> target
+        _ -> nil
+      end
+
+    nerves_systems = lines_to_strings(match_lines(code, ~r/config\s+:nerves_system/))
+
+    broadway_pipelines = modules_using(code, ~r/use\s+Broadway/)
+
+    broadway_processors =
+      lines_to_strings(match_lines(code, ~r/Broadway\.(?:Producer|Processor)/))
+
+    broadway_batchers = lines_to_strings(match_lines(code, ~r/Broadway\.Batcher/))
+
     %{
       phoenix_usage: %{
-        controllers: [],
-        views: [],
-        templates: [],
-        channels: [],
-        live_views: []
+        controllers: controllers,
+        views: views,
+        templates: templates,
+        channels: channels,
+        live_views: live_views
       },
       ecto_usage: %{
-        schemas: [],
-        migrations: [],
-        queries: []
+        schemas: ecto_schemas,
+        migrations: ecto_migrations,
+        queries: ecto_queries
       },
       liveview_usage: %{
-        live_views: [],
-        live_components: []
+        live_views: live_views,
+        live_components: live_components
       },
       nerves_usage: %{
-        target: nil,
+        target: nerves_target,
         system: nil,
-        configs: []
+        configs: nerves_systems
       },
       broadway_usage: %{
-        producers: [],
-        processors: [],
-        batchers: []
+        producers: broadway_pipelines,
+        processors: broadway_processors,
+        batchers: broadway_batchers
       }
     }
+  end
+
+  defp build_elixir_otp_patterns(analysis, code) do
+    base = extract_otp_patterns_from_analysis(analysis, "elixir")
+
+    heuristics = %{
+      genservers: detect_elixir_genservers(code),
+      supervisors: detect_elixir_supervisors(code),
+      applications: detect_elixir_applications(code),
+      genevents: detect_elixir_genevents(code),
+      genstages: detect_elixir_genstages(code),
+      dynamic_supervisors: detect_elixir_dynamic_supervisors(code)
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_elixir_actor_analysis(analysis, code) do
+    base = extract_actor_analysis_from_analysis(analysis, "elixir")
+
+    heuristics = %{
+      process_spawning: %{
+        spawn_calls: lines_to_strings(match_lines(code, ~r/\bspawn\s*\(/)),
+        spawn_link_calls: lines_to_strings(match_lines(code, ~r/\bspawn_link\s*\(/)),
+        task_async_calls:
+          lines_to_strings(match_lines(code, ~r/Task\.(async|start|start_link)\s*\(/)),
+        process_flags: lines_to_strings(match_lines(code, ~r/Process\.flag/)),
+        process_registrations:
+          lines_to_strings(match_lines(code, ~r/(Process\.register|Registry\.)/))
+      },
+      message_passing: %{
+        send_calls:
+          lines_to_strings(match_lines(code, ~r/\b(send|GenServer\.cast|GenServer\.call)\b/)),
+        receive_expressions: lines_to_strings(match_lines(code, ~r/\breceive\b/)),
+        message_patterns: lines_to_strings(match_lines(code, ~r/handle_(?:call|cast|info)/)),
+        mailbox_analysis: %{
+          estimated_queue_size: length(match_lines(code, ~r/\breceive\b/)),
+          processing_patterns: lines_to_strings(match_lines(code, ~r/handle_(?:call|cast|info)/)),
+          bottlenecks: []
+        }
+      },
+      concurrency_patterns: %{
+        agents: lines_to_strings(match_lines(code, ~r/Agent\./)),
+        ets_tables: lines_to_strings(match_lines(code, ~r/:ets\./)),
+        mnesia_usage: lines_to_strings(match_lines(code, ~r/:mnesia\./)),
+        port_usage: lines_to_strings(match_lines(code, ~r/Port\./))
+      }
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_elixir_fault_tolerance(analysis, code) do
+    base = extract_fault_tolerance_from_analysis(analysis, "elixir")
+
+    heuristics = %{
+      try_catch_expressions: lines_to_strings(match_lines(code, ~r/\btry\b/)),
+      rescue_clauses: lines_to_strings(match_lines(code, ~r/\brescue\b/)),
+      let_it_crash_patterns:
+        lines_to_strings(match_lines(code, ~r/(Supervisor\.start_link|Process\.exit)/)),
+      supervision_tree_depth: length(detect_elixir_supervisors(code)),
+      error_handling_strategies:
+        lines_to_strings(match_lines(code, ~r/Logger\.(error|warn|info|debug)/))
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_elixir_beam_metrics(analysis, code) do
+    base = calculate_beam_metrics_from_analysis(analysis, code)
+
+    line_count = line_count(code)
+    function_count = length(match_lines(code, ~r/\bdef\s/))
+    module_count = length(module_blocks(code))
+
+    average_function_length =
+      if function_count > 0 do
+        Float.round(line_count / function_count, 2)
+      else
+        0.0
+      end
+
+    heuristics = %{
+      source_line_count: line_count,
+      function_count: function_count,
+      module_count: module_count,
+      average_function_length: average_function_length
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_erlang_otp_patterns(analysis, code) do
+    base = extract_otp_patterns_from_analysis(analysis, "erlang")
+
+    behaviour_map = erlang_behaviour_map(code)
+
+    heuristics = %{
+      genservers: Map.get(behaviour_map, "gen_server", []),
+      supervisors: Map.get(behaviour_map, "supervisor", []),
+      applications: Map.get(behaviour_map, "application", []),
+      genevents: Map.get(behaviour_map, "gen_event", []),
+      genstages: Map.get(behaviour_map, "gen_stage", []),
+      dynamic_supervisors:
+        lines_to_strings(match_lines(code, ~r/dynamic_supervisor|DynamicSupervisor/))
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_erlang_actor_analysis(analysis, code) do
+    base = extract_actor_analysis_from_analysis(analysis, "erlang")
+
+    heuristics = %{
+      process_spawning: %{
+        spawn_calls: lines_to_strings(match_lines(code, ~r/\bspawn\s*\(/)),
+        spawn_link_calls: lines_to_strings(match_lines(code, ~r/\bspawn_link\s*\(/)),
+        task_async_calls: [],
+        process_flags: lines_to_strings(match_lines(code, ~r/process_flag/)),
+        process_registrations: lines_to_strings(match_lines(code, ~r/register\s*\(/))
+      },
+      message_passing: %{
+        send_calls: lines_to_strings(match_lines(code, ~r/\!\s/)),
+        receive_expressions: lines_to_strings(match_lines(code, ~r/receive/)),
+        message_patterns: lines_to_strings(match_lines(code, ~r/handle_(?:call|cast|info)/)),
+        mailbox_analysis: %{
+          estimated_queue_size: length(match_lines(code, ~r/receive/)),
+          processing_patterns: lines_to_strings(match_lines(code, ~r/handle_(?:call|cast|info)/)),
+          bottlenecks: []
+        }
+      },
+      concurrency_patterns: %{
+        agents: [],
+        ets_tables: lines_to_strings(match_lines(code, ~r/ets:/)),
+        mnesia_usage: lines_to_strings(match_lines(code, ~r/mnesia:/)),
+        port_usage: lines_to_strings(match_lines(code, ~r/open_port/))
+      }
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_erlang_fault_tolerance(analysis, code) do
+    base = extract_fault_tolerance_from_analysis(analysis, "erlang")
+
+    heuristics = %{
+      try_catch_expressions: lines_to_strings(match_lines(code, ~r/try/)),
+      rescue_clauses: lines_to_strings(match_lines(code, ~r/catch|after/)),
+      let_it_crash_patterns: lines_to_strings(match_lines(code, ~r/exit|erlang:error/)),
+      supervision_tree_depth: length(Map.get(erlang_behaviour_map(code), "supervisor", [])),
+      error_handling_strategies: lines_to_strings(match_lines(code, ~r/logger:|error_logger:/))
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_erlang_beam_metrics(analysis, code) do
+    base = calculate_beam_metrics_from_analysis(analysis, code)
+
+    function_count =
+      Regex.scan(~r/^[a-z][a-z0-9_]*\s*\(/im, code)
+      |> length()
+
+    heuristics = %{
+      source_line_count: line_count(code),
+      function_count: function_count,
+      module_count: if(Regex.match?(~r/-module\(/, code), do: 1, else: 0)
+    }
+
+    merge_nested_maps(base, heuristics)
+  end
+
+  defp build_gleam_analysis(_ast, code, analysis) do
+    otp_patterns = %{
+      genservers: detect_gleam_genservers(code),
+      supervisors: detect_gleam_supervisors(code),
+      applications: detect_gleam_applications(code),
+      genevents: [],
+      genstages: [],
+      dynamic_supervisors: detect_gleam_dynamic_supervisors(code)
+    }
+
+    actor_analysis = %{
+      process_spawning: %{
+        spawn_calls: lines_to_strings(match_lines(code, ~r/\b(actor|process)\.(spawn|start)/)),
+        spawn_link_calls: lines_to_strings(match_lines(code, ~r/gleam_erlang\.spawn_link/)),
+        task_async_calls: [],
+        process_flags: lines_to_strings(match_lines(code, ~r/gleam_erlang\.process_flag/)),
+        process_registrations: lines_to_strings(match_lines(code, ~r/gleam_erlang\.register/))
+      },
+      message_passing: %{
+        send_calls: lines_to_strings(match_lines(code, ~r/gleam_erlang\.send/)),
+        receive_expressions: lines_to_strings(match_lines(code, ~r/receive/)),
+        message_patterns: lines_to_strings(match_lines(code, ~r/handle/)),
+        mailbox_analysis: %{
+          estimated_queue_size: length(match_lines(code, ~r/receive/)),
+          processing_patterns: lines_to_strings(match_lines(code, ~r/handle/)),
+          bottlenecks: []
+        }
+      },
+      concurrency_patterns: %{
+        agents: [],
+        ets_tables: [],
+        mnesia_usage: [],
+        port_usage: lines_to_strings(match_lines(code, ~r/gleam_erlang\.open_port/))
+      }
+    }
+
+    fault_tolerance = %{
+      try_catch_expressions: lines_to_strings(match_lines(code, ~r/try/)),
+      rescue_clauses: lines_to_strings(match_lines(code, ~r/catch/)),
+      let_it_crash_patterns: lines_to_strings(match_lines(code, ~r/gleam_erlang\.exit/)),
+      supervision_tree_depth: length(detect_gleam_supervisors(code)),
+      error_handling_strategies: lines_to_strings(match_lines(code, ~r/result\.|option\./))
+    }
+
+    beam_metrics =
+      merge_nested_maps(
+        calculate_beam_metrics_from_analysis(analysis, code),
+        %{
+          source_line_count: line_count(code),
+          function_count: length(match_lines(code, ~r/\bfn\b/)),
+          module_count: length(Regex.scan(~r/\bpub\s+fn\b/, code)),
+          average_function_length:
+            if length(match_lines(code, ~r/\bfn\b/)) > 0 do
+              Float.round(line_count(code) / length(match_lines(code, ~r/\bfn\b/)), 2)
+            else
+              0.0
+            end
+        }
+      )
+
+    %{
+      otp_patterns: otp_patterns,
+      actor_analysis: actor_analysis,
+      fault_tolerance: fault_tolerance,
+      beam_metrics: beam_metrics
+    }
+  end
+
+  defp merge_nested_maps(map1, map2) when is_map(map1) and is_map(map2) do
+    Map.merge(map1, map2, fn _key, left, right ->
+      cond do
+        is_map(left) and is_map(right) -> merge_nested_maps(left, right)
+        is_list(left) and is_list(right) -> Enum.uniq(left ++ right)
+        left in [nil, %{}, [], 0, 0.0] -> right
+        right in [nil, %{}, []] -> left
+        is_number(left) and left == 0 and is_number(right) -> right
+        true -> left
+      end
+    end)
+  end
+
+  defp merge_nested_maps(map1, map2) when map1 in [nil, %{}], do: map2
+  defp merge_nested_maps(map1, _map2), do: map1
+
+  defp module_blocks(code) do
+    Regex.scan(~r/defmodule\s+([A-Za-z0-9_.]+)\s+do(.*?)end/sm, code)
+    |> Enum.map(fn [_, module, body] -> {module, body} end)
+  end
+
+  defp modules_using(code, pattern) do
+    module_blocks(code)
+    |> Enum.filter(fn {_module, body} -> Regex.match?(pattern, body) end)
+    |> Enum.map(fn {module, _} -> module end)
+    |> Enum.uniq()
+  end
+
+  defp match_lines(code, regex) do
+    code
+    |> String.split("\n")
+    |> Enum.with_index(1)
+    |> Enum.reduce([], fn {line, idx}, acc ->
+      if Regex.match?(regex, line) do
+        [%{line: idx, text: String.trim(line)} | acc]
+      else
+        acc
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  defp lines_to_strings(matches) do
+    Enum.map(matches, fn %{line: line, text: text} -> "#{line}: #{text}" end)
+  end
+
+  defp line_count(code), do: code |> String.split("\n") |> length()
+
+  defp erlang_behaviour_map(code) do
+    module_name =
+      case Regex.run(~r/-module\(([^)]+)\)\./, code) do
+        [_, name] -> name
+        _ -> "unknown"
+      end
+
+    Regex.scan(~r/-behaviour\(([^)]+)\)\./, code, capture: :all_but_first)
+    |> Enum.reduce(%{}, fn [behaviour], acc ->
+      Map.update(acc, behaviour, [module_name], fn existing ->
+        Enum.uniq([module_name | existing])
+      end)
+    end)
+  end
+
+  defp erlang_behaviours(code) do
+    erlang_behaviour_map(code)
+    |> Enum.flat_map(fn {behaviour, modules} -> Enum.map(modules, &"#{behaviour}:#{&1}") end)
+  end
+
+  defp detect_gleam_dynamic_supervisors(code) do
+    code
+    |> String.split("\n")
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {line, _} ->
+      String.contains?(line, "DynamicSupervisor") or String.contains?(line, "dynamic_supervisor")
+    end)
+    |> Enum.map(fn {line, line_num} ->
+      %{
+        name: "DynamicSupervisor_#{line_num}",
+        module: extract_module_name(line),
+        line_start: line_num,
+        line_end: line_num,
+        strategy: "dynamic"
+      }
+    end)
+  end
+
+  defp detect_elixir_dynamic_supervisors(code) do
+    lines_to_strings(match_lines(code, ~r/DynamicSupervisor|dynamic_supervisor/))
   end
 
   # Erlang-specific analysis
 
   defp parse_erlang_code(code) do
-    # Use CodeEngine for tree-sitter parsing
-    case Singularity.CodeEngine.analyze_code(code, "erlang") do
-      {:ok, analysis} ->
-        # Extract AST from analysis result
-        {:ok, analysis.ast || %{}}
+    charlist = String.to_charlist(code)
 
-      {:error, reason} ->
-        {:error, "CodeEngine failed for Erlang parsing: #{inspect(reason)}"}
+    with {:ok, tokens, _} <- :erl_scan.string(charlist),
+         {:ok, forms} <- :erl_parse.parse_form_list(tokens) do
+      {:ok, forms}
+    else
+      {:error, {line, :erl_parse, desc}} ->
+        {:error, "Erlang parsing error on line #{line}: #{:erl_parse.format_error(desc)}"}
+
+      {:error, {line, _module, desc}, _} ->
+        {:error, "Erlang scanning error on line #{line}: #{desc}"}
     end
   end
 
@@ -324,30 +658,29 @@ defmodule Singularity.BeamAnalysisEngine do
     Logger.debug("BeamAnalysisEngine: Analyzing Erlang BEAM patterns for #{file_path}")
 
     # Use CodeEngine for comprehensive BEAM analysis
-    case CodeEngine.analyze_language("erlang", code) do
+    case CodeEngine.analyze_language(code, "erlang") do
       {:ok, analysis} ->
         # Record successful analysis
         CodeEngineHealthTracker.record_success("erlang", file_path, 0)
 
         # Extract OTP patterns from CodeEngine analysis
-        otp_patterns = extract_otp_patterns_from_analysis(analysis, "erlang")
-        actor_analysis = extract_actor_analysis_from_analysis(analysis, "erlang")
-        fault_tolerance = extract_fault_tolerance_from_analysis(analysis, "erlang")
-        beam_metrics = calculate_beam_metrics_from_analysis(analysis, code)
+        otp_patterns = build_erlang_otp_patterns(analysis, code)
+        actor_analysis = build_erlang_actor_analysis(analysis, code)
+        fault_tolerance = build_erlang_fault_tolerance(analysis, code)
+        beam_metrics = build_erlang_beam_metrics(analysis, code)
 
-        %{
-          otp_patterns: otp_patterns,
-          actor_analysis: actor_analysis,
-          fault_tolerance: fault_tolerance,
-          beam_metrics: beam_metrics
-        }
+        {:ok,
+         %{
+           otp_patterns: otp_patterns,
+           actor_analysis: actor_analysis,
+           fault_tolerance: fault_tolerance,
+           beam_metrics: beam_metrics
+         }}
 
       {:error, reason} ->
         Logger.error("🚨 CodeEngine analysis FAILED for Erlang #{file_path}: #{inspect(reason)}")
-        Logger.error("💥 NO FALLBACK - CodeEngine is required for BEAM analysis")
-        CodeEngineHealthTracker.record_fallback("erlang", file_path, reason)
+        CodeEngineHealthTracker.record_failure("erlang", file_path, reason)
 
-        # Report to SASL for proper error handling
         SASL.analysis_failure(
           :code_engine_failure,
           "CodeEngine analysis failed for Erlang file",
@@ -356,35 +689,29 @@ defmodule Singularity.BeamAnalysisEngine do
           reason: reason
         )
 
-        # Return error instead of degraded fallback
-        {:error, "CodeEngine analysis failed for Erlang: #{inspect(reason)}"}
+        Logger.debug("[BeamAnalysis] SCA analysis failed - no fallback available")
+        {:error, "SCA analysis failed for Erlang: #{inspect(reason)}. Please ensure singularity-code-analysis NIF is properly configured."}
     end
   end
 
   defp extract_erlang_features(_ast, code, file_path) do
     Logger.debug("BeamAnalysisEngine: Analyzing Erlang BEAM patterns for #{file_path}")
 
-    # Basic Erlang code analysis
-    has_dash_include = String.contains?(code, "-include")
-    has_dash_define = String.contains?(code, "-define")
-    has_dash_behaviour = String.contains?(code, "-behaviour")
+    behaviours = erlang_behaviours(code)
+    common_test = lines_to_strings(match_lines(code, ~r/-include_lib\("common_test/))
+    test_cases = lines_to_strings(match_lines(code, ~r/_test\s*\(/))
+    specs = lines_to_strings(match_lines(code, ~r/^-spec/))
+    contracts = lines_to_strings(match_lines(code, ~r/^-spec|^-callback/))
 
-    Logger.debug(
-      "BeamAnalysisEngine: Erlang file analysis - include: #{has_dash_include}, define: #{has_dash_define}, behaviour: #{has_dash_behaviour}"
-    )
-
-    # TODO: Use CodeEngine for comprehensive feature extraction
-    # Current: Mock features with basic analysis
-    # Target: CodeEngine.extract_functions("erlang", ast) + extract_imports_exports("erlang", ast)
     %{
-      otp_behaviors: [],
+      otp_behaviors: behaviours,
       common_test_usage: %{
-        test_suites: [],
-        test_cases: []
+        test_suites: common_test,
+        test_cases: test_cases
       },
       dialyzer_usage: %{
-        type_specs: [],
-        contracts: []
+        type_specs: specs,
+        contracts: contracts
       }
     }
   end
@@ -392,119 +719,65 @@ defmodule Singularity.BeamAnalysisEngine do
   # Gleam-specific analysis
 
   defp parse_gleam_code(code) do
-    # Use CodeEngine for tree-sitter parsing
-    case Singularity.CodeEngine.analyze_code(code, "gleam") do
-      {:ok, analysis} ->
-        # Extract AST from analysis result
-        {:ok, analysis.ast || %{}}
-
-      {:error, reason} ->
-        {:error, "CodeEngine failed for Gleam parsing: #{inspect(reason)}"}
-    end
+    {:ok, %{source: code}}
   end
 
   defp analyze_gleam_beam_patterns(ast, code, file_path) do
     Logger.debug("BeamAnalysisEngine: Analyzing Gleam BEAM patterns for #{file_path}")
 
-    # Basic AST size analysis
-    ast_size = if is_map(ast), do: map_size(ast), else: 0
-    code_length = String.length(code)
+    case CodeEngine.analyze_language(code, "gleam") do
+      {:ok, analysis} ->
+        CodeEngineHealthTracker.record_success("gleam", file_path, 0)
+        gleam_analysis = build_gleam_analysis(ast, code, analysis)
+        {:ok, gleam_analysis}
 
-    Logger.debug("BeamAnalysisEngine: AST size: #{ast_size}, code length: #{code_length}")
-
-    # TODO: Use CodeEngine for comprehensive BEAM analysis
-    # Current: Regex-based pattern detection with mock metrics
-    # Target: CodeEngine.analyze_language("gleam", code) + AST-based OTP pattern detection
-    %{
-      otp_patterns: %{
-        genservers: detect_gleam_genservers(code),
-        supervisors: detect_gleam_supervisors(code),
-        applications: detect_gleam_applications(code),
-        genevents: [],
-        genstages: [],
-        dynamic_supervisors: []
-      },
-      actor_analysis: %{
-        process_spawning: %{
-          spawn_calls: [],
-          spawn_link_calls: [],
-          task_async_calls: [],
-          process_flags: [],
-          process_registrations: []
-        },
-        message_passing: %{
-          send_calls: [],
-          receive_expressions: [],
-          message_patterns: [],
-          mailbox_analysis: %{
-            estimated_queue_size: 0,
-            processing_patterns: [],
-            bottlenecks: []
-          }
-        },
-        concurrency_patterns: %{
-          agents: [],
-          ets_tables: [],
-          mnesia_usage: [],
-          port_usage: []
-        }
-      },
-      fault_tolerance: %{
-        try_catch_expressions: [],
-        rescue_clauses: [],
-        let_it_crash_patterns: [],
-        supervision_tree_depth: 0,
-        error_handling_strategies: []
-      },
-      beam_metrics: %{
-        estimated_process_count: 0,
-        estimated_message_queue_size: 0,
-        estimated_memory_usage: 0,
-        gc_pressure: 0.0,
-        supervision_complexity: 0.0,
-        actor_complexity: 0.0,
-        fault_tolerance_score: 0.0
-      }
-    }
+      {:error, reason} ->
+        Logger.error("🚨 CodeEngine analysis FAILED for Gleam #{file_path}: #{inspect(reason)}")
+        CodeEngineHealthTracker.record_failure("gleam", file_path, reason)
+        {:error, "CodeEngine analysis failed for Gleam: #{inspect(reason)}"}
+    end
   end
 
   defp extract_gleam_features(_ast, code, file_path) do
     Logger.debug("BeamAnalysisEngine: Extracting Gleam features from #{file_path}")
 
-    # Basic Gleam code analysis
-    lines_of_code = code |> String.split("\n") |> length()
-    has_import = String.contains?(code, "import ")
-    has_pub = String.contains?(code, "pub ")
-    has_type = String.contains?(code, "type ")
+    custom_types =
+      Regex.scan(~r/\bpub\s+type\s+(\w+)/, code, capture: :all_but_first)
+      |> List.flatten()
 
-    Logger.debug(
-      "BeamAnalysisEngine: #{lines_of_code} lines, imports: #{has_import}, pub: #{has_pub}, types: #{has_type}"
-    )
+    type_aliases =
+      Regex.scan(~r/\btype\s+(\w+)\s*=/, code, capture: :all_but_first)
+      |> List.flatten()
 
-    # TODO: Use CodeEngine for comprehensive feature extraction
-    # Current: Mock features with basic analysis
-    # Target: CodeEngine.extract_functions("gleam", ast) + extract_imports_exports("gleam", ast)
+    functional_features = lines_to_strings(match_lines(code, ~r/\bcase\b|\bfn\b/))
+
+    otp_usage = lines_to_strings(match_lines(code, ~r/\bprocess\.(spawn|send)\b/))
+    interop_patterns = lines_to_strings(match_lines(code, ~r/\bgleam_erlang\b/))
+
     %{
       type_analysis: %{
-        custom_types: [],
-        type_aliases: [],
-        type_features: %{}
+        custom_types: custom_types,
+        type_aliases: type_aliases,
+        type_features: %{
+          record_types: lines_to_strings(match_lines(code, ~r/{\s*[^}]*\s*}/))
+        }
       },
       functional_analysis: %{
         immutability_score: 100.0,
-        pattern_match_complexity: 0.0,
-        functional_features: %{}
+        pattern_match_complexity: length(functional_features),
+        functional_features: functional_features
       },
       beam_integration: %{
-        interop_patterns: [],
-        otp_usage: []
+        interop_patterns: interop_patterns,
+        otp_usage: otp_usage
       },
       modern_features: %{
-        language_features: %{}
+        pipelines: lines_to_strings(match_lines(code, ~r/\|\>/)),
+        option_usage: lines_to_strings(match_lines(code, ~r/\bResult\b|\bOption\b/))
       },
       web_patterns: %{
-        http_patterns: [],
-        web_safety_features: []
+        http_patterns: lines_to_strings(match_lines(code, ~r/\bgleam_http\b/)),
+        web_safety_features: lines_to_strings(match_lines(code, ~r/\bgleam_crypto\b/))
       }
     }
   end
@@ -725,39 +998,7 @@ defmodule Singularity.BeamAnalysisEngine do
     |> Enum.reverse()
   end
 
-  # Fallback analysis for when CodeEngine fails
-  defp fallback_elixir_analysis(code) do
-    %{
-      otp_patterns: %{
-        genservers: detect_elixir_genservers(code),
-        supervisors: detect_elixir_supervisors(code),
-        applications: detect_elixir_applications(code),
-        genevents: [],
-        genstages: [],
-        dynamic_supervisors: []
-      },
-      actor_analysis: basic_actor_analysis_from_code(code),
-      fault_tolerance: basic_fault_tolerance_from_code(code),
-      beam_metrics: basic_beam_metrics_from_code(code)
-    }
-  end
-
-  # Fallback analysis for when CodeEngine fails for Erlang
-  defp fallback_erlang_analysis(code) do
-    %{
-      otp_patterns: %{
-        genservers: detect_erlang_gen_servers(code),
-        supervisors: detect_erlang_supervisors(code),
-        applications: detect_erlang_applications(code),
-        genevents: [],
-        genstages: [],
-        dynamic_supervisors: []
-      },
-      actor_analysis: basic_actor_analysis_from_code(code),
-      fault_tolerance: basic_fault_tolerance_from_code(code),
-      beam_metrics: basic_beam_metrics_from_code(code)
-    }
-  end
+  # Fallback functions removed - use SCA instead
 
   defp detect_elixir_genservers(code) do
     # Detect "use GenServer" patterns
@@ -818,6 +1059,38 @@ defmodule Singularity.BeamAnalysisEngine do
         mod: nil,
         start_phases: [],
         applications: []
+      }
+    end)
+  end
+
+  defp detect_elixir_genevents(code) do
+    code
+    |> String.split("\n")
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {line, _} -> String.contains?(line, "use GenEvent") end)
+    |> Enum.map(fn {line, line_num} ->
+      %{
+        name: "GenEvent_#{line_num}",
+        module: extract_module_name(line),
+        line_start: line_num,
+        line_end: line_num,
+        handlers: []
+      }
+    end)
+  end
+
+  defp detect_elixir_genstages(code) do
+    code
+    |> String.split("\n")
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {line, _} -> String.contains?(line, "use GenStage") end)
+    |> Enum.map(fn {line, line_num} ->
+      %{
+        name: "GenStage_#{line_num}",
+        module: extract_module_name(line),
+        line_start: line_num,
+        line_end: line_num,
+        stages: []
       }
     end)
   end
@@ -1068,7 +1341,8 @@ defmodule Singularity.BeamAnalysisEngine do
   defp find_supervisors_in_ast(
          {{:., _, [{:__aliases__, _, [:Supervisor]}, :start_link]}, _, _} = node,
          acc
-       ), do: [node | acc]
+       ),
+       do: [node | acc]
 
   defp find_supervisors_in_ast(ast, acc) when is_list(ast) do
     Enum.flat_map(ast, &find_supervisors_in_ast(&1, [])) ++ acc
