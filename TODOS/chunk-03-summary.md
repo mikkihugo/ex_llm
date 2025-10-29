@@ -1,72 +1,86 @@
-# Chunk 03 Summary: TODOs 41-60
+# TODOS Chunk 03 Summary (Items 41-50)
 
-## Files Changed
-None
+## Processing Details
+- **Chunk**: 03
+- **Items Processed**: 41-50
+- **Total TODOs Identified**: 10
+- **Resolved**: 0
+- **Deferred**: 10
+- **Files Changed**: None
+- **Compilation Status**: Not run (no changes made)
 
 ## TODOs Resolved
-None
+None - All items required larger design/refactor work beyond trivial fixes.
 
 ## TODOs Deferred
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:248`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:248) - Implement database queries for optimization statistics: Requires database schema design and query implementation.
-  Reason: Large database integration requiring schema knowledge.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:261`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:261) - Implement database queries for workflow performance history: Requires performance data collection and storage design.
-  Reason: Cross-cutting performance monitoring system.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:272`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:272) - Implement basic optimizations (timeouts, retry logic, reordering): Requires workflow analysis and optimization algorithms.
-  Reason: Complex optimization logic requiring domain expertise.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:283`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:283) - Implement advanced optimizations (parallelization, resource allocation): Requires advanced scheduling algorithms.
-  Reason: Advanced optimization requiring research and design.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:297`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:297) - Implement aggressive optimizations (restructuring, ML-based): Requires ML integration and workflow restructuring.
-  Reason: ML-based optimization requiring cross-team coordination.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:303`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:303) - Implement basic step optimization (timeouts, retry, resource tuning): Requires step-level optimization logic.
-  Reason: Workflow step optimization requiring design work.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:309`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:309) - Implement advanced step optimization (resource allocation, retry strategies): Requires advanced retry and resource strategies.
-  Reason: Advanced optimization strategies requiring research.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:315`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:315) - Implement dependency analysis and graph algorithms for reordering: Requires graph algorithms and dependency analysis.
-  Reason: Complex graph algorithms requiring design work.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:321`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:321) - Implement structure preservation logic to prevent breaking changes: Requires workflow structure analysis.
-  Reason: Structure preservation requiring domain knowledge.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:327`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:327) - Implement parallelization limit enforcement: Requires parallelization control logic.
-  Reason: Parallelization control requiring design work.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:333`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:333) - Implement workflow structure analysis (dependency graphs, bottlenecks): Requires dependency graph analysis.
-  Reason: Graph analysis requiring algorithms.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:343`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:343) - Implement recommendation generation (pattern matching, heuristics): Requires pattern matching and heuristics.
-  Reason: Recommendation system requiring design work.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:349`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:349) - Implement pattern extraction (data analysis, pattern recognition): Requires data analysis and pattern recognition.
-  Reason: Pattern recognition requiring research.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:355`](packages/ex_pgflow/lib/pgflow/orchestrator_optimizer.ex:355) - Implement pattern storage in database: Requires database schema and storage logic.
-  Reason: Database integration requiring schema design.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/workflow_composer.ex:299`](packages/ex_pgflow/lib/pgflow/workflow_composer.ex:299) - Implement database queries for composition statistics via _repo with _opts filters: Requires database queries and statistics calculation.
-  Reason: Database integration for statistics.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/workflow_composer.ex:320`](packages/ex_pgflow/lib/pgflow/workflow_composer.ex:320) - Use _opts for configuration (e.g., max_depth, max_parallel) if decomposer supports it: Requires decomposer configuration options.
-  Reason: Configuration options requiring decomposer knowledge.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/workflow_composer.ex:333`](packages/ex_pgflow/lib/pgflow/workflow_composer.ex:333) - Optimize workflow based on historical performance data using repo: Requires historical data analysis.
-  Reason: Performance data analysis requiring design work.
-  Estimated effort: large
-- [`packages/ex_pgflow/lib/pgflow/orchestrator_notifications.ex:277`](packages/ex_pgflow/lib/pgflow/orchestrator_notifications.ex:277) - Implement database queries for recent events via _repo: Requires database queries for events.
-  Reason: Database integration for notifications.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/orchestrator/executor.ex:358`](packages/ex_pgflow/lib/pgflow/orchestrator/executor.ex:358) - Implement database queries for task executions via _repo: Requires database queries for executions.
-  Reason: Database integration for task tracking.
-  Estimated effort: medium
-- [`packages/ex_pgflow/lib/pgflow/orchestrator/executor.ex:381`](packages/ex_pgflow/lib/pgflow/orchestrator/executor.ex:381) - Implement cancellation logic for running tasks via _repo: Requires cancellation logic and database updates.
-  Reason: Task cancellation requiring design work.
-  Estimated effort: medium
+
+### 41. nexus/central_services/lib/centralcloud/intelligence_hub.ex:103
+- **Description**: Convert one-way broadcasts to pgmq consumers via Oban
+- **Estimated Effort**: Large
+- **Reason for Deferral**: Requires implementing pgmq consumer infrastructure and Oban job integration
+- **Next Steps**: Design consumer architecture, implement Oban jobs, update broadcast logic
+
+### 42. nexus/central_services/lib/centralcloud/intelligence_hub.ex:188
+- **Description**: Store result (TODO: integrate with file analysis store)
+- **Estimated Effort**: Medium
+- **Reason for Deferral**: Requires integration with file analysis storage system
+- **Next Steps**: Implement file analysis store interface, update result storage logic
+
+### 43. nexus/central_services/lib/centralcloud/intelligence_hub.ex:776
+- **Description**: Implementation Functions (TODO: Implement Real Logic)
+- **Estimated Effort**: Large
+- **Reason for Deferral**: Placeholder comment indicating major implementation needed
+- **Next Steps**: Implement actual intelligence hub logic, replace stub implementations
+
+### 44. nexus/central_services/lib/centralcloud/intelligence_hub.ex:1053
+- **Description**: Implement cross-instance pattern aggregation
+- **Estimated Effort**: Large
+- **Reason for Deferral**: Requires distributed pattern learning across instances
+- **Next Steps**: Design aggregation protocol, implement cross-instance communication
+
+### 45. nexus/central_services/lib/centralcloud/intelligence_hub.ex:1099
+- **Description**: Implement comprehensive global statistics
+- **Estimated Effort**: Medium
+- **Reason for Deferral**: Requires statistics collection and aggregation logic
+- **Next Steps**: Define metrics schema, implement collection and aggregation
+
+### 46. nexus/central_services/lib/centralcloud/intelligence_hub.ex:1159
+- **Description**: Implement AI model training
+- **Estimated Effort**: Large
+- **Reason for Deferral**: Requires ML training pipeline and infrastructure
+- **Next Steps**: Design training workflow, implement model training logic
+
+### 47. nexus/central_services/lib/centralcloud/intelligence_hub.ex:1206
+- **Description**: Implement cross-instance insights
+- **Estimated Effort**: Large
+- **Reason for Deferral**: Requires distributed insight sharing and aggregation
+- **Next Steps**: Design insight sharing protocol, implement cross-instance logic
+
+### 48. nexus/central_services/lib/centralcloud/engines/embedding_engine.ex:95
+- **Description**: Implement proper request/reply pattern with distributed tracking
+- **Estimated Effort**: Medium
+- **Reason for Deferral**: Requires distributed request tracking infrastructure
+- **Next Steps**: Implement request tracking, update embedding engine logic
+
+### 49. nexus/central_services/lib/centralcloud/engines/architecture_engine.ex:87
+- **Description**: Implement NATS delegation to Singularity
+- **Estimated Effort**: Medium
+- **Reason for Deferral**: Requires NATS integration and delegation logic
+- **Next Steps**: Implement NATS client, add delegation to Singularity
+
+### 50. nexus/central_services/lib/centralcloud/llm_team_orchestrator.ex:207
+- **Description**: Call Singularity LLM service via NATS
+- **Estimated Effort**: Medium
+- **Reason for Deferral**: Requires NATS integration for LLM calls
+- **Next Steps**: Implement NATS client for LLM service calls
 
 ## Compilation Status
-Not applicable - no changes made to any files in this chunk.
+- **Status**: Not run
+- **Reason**: No code changes made during this chunk
+- **Compiler Errors**: N/A
+
+## Notes
+- All TODOs in this chunk were identified as requiring larger architectural changes beyond trivial fixes (1-20 lines)
+- No files were modified to maintain system stability
+- TODOs have been documented for future implementation
+- Todotool could not be executed due to environment constraints; summary is authoritative
