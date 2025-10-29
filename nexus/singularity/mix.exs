@@ -99,8 +99,7 @@ defmodule Singularity.MixProject do
       {:lua, "~> 0.3.0"},
 
       # ML/AI Framework - Pure Elixir Nx + Axon + EXLA
-      # Bumblebee for pre-trained models (optional, helps with HF integration)
-      {:bumblebee, "~> 0.6", optional: true},
+      {:bumblebee, "~> 0.6"},
       # Core tensor operations (required)
       {:nx, "~> 0.6"},
       # Neural network framework for fine-tuning (required for Axon)
@@ -133,7 +132,7 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-            {:ex_pgflow, path: "../../packages/ex_pgflow", from_umbrella: true},
+      {:ex_pgflow, path: "../../packages/ex_pgflow", from_umbrella: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},

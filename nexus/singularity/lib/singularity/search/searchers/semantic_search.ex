@@ -8,7 +8,7 @@ defmodule Singularity.Search.Searchers.SemanticSearch do
 
   @behaviour Singularity.Search.SearchType
   require Logger
-  alias Singularity.CodeSearch
+  alias Singularity.Search.CodeSearchStack
 
   @impl true
   def search_type, do: :semantic
@@ -25,7 +25,9 @@ defmodule Singularity.Search.Searchers.SemanticSearch do
   def search(query, opts \\ []) when is_binary(query) do
     try do
       # Call existing CodeSearch implementation
-      case CodeSearch.search(query, opts) do
+      opts = Keyword.put(opts, :strategy, :semantic)
+
+      case CodeSearchStack.search(query, opts) do
         {:ok, results} -> {:ok, results}
         {:error, reason} -> {:error, reason}
         results when is_list(results) -> {:ok, results}

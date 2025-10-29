@@ -9,13 +9,13 @@ project:
 
 tasks:
   deps:
-    command: 'mix deps.get'
+    command: 'nix develop ..#dev --command mix deps.get'
     inputs:
       - 'mix.exs'
       - 'mix.lock'
 
   compile:
-    command: 'mix compile'
+    command: 'nix develop ..#dev --command mix compile'
     inputs:
       - 'lib/**/*.ex'
       - 'mix.exs'
@@ -23,7 +23,7 @@ tasks:
       - '~:deps'
 
   test:
-    command: 'mix test'
+    command: 'nix develop ..#dev --command mix test'
     inputs:
       - 'lib/**/*.ex'
       - 'test/**/*.exs'
@@ -31,21 +31,21 @@ tasks:
       - '~:compile'
 
   format:
-    command: 'mix format'
+    command: 'nix develop ..#dev --command mix format'
     inputs:
       - 'lib/**/*.ex'
       - 'test/**/*.exs'
       - '.formatter.exs'
 
   format-check:
-    command: 'mix format --check-formatted'
+    command: 'nix develop ..#dev --command mix format --check-formatted'
     inputs:
       - 'lib/**/*.ex'
       - 'test/**/*.exs'
       - '.formatter.exs'
 
   run:
-    command: 'iex -S mix'
+    command: 'nix develop ..#dev --command iex -S mix'
     local: true
     deps:
       - '~:compile'

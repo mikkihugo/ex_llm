@@ -77,16 +77,7 @@ seahash = "4.1"
 # NIF support (optional - only when used from Elixir)
 rustler = { workspace = true, optional = true }
 
-# ML & Embeddings (optional)
-candle-core = { version = "0.9.1", optional = true }
-candle-nn = { version = "0.9.1", optional = true }
-candle-transformers = { version = "0.9.1", optional = true }
-tokenizers = { version = "0.22.1", optional = true, default-features = false, features = ["onig"] }
-hf-hub = { version = "0.4.3", optional = true, features = ["tokio"] }
 thiserror = { workspace = true }
-
-# Full-text search
-tantivy = { version = "0.25.0", optional = true }
 
 # Internal SPARC crates
 quality = { path = "../linting_engine", package = "linting_engine" }
@@ -121,6 +112,3 @@ tokio-test = { workspace = true }
 [features]
 default = ["nif"]
 nif = ["rustler"]  # Enable NIF support for Elixir integration
-# Semantic embeddings with Candle transformers
-semantic = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]
-advanced-search = ["tantivy"]

@@ -2,20 +2,36 @@ defmodule Singularity.CodeAnalyzerTest do
   use Singularity.DataCase
   alias Singularity.CodeAnalyzer
 
+  @expected_languages ~w(
+    bash
+    c
+    cpp
+    csharp
+    dockerfile
+    elixir
+    erlang
+    gleam
+    go
+    java
+    javascript
+    json
+    lua
+    markdown
+    python
+    rust
+    sql
+    toml
+    typescript
+    yaml
+  )
+
   describe "supported_languages/0" do
-    test "returns all 20 supported languages" do
-      languages = CodeAnalyzer.supported_languages()
+    test "returns the full supported language list" do
+      languages =
+        CodeAnalyzer.supported_languages()
+        |> Enum.sort()
 
-      assert is_list(languages)
-      assert length(languages) == 20
-
-      # Check key languages are present
-      assert "elixir" in languages
-      assert "rust" in languages
-      assert "python" in languages
-      assert "javascript" in languages
-      assert "typescript" in languages
-      assert "csharp" in languages
+      assert Enum.sort(@expected_languages) == languages
     end
   end
 

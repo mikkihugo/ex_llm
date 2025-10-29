@@ -2,27 +2,34 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
   @moduledoc """
   Embedding Generator - Local ONNX embeddings with multi-vector concatenation.
 
-  Always generates 2560-dimensional concatenated embeddings:
-  - **Qodo-Embed-1** (1536-dim): Code semantics, specialized for source code
-  - **Jina v3** (1024-dim): General text understanding
-  - **Concatenated**: 2560-dim combining both models for maximum quality
+  Supports multiple embedding strategies:
+  - **:combined** (default): Concatenates Qodo-Embed-1 (1536-dim) + Jina v3 (1024-dim) = 2560-dim
+  - **:qodo**: Code-specialised 1536-dim embeddings
+  - **:jina_v3**: General text/document 1024-dim embeddings
+  - **:minilm**: Lightweight 384-dim fallback for constrained environments
 
   ## Key Benefits
   - ✅ Local inference (no API calls, works offline)
-  - ✅ Dual-model strength (code + text understanding)
+  - ✅ Adaptive model selection (code vs. natural language)
   - ✅ No API keys needed
   - ✅ No quota limits
-  - ✅ Deterministic (same input = same embedding every time)
-  - ✅ Consistent 2560-dim output (no dimension variance)
+  - ✅ Deterministic (same input + model = same embedding every time)
+  - ✅ Consistent output dimensions per selected model
 
   ## Usage
 
       # Generate embedding - always 2560-dim
       {:ok, embedding} = EmbeddingGenerator.embed("def hello do :ok end")
-      # => %Pgvector{} with 2560 dimensions
+      # => %Pgvector{} with 2560 dimensions (combined strategy)
 
-      # The :model option is ignored; both models always used for quality
-      {:ok, embedding} = EmbeddingGenerator.embed("some text", model: :ignored)
+      # Use model: :qodo for code-only embeddings
+      {:ok, embedding} = EmbeddingGenerator.embed("defmodule Demo do", model: :qodo)
+
+      # Force natural-language embedding with Jina v3
+      {:ok, embedding} = EmbeddingGenerator.embed("How do I deploy on Fly.io?", model: :jina_v3)
+
+      # Lightweight fallback (MiniLM 384-dim)
+      {:ok, embedding} = EmbeddingGenerator.embed("short blurb", model: :minilm)
 
   ## AI Navigation Metadata
 
@@ -238,11 +245,14 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
       # Force Qodo-Embed for code
       {:ok, embedding} = EmbeddingGenerator.embed("fn main() {}", model: :qodo_embed)
   """
+  @type model_option :: :combined | :qodo | :jina_v3 | :minilm | :auto | nil
+
   @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
   def embed(text, opts \\ []) do
-    model = opts[:model] || select_best_model()
+    model = normalize_model_option(Keyword.get(opts, :model, :auto), text)
+    engine_opts = Keyword.put(opts, :model, model)
 
-    case EmbeddingEngine.embed(text, model: model) do
+    case EmbeddingEngine.embed(text, engine_opts) do
       {:ok, embedding} ->
         Logger.debug("Generated embedding via #{model}", dimension: byte_size(inspect(embedding)))
         {:ok, Pgvector.new(embedding)}
@@ -258,23 +268,52 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
   """
   @spec dimension(atom()) :: pos_integer()
   def dimension(:qodo_embed), do: 1536
+  def dimension(:qodo), do: 1536
   def dimension(:minilm), do: 384
   def dimension(:jina_v3), do: 1024
+  def dimension(:combined), do: 2560
 
   # Private: Auto-select best available model
-  defp select_best_model do
-    # Prefer Qodo-Embed if available (GPU with code specialization)
-    # Fall back to MiniLM for CPU-only environments
-    case System.get_env("CUDA_VISIBLE_DEVICES") || System.get_env("HIP_VISIBLE_DEVICES") do
-      nil ->
-        # No GPU found
-        Logger.debug("No GPU detected, using MiniLM-L6-v2 for embeddings")
-        :minilm
-
-      _gpu ->
-        # GPU available
-        Logger.debug("GPU detected, using Qodo-Embed-1 for embeddings")
-        :qodo_embed
+  defp select_best_model(text) do
+    cond do
+      code_like?(text) -> :combined
+      String.length(text) > 220 -> :combined
+      true -> :jina_v3
     end
+  end
+
+  defp normalize_model_option(:auto, text), do: choose_with_hardware(select_best_model(text))
+  defp normalize_model_option(nil, text), do: choose_with_hardware(select_best_model(text))
+  defp normalize_model_option(model, _text), do: model
+
+  defp choose_with_hardware(:combined) do
+    case gpu_available?() do
+      true -> :combined
+      false -> :jina_v3
+    end
+  end
+
+  defp choose_with_hardware(model), do: model
+
+  defp gpu_available? do
+    EmbeddingEngine.gpu_available?()
+  rescue
+    _ -> false
+  end
+
+  defp code_like?(text) do
+    patterns = [
+      "defmodule ",
+      "def ",
+      "fn ",
+      "class ",
+      "::",
+      "->",
+      "function ",
+      "{",
+      ";"
+    ]
+
+    Enum.any?(patterns, &String.contains?(text, &1))
   end
 end

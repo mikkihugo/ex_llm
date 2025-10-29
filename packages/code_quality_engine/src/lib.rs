@@ -27,7 +27,6 @@ pub mod nif;
 pub mod nif_bindings;
 pub mod parsing;
 pub mod repository;
-pub mod search;
 pub mod technology_detection;
 pub mod testing;
 pub mod types;

@@ -2,6 +2,7 @@
 //!
 //! PSEUDO CODE: Visual representation of test coverage data.
 
+use super::coverage::CoverageAnalysis;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 

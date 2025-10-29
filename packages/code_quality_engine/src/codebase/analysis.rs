@@ -1,19 +1,14 @@
 //! Analysis engine for codebase
 
-use crate::codebase::metadata::{CodebaseMetadata, FileAnalysis};
+use crate::codebase::metadata::CodebaseMetadata;
 // CodebaseDatabase removed - NIF doesn't need storage
 use crate::codebase::config::CodebaseConfig;
 use crate::codebase::parser_registry::{ParserRegistry, ExpectedAnalysisFields, ParserRegistryEntry, ParserSpecificConfig};
 use anyhow::Result;
-use sha2::{Sha256, Digest};
 
 // Universal parser and individual parser imports
-use rust_parser::RustParser;
-use python_parser::PythonParser;
-use javascript_parser::JavascriptParser;
-use typescript_parser::TypescriptParser;
-use elixir_parser::ElixirParser;
-use gleam_parser::GleamParser;
+use parser_core::{AnalysisResult as PolyglotAnalysisResult, PolyglotCodeParser};
+use tempfile::Builder;
 
 /// Core analysis engine (pure computation, no storage)
 pub struct AnalysisEngine {
@@ -55,130 +50,34 @@ impl AnalysisEngine {
 
   /// Analyze file content with parser-aware expectations
   pub async fn analyze_file_with_parser(&self, path: &str, content: &str, parser_id: &str) -> Result<CodebaseMetadata> {
-    // Get expected fields for this parser
-    let expected_fields = self.parser_registry.get_expected_fields(parser_id)
+    let _ = self
+      .parser_registry
+      .get_expected_fields(parser_id)
       .ok_or_else(|| anyhow::anyhow!("Parser '{}' not registered", parser_id))?;
 
-    // Perform analysis based on parser capabilities
-    self.analyze_file_with_expectations(path, content, expected_fields).await
+    self.analyze_file(path, content).await
   }
 
   /// Analyze file content using universal parser and return CodebaseMetadata
   pub async fn analyze_file(&self, path: &str, content: &str) -> Result<CodebaseMetadata> {
-    // Check if already cached
-    let content_hash = self.calculate_hash(content);
-    if self.database.is_cached(path, &content_hash).await {
-      if let Some(metadata) = self.database.get_metadata(path).await {
-        return Ok(metadata);
-      }
-    }
+    let universal_result =
+      self
+        .analyze_with_polyglot(path, content)
+        .map_err(|err| anyhow::anyhow!(err))?;
 
-    // Use universal parser for comprehensive analysis
-    let language = self.detect_language_from_path(path);
-    let universal_result = self.analyze_with_universal_parser(content, language, path).await?;
-    
-    // Convert universal parser result to CodebaseMetadata
-    let metadata = self.convert_universal_to_metadata(&universal_result, path, content)?;
-    
-    // Store in database
-    self.database.store_metadata(path.to_string(), metadata.clone()).await?;
-    
-    // Create file analysis
-    let file_analysis = FileAnalysis {
-      path: path.to_string(),
-      metadata: metadata.clone(),
-      analyzed_at: chrono::Utc::now().timestamp() as u64,
-      content_hash,
-    };
-    
-    self.database.store_file_analysis(file_analysis).await?;
-    
-    Ok(metadata)
+    self
+      .convert_polyglot_to_metadata(&universal_result, path, content)
+      .map_err(|err| anyhow::anyhow!(err))
   }
 
   /// Analyze file content with specific field expectations
-  async fn analyze_file_with_expectations(&self, path: &str, content: &str, expected_fields: &ExpectedAnalysisFields) -> Result<CodebaseMetadata> {
-    // Check if already cached
-    let content_hash = self.calculate_hash(content);
-    if self.database.is_cached(path, &content_hash).await {
-      if let Some(metadata) = self.database.get_metadata(path).await {
-        return Ok(metadata);
-      }
-    }
-
-    // Perform analysis based on expected fields
-    let mut metadata = CodebaseMetadata::default();
-    
-    // Basic analysis (always available)
-    metadata.path = path.to_string();
-    metadata.size = content.len() as u64;
-    metadata.lines = content.lines().count();
-    metadata.total_lines = content.lines().count() as u64;
-    metadata.language = self.detect_language(path);
-    
-    // Symbol extraction (if expected)
-    if expected_fields.symbols.functions {
-      metadata.function_count = self.count_functions(content);
-      metadata.functions = self.extract_functions(content);
-    }
-    if expected_fields.symbols.classes {
-      metadata.class_count = self.count_classes(content);
-      metadata.classes = self.extract_classes(content);
-    }
-    if expected_fields.symbols.structs {
-      metadata.struct_count = self.count_structs(content);
-      metadata.structs = self.extract_structs(content);
-    }
-    if expected_fields.symbols.enums {
-      metadata.enum_count = self.count_enums(content);
-      metadata.enums = self.extract_enums(content);
-    }
-    if expected_fields.symbols.traits {
-      metadata.trait_count = self.count_traits(content);
-      metadata.traits = self.extract_traits(content);
-    }
-    
-    // Complexity analysis (if expected)
-    if expected_fields.complexity.cyclomatic_complexity {
-      metadata.cyclomatic_complexity = self.calculate_complexity(content);
-    }
-    if expected_fields.complexity.cognitive_complexity {
-      metadata.cognitive_complexity = self.calculate_cognitive_complexity(content);
-    }
-    
-    // Line analysis (if expected)
-    if expected_fields.basic_info {
-      metadata.code_lines = self.count_code_lines(content);
-      metadata.comment_lines = self.count_comment_lines(content);
-      metadata.blank_lines = self.count_blank_lines(content);
-    }
-    
-    // Store in database
-    self.database.store_metadata(path.to_string(), metadata.clone()).await?;
-    
-    // Create file analysis
-    let file_analysis = FileAnalysis {
-      path: path.to_string(),
-      metadata: metadata.clone(),
-      analyzed_at: chrono::Utc::now().timestamp() as u64,
-      content_hash,
-    };
-    
-    self.database.store_file_analysis(file_analysis).await?;
-    
-    Ok(metadata)
-  }
-
-  /// Get the database reference
-  pub fn database(&self) -> &CodebaseDatabase {
-    &self.database
-  }
-
-  /// Calculate content hash
-  fn calculate_hash(&self, content: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(content.as_bytes());
-    format!("{:x}", hasher.finalize())
+  async fn analyze_file_with_expectations(
+    &self,
+    path: &str,
+    content: &str,
+    _expected_fields: &ExpectedAnalysisFields,
+  ) -> Result<CodebaseMetadata> {
+    self.analyze_file(path, content).await
   }
 
   /// Detect language from file path
@@ -193,165 +92,41 @@ impl AnalysisEngine {
     else { "unknown".to_string() }
   }
 
-  /// Count functions in content
-  fn count_functions(&self, content: &str) -> u64 {
-    content.matches("fn ").count() as u64 +
-    content.matches("function ").count() as u64 +
-    content.matches("def ").count() as u64 +
-    content.matches("func ").count() as u64
-  }
-
-  /// Count classes in content
-  fn count_classes(&self, content: &str) -> u64 {
-    content.matches("class ").count() as u64
-  }
-
-  /// Count structs in content
-  fn count_structs(&self, content: &str) -> u64 {
-    content.matches("struct ").count() as u64
-  }
-
-  /// Count enums in content
-  fn count_enums(&self, content: &str) -> u64 {
-    content.matches("enum ").count() as u64
-  }
-
-  /// Count traits in content
-  fn count_traits(&self, content: &str) -> u64 {
-    content.matches("trait ").count() as u64 +
-    content.matches("interface ").count() as u64
-  }
-
-  /// Count code lines (non-empty, non-comment)
-  fn count_code_lines(&self, content: &str) -> u64 {
-    content.lines()
-      .filter(|line| {
-        let trimmed = line.trim();
-        !trimmed.is_empty() && !trimmed.starts_with("//") && !trimmed.starts_with("#")
-      })
-      .count() as u64
-  }
-
-  /// Count comment lines
-  fn count_comment_lines(&self, content: &str) -> u64 {
-    content.lines()
-      .filter(|line| {
-        let trimmed = line.trim();
-        trimmed.starts_with("//") || trimmed.starts_with("#") || trimmed.starts_with("/*")
-      })
-      .count() as u64
-  }
-
-  /// Count blank lines
-  fn count_blank_lines(&self, content: &str) -> u64 {
-    content.lines()
-      .filter(|line| line.trim().is_empty())
-      .count() as u64
-  }
-
-  /// Calculate cyclomatic complexity
-  fn calculate_complexity(&self, content: &str) -> f64 {
-    let mut complexity = 1.0;
-    
-    complexity += content.matches("if ").count() as f64;
-    complexity += content.matches("while ").count() as f64;
-    complexity += content.matches("for ").count() as f64;
-    complexity += content.matches("switch ").count() as f64;
-    complexity += content.matches("case ").count() as f64;
-    complexity += content.matches("&&").count() as f64;
-    complexity += content.matches("||").count() as f64;
-    
-    complexity
-  }
-
-  /// Calculate cognitive complexity
-  fn calculate_cognitive_complexity(&self, content: &str) -> f64 {
-    let mut complexity = 0.0;
-    
-    // Base complexity for control structures
-    complexity += content.matches("if ").count() as f64;
-    complexity += content.matches("while ").count() as f64;
-    complexity += content.matches("for ").count() as f64;
-    
-    // Additional complexity for nesting
-    let mut nesting_level = 0;
-    for line in content.lines() {
-      let trimmed = line.trim();
-      if trimmed.contains("{") {
-        nesting_level += 1;
-      }
-      if trimmed.contains("}") {
-        nesting_level = nesting_level.saturating_sub(1);
-      }
-      complexity += nesting_level as f64 * 0.1; // Small penalty for nesting
-    }
-    
-    complexity
-  }
-
-  /// Analyze content using universal parser
-  async fn analyze_with_universal_parser(
+  /// Analyze content using the polyglot parser backed by Singularity Code Analyzer
+  fn analyze_with_polyglot(
     &self,
+    path: &str,
     content: &str,
-    language: parser_code::ProgrammingLanguage,
-    file_path: &str,
-  ) -> Result<parser_code::AnalysisResult, String> {
-    use parser_core::ProgrammingLanguage;
+  ) -> Result<PolyglotAnalysisResult, String> {
+    let mut parser =
+      PolyglotCodeParser::new().map_err(|err| format!("Failed to create polyglot parser: {}", err))?;
 
-    match language {
-      ProgrammingLanguage::Rust => {
-        match rust_parser::RustParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Rust parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Rust parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Python => {
-        match python_parser::PythonParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Python parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Python parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::JavaScript => {
-        match javascript_parser::JavascriptParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("JavaScript parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create JavaScript parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::TypeScript => {
-        match typescript_parser::TypescriptParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("TypeScript parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create TypeScript parser: {}", e)),
-        }
-      }
-      // Unsupported languages - no dedicated parsers available
-      // ProgrammingLanguage::Go |
-      // ProgrammingLanguage::Java |
-      // ProgrammingLanguage::CSharp |
-      // ProgrammingLanguage::C |
-      // ProgrammingLanguage::Cpp |
-      // ProgrammingLanguage::Erlang => {
-      //   // No dedicated parsers - return error or use fallback
-      // }
-      ProgrammingLanguage::Elixir => {
-        match elixir_parser::ElixirParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Elixir parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Elixir parser: {}", e)),
-        }
-      }
-      ProgrammingLanguage::Gleam => {
-        match gleam_parser::GleamParser::new() {
-          Ok(parser) => parser.analyze_content(content, file_path).await.map_err(|e| format!("Gleam parser error: {}", e)),
-          Err(e) => Err(format!("Failed to create Gleam parser: {}", e)),
-        }
-      }
-      _ => Err(format!("Unsupported language: {:?}", language)),
-    }
+    let extension = std::path::Path::new(path)
+      .extension()
+      .and_then(|ext| ext.to_str())
+      .filter(|ext| !ext.is_empty())
+      .unwrap_or("code");
+
+    let suffix = format!(".{}", extension);
+    let mut temp_file = Builder::new()
+      .suffix(&suffix)
+      .tempfile()
+      .map_err(|err| format!("Failed to create temporary file: {}", err))?;
+
+    use std::io::Write;
+    temp_file
+      .write_all(content.as_bytes())
+      .map_err(|err| format!("Failed to write temporary file: {}", err))?;
+
+    parser
+      .analyze_file(temp_file.path())
+      .map_err(|err| format!("Polyglot analysis failed: {}", err))
   }
 
-  /// Convert universal parser result to CodebaseMetadata
-  fn convert_universal_to_metadata(
+  /// Convert polyglot parser result to CodebaseMetadata
+  fn convert_polyglot_to_metadata(
     &self,
-    universal_result: &parser_code::AnalysisResult,
+    universal_result: &PolyglotAnalysisResult,
     path: &str,
     content: &str,
   ) -> Result<CodebaseMetadata, String> {
@@ -361,103 +136,87 @@ impl AnalysisEngine {
     metadata.path = path.to_string();
     metadata.size = content.len() as u64;
     metadata.lines = content.lines().count();
-    metadata.language = universal_result.language.to_string();
-    metadata.last_modified = universal_result.timestamp.timestamp() as u64;
+    metadata.language = universal_result.language.clone();
+    metadata.last_modified = Self::parse_timestamp(&universal_result.analysis_timestamp);
     
     // Line metrics from universal parser
-    metadata.total_lines = universal_result.line_metrics.total_lines;
-    metadata.code_lines = universal_result.line_metrics.code_lines;
-    metadata.comment_lines = universal_result.line_metrics.comment_lines;
-    metadata.blank_lines = universal_result.line_metrics.blank_lines;
+    metadata.total_lines = universal_result.metrics.total_lines;
+    metadata.code_lines = universal_result.metrics.lines_of_code;
+    metadata.comment_lines = universal_result.metrics.lines_of_comments;
+    metadata.blank_lines = universal_result.metrics.blank_lines;
     
     // Complexity metrics from universal parser
-    metadata.cyclomatic_complexity = universal_result.complexity_metrics.cyclomatic;
-    metadata.cognitive_complexity = universal_result.complexity_metrics.cognitive;
-    metadata.nesting_depth = universal_result.complexity_metrics.nesting_depth;
+    metadata.cyclomatic_complexity = universal_result.metrics.complexity_score;
+    metadata.function_count = universal_result.metrics.functions;
+    metadata.class_count = universal_result.metrics.classes;
     
-    // Halstead metrics from universal parser
-    metadata.halstead_vocabulary = universal_result.halstead_metrics.unique_operators + universal_result.halstead_metrics.unique_operands;
-    metadata.halstead_length = universal_result.halstead_metrics.total_operators + universal_result.halstead_metrics.total_operands;
-    metadata.halstead_volume = universal_result.halstead_metrics.volume;
-    metadata.halstead_difficulty = universal_result.halstead_metrics.difficulty;
-    metadata.halstead_effort = universal_result.halstead_metrics.effort;
-    
-    // Maintainability metrics from universal parser
-    metadata.maintainability_index = universal_result.maintainability_metrics.index;
-    metadata.technical_debt_ratio = universal_result.maintainability_metrics.technical_debt_ratio;
-    metadata.duplication_percentage = universal_result.maintainability_metrics.duplication_percentage;
-    
-    // Extract language-specific data
-    self.extract_language_specific_data(&mut metadata, universal_result)?;
+    if let Some(rca) = &universal_result.rca_metrics {
+      metadata.maintainability_index = Self::parse_float(&rca.maintainability_index);
+      metadata.cyclomatic_complexity =
+        Self::parse_float(&rca.cyclomatic_complexity).max(metadata.cyclomatic_complexity);
+
+      if let Ok(halstead) = serde_json::from_str::<serde_json::Value>(&rca.halstead_metrics) {
+        metadata.halstead_volume = halstead
+          .get("volume")
+          .and_then(|v| v.as_f64())
+          .unwrap_or(metadata.halstead_volume);
+        metadata.halstead_difficulty = halstead
+          .get("difficulty")
+          .and_then(|v| v.as_f64())
+          .unwrap_or(metadata.halstead_difficulty);
+        metadata.halstead_effort = halstead
+          .get("effort")
+          .and_then(|v| v.as_f64())
+          .unwrap_or(metadata.halstead_effort);
+        metadata.halstead_vocabulary = halstead
+          .get("unique_operators")
+          .and_then(|v| v.as_u64())
+          .unwrap_or(metadata.halstead_vocabulary)
+          + halstead
+            .get("unique_operands")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+        metadata.halstead_length = halstead
+          .get("total_operators")
+          .and_then(|v| v.as_u64())
+          .unwrap_or(0)
+          + halstead
+            .get("total_operands")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0);
+      }
+
+      metadata.total_lines = metadata.total_lines.max(rca.physical_lines_of_code);
+      metadata.code_lines = metadata.code_lines.max(rca.source_lines_of_code);
+      metadata.comment_lines = metadata.comment_lines.max(rca.comment_lines_of_code);
+      metadata.blank_lines = metadata.blank_lines.max(rca.blank_lines);
+    }
+
+    if let Some(tree) = &universal_result.tree_sitter_analysis {
+      metadata.functions = tree.functions.iter().map(|f| f.name.clone()).collect();
+      metadata.classes = tree.classes.iter().map(|c| c.name.clone()).collect();
+      metadata.function_count = metadata.functions.len() as u64;
+      metadata.class_count = metadata.classes.len() as u64;
+      metadata.imports = tree.imports.clone();
+      metadata.exports = tree.exports.clone();
+    }
+
+    if let Some(dep_analysis) = &universal_result.dependency_analysis {
+      metadata.dependencies = dep_analysis.dependencies.clone();
+      metadata.dependency_count = dep_analysis.dependencies.len();
+    }
     
     Ok(metadata)
   }
 
-  /// Extract language-specific data from universal parser result
-  fn extract_language_specific_data(
-    &self,
-    metadata: &mut CodebaseMetadata,
-    universal_result: &parser_code::AnalysisResult,
-  ) -> Result<(), String> {
-    // Process language-specific data for each supported language
-    match universal_result.language {
-      parser_code::ProgrammingLanguage::Rust => {
-        self.process_rust_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::Python => {
-        self.process_python_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::JavaScript => {
-        self.process_javascript_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::TypeScript => {
-        self.process_typescript_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::Go => {
-        self.process_go_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::Java => {
-        self.process_java_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      parser_code::ProgrammingLanguage::CSharp => {
-        self.process_csharp_specific_data(metadata, &universal_result.language_specific)?;
-      }
-      _ => {
-        // For unsupported languages, just extract basic counts
-        self.extract_basic_counts(metadata, &universal_result.language_specific)?;
-      }
-    }
-    
-    Ok(())
+  fn parse_timestamp(timestamp: &str) -> u64 {
+    chrono::DateTime::parse_from_rfc3339(timestamp)
+      .map(|dt| dt.timestamp() as u64)
+      .unwrap_or_default()
   }
 
-  /// Process Rust-specific data
-  fn process_rust_specific_data(
-    &self,
-    metadata: &mut CodebaseMetadata,
-    language_specific: &std::collections::HashMap<String, serde_json::Value>,
-  ) -> Result<(), String> {
-    if let Some(rust_data) = language_specific.get("rust") {
-      if let Ok(rust_analysis) = serde_json::from_value::<rust_parser::RustSpecificAnalysis>(rust_data.clone()) {
-        // Extract Rust-specific patterns
-        if rust_analysis.ownership_patterns.get("borrowing").unwrap_or(&false) {
-          metadata.patterns.push("borrowing".to_string());
-        }
-        if rust_analysis.concurrency_patterns.get("async").unwrap_or(&false) {
-          metadata.patterns.push("async".to_string());
-        }
-        if rust_analysis.memory_safety.get("unsafe_code").unwrap_or(&false) {
-          metadata.security_characteristics.push("unsafe_code".to_string());
-        }
-        
-        // Extract function and struct counts from Rust analysis
-        metadata.function_count = rust_analysis.function_count;
-        metadata.struct_count = rust_analysis.struct_count;
-        metadata.enum_count = rust_analysis.enum_count;
-        metadata.trait_count = rust_analysis.trait_count;
-      }
-    }
-    Ok(())
+  fn parse_float(value: &str) -> f64 {
+    value.parse::<f64>().unwrap_or_default()
   }
 
   /// Process Python-specific data
@@ -625,32 +384,6 @@ impl AnalysisEngine {
     Ok(())
   }
 
-  /// Detect language from file path
-  fn detect_language_from_path(&self, path: &str) -> parser_code::ProgrammingLanguage {
-    use parser_core::ProgrammingLanguage;
-    
-    let extension = std::path::Path::new(path)
-      .extension()
-      .and_then(|ext| ext.to_str())
-      .unwrap_or("")
-      .to_lowercase();
-    
-    match extension.as_str() {
-      "rs" => ProgrammingLanguage::Rust,
-      "py" => ProgrammingLanguage::Python,
-      "js" | "jsx" | "mjs" | "cjs" => ProgrammingLanguage::JavaScript,
-      "ts" | "tsx" => ProgrammingLanguage::TypeScript,
-      "go" => ProgrammingLanguage::Go,
-      "java" => ProgrammingLanguage::Java,
-      "cs" => ProgrammingLanguage::CSharp,
-      "c" => ProgrammingLanguage::C,
-      "cpp" | "cc" | "cxx" | "hpp" => ProgrammingLanguage::Cpp,
-      "erl" => ProgrammingLanguage::Erlang,
-      "ex" | "exs" => ProgrammingLanguage::Elixir,
-      "gleam" => ProgrammingLanguage::Gleam,
-      _ => ProgrammingLanguage::Unknown,
-    }
-  }
 }
 
 impl Default for AnalysisEngine {

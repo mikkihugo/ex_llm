@@ -102,6 +102,11 @@ tasks:
     options:
       runInCI: true
 
+  check:
+    deps:
+      - 'test'
+      - 'quality'
+
   # Analysis tasks
   analysis:rust:
     command: 'cd singularity && nix develop ..#dev --command mix analyze.rust'

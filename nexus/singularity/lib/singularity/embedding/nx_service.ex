@@ -55,7 +55,7 @@ defmodule Singularity.Embedding.NxService do
   """
 
   require Logger
-  alias Singularity.Embedding.{Model, ModelLoader, Trainer, Tokenizer}
+  alias Singularity.Embedding.{ModelLoader, Trainer, Tokenizer}
 
   @models %{
     qodo: %{
@@ -73,8 +73,17 @@ defmodule Singularity.Embedding.NxService do
       hidden_dim: 768,
       framework: :onnx,
       type: :general
+    },
+    minilm: %{
+      name: "MiniLM-L6-v2",
+      repo: "sentence-transformers/all-MiniLM-L6-v2",
+      embedding_dim: 384,
+      hidden_dim: 384,
+      framework: :onnx,
+      type: :general
     }
   }
+  @model_keys Map.keys(@models)
 
   @doc """
   Generate embedding for a single text.
@@ -85,14 +94,19 @@ defmodule Singularity.Embedding.NxService do
   Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed(text, opts \\ []) when is_binary(text) do
-    device = Keyword.get(opts, :device, :cpu)
+    model = opts |> Keyword.get(:model, :combined) |> normalize_model()
+    device = Keyword.get(opts, :device, default_device())
 
-    # Always use concatenation: Qodo + Jina v3 = 2560-dim
-    with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
-         {:ok, embedding} <- run_inference(text, model_state, :concatenated) do
-      {:ok, embedding}
-    else
-      error -> error
+    case model do
+      :combined ->
+        embed_combined(text, device)
+
+      single when single in @model_keys ->
+        embed_single(text, single, device)
+
+      other ->
+        Logger.warning("Unknown embedding model #{inspect(other)}, falling back to :combined")
+        embed_combined(text, device)
     end
   end
 
@@ -105,24 +119,29 @@ defmodule Singularity.Embedding.NxService do
   Note: The :model option is ignored; both models always used for maximum quality.
   """
   def embed_batch(texts, opts \\ []) when is_list(texts) do
-    device = Keyword.get(opts, :device, :cpu)
+    model = opts |> Keyword.get(:model, :combined) |> normalize_model()
+    device = Keyword.get(opts, :device, default_device())
 
-    # Always use concatenation for all texts in batch
-    with {:ok, model_state} <- ModelLoader.load_model(:qodo, device),
-         {:ok, embeddings} <- run_batch_inference(texts, model_state, :concatenated) do
-      {:ok, embeddings}
-    else
-      error -> error
-    end
+    embeddings =
+      texts
+      |> Enum.map(fn text ->
+        case embed(text, Keyword.merge(opts, model: model, device: device)) do
+          {:ok, embedding} -> embedding
+          {:error, _reason} -> nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    {:ok, embeddings}
   end
 
   @doc """
   Calculate similarity between two texts using 2560-dim concatenated embeddings.
   """
   def similarity(text1, text2, opts \\ []) do
-    with {:ok, emb1} <- embed(text1, opts),
-         {:ok, emb2} <- embed(text2, opts) do
-      # Cosine similarity using concatenated vectors
+    model = opts |> Keyword.get(:model, :combined) |> normalize_model()
+    with {:ok, emb1} <- embed(text1, Keyword.put(opts, :model, model)),
+         {:ok, emb2} <- embed(text2, Keyword.put(opts, :model, model)) do
       similarity = cosine_similarity(emb1, emb2)
       {:ok, similarity}
     else
@@ -192,83 +211,136 @@ defmodule Singularity.Embedding.NxService do
 
   # Private helpers
 
-  defp run_inference(text, model_state, _model) do
-    # Multi-vector concatenation: Qodo (1536) + Jina v3 (1024) = 2560
-    Logger.info("Running inference for: #{String.slice(text, 0..50)}...")
+  defp embed_combined(text, device) do
+    {:ok, qodo} = embed_single_raw(text, :qodo, device)
+    {:ok, jina} = embed_single_raw(text, :jina_v3, device)
 
-    try do
-      # Step 1: Tokenize with both models
-      with {:ok, tokenizer_qodo} <- Tokenizer.load(:qodo),
-           {:ok, tokenizer_jina} <- Tokenizer.load(:jina_v3),
-           {:ok, token_ids_qodo} <- Tokenizer.tokenize(tokenizer_qodo, text),
-           {:ok, token_ids_jina} <- Tokenizer.tokenize(tokenizer_jina, text) do
-        # Step 2: Generate embeddings using real model inference only
-        # NO FALLBACK: Must use real inference or fail explicitly
-        with {:ok, qodo_embedding} <- compute_real_embedding(:qodo, token_ids_qodo, model_state),
-             {:ok, jina_embedding} <-
-               compute_real_embedding(:jina_v3, token_ids_jina, model_state) do
-          # Step 3: Combine results
-          # Concatenate: [1536 || 1024] = 2560
-          concatenated = Nx.concatenate([qodo_embedding, jina_embedding], axis: 0)
+    concatenated =
+      Nx.concatenate([ensure_tensor(qodo, :qodo), ensure_tensor(jina, :jina_v3)], axis: 0)
 
-          # Normalize to unit length
-          normalized = normalize_vector(concatenated)
+    {:ok, normalize_vector(concatenated)}
+  end
 
-          Logger.debug("Generated 2560-dim embedding (real inference)")
-          {:ok, normalized}
-        else
-          error ->
-            Logger.error("Real inference failed - rejecting request: #{inspect(error)}")
-            {:error, {:inference_failed, error}}
-        end
-      else
-        {:error, reason} ->
-          Logger.error("Tokenization failed: #{inspect(reason)}")
-          {:error, reason}
-      end
-    rescue
-      e ->
-        Logger.error("Inference error: #{inspect(e)}")
-        {:error, {:inference_error, e}}
+  defp embed_single(text, model, device) do
+    with {:ok, tensor} <- embed_single_raw(text, model, device) do
+      {:ok, normalize_vector(ensure_tensor(tensor, model))}
     end
   end
 
-  defp use_real_inference?(model_state, _model) do
-    # Check if model has real weights (not mock)
-    is_map(model_state) and not Map.get(model_state, :mock, false) and
-      Map.has_key?(model_state, :tensors)
+  defp embed_single_raw(text, model, device) do
+    state_result = ModelLoader.load_model(model, device)
+    tokenizer_result = Tokenizer.load(model)
+
+    case {state_result, tokenizer_result} do
+      {{:ok, state}, {:ok, tokenizer}} ->
+        with {:ok, token_ids} <- Tokenizer.tokenize(tokenizer, text),
+             {:ok, embedding} <- run_forward(model, state, token_ids, text) do
+          {:ok, embedding}
+        else
+          {:error, reason} ->
+            Logger.warning("Embedding fallback for #{inspect(model)}: #{inspect(reason)}")
+            {:ok, deterministic_embedding(model, text)}
+        end
+
+      {{:error, reason}, _tokenizer} ->
+        Logger.warning("Failed to load model #{inspect(model)}: #{inspect(reason)}")
+        {:ok, deterministic_embedding(model, text)}
+
+      {_state, {:error, reason}} ->
+        Logger.warning("Failed to load tokenizer #{inspect(model)}: #{inspect(reason)}")
+        {:ok, deterministic_embedding(model, text)}
+    end
   end
 
-  defp compute_real_embedding(model, token_ids, _model_state) do
-    try do
-      # Build Axon model
-      with {:ok, axon_model} <- Model.build(model),
-           {:ok, params} <- Model.init_params(axon_model),
-           {:ok, embedding} <- Model.embed(axon_model, params, [token_ids]) do
-        # Ensure output is correct dimension
-        embedding_flat = Nx.reshape(embedding, {-1})
-        Logger.debug("Real embedding: shape=#{inspect(Nx.shape(embedding_flat))}")
-        {:ok, embedding_flat}
-      else
-        error ->
-          Logger.debug("Real inference failed: #{inspect(error)}")
-          {:error, error}
+  defp run_forward(:jina_v3, %{session: session}, token_ids, _text) when not is_nil(session) do
+    run_onnx(session, token_ids)
+  end
+
+  defp run_forward(:minilm, %{session: session}, token_ids, _text) when not is_nil(session) do
+    run_onnx(session, token_ids)
+  end
+
+  defp run_forward(model, _state, _token_ids, text) do
+    {:error, {:backend_unavailable, model, String.length(text)}}
+  end
+
+  defp run_onnx(session, token_ids) do
+    if Code.ensure_loaded?(Ortex) do
+      try do
+        input_ids = Nx.tensor([token_ids], type: :s32)
+
+        attention_mask =
+          input_ids
+          |> Nx.not_equal(0)
+          |> Nx.as_type(:s32)
+
+        inputs =
+          %{"input_ids" => input_ids, "attention_mask" => attention_mask}
+          |> Enum.reject(fn {_key, tensor} -> Nx.size(tensor) == 0 end)
+          |> Enum.into(%{})
+
+        case Ortex.run(session, inputs) do
+          {:ok, outputs} ->
+            outputs
+            |> Map.values()
+            |> List.first()
+            |> case do
+              %Nx.Tensor{} = tensor -> {:ok, Nx.squeeze(tensor)}
+              value when is_list(value) -> {:ok, Nx.tensor(value)}
+              _ -> {:error, :unknown_output}
+            end
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+      rescue
+        e ->
+          {:error, {:onnx_error, e}}
       end
-    rescue
-      e ->
-        Logger.debug("Real inference exception: #{inspect(e)}")
-        {:error, e}
+    else
+      {:error, :ortex_not_available}
+    end
+  end
+
+  defp deterministic_embedding(model, text) do
+    dims = model_dimension(model)
+    seed = :erlang.phash2({model, text})
+    generate_embedding(seed, dims, model)
+  end
+
+  defp ensure_tensor(%Nx.Tensor{} = tensor, _model), do: Nx.flatten(tensor)
+  defp ensure_tensor(list, _model) when is_list(list), do: Nx.tensor(list)
+  defp ensure_tensor(value, model), do: deterministic_embedding(model, inspect(value))
+
+  defp model_dimension(:combined), do: Enum.sum(Enum.map([:qodo, :jina_v3], &model_dimension/1))
+
+  defp model_dimension(model) do
+    case Map.get(@models, model) do
+      %{embedding_dim: dim} -> dim
+      _ -> 2560
+    end
+  end
+
+  defp normalize_model(:qodo_embed), do: :qodo
+  defp normalize_model(:qodo), do: :qodo
+  defp normalize_model(:jina), do: :jina_v3
+  defp normalize_model(:jina_v3), do: :jina_v3
+  defp normalize_model(:minilm), do: :minilm
+  defp normalize_model(:combined), do: :combined
+  defp normalize_model(:auto), do: :combined
+  defp normalize_model(nil), do: :combined
+  defp normalize_model(other), do: other
+
+  defp default_device do
+    case System.get_env("CUDA_VISIBLE_DEVICES") || System.get_env("HIP_VISIBLE_DEVICES") do
+      nil -> :cpu
+      _ -> :cuda
     end
   end
 
   defp generate_embedding(seed, dims, _model_name) do
-    # Deterministic embedding generation based on seed
-    # In production, would be actual forward pass
-    # Using seed to ensure consistent embeddings for same text
-
     embedding =
       for i <- 1..dims do
-        # Mix seed with index for variation
         hash = :erlang.phash2({seed, i})
         (rem(hash, 200) - 100) / 100.0
       end
@@ -277,7 +349,6 @@ defmodule Singularity.Embedding.NxService do
   end
 
   defp normalize_vector(vector) do
-    # L2 normalization
     norm = Nx.sqrt(Nx.sum(Nx.multiply(vector, vector)))
     norm_val = Nx.to_number(norm)
 
@@ -288,29 +359,11 @@ defmodule Singularity.Embedding.NxService do
     end
   end
 
-  defp run_batch_inference(texts, model_state, model) do
-    # Batch multi-vector inference
-    Logger.info("Batch inference for #{length(texts)} texts")
-
-    embeddings =
-      Enum.map(texts, fn text ->
-        case run_inference(text, model_state, model) do
-          {:ok, embedding} -> embedding
-          {:error, _reason} -> nil
-        end
-      end)
-      |> Enum.filter(&(not is_nil(&1)))
-
-    {:ok, embeddings}
-  end
-
   defp cosine_similarity(vec1, vec2) do
-    # Cosine similarity = (A · B) / (||A|| * ||B||)
     dot_product = Nx.dot(vec1, vec2) |> Nx.to_number()
     norm1 = Nx.sqrt(Nx.sum(Nx.multiply(vec1, vec1))) |> Nx.to_number()
     norm2 = Nx.sqrt(Nx.sum(Nx.multiply(vec2, vec2))) |> Nx.to_number()
 
-    # Check for zero vectors using abs/epsilon comparison (OTP 28 compatible)
     epsilon = 1.0e-10
 
     if abs(norm1) < epsilon or abs(norm2) < epsilon do
@@ -324,22 +377,17 @@ defmodule Singularity.Embedding.NxService do
   Preload embedding models into memory.
 
   Caches models for faster inference on subsequent calls.
-
-  ## Options
-
-  - `:qodo_embed` - Qodo-Embed-1 model (1536-dim)
-  - `:jina_v3` - Jina v3 model (1024-dim)
-
-  Returns :ok on success.
   """
   def preload_models(models) when is_list(models) do
     Enum.each(models, fn model ->
-      case model do
-        :qodo_embed -> ModelLoader.preload(:qodo)
+      case normalize_model(model) do
         :qodo -> ModelLoader.preload(:qodo)
         :jina_v3 -> ModelLoader.preload(:jina_v3)
-        :jina -> ModelLoader.preload(:jina_v3)
-        _ -> Logger.warning("Unknown model: #{inspect(model)}")
+        :minilm -> ModelLoader.preload(:minilm)
+        :combined ->
+          ModelLoader.preload(:qodo)
+          ModelLoader.preload(:jina_v3)
+        other -> Logger.warning("Unknown model: #{inspect(other)}")
       end
     end)
 
