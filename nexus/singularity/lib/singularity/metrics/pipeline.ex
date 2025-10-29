@@ -2,12 +2,8 @@ defmodule Singularity.Metrics.Pipeline do
   @moduledoc """
   Entry point for the code metrics pipeline.
 
-  Supports two modes:
-    * **PGFlow mode** (default) – each request executes the PGFlow workflow
-    * **Direct mode** – runs the orchestrator synchronously (used for tests or
-      environments without PGFlow)
-
-  The mode is controlled via `config :singularity, :metrics_pipeline, pgflow_enabled: true/false`.
+  Uses PgFlow for all workflow execution and messaging.
+  All requests are processed through PgFlow workflows for consistency and reliability.
   """
 
   use GenServer
@@ -16,9 +12,7 @@ defmodule Singularity.Metrics.Pipeline do
   alias Singularity.Metrics.Orchestrator
   alias Singularity.Workflows.CodeMetricsWorkflow
 
-  @default_opts [
-    pgflow_enabled: true
-  ]
+  @default_opts []
 
   # -- Public API -----------------------------------------------------------------
 
@@ -41,34 +35,22 @@ defmodule Singularity.Metrics.Pipeline do
   end
 
   defp execute(payload) do
-    if pgflow_enabled?() do
-      Logger.info("Submitting code metrics workflow via PGFlow", payload: redact(payload))
-      PGFlow.Workflow.execute(CodeMetricsWorkflow, payload)
-    else
-      Logger.info("Running code metrics synchronously", payload: redact(payload))
-      run_direct(payload)
-    end
+    Logger.info("Submitting code metrics workflow via PGFlow", payload: redact(payload))
+    PGFlow.Workflow.execute(CodeMetricsWorkflow, payload)
   end
 
   # -- GenServer callbacks --------------------------------------------------------
 
   @impl true
   def init(opts) do
-    Logger.info("Starting Metrics Pipeline (pgflow: #{pgflow_enabled?()})")
+    Logger.info("Starting Metrics Pipeline with PGFlow")
 
-    if pgflow_enabled?() do
-      start_pgflow_supervisor(opts)
-    end
+    start_pgflow_supervisor(opts)
 
     {:ok, Map.merge(@default_opts, Map.new(opts))}
   end
 
   # -- Internal helpers -----------------------------------------------------------
-
-  defp pgflow_enabled? do
-    Application.get_env(:singularity, :metrics_pipeline, %{})
-    |> Map.get(:pgflow_enabled, true)
-  end
 
   defp start_pgflow_supervisor(opts) do
     workflow_opts =

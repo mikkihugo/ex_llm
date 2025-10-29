@@ -8,6 +8,7 @@ defmodule Singularity.Knowledge.RequestListener do
   require Logger
 
   alias Singularity.Knowledge.Requests
+  alias Singularity.PgFlow
   alias Singularity.Repo
 
   @channel "knowledge_requests"
@@ -37,7 +38,7 @@ defmodule Singularity.Knowledge.RequestListener do
       poll_interval_ms: poll_interval_ms
     }
 
-    case Postgrex.Notifications.listen(Repo, @channel) do
+    case PgFlow.listen(@channel, Repo) do
       {:ok, listener_pid} ->
         Logger.info("KnowledgeRequestListener subscribed to #{@channel}")
         Process.monitor(listener_pid)
@@ -67,7 +68,7 @@ defmodule Singularity.Knowledge.RequestListener do
   def handle_info({:DOWN, _ref, :process, pid, reason}, %{listener: pid} = state) do
     Logger.warning("KnowledgeRequestListener lost NOTIFY subscription, reason: #{inspect(reason)}")
 
-    case Postgrex.Notifications.listen(Repo, @channel) do
+    case PgFlow.listen(@channel, Repo) do
       {:ok, listener_pid} ->
         Logger.info("KnowledgeRequestListener re-subscribed to #{@channel}")
         Process.monitor(listener_pid)

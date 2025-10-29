@@ -25,10 +25,11 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::Path;
+use std::sync::OnceLock;
 use tree_sitter::{Language, Parser};
 
 // Singularity rust-code-analysis for comprehensive complexity metrics
-use singularity_code_analysis as rca;
+use singularity_code_analysis::{AnalyzeOptions, AnalyzerError, SingularityCodeAnalyzer};
 
 // Module declarations
 mod dependency_analyzer;
@@ -199,6 +200,8 @@ pub struct PolyglotCodeParser {
     rca_metrics_cache: HashMap<String, RcaMetrics>,
     /// Cache for tokei basic metrics (keyed by content hash for fast lookup)
     basic_metrics_cache: HashMap<u64, CodeMetrics>,
+    /// Singularity Code Analyzer facade (registry-backed)
+    code_analyzer: SingularityCodeAnalyzer,
 }
 
 impl PolyglotCodeParser {
@@ -210,6 +213,7 @@ impl PolyglotCodeParser {
             parser_cache: HashMap::new(),
             rca_metrics_cache: HashMap::new(),
             basic_metrics_cache: HashMap::new(),
+            code_analyzer: SingularityCodeAnalyzer::new(),
         };
 
         // Initialize language parsers
@@ -469,35 +473,47 @@ impl PolyglotCodeParser {
 
     /// Calculate RCA (rust-code-analysis) metrics using Singularity rust-code-analysis
     fn calculate_rca_metrics(&self, content: &str, language: &str) -> Result<RcaMetrics> {
-        // Use in-memory analysis with dummy path
-        let dummy_path = std::path::Path::new("dummy");
-        let code_bytes = content.as_bytes().to_vec();
-
-        // Analyze based on language with full RCA integration using registry
         use crate::language_registry::get_language_by_alias;
-        let language_info = get_language_by_alias(&language.to_lowercase())
-            .ok_or_else(|| anyhow::anyhow!("Unsupported language: {}", language))?;
 
-        let metrics = if language_info.rca_supported {
-            match language_info.id.as_str() {
-                "rust" => self.analyze_rust_rca_in_memory(&code_bytes, dummy_path)?,
-                "python" => self.analyze_python_rca_in_memory(&code_bytes, dummy_path)?,
-                "javascript" => self.analyze_javascript_rca_in_memory(&code_bytes, dummy_path)?,
-                "typescript" => self.analyze_typescript_rca_in_memory(&code_bytes, dummy_path)?,
-                "java" => self.analyze_java_rca_in_memory(&code_bytes, dummy_path)?,
-                "cpp" => self.analyze_cpp_rca_in_memory(&code_bytes, dummy_path)?,
-                "c" => self.analyze_c_rca_in_memory(&code_bytes, dummy_path)?,
-                _ => {
-                    // Fallback to basic metrics for unsupported RCA languages
-                    self.analyze_basic_rca(content)?
+        // Resolve incoming identifier to a concrete LANG variant
+        let resolved_lang = self
+            .code_analyzer
+            .language_from_str(language)
+            .or_else(|| {
+                get_language_by_alias(&language.to_lowercase()).and_then(|info| {
+                    self.code_analyzer
+                        .language_from_str(&info.name)
+                        .or_else(|| self.code_analyzer.language_from_str(&info.id))
+                })
+            });
+
+        if let Some(lang) = resolved_lang {
+            match self.code_analyzer.analyze_language(
+                lang,
+                content.as_bytes(),
+                AnalyzeOptions::default(),
+            ) {
+                Ok(result) => {
+                    let metrics = result.metrics();
+                    return Ok(RcaMetrics {
+                        cyclomatic_complexity: format!("{:.1}", metrics.cyclomatic.cyclomatic_average()),
+                        halstead_metrics: serde_json::to_string(&metrics.halstead)?,
+                        maintainability_index: format!("{:.2}", metrics.mi.mi_original()),
+                        source_lines_of_code: metrics.loc.sloc() as u64,
+                        physical_lines_of_code: metrics.loc.ploc() as u64,
+                        logical_lines_of_code: metrics.loc.lloc() as u64,
+                        comment_lines_of_code: metrics.loc.cloc() as u64,
+                        blank_lines: metrics.loc.blank() as u64,
+                    });
                 }
+                Err(AnalyzerError::UnsupportedLanguage(_)) => {}
+                Err(AnalyzerError::AnalysisFailed { .. }) => {}
+                Err(AnalyzerError::Io(_)) => {}
             }
-        } else {
-            // BEAM languages and others not supported by RCA
-            self.analyze_basic_rca(content)?
-        };
+        }
 
-        Ok(metrics)
+        // Fall back to basic heuristic if the analyzer cannot handle this language
+        self.analyze_basic_rca(content)
     }
 
     /// Analyze with basic metrics for unsupported languages
@@ -592,179 +608,6 @@ impl PolyglotCodeParser {
         })
     }
 
-    /// Analyze Rust code with RCA (in-memory)
-    fn analyze_rust_rca_in_memory(
-        &self,
-        code: &[u8],
-        path: &std::path::Path,
-    ) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::RustParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze Python code with RCA (in-memory)
-    fn analyze_python_rca_in_memory(
-        &self,
-        code: &[u8],
-        path: &std::path::Path,
-    ) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::PythonParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze JavaScript code with RCA (in-memory)
-    fn analyze_javascript_rca_in_memory(
-        &self,
-        code: &[u8],
-        path: &std::path::Path,
-    ) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::JavascriptParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze TypeScript code with RCA (in-memory)
-    fn analyze_typescript_rca_in_memory(
-        &self,
-        code: &[u8],
-        path: &std::path::Path,
-    ) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::TypescriptParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze Java code with RCA (in-memory)
-    fn analyze_java_rca_in_memory(
-        &self,
-        code: &[u8],
-        path: &std::path::Path,
-    ) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::JavaParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze C++ code with RCA (in-memory)
-    fn analyze_cpp_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::CppParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
-
-    /// Analyze C code with RCA (in-memory)
-    fn analyze_c_rca_in_memory(&self, code: &[u8], path: &std::path::Path) -> Result<RcaMetrics> {
-        use rca::{metrics, ParserTrait};
-
-        let parser = rca::CcommentParser::new(code.to_vec(), path, None);
-        if let Some(func_space) = metrics(&parser, path) {
-            let m = &func_space.metrics;
-            Ok(RcaMetrics {
-                cyclomatic_complexity: format!("{:.1}", m.cyclomatic.cyclomatic_average()),
-                halstead_metrics: serde_json::to_string(&m.halstead)?,
-                maintainability_index: format!("{:.2}", m.mi.mi_original()),
-                source_lines_of_code: m.loc.sloc() as u64,
-                physical_lines_of_code: m.loc.ploc() as u64,
-                logical_lines_of_code: m.loc.lloc() as u64,
-                comment_lines_of_code: m.loc.cloc() as u64,
-                blank_lines: m.loc.blank() as u64,
-            })
-        } else {
-            Ok(RcaMetrics::default())
-        }
-    }
 }
 
 impl Default for PolyglotCodeParser {
@@ -960,75 +803,24 @@ pub fn calculate_rca_complexity(
     content: &str,
     language: &str,
 ) -> Result<(f64, u64, u64, u64, u64), ParseError> {
-    use rca::{metrics, ParserTrait};
-    use std::path::Path;
+    use crate::language_registry::get_language_by_alias;
 
-    let code_bytes = content.as_bytes().to_vec();
-    let dummy_path = Path::new("dummy");
+    static ANALYZER: OnceLock<SingularityCodeAnalyzer> = OnceLock::new();
+    let analyzer = ANALYZER.get_or_init(SingularityCodeAnalyzer::new);
 
-    // Match language and create appropriate RCA parser
-    let func_space = match language.to_lowercase().as_str() {
-        "rust" | "rs" => {
-            let parser = rca::RustParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "python" | "py" => {
-            let parser = rca::PythonParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "javascript" | "js" => {
-            let parser = rca::JavascriptParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "typescript" | "ts" => {
-            let parser = rca::TypescriptParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "java" => {
-            let parser = rca::JavaParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "cpp" | "c++" | "cxx" => {
-            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "c" => {
-            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "elixir" | "ex" => {
-            let parser = rca::ElixirParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "erlang" | "erl" => {
-            let parser = rca::ErlangParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "gleam" => {
-            let parser = rca::GleamParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "lua" => {
-            let parser = rca::LuaParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "bash" | "sh" => {
-            // Bash - use C++ parser as approximation (similar control flow)
-            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "go" => {
-            // Go - use C++ parser as approximation (C-family syntax)
-            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        "sql" => {
-            // SQL - use C++ parser as approximation (has control flow)
-            let parser = rca::CppParser::new(code_bytes, dummy_path, None);
-            metrics(&parser, dummy_path)
-        }
-        _ => {
-            // Unsupported language - return default values
+    let resolved_lang = analyzer
+        .language_from_str(language)
+        .or_else(|| {
+            get_language_by_alias(&language.to_lowercase()).and_then(|info| {
+                analyzer
+                    .language_from_str(&info.name)
+                    .or_else(|| analyzer.language_from_str(&info.id))
+            })
+        });
+
+    let lang = match resolved_lang {
+        Some(lang) => lang,
+        None => {
             return Ok((
                 1.0,
                 content.lines().count() as u64,
@@ -1039,26 +831,27 @@ pub fn calculate_rca_complexity(
         }
     };
 
-    if let Some(func_space) = func_space {
-        let m = &func_space.metrics;
-
-        // Extract metrics from RCA
-        let complexity = m.cyclomatic.cyclomatic_average();
-        let sloc = m.loc.sloc() as u64;
-        let ploc = m.loc.ploc() as u64;
-        let cloc = m.loc.cloc() as u64;
-        let blank = m.loc.blank() as u64;
-
-        Ok((complexity, sloc, ploc, cloc, blank))
-    } else {
-        // Failed to parse - return reasonable defaults
-        Ok((
-            1.0,
-            content.lines().count() as u64,
-            content.lines().count() as u64,
-            0,
-            0,
-        ))
+    match analyzer.analyze_language(lang, content.as_bytes(), AnalyzeOptions::default()) {
+        Ok(result) => {
+            let metrics = result.metrics();
+            Ok((
+                metrics.cyclomatic.cyclomatic_average(),
+                metrics.loc.sloc() as u64,
+                metrics.loc.ploc() as u64,
+                metrics.loc.cloc() as u64,
+                metrics.loc.blank() as u64,
+            ))
+        }
+        Err(AnalyzerError::Io(err)) => Err(ParseError::IoError(err.to_string())),
+        Err(AnalyzerError::UnsupportedLanguage(_)) | Err(AnalyzerError::AnalysisFailed { .. }) => {
+            Ok((
+                1.0,
+                content.lines().count() as u64,
+                content.lines().count() as u64,
+                0,
+                0,
+            ))
+        }
     }
 }
 

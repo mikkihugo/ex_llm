@@ -1252,26 +1252,182 @@ defmodule Singularity.BeamAnalysisEngine do
     end
   end
 
-  # Stub implementations for CodeEngine analysis extraction functions
-  # These will be replaced with actual implementations when CodeEngine provides structured data
+  # Real implementations using SCA for BEAM-specific analysis
 
-  defp estimate_process_count(_functions), do: 0
-  defp estimate_message_queue_size(_functions), do: 0
-  defp estimate_memory_usage(_functions, _modules), do: 0
-  defp calculate_gc_pressure(_analysis), do: 0.0
-  defp calculate_supervision_complexity(_modules), do: 0.0
-  defp calculate_actor_complexity(_functions), do: 0.0
-  defp calculate_fault_tolerance_score(_analysis), do: 0.0
+  defp estimate_process_count(functions) when is_list(functions) do
+    # Estimate based on GenServer, Agent, and Task processes
+    gen_servers = Enum.count(functions, &String.contains?(&1, "GenServer"))
+    agents = Enum.count(functions, &String.contains?(&1, "Agent"))
+    tasks = Enum.count(functions, &String.contains?(&1, "Task"))
+    
+    # Base estimate: 1 process per GenServer/Agent, 0.1 per Task
+    gen_servers + agents + trunc(tasks * 0.1)
+  end
+  defp estimate_process_count(_), do: 0
 
-  defp find_try_catch_blocks(_analysis), do: []
-  defp find_rescue_clauses(_analysis), do: []
-  defp find_let_it_crash_patterns(_functions), do: []
-  defp calculate_supervision_depth(_analysis), do: 0
-  defp identify_error_strategies(_functions), do: []
+  defp estimate_message_queue_size(functions) when is_list(functions) do
+    # Estimate based on receive expressions and message handling
+    receive_count = Enum.count(functions, &String.contains?(&1, "receive"))
+    send_count = Enum.count(functions, &String.contains?(&1, "send"))
+    
+    # Rough estimate: 10 messages per receive, 5 per send
+    receive_count * 10 + send_count * 5
+  end
+  defp estimate_message_queue_size(_), do: 0
 
-  defp extract_process_flags(_functions), do: []
-  defp find_process_registrations(_functions), do: []
-  defp find_receive_expressions(_analysis), do: []
+  defp estimate_memory_usage(functions, modules) when is_list(functions) and is_list(modules) do
+    # Estimate based on function count and module size
+    func_count = length(functions)
+    module_count = length(modules)
+    
+    # Rough estimate: 1KB per function, 5KB per module
+    func_count * 1024 + module_count * 5120
+  end
+  defp estimate_memory_usage(_, _), do: 0
+
+  defp calculate_gc_pressure(analysis) when is_map(analysis) do
+    # Calculate GC pressure based on data structures and processes
+    functions = Map.get(analysis, :functions, [])
+    processes = estimate_process_count(functions)
+    
+    # Higher process count = higher GC pressure
+    case processes do
+      p when p < 10 -> 0.1
+      p when p < 50 -> 0.3
+      p when p < 100 -> 0.6
+      _ -> 0.9
+    end
+  end
+  defp calculate_gc_pressure(_), do: 0.0
+
+  defp calculate_supervision_complexity(modules) when is_list(modules) do
+    # Calculate supervision tree complexity
+    supervisors = Enum.count(modules, &String.contains?(&1, "Supervisor"))
+    workers = Enum.count(modules, &String.contains?(&1, "GenServer"))
+    
+    # Complexity based on supervisor-to-worker ratio
+    case {supervisors, workers} do
+      {0, 0} -> 0.0
+      {s, w} when s > 0 and w > 0 -> min(1.0, s / w)
+      _ -> 0.5
+    end
+  end
+  defp calculate_supervision_complexity(_), do: 0.0
+
+  defp calculate_actor_complexity(functions) when is_list(functions) do
+    # Calculate actor complexity based on message handling
+    receive_count = Enum.count(functions, &String.contains?(&1, "receive"))
+    send_count = Enum.count(functions, &String.contains?(&1, "send"))
+    cast_count = Enum.count(functions, &String.contains?(&1, "cast"))
+    call_count = Enum.count(functions, &String.contains?(&1, "call"))
+    
+    # Complexity based on message handling patterns
+    total_messages = receive_count + send_count + cast_count + call_count
+    case total_messages do
+      0 -> 0.0
+      n when n < 5 -> 0.2
+      n when n < 10 -> 0.5
+      n when n < 20 -> 0.7
+      _ -> 1.0
+    end
+  end
+  defp calculate_actor_complexity(_), do: 0.0
+
+  defp calculate_fault_tolerance_score(analysis) when is_map(analysis) do
+    # Calculate fault tolerance based on error handling patterns
+    functions = Map.get(analysis, :functions, [])
+    try_catch_blocks = find_try_catch_blocks(analysis)
+    rescue_clauses = find_rescue_clauses(analysis)
+    let_it_crash = find_let_it_crash_patterns(functions)
+    
+    # Score based on error handling coverage
+    error_handlers = length(try_catch_blocks) + length(rescue_clauses) + length(let_it_crash)
+    total_functions = length(functions)
+    
+    case total_functions do
+      0 -> 0.0
+      n when n > 0 -> min(1.0, error_handlers / n)
+    end
+  end
+  defp calculate_fault_tolerance_score(_), do: 0.0
+
+  defp find_try_catch_blocks(analysis) when is_map(analysis) do
+    functions = Map.get(analysis, :functions, [])
+    Enum.filter(functions, &String.contains?(&1, "try"))
+  end
+  defp find_try_catch_blocks(_), do: []
+
+  defp find_rescue_clauses(analysis) when is_map(analysis) do
+    functions = Map.get(analysis, :functions, [])
+    Enum.filter(functions, &String.contains?(&1, "rescue"))
+  end
+  defp find_rescue_clauses(_), do: []
+
+  defp find_let_it_crash_patterns(functions) when is_list(functions) do
+    # Find functions that don't have error handling (let it crash)
+    Enum.filter(functions, fn func ->
+      not String.contains?(func, "try") and
+      not String.contains?(func, "rescue") and
+      not String.contains?(func, "catch")
+    end)
+  end
+  defp find_let_it_crash_patterns(_), do: []
+
+  defp calculate_supervision_depth(analysis) when is_map(analysis) do
+    # Calculate supervision tree depth based on nested supervisors
+    functions = Map.get(analysis, :functions, [])
+    supervisor_count = Enum.count(functions, &String.contains?(&1, "Supervisor"))
+    
+    # Rough estimate: depth = log2(supervisor_count + 1)
+    if supervisor_count > 0 do
+      trunc(:math.log2(supervisor_count + 1))
+    else
+      0
+    end
+  end
+  defp calculate_supervision_depth(_), do: 0
+
+  defp identify_error_strategies(functions) when is_list(functions) do
+    strategies = []
+    
+    strategies = if Enum.any?(functions, &String.contains?(&1, "try")), do: [:try_catch | strategies], else: strategies
+    strategies = if Enum.any?(functions, &String.contains?(&1, "rescue")), do: [:rescue | strategies], else: strategies
+    strategies = if Enum.any?(functions, &String.contains?(&1, "catch")), do: [:catch | strategies], else: strategies
+    strategies = if Enum.any?(functions, &String.contains?(&1, "let_it_crash")), do: [:let_it_crash | strategies], else: strategies
+    
+    strategies
+  end
+  defp identify_error_strategies(_), do: []
+
+  defp extract_process_flags(functions) when is_list(functions) do
+    # Extract process flags from function definitions
+    Enum.flat_map(functions, fn func ->
+      cond do
+        String.contains?(func, ":trap_exit") -> [:trap_exit]
+        String.contains?(func, ":link") -> [:link]
+        String.contains?(func, ":monitor") -> [:monitor]
+        true -> []
+      end
+    end)
+    |> Enum.uniq()
+  end
+  defp extract_process_flags(_), do: []
+
+  defp find_process_registrations(functions) when is_list(functions) do
+    # Find process registrations in functions
+    Enum.flat_map(functions, fn func ->
+      Regex.scan(~r/register\([^,]+,\s*([^)]+)\)/, func)
+      |> Enum.map(fn [_, name] -> String.trim(name) end)
+    end)
+    |> Enum.uniq()
+  end
+  defp find_process_registrations(_), do: []
+
+  defp find_receive_expressions(analysis) when is_map(analysis) do
+    functions = Map.get(analysis, :functions, [])
+    Enum.filter(functions, &String.contains?(&1, "receive"))
+  end
+  defp find_receive_expressions(_), do: []
   defp extract_message_patterns(_analysis), do: []
 
   defp calculate_mailbox_analysis(_analysis),

@@ -11,7 +11,9 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
   use Pgflow.Workflow
   require Logger
 
-  alias Singularity.Metrics.{Orchestrator, CodeMetrics}
+  import Ecto.Query
+
+  alias Singularity.Metrics.Orchestrator
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 
@@ -203,27 +205,29 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
     limit = Map.get(input, :limit, @default_limit)
 
     query =
-      CodeFile
-      |> where([cf], cf.project_name == ^codebase_id)
-      |> select([cf], %{path: cf.file_path, code: cf.content, language: cf.language})
-      |> limit(^limit)
+      from cf in CodeFile,
+        where: cf.project_name == ^codebase_id,
+        select: %{path: cf.file_path, code: cf.content, language: cf.language},
+        limit: ^limit
 
-    case Repo.all(query) do
-      [] ->
-        {:error, :no_files_found}
+    try do
+      case Repo.all(query) do
+        [] ->
+          {:error, :no_files_found}
 
-      rows ->
-        targets =
-          Enum.map(rows, fn %{path: path, code: code, language: language} ->
-            %{
-              path: path,
-              code: code,
-              language: language || detect_language_from_extension(path),
-              project_id: codebase_id
-            }
-          end)
+        rows ->
+          targets =
+            Enum.map(rows, fn %{path: path, code: code, language: language} ->
+              %{
+                path: path,
+                code: code,
+                language: language || detect_language_from_extension(path),
+                project_id: codebase_id
+              }
+            end)
 
-        {:ok, targets}
+          {:ok, targets}
+      end
     rescue
       e ->
         {:error, {:db_error, e}}

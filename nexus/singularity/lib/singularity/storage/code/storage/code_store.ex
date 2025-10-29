@@ -4,6 +4,9 @@ defmodule Singularity.CodeStore do
   Extended to support multiple codebases (singularity, singularity-engine, learning codebases).
   """
   use GenServer
+  require Logger
+
+  alias Singularity.Metrics.Pipeline, as: MetricsPipeline
 
   @type state :: %{
           root: String.t(),
@@ -287,6 +290,29 @@ defmodule Singularity.CodeStore do
 
       codebase_data ->
         analysis_result = perform_codebase_analysis(codebase_id, codebase_data)
+
+        Task.start(fn ->
+          case MetricsPipeline.analyze_codebase(codebase_id, project_id: codebase_id) do
+            {:ok, execution_id} ->
+              Logger.info("Triggered code metrics workflow",
+                codebase_id: codebase_id,
+                execution_id: execution_id
+              )
+
+            {:error, reason} ->
+              Logger.error("Failed to trigger code metrics workflow",
+                codebase_id: codebase_id,
+                reason: inspect(reason)
+              )
+
+            results when is_list(results) ->
+              Logger.info("Synchronous metrics analysis completed",
+                codebase_id: codebase_id,
+                results: length(results)
+              )
+          end
+        end)
+
         {:reply, {:ok, analysis_result}, state}
     end
   end
@@ -409,6 +435,16 @@ defmodule Singularity.CodeStore do
     }
   end
 
+  defp queue_entry_to_map(queue_entry) when is_map(queue_entry) do
+    # Convert queue entry to map format
+    %{
+      "id" => Map.get(queue_entry, :id),
+      "payload" => Map.get(queue_entry, :payload),
+      "context" => Map.get(queue_entry, :context),
+      "inserted_at" => Map.get(queue_entry, :inserted_at),
+      "status" => Map.get(queue_entry, :status, "pending")
+    }
+  end
   defp queue_entry_to_map(_), do: nil
 
   defp map_to_queue_entry(
@@ -423,6 +459,16 @@ defmodule Singularity.CodeStore do
     }
   end
 
+  defp map_to_queue_entry(map) when is_map(map) do
+    # Convert map to queue entry format
+    %{
+      payload: Map.get(map, "payload"),
+      context: Map.get(map, "context"),
+      inserted_at: Map.get(map, "inserted_at"),
+      fingerprint: Map.get(map, "fingerprint"),
+      status: Map.get(map, "status", "pending")
+    }
+  end
   defp map_to_queue_entry(_), do: nil
 
   defp ensure_dir(path) do

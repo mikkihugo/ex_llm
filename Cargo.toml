@@ -96,6 +96,7 @@ tree-sitter-sequel = "0.3.11"
 tree-sitter-dockerfile-updated = "0.2.0"
 tree-sitter-toml-ng = "0.7.0"
 tree-sitter-language = "0.1.5"
+tree-sitter-kotlin = { git = "https://github.com/fwcd/tree-sitter-kotlin", rev = "57fb4560ba8641865bc0baa6b3f413b236112c4c" }
 
 # Rustler NIF
 rustler = "0.37.0"
@@ -154,4 +155,3 @@ debug-assertions = true
 overflow-checks = true
 lto = false
 incremental = true
-

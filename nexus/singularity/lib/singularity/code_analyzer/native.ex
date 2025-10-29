@@ -99,7 +99,11 @@ defmodule Singularity.CodeAnalyzer.Native do
   halstead-metrics, ast-extraction, pattern-detection, rustler, nif-bindings
   """
 
-  use Rustler, otp_app: :singularity, crate: "singularity_code_analysis", path: "../../packages/singularity-code-analysis"
+  use Rustler,
+    otp_app: :singularity,
+    crate: "code_quality_engine",
+    path: "../../packages/code_quality_engine"
+
   # ===========================
   # Multi-Language Analysis NIFs (NEW - CodebaseAnalyzer)
   # ===========================

@@ -84,9 +84,9 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   """
 
   require Logger
-  alias Singularity.{Workflows, PgFlow}
+  alias Singularity.PgFlow
+  alias PGFlow.WorkflowSupervisor
   alias Singularity.Code.{UnifiedIngestionService, CodebaseDetector}
-  alias Singularity.HTDAG.Executor
 
   @dag_type "htdag_auto_code_ingestion"
   @config Application.get_env(:singularity, :htdag_auto_ingestion, %{})
@@ -220,23 +220,35 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     # Auto-detect codebase if not provided
     codebase_id = attrs[:codebase_id] || CodebaseDetector.detect(format: :full)
 
-    # Build HTDAG workflow
-    workflow = build_htdag_workflow(dag_id, attrs[:file_path], codebase_id, attrs)
+    # Build HTDAG workflow payload
+    workflow_payload = build_htdag_workflow(dag_id, attrs[:file_path], codebase_id, attrs)
 
-    case Workflows.create_workflow(workflow) do
+    # Create workflow directly in PgFlow (single source of truth)
+    workflow_attrs = %{
+      workflow_id: dag_id,
+      type: @dag_type,
+      status: "pending",
+      payload: workflow_payload
+    }
+
+    case PgFlow.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Started HTDAG auto code ingestion",
           dag_id: dag_id,
           file_path: attrs[:file_path]
         )
 
-        # Start DAG execution asynchronously
-        Task.start(fn -> execute_dag(dag_id) end)
-
-        {:ok, dag_id}
+        # Execute DAG via PgFlow WorkflowSupervisor for reliable workflow management
+        case WorkflowSupervisor.start_workflow(workflow_payload, []) do
+          {:ok, _pid} ->
+            {:ok, dag_id}
+          {:error, reason} ->
+            Logger.error("Failed to execute HTDAG via PgFlow", reason: reason)
+            {:error, reason}
+        end
 
       {:error, reason} ->
-        Logger.error("Failed to start HTDAG auto code ingestion",
+        Logger.error("Failed to create HTDAG workflow in PgFlow",
           error: reason,
           file_path: attrs[:file_path]
         )
@@ -589,8 +601,21 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       file_path: file_path
     )
 
-    # Send completion notification
-    {:ok, %{file_path: file_path, notification_sent: true}}
+    # Send completion notification via PgFlow
+    notification = %{
+      type: "code_ingestion_complete",
+      file_path: file_path,
+      dag_id: dag_id,
+      timestamp: System.system_time(:millisecond)
+    }
+    
+    case PgFlow.send_with_notify("code_ingestion_notifications", notification) do
+      {:ok, _message_id} ->
+        {:ok, %{file_path: file_path, notification_sent: true}}
+      {:error, reason} ->
+        Logger.error("Failed to send completion notification", reason: reason)
+        {:ok, %{file_path: file_path, notification_sent: false}}
+    end
   end
 
   # Private Functions
@@ -616,7 +641,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   end
 
   defp execute_dag(dag_id) do
-    case Workflows.fetch_workflow(dag_id) do
+    case PgFlow.get_workflow(dag_id) do
       {:ok, workflow} ->
         execute_htdag_nodes(workflow)
 
@@ -847,11 +872,34 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     []
   end
 
-  defp calculate_complexity(parse_results) do
-    # Calculate code complexity metrics
-    # This would be implemented based on the actual parse results structure
-    1.0
+  defp calculate_complexity(parse_results) when is_map(parse_results) do
+    # Calculate code complexity using SCA
+    code = Map.get(parse_results, :content, "")
+    language = Map.get(parse_results, :language, "elixir")
+    
+    case Singularity.CodeAnalyzer.calculate_ai_complexity_score(code, language) do
+      {:ok, score} -> score
+      {:error, _} -> 
+        # Fallback to basic estimation
+        basic_complexity_estimation(parse_results)
+    end
   end
+  defp calculate_complexity(_), do: 1.0
+
+  defp basic_complexity_estimation(parse_results) when is_map(parse_results) do
+    # Basic complexity estimation based on parse results
+    functions = Map.get(parse_results, :functions, [])
+    classes = Map.get(parse_results, :classes, [])
+    lines = Map.get(parse_results, :lines, 0)
+    
+    # Simple heuristic: 0.1 per function, 0.2 per class, 0.01 per line
+    function_complexity = length(functions) * 0.1
+    class_complexity = length(classes) * 0.2
+    line_complexity = lines * 0.01
+    
+    min(10.0, function_complexity + class_complexity + line_complexity)
+  end
+  defp basic_complexity_estimation(_), do: 1.0
 
   defp find_dependents(file_path) do
     # Find files that depend on this file
@@ -860,10 +908,14 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   end
 
   defp update_workflow_payload(dag_id, payload) do
-    case Workflows.fetch_workflow(dag_id) do
+    case PgFlow.get_workflow(dag_id) do
       {:ok, workflow} ->
-        updated_workflow = %{workflow | payload: payload}
-        Workflows.update_workflow_status(dag_id, updated_workflow.payload)
+        # Update payload directly via PgFlow
+        case PgFlow.update_workflow_status(workflow, payload) do
+          {:ok, _} -> :ok
+          {:error, reason} ->
+            Logger.error("Failed to update workflow payload via PgFlow", reason: reason)
+        end
 
       :not_found ->
         Logger.error("DAG not found for payload update", dag_id: dag_id)
@@ -871,9 +923,14 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   end
 
   defp update_workflow_status(dag_id, status) do
-    case Workflows.fetch_workflow(dag_id) do
+    case PgFlow.get_workflow(dag_id) do
       {:ok, workflow} ->
-        Workflows.update_workflow_status(dag_id, status)
+        # Update via PgFlow for reliable persistence
+        case PgFlow.update_workflow_status(workflow, status) do
+          {:ok, _} -> :ok
+          {:error, reason} ->
+            Logger.error("Failed to update workflow status via PgFlow", reason: reason)
+        end
 
       :not_found ->
         Logger.error("DAG not found for status update", dag_id: dag_id)
