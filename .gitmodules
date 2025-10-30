@@ -4,3 +4,6 @@
 [submodule "packages/ex_llm"]
 	path = packages/ex_llm
 	url = https://github.com/mikkihugo/ex_llm.git
+[submodule "packages/singularity-code-analysis"]
+	path = packages/singularity-code-analysis
+	url = git@github.com:mikkihugo/singularity-code-analysis.git
