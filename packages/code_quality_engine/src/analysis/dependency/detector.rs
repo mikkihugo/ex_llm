@@ -260,9 +260,9 @@ pub trait DependencyDetectorTrait {
     fn detect_dependencies(&self, content: &str, file_path: &str) -> Result<Vec<Dependency>>;
     fn detect_circular_dependencies(
         &self,
-        dependencies: &[Dependency],
+        _dependencies: &[Dependency],
     ) -> Result<Vec<CircularDependency>>;
-    fn build_dependency_graph(&self, dependencies: &[Dependency]) -> Result<DependencyGraph>;
+    fn build_dependency_graph(&self, _dependencies: &[Dependency]) -> Result<DependencyGraph>;
     fn get_name(&self) -> &str;
     fn get_version(&self) -> &str;
 }
@@ -430,7 +430,7 @@ impl DependencyPatternRegistry {
     /// Analyze dependency health
     async fn analyze_dependency_health(
         &self,
-        dependencies: &[Dependency],
+        _dependencies: &[Dependency],
     ) -> Result<DependencyHealthMetrics> {
         // PSEUDO CODE:
         /*
@@ -496,9 +496,9 @@ impl DependencyPatternRegistry {
     /// Generate recommendations
     fn generate_recommendations(
         &self,
-        dependencies: &[Dependency],
-        circular_deps: &[CircularDependency],
-        health_metrics: &DependencyHealthMetrics,
+        _dependencies: &[Dependency],
+        _circular_deps: &[CircularDependency],
+        _health_metrics: &DependencyHealthMetrics,
     ) -> Vec<DependencyRecommendation> {
         // PSEUDO CODE:
         /*
