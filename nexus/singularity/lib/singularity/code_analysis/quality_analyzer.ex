@@ -369,7 +369,9 @@ defmodule Singularity.CodeAnalysis.QualityAnalyzer do
       "medium" -> :medium
       "low" -> :low
       "info" -> :info
-      other -> String.to_atom(other)
+      # BUG FIX: Don't use String.to_atom on unknown values - can create unbounded atoms
+      # causing atom table exhaustion and VM crash. Default to :info instead.
+      _unknown -> :info
     end
   end
 

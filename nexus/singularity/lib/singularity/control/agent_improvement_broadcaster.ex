@@ -5,6 +5,8 @@ defmodule Singularity.AgentImprovementBroadcaster do
   Cluster-native broadcasting without external transports (pgmq-free).
   """
 
+  require Logger
+
   alias Singularity.Agents.Agent
 
   @group :singularity_control
@@ -60,10 +62,19 @@ defmodule Singularity.AgentImprovementBroadcaster do
 
   defp ensure_pg do
     case :pg.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, {:already_registered_name, _name}} -> :ok
-      {:error, reason} -> raise "failed to start :pg: #{inspect(reason)}"
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, {:already_registered_name, _name}} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Failed to start :pg process group", reason: inspect(reason))
+        # Don't raise - continue anyway since :pg might already be started
+        :ok
     end
   end
 end

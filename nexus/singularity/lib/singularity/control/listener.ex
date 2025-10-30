@@ -18,10 +18,16 @@ defmodule Singularity.Control.Listener do
 
   @impl true
   def init(_opts) do
-    ensure_pg()
-    :ok = :pg.join(@group, self())
-    Logger.debug("Joined control group", node: node(), group: @group)
-    {:ok, %{}}
+    case ensure_pg() do
+      :ok ->
+        :ok = :pg.join(@group, self())
+        Logger.debug("Joined control group", node: node(), group: @group)
+        {:ok, %{}}
+
+      {:error, reason} ->
+        Logger.error("Failed to initialize process group", reason: inspect(reason))
+        {:error, reason}
+    end
   end
 
   @impl true
@@ -38,10 +44,18 @@ defmodule Singularity.Control.Listener do
 
   defp ensure_pg do
     case :pg.start_link() do
-      {:ok, _pid} -> :ok
-      {:error, {:already_started, _pid}} -> :ok
-      {:error, {:already_registered_name, _name}} -> :ok
-      {:error, reason} -> raise "failed to start :pg: #{inspect(reason)}"
+      {:ok, _pid} ->
+        :ok
+
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      {:error, {:already_registered_name, _name}} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Failed to start :pg process group", reason: inspect(reason))
+        {:error, reason}
     end
   end
 end

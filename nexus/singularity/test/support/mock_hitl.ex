@@ -24,13 +24,17 @@ defmodule Singularity.Test.MockHITL do
   end
 
   def publish_decision(updated) do
-    request_id = Map.get(updated, :request_id)
-    response_queue = Map.get(updated, :response_queue, "approval_response_#{request_id}")
+    # TODO: Implement PgmqClient module or use a proper message queue
+    # For now, just return :ok since this is a mock
+    _request_id = Map.get(updated, :request_id)
+    _response_queue = Map.get(updated, :response_queue, "approval_response_#{_request_id}")
 
-    Singularity.Jobs.PgmqClient.send_message(response_queue, %{
-      decision: "approved",
-      decision_reason: "mock decision"
-    })
+    # Singularity.Jobs.PgmqClient.send_message(response_queue, %{
+    #   decision: "approved",
+    #   decision_reason: "mock decision"
+    # })
+
+    :ok
   end
 
   def list_pending_approvals do
