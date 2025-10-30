@@ -304,8 +304,8 @@ defmodule Singularity.Ingestion.RunStartupCodeIngestion do
     # TELEMETRY: Learning started
     :telemetry.execute([:task_graph, :learn, :start], %{timestamp: DateTime.utc_now()}, %{})
 
-    # INTEGRATION: FullRepoScanner - Scans codebase and builds knowledge graph
-    case FullRepoScanner.learn_codebase() do
+    # INTEGRATION: ScanRepositoryAndQueueIngestion - Scans codebase and builds knowledge graph
+    case Singularity.Ingestion.ScanRepositoryAndQueueIngestion.learn_codebase() do
       {:ok, learning} ->
         issues_count = length(learning.issues)
         Logger.info("Learning complete: #{issues_count} issues found")
@@ -341,8 +341,8 @@ defmodule Singularity.Ingestion.RunStartupCodeIngestion do
           max_iterations = Keyword.get(state.config, :max_iterations, 10)
           dry_run = state.dry_run
 
-          # INTEGRATION: FullRepoScanner.auto_fix_all - Uses RAG + Quality templates to fix issues
-          case FullRepoScanner.auto_fix_all(max_iterations: max_iterations, dry_run: dry_run) do
+          # INTEGRATION: ScanRepositoryAndQueueIngestion.auto_fix_all - Uses RAG + Quality templates to fix issues
+          case Singularity.Ingestion.ScanRepositoryAndQueueIngestion.auto_fix_all(max_iterations: max_iterations, dry_run: dry_run) do
             {:ok, fix_result} ->
               mode_msg = if dry_run, do: " (DRY-RUN mode - no changes applied)", else: ""
 
@@ -505,7 +505,7 @@ defmodule Singularity.Ingestion.RunStartupCodeIngestion do
 
     # Auto-detect codebase_id from Git with extended cache (30 min TTL for heavy ingestion)
     # This prevents re-running git command for each of 933 files during startup
-    codebase_id = CodebaseDetector.detect(format: :full, extend_cache: module_count > 100)
+    codebase_id = Singularity.Ingestion.Core.DetectCurrentCodebase.detect(format: :full, extend_cache: module_count > 100)
 
     # Persist each learned module using unified ingestion service
     results =

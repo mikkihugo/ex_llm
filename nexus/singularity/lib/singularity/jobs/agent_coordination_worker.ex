@@ -14,7 +14,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   - Agent coordination signals
   """
 
-  use Pgflow.Worker, queue: :default, max_attempts: 3
+  use Singularity.Infrastructure.PgFlow.Worker, queue: :default, max_attempts: 3
 
   require Logger
   alias Singularity.Workflows.AgentCoordination

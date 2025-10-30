@@ -112,7 +112,7 @@ defmodule Singularity.SelfImprovingAgent do
 
   require Logger
 
-  alias Singularity.{CodeStore, HotReload, ProcessRegistry}
+  alias Singularity.{CodeStore, ProcessRegistry}
   alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter
@@ -338,7 +338,7 @@ defmodule Singularity.SelfImprovingAgent do
     # Subscribe to PGFlow workflow completion events for Genesis experiment results
     workflow_name = "genesis_experiment_#{agent_id}"
 
-    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+    case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_genesis_workflow_completion(agent_id, workflow_result)
          end) do
       {:ok, subscription_id} ->
@@ -400,7 +400,7 @@ defmodule Singularity.SelfImprovingAgent do
       |> Map.put(:pending_plan, payload)
       |> Map.put(:pending_context, enriched_context)
 
-    case HotReload.ModuleReloader.enqueue(state.id, payload) do
+    case Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange.enqueue(state.id, payload) do
       :ok ->
         {:noreply, %{state | status: :updating}}
 
@@ -693,7 +693,7 @@ defmodule Singularity.SelfImprovingAgent do
     }
 
     # Publish request to Genesis via Pgflow workflow
-    case Pgflow.Workflow.create_workflow(
+    case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
            Singularity.Workflows.GenesisExperimentRequestWorkflow,
            %{
              "request" => request,
@@ -1184,7 +1184,7 @@ defmodule Singularity.SelfImprovingAgent do
         |> Map.put(:pending_previous_code, nil)
 
       true ->
-        _ = HotReload.ModuleReloader.enqueue(state.id, payload)
+        _ = Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange.enqueue(state.id, payload)
         Limiter.reset(state.id)
 
         baseline = Singularity.Infrastructure.Telemetry.snapshot()

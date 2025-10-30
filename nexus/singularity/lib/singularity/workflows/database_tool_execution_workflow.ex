@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
   5. Send Response - Deliver response to requesting system
   """
 
-  use Pgflow.Workflow
+  use Singularity.Infrastructure.PgFlow.Workflow
 
   require Logger
   alias Singularity.Tools.DatabaseToolsExecutor

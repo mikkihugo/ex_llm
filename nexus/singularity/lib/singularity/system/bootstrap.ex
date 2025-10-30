@@ -67,16 +67,16 @@ defmodule Singularity.System.Bootstrap do
 
     # Phase 1: Simple codebase learning
     Logger.info("Phase 1: Learning codebase the easy way...")
-    {:ok, learning} = FullRepoScanner.learn_codebase()
+    {:ok, learning} = Singularity.Ingestion.ScanRepositoryAndQueueIngestion.learn_codebase()
 
     # Phase 2: Map all systems with explanations
     Logger.info("Phase 2: Mapping all systems with inline documentation...")
-    {:ok, mapping} = FullRepoScanner.map_all_systems()
+    {:ok, mapping} = Singularity.Ingestion.ScanRepositoryAndQueueIngestion.map_all_systems()
 
     # Phase 3: Auto-fix everything
     if Keyword.get(opts, :auto_fix, false) do
       Logger.info("Phase 3: Auto-fixing all issues...")
-      {:ok, fixes} = FullRepoScanner.auto_fix_all()
+      {:ok, fixes} = Singularity.Ingestion.ScanRepositoryAndQueueIngestion.auto_fix_all()
 
       {:ok,
        %{
@@ -113,7 +113,7 @@ defmodule Singularity.System.Bootstrap do
     Logger.info("Auto-repairing Singularity server...")
 
     # Use the simple auto-fix approach
-    case FullRepoScanner.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
+    case Singularity.Ingestion.ScanRepositoryAndQueueIngestion.auto_fix_all(Keyword.put(opts, :max_iterations, 20)) do
       {:ok, result} ->
         Logger.info("Auto-repair complete",
           iterations: result.iterations,
@@ -290,23 +290,11 @@ defmodule Singularity.System.Bootstrap do
     missing
   end
 
-  defp check_module_available(module) do
-    Code.ensure_loaded?(module)
-  end
+  defp check_module_available(module), do: Code.ensure_loaded?(module)
 
-  defp task_graph_integrated_with_self_improving? do
-    # Check if integration exists
-    # For now, return false to indicate we need this integration
-    false
-  end
+  defp task_graph_integrated_with_self_improving?, do: false
 
-  defp task_graph_integrated_with_safe_planner? do
-    # Check if integration exists
-    false
-  end
+  defp task_graph_integrated_with_safe_planner?, do: false
 
-  defp task_graph_uses_rag? do
-    # Check if TaskGraph executor uses RAG
-    false
-  end
+  defp task_graph_uses_rag?, do: false
 end

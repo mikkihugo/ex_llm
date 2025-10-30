@@ -83,7 +83,7 @@ defmodule Singularity.Agents.Agent do
 
   require Logger
 
-  alias Singularity.{CodeStore, HotReload, ProcessRegistry}
+  alias Singularity.{CodeStore, ProcessRegistry}
   alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter
@@ -319,7 +319,7 @@ defmodule Singularity.Agents.Agent do
       |> Map.put(:pending_plan, payload)
       |> Map.put(:pending_context, enriched_context)
 
-    case HotReload.ModuleReloader.enqueue(state.id, payload) do
+    case Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange.enqueue(state.id, payload) do
       :ok ->
         {:noreply, %{state | status: :updating}}
 
@@ -994,7 +994,7 @@ defmodule Singularity.Agents.Agent do
         |> Map.put(:pending_previous_code, nil)
 
       true ->
-        _ = HotReload.ModuleReloader.enqueue(state.id, payload)
+        _ = Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange.enqueue(state.id, payload)
         Limiter.reset(state.id)
 
         baseline = Singularity.Infrastructure.Telemetry.snapshot()

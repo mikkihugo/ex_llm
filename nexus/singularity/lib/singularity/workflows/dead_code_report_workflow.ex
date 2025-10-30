@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.DeadCodeReportWorkflow do
   5. Update Metrics - Update dead code monitoring metrics
   """
 
-  use Pgflow.Workflow
+  use Singularity.Infrastructure.PgFlow.Workflow
 
   require Logger
 

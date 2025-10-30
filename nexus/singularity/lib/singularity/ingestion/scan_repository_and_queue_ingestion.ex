@@ -38,11 +38,11 @@ defmodule Singularity.Ingestion.ScanRepositoryAndQueueIngestion do
   ## Usage
 
       # Learn about the codebase incrementally
-      {:ok, knowledge} = FullRepoScanner.learn_codebase()
+      {:ok, knowledge} = __MODULE__.learn_codebase()
       # => {:ok, %{knowledge: %{modules: %{...}}, issues: [...]}}
 
       # Auto-fix everything that's broken (uses Lua scripts)
-      {:ok, fixes} = FullRepoScanner.auto_fix_all()
+      {:ok, fixes} = __MODULE__.auto_fix_all()
       # => {:ok, %{iterations: 3, fixes: [...]}}
   """
 

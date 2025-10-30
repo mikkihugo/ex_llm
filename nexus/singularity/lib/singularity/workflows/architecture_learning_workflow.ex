@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
   5. Model Deployment - Save and deploy trained models
   """
 
-  use Pgflow.Workflow
+  use Singularity.Infrastructure.PgFlow.Workflow
 
   require Logger
   alias Singularity.Architecture.PatternDetector

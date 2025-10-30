@@ -201,12 +201,14 @@ defmodule Singularity.Execution.Runners.Control do
         Logger.debug("Broadcast system event via PGFlow workflow",
           event_type: event.type,
           source: event.source,
+          workflow: workflow_name,
           workflow_id: workflow_id
         )
 
       {:error, reason} ->
         Logger.warning("Failed to create PGFlow workflow for system event",
           event_type: event.type,
+          workflow: workflow_name,
           reason: reason
         )
 
