@@ -5,22 +5,22 @@
 THE OPPORTUNITY
 ===============
 
-Right now: Singularity = excellent internal tool for auto-code-generation
+Right now: Singularity Core = excellent internal auto-code-generation system
 
-Opportunity: Package it into 4 free/freemium products, distribute across 
+Opportunity: Package it into 4 free/freemium Singularity Products, distribute across
 4 channels (MCP + VS Code + CLI + API), drive users toward the core system.
 
-= Customer acquisition flywheel that locks customers into Singularity core
+= Customer acquisition flywheel that locks customers into Singularity Core
 
 
 THE STRATEGY
 ============
 
-1. BUILD: 4 Free Products (Months 1-2)
-   ├─ Smart Package Context (package docs + real examples + consensus patterns)
-   ├─ Scanner (code quality + auto-fixes)
-   ├─ GitHub App (PR quality checks)
-   └─ CentralCloud (team pattern aggregation)
+1. BUILD: 4 Singularity Products (Months 1-2)
+   ├─ Singularity Smart Package Context (package docs + examples + patterns)
+   ├─ Singularity Scanner (code quality + auto-fixes)
+   ├─ Singularity GitHub App (PR quality checks)
+   └─ Singularity Central Cloud (team pattern aggregation)
 
 2. DISTRIBUTE: Each product on 4 channels (Months 1-5)
    ├─ MCP Server (Claude/Cursor)
@@ -29,9 +29,9 @@ THE STRATEGY
    └─ HTTP API (custom integrations)
 
 3. MONETIZE: Freemium → Premium → Singularity Core (Month 6+)
-   ├─ Free: Basic access across all products
+   ├─ Free: Basic access across all Singularity Products
    ├─ Premium: $20/mo unlimited access + advanced patterns
-   └─ Enterprise: Singularity core $100-500/mo (auto-generation)
+   └─ Enterprise: Singularity Core $100-500/mo (auto-generation + lock-in)
 
 4. LOCK-IN: Network Effects
    └─ More users → Better patterns → Higher value → Harder to leave
@@ -40,36 +40,36 @@ THE STRATEGY
 KEY PRODUCTS
 ============
 
-1. SMART PACKAGE CONTEXT
-   What: "Know before you code" - docs + examples + consensus
-   Why: Every developer researches packages, saves 10 mins/day
-   Status: 95% ready (package_intelligence + CentralCloud + embeddings)
-   Effort: 4-5 weeks (all channels)
+1. SINGULARITY SMART PACKAGE CONTEXT
+   What: "Know before you code" - docs + examples + consensus patterns
+   Why: Every developer researches packages, saves 10 mins/day on research
+   Status: 95% ready (package_intelligence + patterns + embeddings)
+   Effort: 4-5 weeks (all 4 channels)
    Market: 15M+ developers
    Revenue: Free tier + $20/mo premium
 
-2. SCANNER
-   What: "Fix before it breaks" - code quality with pattern suggestions
-   Why: Quality issues are expensive, consensus patterns improve fixes
-   Status: 95% ready (code_quality_engine)
-   Effort: 2-3 weeks (all channels)
-   Market: Every dev team
-   Revenue: Free tier + CI/CD enterprise tier
+2. SINGULARITY SCANNER
+   What: "Fix before it breaks" - code quality with pattern-based suggestions
+   Why: Quality issues are expensive, consensus patterns improve effectiveness
+   Status: 95% ready (code_quality_engine + patterns)
+   Effort: 2-3 weeks (all 4 channels)
+   Market: Every dev team, CI/CD pipelines
+   Revenue: Free tier + enterprise CI/CD tier
 
-3. GITHUB APP
-   What: "Quality at merge time" - PR checks with pattern suggestions
-   Why: GitHub is where code review happens, need tools there
-   Status: 90% ready (just needs polish)
+3. SINGULARITY GITHUB APP
+   What: "Quality at merge time" - PR checks with pattern suggestions + fixes
+   Why: GitHub is where code review happens, need integrated tools there
+   Status: 90% ready (just needs polish + channel wrappers)
    Effort: 1-2 weeks (all channels)
    Market: 20M+ GitHub users
-   Revenue: Free tier + org enterprise
+   Revenue: Free tier + org/enterprise tiers
 
-4. CENTRALCLOUD
-   What: "Collective intelligence" - consensus patterns across teams
-   Why: Your patterns are valuable to others, their patterns improve yours
-   Status: 85% ready (embedding integration just done)
-   Effort: 2-3 weeks (productize + expose APIs)
-   Market: Engineering teams, enterprises
+4. SINGULARITY CENTRAL CLOUD
+   What: "Collective intelligence" - consensus patterns across teams/instances
+   Why: Your patterns are valuable to others, network effects compound value
+   Status: 85% ready (embedding integration complete)
+   Effort: 2-3 weeks (productize + expose APIs + multi-channel)
+   Market: Engineering teams, enterprises, Singularity customers
    Revenue: Free tier + team/enterprise tiers
 
 
