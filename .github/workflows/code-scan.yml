@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   scan:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, rtx4080]
     
     steps:
       - name: Checkout
@@ -39,24 +39,16 @@ jobs:
           cd nexus/singularity
           mix deps.get
 
-      - name: Auto-format Rust code
-        run: |
-          cargo fmt --all -- --check || cargo fmt --all
-
-      - name: Auto-format Elixir code
-        run: |
-          cd nexus/singularity
-          mix format --check-formatted || mix format
-
       - name: Build scanner CLI
         run: |
           cargo build --release -p code_quality_engine --features cli
 
-      - name: Run scanner on codebase
+      - name: Run scanner with auto-fix
         run: |
           ./target/release/singularity-scanner analyze \
             --path nexus/singularity \
-            --format json || true
+            --format json \
+            --fix || true
 
       - name: Commit auto-fixes
         if: github.event_name == 'pull_request'
