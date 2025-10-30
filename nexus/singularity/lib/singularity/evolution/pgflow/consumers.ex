@@ -88,12 +88,12 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
             handle_consensus_rejected(proposal, message)
 
           _ ->
-            Logger.warn("Unknown consensus status: #{status}")
+            Logger.warning("Unknown consensus status: #{status}")
             {:error, :unknown_status}
         end
 
       nil ->
-        Logger.warn("Proposal #{proposal_id} not found")
+        Logger.warning("Proposal #{proposal_id} not found")
         {:error, :proposal_not_found}
     end
   end
@@ -136,7 +136,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         end
 
       nil ->
-        Logger.warn("Proposal #{proposal_id} not found for rollback")
+        Logger.warning("Proposal #{proposal_id} not found for rollback")
         {:error, :proposal_not_found}
     end
   end
@@ -271,7 +271,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
 
     case Repo.update(updated) do
       {:ok, rolled_back_proposal} ->
-        Logger.warn("Proposal rolled back: #{rolled_back_proposal.id}")
+        Logger.warning("Proposal rolled back: #{rolled_back_proposal.id}")
 
         :telemetry.execute(
           [:evolution, :pgflow, :rollback_completed],

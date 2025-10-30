@@ -336,7 +336,7 @@ impl DependencyPatternRegistry {
     }
 
     /// Analyze dependencies
-    pub async fn analyze(&self, content: &str, file_path: &str) -> Result<DependencyAnalysis> {
+    pub async fn analyze(&self, _content: &str, _file_path: &str) -> Result<DependencyAnalysis> {
         // PSEUDO CODE:
         /*
         let mut all_dependencies = Vec::new();

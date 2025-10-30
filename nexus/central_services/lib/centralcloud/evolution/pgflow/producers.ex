@@ -108,7 +108,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
 
     case publish_message("rollback_triggers_queue", message) do
       {:ok, message_id} ->
-        Logger.warn(
+        Logger.warning(
           "Published rollback trigger for proposal #{proposal_id} to #{instance_id}: #{reason}"
         )
 

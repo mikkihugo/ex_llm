@@ -259,7 +259,6 @@ pub struct InfrastructureAnalysis {
 // - Supported JetStream detection
 // - Integrated with docker-compose
 // Now use ex_pgflow/pgmq via Elixir for persistent storage
-
 /// Kafka detector
 struct KafkaDetector;
 

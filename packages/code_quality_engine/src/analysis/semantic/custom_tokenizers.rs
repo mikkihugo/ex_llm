@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use parser_core::language_registry::LANGUAGE_REGISTRY;
 
 /// Data type for tokenization
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,22 +145,29 @@ impl CustomTokenizer for CodeTokenizer {
 
 impl CodeTokenizer {
     fn tokenize_code(&self, language: &str, content: &str) -> Result<Vec<DataToken>> {
-        // ALL parsers now use universal-parser trait for consistency
-        match language {
-            // All parsers use PolyglotCodeParser trait
-            "rust" => self.tokenize_rust(content), // syn-based + universal trait
-            "typescript" => self.tokenize_typescript(content), // oxc-based + universal trait
-            "javascript" => self.tokenize_javascript(content), // oxc-based + universal trait
-            "python" => self.tokenize_python(content), // universal-parser
-            "java" => self.tokenize_java(content), // universal-parser
-            "go" => self.tokenize_go(content),     // universal-parser
-            "c" | "cpp" | "c++" => self.tokenize_c_cpp(content), // universal-parser
-            "csharp" | "c#" => self.tokenize_csharp(content), // universal-parser
+        // Normalize language id via the centralized language registry. This
+        // allows callers to send IDs, aliases or extensions and still resolve
+        // to the canonical language id used by the tokenizer.
+        let lang_id = LANGUAGE_REGISTRY
+            .get_language(language)
+            .or_else(|| LANGUAGE_REGISTRY.get_language_by_alias(language))
+            .map(|l| l.id.clone())
+            .unwrap_or_else(|| language.to_string());
 
-            // BEAM languages (all use universal-parser)
-            "elixir" => self.tokenize_elixir(content), // universal-parser
-            "erlang" => self.tokenize_erlang(content), // universal-parser
-            "gleam" => self.tokenize_gleam(content),   // universal-parser
+        match lang_id.as_str() {
+            "rust" => self.tokenize_rust(content),
+            "typescript" => self.tokenize_typescript(content),
+            "javascript" => self.tokenize_javascript(content),
+            "python" => self.tokenize_python(content),
+            "java" => self.tokenize_java(content),
+            "go" => self.tokenize_go(content),
+            "c" | "cpp" | "c++" => self.tokenize_c_cpp(content),
+            "csharp" | "c#" => self.tokenize_csharp(content),
+
+            // BEAM family
+            "elixir" => self.tokenize_elixir(content),
+            "erlang" => self.tokenize_erlang(content),
+            "gleam" => self.tokenize_gleam(content),
 
             _ => self.tokenize_generic(content),
         }

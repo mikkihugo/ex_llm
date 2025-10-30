@@ -700,7 +700,6 @@ impl CodeInsightsEngine {
 /// CodePattern database for code pattern detection
 // CodePatternDatabase removed - use crate::analysis::results::CodePatternDatabase instead
 // The old impl CodePatternDatabase has been removed - use the results module instead
-
 /// Insight engine for generating intelligent insights
 struct InsightEngine {
     insight_rules: Vec<InsightRule>,

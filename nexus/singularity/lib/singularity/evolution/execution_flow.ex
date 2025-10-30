@@ -69,6 +69,9 @@ defmodule Singularity.Evolution.ExecutionFlow do
   alias Singularity.Repo
   alias Singularity.Schemas.Evolution.Proposal
   alias CentralCloud.Guardian.RollbackService
+  alias Singularity.Agents.RemediationEngine
+  alias Singularity.HotReload.SafeCodeChangeDispatcher
+  alias Singularity.Evolution.ProposalQueue
 
   @doc """
   Execute an approved proposal end-to-end.
@@ -179,14 +182,32 @@ defmodule Singularity.Evolution.ExecutionFlow do
   def execute_code_change(proposal) do
     Logger.info("Executing code change for proposal #{proposal.id}")
 
-    case proposal.code_change do
-      %{"file" => file, "change" => change} ->
-        # Delegate to actual execution engine (simplified here)
-        apply_code_change(file, change)
+    # Extract execution details from proposal metadata
+    metadata = proposal.metadata || %{}
+    change_type = metadata["change_type"] || proposal.code_change["type"]
+    target_module = metadata["target_module"]
+    details = metadata["details"] || %{}
+
+    # Route to appropriate executor based on change type
+    case change_type do
+      :documentation ->
+        execute_documentation_change(proposal, target_module, details)
+
+      :refactoring ->
+        execute_refactoring_change(proposal, target_module, details)
+
+      :bug_fix ->
+        execute_bug_fix_change(proposal, target_module, details)
+
+      :quality ->
+        execute_quality_change(proposal, target_module, details)
+
+      :pattern_adoption ->
+        execute_pattern_adoption(proposal, target_module, details)
 
       _ ->
-        Logger.error("Invalid code change format in proposal #{proposal.id}")
-        {:error, :invalid_code_change}
+        # Fallback to generic change application
+        apply_generic_code_change(proposal)
     end
   end
 

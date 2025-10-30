@@ -117,7 +117,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
 
       {:error, reason} ->
         # Non-critical - don't fail execution if metrics reporting fails
-        Logger.warn("Failed to publish metrics for #{proposal.id}: #{inspect(reason)}")
+        Logger.warning("Failed to publish metrics for #{proposal.id}: #{inspect(reason)}")
         {:ok, :async_failed}
     end
   end
@@ -148,7 +148,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
         {:ok, message_id}
 
       {:error, reason} ->
-        Logger.warn("Failed to publish pattern: #{inspect(reason)}")
+        Logger.warning("Failed to publish pattern: #{inspect(reason)}")
         {:ok, :async_failed}
     end
   end
