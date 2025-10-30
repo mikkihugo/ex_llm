@@ -45,8 +45,8 @@ defmodule CentralCloud.LLMTeamOrchestrator do
 
     timeout = Keyword.get(opts, :timeout, 180_000)
 
-    with {:ok, run_id} <- QuantumFlow.WorkflowAPI.execute(LLMTeamWorkflow, payload),
-         {:ok, result} <- QuantumFlow.WorkflowAPI.await(run_id, timeout: timeout) do
+    with {:ok, run_id} <- QuantumFlow.Workflow.execute(LLMTeamWorkflow, payload),
+         {:ok, result} <- QuantumFlow.Workflow.await(run_id, timeout: timeout) do
       store_validation_results(codebase_id, result)
       {:ok, result}
     else

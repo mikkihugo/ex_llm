@@ -51,6 +51,8 @@ defmodule Singularity.Database.MessageQueue do
 
   require Logger
   alias Singularity.Repo
+  alias Pgmq
+  alias Pgmq.Message
 
   @doc """
   Create or get a queue by name.
@@ -58,14 +60,25 @@ defmodule Singularity.Database.MessageQueue do
   Idempotent - safe to call multiple times.
   """
   def create_queue(queue_name) when is_binary(queue_name) do
-    case Repo.query("SELECT pgmq.create($1)", [queue_name]) do
-      {:ok, _} ->
-        Logger.info("Queue created: #{queue_name}")
-        {:ok, queue_name}
+    try do
+      :ok = Pgmq.create_queue(Repo, queue_name)
+      Logger.info("Queue created: #{queue_name}")
+      {:ok, queue_name}
+    rescue
+      error in [Postgrex.Error] ->
+        case error.postgres[:code] do
+          :duplicate_table ->
+            Logger.debug("Queue already exists: #{queue_name}")
+            {:ok, queue_name}
 
-      error ->
-        Logger.error("Failed to create queue #{queue_name}: #{inspect(error)}")
-        {:error, error}
+          :duplicate_object ->
+            Logger.debug("Queue already exists: #{queue_name}")
+            {:ok, queue_name}
+
+          _ ->
+            Logger.error("Failed to create queue #{queue_name}: #{format_error(error)}")
+            {:error, error}
+        end
     end
   end
 
@@ -78,12 +91,18 @@ defmodule Singularity.Database.MessageQueue do
   def send(queue_name, message) when is_binary(queue_name) do
     json_msg = Jason.encode!(message)
 
-    case Repo.query("SELECT pgmq.send($1, $2)", [queue_name, json_msg]) do
-      {:ok, %{rows: [[msg_id]]}} ->
-        {:ok, msg_id}
+    try do
+      case Pgmq.send_message(Repo, queue_name, json_msg) do
+        {:ok, msg_id} ->
+          {:ok, msg_id}
 
+        {:error, reason} ->
+          Logger.error("Failed to send message to #{queue_name}: #{inspect(reason)}")
+          {:error, reason}
+      end
+    rescue
       error ->
-        Logger.error("Failed to send message to #{queue_name}: #{inspect(error)}")
+        Logger.error("Failed to send message to #{queue_name}: #{format_error(error)}")
         {:error, error}
     end
   end
@@ -95,21 +114,20 @@ defmodule Singularity.Database.MessageQueue do
   Returns {message_id, decoded_message} if available, :empty if queue is empty.
   """
   def receive_message(queue_name) when is_binary(queue_name) do
-    case Repo.query(
-           "SELECT msg_id, body FROM pgmq.read($1, vt := 30, limit := 1)",
-           [queue_name]
-         ) do
-      {:ok, %{rows: [[msg_id, body_json]]}} ->
-        case Jason.decode(body_json) do
-          {:ok, message} -> {:ok, {msg_id, message}}
-          {:error, error} -> {:error, "JSON decode failed: #{inspect(error)}"}
-        end
+    try do
+      case Pgmq.read_message(Repo, queue_name, 30) do
+        nil ->
+          :empty
 
-      {:ok, %{rows: []}} ->
-        :empty
-
+        %Message{id: msg_id, body: body_json} ->
+          case Jason.decode(body_json) do
+            {:ok, message} -> {:ok, {msg_id, message}}
+            {:error, error} -> {:error, "JSON decode failed: #{inspect(error)}"}
+          end
+      end
+    rescue
       error ->
-        Logger.error("Failed to receive from #{queue_name}: #{inspect(error)}")
+        Logger.error("Failed to receive from #{queue_name}: #{format_error(error)}")
         {:error, error}
     end
   end
@@ -120,15 +138,12 @@ defmodule Singularity.Database.MessageQueue do
   Call after successfully processing a message.
   """
   def acknowledge(queue_name, message_id) when is_binary(queue_name) and is_integer(message_id) do
-    case Repo.query("SELECT pgmq.delete($1, $2)", [queue_name, message_id]) do
-      {:ok, %{rows: [[1]]}} ->
-        {:ok, :deleted}
-
-      {:ok, %{rows: [[0]]}} ->
-        {:error, "Message not found"}
-
+    try do
+      :ok = Pgmq.delete_messages(Repo, queue_name, [message_id])
+      {:ok, :deleted}
+    rescue
       error ->
-        Logger.error("Failed to acknowledge message: #{inspect(error)}")
+        Logger.error("Failed to acknowledge message: #{format_error(error)}")
         {:error, error}
     end
   end
@@ -209,14 +224,20 @@ defmodule Singularity.Database.MessageQueue do
   Use with caution!
   """
   def drop_queue(queue_name) when is_binary(queue_name) do
-    case Repo.query("SELECT pgmq.drop($1)", [queue_name]) do
-      {:ok, _} ->
-        Logger.warning("Queue dropped: #{queue_name}")
-        {:ok, :dropped}
-
+    try do
+      :ok = Pgmq.drop_queue(Repo, queue_name)
+      Logger.warning("Queue dropped: #{queue_name}")
+      {:ok, :dropped}
+    rescue
       error ->
-        Logger.error("Failed to drop queue #{queue_name}: #{inspect(error)}")
+        Logger.error("Failed to drop queue #{queue_name}: #{format_error(error)}")
         {:error, error}
     end
   end
+
+  defp format_error(%Postgrex.Error{postgres: postgres}) do
+    inspect(%{code: postgres[:code], message: postgres[:message], detail: postgres[:detail]})
+  end
+
+  defp format_error(error), do: inspect(error)
 end

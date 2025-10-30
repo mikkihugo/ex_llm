@@ -457,7 +457,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     updates_id = Keyword.get(opts, :updates)
     relates_to = Keyword.get(opts, :relates_to)
 
-    # Create PgFlow workflow for work item processing
+    # Create QuantumFlow workflow for work item processing
     workflow_id = "work_item_#{:erlang.unique_integer([:positive])}"
 
     workflow_attrs = %{
@@ -473,7 +473,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       }
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created work item workflow", workflow_id: workflow_id)
 
@@ -517,7 +517,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
         new_state = apply_chunk_changes(state, analysis, approved_by, updates_id)
 
-        # Send success notification via PgFlow
+        # Send success notification via QuantumFlow
         notification = %{
           type: "work_item_processed",
           workflow_id: workflow_id,
@@ -527,7 +527,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           confidence: validation_result |> elem(1) |> Map.get(:confidence)
         }
 
-        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:ok, analysis}, new_state}
 
@@ -541,7 +541,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
         notify_approval_needed(analysis, result)
 
-        # Send approval needed notification via PgFlow
+        # Send approval needed notification via QuantumFlow
         notification = %{
           type: "work_item_approval_needed",
           workflow_id: workflow_id,
@@ -552,7 +552,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           reasoning: result.reasoning
         }
 
-        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:needs_approval, result}, state}
 
@@ -566,7 +566,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
         notify_escalation(analysis, result)
 
-        # Send escalation notification via PgFlow
+        # Send escalation notification via QuantumFlow
         notification = %{
           type: "work_item_escalated",
           workflow_id: workflow_id,
@@ -577,7 +577,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           reasoning: result.reasoning
         }
 
-        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:escalated, result}, state}
     end
@@ -622,7 +622,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     new_state = mark_complete(state, item_id, level)
     CodeStore.save_vision(serialize_state(new_state))
 
-    # Send completion notification via PgFlow
+    # Send completion notification via QuantumFlow
     notification = %{
       type: "work_item_completed",
       item_id: item_id,
@@ -630,7 +630,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       completed_at: :erlang.system_time(:millisecond)
     }
 
-    Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
+    Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("work_item_notifications", notification)
 
     {:reply, :ok, new_state}
   end

@@ -147,7 +147,7 @@ defmodule Singularity.MixProject do
       # Data pipelines
       {:broadway, "~> 1.0"},
       {:broadway_quantum_flow, path: "../../packages/broadway_quantum_flow"},
-      {:off_broadway_pgmq, "~> 0.2"},
+      {:pgmq, "~> 0.4"},
       # Producer-consumer
       {:gen_stage, "~> 1.2"},
       # Parallel processing

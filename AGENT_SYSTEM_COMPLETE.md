@@ -10,7 +10,7 @@
 ### 1. Core Unified System (Workflows Hub)
 ```
 lib/singularity/workflows.ex
-├── create_workflow/1        → Persist workflow to ETS + DB
+├── create_workflow/1        → Persist workflow to QuantumFlow (PostgreSQL)
 ├── execute_workflow/2       → Run nodes (dry-run safe)
 ├── request_approval/2       → Issue Arbiter tokens
 ├── apply_with_approval/3    → Execute with consumed token
@@ -74,7 +74,7 @@ Phase 4: Integration & Learning
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        Todo Store (ETS)                          │
+│                        Workflow Store (PostgreSQL)                          │
 │                   Polls every 30-60 seconds                      │
 └────────────────────┬─────────────────────────────────────────────┘
                      │
@@ -101,7 +101,7 @@ Phase 4: Integration & Learning
     ┌──────────────────────────────┐
     │ Workflows.create_workflow/1  │
     │ Persists to:                 │
-    │ - ETS (:quantum_flow_workflows)    │
+    │ - PostgreSQL table (quantum_flow_workflows)    │
     │ - [Future] PostgreSQL        │
     └────────────┬─────────────────┘
                  │
@@ -146,14 +146,14 @@ Phase 4: Integration & Learning
 
 ### 1. Workflows (Central Hub)
 - **Purpose**: Unified HTDAG + approval orchestration
-- **State**: ETS table `:quantum_flow_workflows` for fast lookups
+- **State**: PostgreSQL table `quantum_flow_workflows` for workflow visibility
 - **Future**: PostgreSQL for durability
-- **Backward Compatibility**: PgFlowAdapter + HTDAG.Executor are shims
+- **Backward Compatibility**: QuantumFlowAdapter + HTDAG.Executor are shims
 
 ### 2. Arbiter (Approval Authority)
 - **Issues**: One-time-use approval tokens (60s TTL)
 - **Enforces**: No accidental reuse, no silent failures
-- **Persists**: To both ETS + Workflows for redundancy
+- **Persistence**: Stored in PostgreSQL `quantum_flow_workflows`
 
 ### 3. RefactorPlanner (Orchestration Brain)
 - **Detects**: Code smells (demo: long_function, deep_nesting)
@@ -313,9 +313,9 @@ iex> SelfImprovementAgent.apply_workflow_with_approval(codebase_id, token)
 **Goal**: Durability beyond process crashes
 ```elixir
 # Use existing Ecto schemas:
-# - Singularity.PgFlow.Workflow (persist workflows)
+# - Singularity.QuantumFlow.Workflow (persist workflows)
 # - Add workflow_node, workflow_execution schemas
-# Keep ETS for fast lookups, sync to DB on completion
+# Stored directly in PostgreSQL (no ETS cache)
 ```
 
 ### Phase 3: Real CodeEngine Integration
@@ -357,9 +357,9 @@ iex> SelfImprovementAgent.apply_workflow_with_approval(codebase_id, token)
 | Supervisor Modules | 5+ | Lifecycle management trees |
 | Workflow Nodes per Todo | ~40 | 4 phases × 2 issues × varying workers |
 | Approval Token TTL | 60 seconds | One-time use, auto-expire |
-| ETS Table Lookups | O(1) | `:quantum_flow_workflows` for fast visibility |
+| Workflow Table Query | O(log n) | `quantum_flow_workflows` for visibility |
 | Default Behavior | Dry-run safe | All workers default to `dry_run: true` |
-| Backward Compatibility | 100% | Old PgFlow + HTDAG APIs still work |
+| Backward Compatibility | 100% | Old QuantumFlow + HTDAG APIs still work |
 
 ---
 
@@ -391,7 +391,7 @@ iex> SelfImprovementAgent.apply_workflow_with_approval(codebase_id, token)
 ## File Summary (Changes This Session)
 
 ### New Files Created
-- `lib/singularity/workflows.ex` - Unified HTDAG + PgFlow hub
+- `lib/singularity/workflows.ex` - Unified HTDAG + QuantumFlow hub
 - `lib/singularity/execution/refactor_worker.ex` - Enhanced with analyze/transform/validate
 - `lib/singularity/execution/assimilate_worker.ex` - New with learn/integrate/report
 - `lib/singularity/smoke_tests/end_to_end_workflow.ex` - Full pipeline demo

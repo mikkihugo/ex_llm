@@ -96,7 +96,7 @@ defmodule Singularity.Pipeline.PipelineOrchestrator do
   - **TaskGraph HTDAG**: Orchestrator extends TaskGraph with constraint generation
   - **SPARC Methodology**: Uses SPARC phases for context gathering and refinement
   - **CentralCloud**: Publishes learnings for cross-instance learning
-  - **ex_quantum_flow**: Uses QuantumFlow workflows for durable execution tracking
+  - **quantum_flow**: Uses QuantumFlow workflows for durable execution tracking
   - **Oban**: Uses Oban jobs for async learning phase processing
   """
 

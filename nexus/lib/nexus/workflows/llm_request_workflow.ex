@@ -1,6 +1,6 @@
 defmodule Nexus.Workflows.LLMRequestWorkflow do
   @moduledoc """
-  ex_quantum_flow Workflow for LLM Request Processing.
+  quantum_flow Workflow for LLM Request Processing.
 
   This workflow handles the complete lifecycle of an LLM request:
   1. Validate request parameters
@@ -33,7 +33,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
         Nexus.Repo
       )
 
-  ## Benefits of Using ex_quantum_flow
+  ## Benefits of Using quantum_flow
 
   - **Automatic Retry** - Failed LLM calls retry with exponential backoff
   - **State Persistence** - All workflow state persisted in PostgreSQL
@@ -45,7 +45,7 @@ defmodule Nexus.Workflows.LLMRequestWorkflow do
   require Logger
 
   @doc """
-  Define workflow steps using ex_quantum_flow DAG syntax.
+  Define workflow steps using quantum_flow DAG syntax.
 
   Steps execute in dependency order with automatic state management.
   """

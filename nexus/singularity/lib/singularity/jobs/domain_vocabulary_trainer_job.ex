@@ -27,7 +27,7 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
         include_patterns: true
       }
       |> Singularity.Jobs.DomainVocabularyTrainerJob.new()
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
 
       # Train vocabulary from codebase
       %{
@@ -36,10 +36,10 @@ defmodule Singularity.Jobs.DomainVocabularyTrainerJob do
         min_token_frequency: 5
       }
       |> Singularity.Jobs.DomainVocabularyTrainerJob.new()
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :ml_training,
     max_attempts: 3,
     priority: 1

@@ -29,7 +29,7 @@ config :centralcloud, :shared_queue,
 
 # Configure the application
 config :centralcloud,
-  ecto_repos: [CentralCloud.Repo, CentralCloud.SharedQueueRepo]
+  ecto_repos: [CentralCloud.SharedQueueRepo]
 
 # Configure logging
 config :logger, level: :info

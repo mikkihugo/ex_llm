@@ -412,11 +412,11 @@ defmodule Singularity.Storage.ValidationMetricsStore do
         source_instance: "singularity_#{node()}"
       }
 
-      # Publish validation metrics to CentralCloud via PgFlow
+      # Publish validation metrics to CentralCloud via QuantumFlow
       # Queue: execution_metrics_aggregated (consumed by CentralCloud.Consumers.PerformanceStatsConsumer)
       message = Map.put(sync_payload, "type", "execution_metrics")
 
-      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("execution_metrics_aggregated", message) do
+      case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("execution_metrics_aggregated", message) do
         {:ok, _} ->
           Logger.debug("Validation metrics published to CentralCloud",
             metrics_count:

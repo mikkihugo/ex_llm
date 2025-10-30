@@ -99,7 +99,7 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
   """
   def yield_and_commit(%{batches: batches, workflow_pid: workflow_pid} = state) do
     state = init_state(state)
-    producer_pid = QuantumFlow.WorkflowAPI.get_parent(workflow_pid)
+    producer_pid = QuantumFlow.Workflow.get_parent(workflow_pid)
 
     # Flatten messages and attach workflow_pid into metadata
     messages =
@@ -121,8 +121,6 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
       |> Enum.map(fn j -> Map.get(j.metadata || %{}, :resource_key) end)
       |> Enum.uniq()
       |> Enum.filter(& &1)
-
-    import Ecto.Query
 
     multi = Ecto.Multi.new()
 
@@ -146,16 +144,7 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
     # Mark jobs in_progress (only those ids)
     multi =
       Ecto.Multi.run(multi, :mark_in_progress, fn repo, _changes ->
-        query =
-          from(j in dynamic_table_name(),
-            where: j.id in ^ids,
-            update: [set: [status: ^"in_progress", updated_at: fragment("NOW()")]]
-          )
-
-        case repo.update_all(query, []) do
-          {count, _} -> {:ok, count}
-          other -> {:error, other}
-        end
+        mark_jobs_in_progress(repo, state, ids)
       end)
 
     # Yield messages as side-effect
@@ -227,11 +216,15 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
   def handle_update(:ack, %{id: job_id}, state) do
     state = init_state(state)
 
+    repo = repo()
+
     case Map.get(state.yielded_job_hints, job_id) do
       nil ->
         # No resource held for this job; just mark completed
-        update_job_status([%{id: job_id}], "completed")
-        {:ok, state}
+        case update_job_status(repo, state, [job_id], "completed") do
+          {:ok, _} -> {:ok, state}
+          {:error, reason} -> {:error, reason, state}
+        end
 
       {resource_key, token} ->
         # Release resource and mark job completed in a single transaction
@@ -247,16 +240,7 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
             end
           end)
           |> Ecto.Multi.run(:mark_completed, fn repo, _ ->
-            query =
-              from(j in dynamic_table_name(),
-                where: j.id == ^job_id,
-                update: [set: [status: ^"completed", updated_at: fragment("NOW()")]]
-              )
-
-            case repo.update_all(query, []) do
-              {count, _} -> {:ok, count}
-              other -> {:error, other}
-            end
+            update_job_status(repo, state, [job_id], "completed")
           end)
 
         case repo().transaction(multi) do
@@ -277,10 +261,17 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
   def handle_update(:requeue, %{id: job_id, reason: reason}, state) do
     state = init_state(state)
 
+    repo = repo()
+
     case Map.get(state.yielded_job_hints, job_id) do
       nil ->
-        update_job_status([%{id: job_id}], "failed", reason)
-        {:ok, %{state | retries: Map.get(state, :retries, 0) + 1}}
+        case update_job_status(repo, state, [job_id], "failed", reason) do
+          {:ok, _} ->
+            {:ok, %{state | retries: Map.get(state, :retries, 0) + 1}}
+
+          {:error, err} ->
+            {:error, err, state}
+        end
 
       {resource_key, token} ->
         # Release resource and mark job failed in a single transaction
@@ -296,16 +287,7 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
             end
           end)
           |> Ecto.Multi.run(:mark_failed, fn repo, _ ->
-            query =
-              from(j in dynamic_table_name(),
-                where: j.id == ^job_id,
-                update: [set: [status: ^"failed", failure_reason: ^reason, updated_at: fragment("NOW()")]]
-              )
-
-            case repo.update_all(query, []) do
-              {count, _} -> {:ok, count}
-              other -> {:error, other}
-            end
+            update_job_status(repo, state, [job_id], "failed", reason)
           end)
 
         case repo().transaction(multi) do
@@ -466,28 +448,72 @@ defmodule Broadway.QuantumFlowProducer.Workflow do
     :crypto.strong_rand_bytes(12) |> Base.url_encode64(padding: false)
   end
 
-  defp update_job_status(jobs, status, reason \\ nil) do
-    import Ecto.Query
+  defp update_job_status(repo, state, ids, status, reason \\ nil) do
+    ids = List.wrap(ids) |> Enum.map(&normalize_id/1)
 
-    ids = Enum.map(jobs, & &1.id)
+    if Enum.empty?(ids) do
+      {:ok, 0}
+    else
+      table = quote_table(queue_table(state))
+      params =
+        if reason do
+          [status, reason, ids]
+        else
+          [status, ids]
+        end
 
-    query =
-      if reason do
-        from(j in dynamic_table_name(),
-          where: j.id in ^ids,
-          update: [set: [status: ^status, updated_at: fragment("NOW()"), failure_reason: ^reason]]
-        )
-      else
-        from(j in dynamic_table_name(),
-          where: j.id in ^ids,
-          update: [set: [status: ^status, updated_at: fragment("NOW()")]]
-        )
+      sql =
+        if reason do
+          "UPDATE #{table} SET status = $1, failure_reason = $2, updated_at = NOW() WHERE id = ANY($3)"
+        else
+          "UPDATE #{table} SET status = $1, failure_reason = NULL, updated_at = NOW() WHERE id = ANY($2)"
+        end
+
+      case repo.query(sql, params) do
+        {:ok, %Postgrex.Result{num_rows: count}} -> {:ok, count}
+        {:error, reason} -> {:error, reason}
       end
-
-    repo().update_all(query, [])
+    end
   end
 
-  defp dynamic_table_name, do: "embedding_jobs"
+  defp mark_jobs_in_progress(repo, state, ids) do
+    ids = List.wrap(ids) |> Enum.map(&normalize_id/1)
+
+    if Enum.empty?(ids) do
+      {:ok, 0}
+    else
+      table = quote_table(queue_table(state))
+      sql = "UPDATE #{table} SET status = 'in_progress', updated_at = NOW() WHERE id = ANY($1)"
+
+      case repo.query(sql, [ids]) do
+        {:ok, %Postgrex.Result{num_rows: count}} -> {:ok, count}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  defp queue_table(state) do
+    state
+    |> Map.get(:queue_name, "embedding_jobs")
+    |> to_string()
+  end
+
+  defp quote_table(table) do
+    escaped = String.replace(table, "\"", "\"\"")
+    ~s("#{escaped}")
+  end
+
+  defp normalize_id(%{id: id}), do: normalize_id(id)
+  defp normalize_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {value, _} -> value
+      :error -> raise ArgumentError, "Unable to parse job id #{inspect(id)}"
+    end
+  end
+
+  defp normalize_id(id) when is_integer(id), do: id
+  defp normalize_id(id) when is_float(id), do: trunc(id)
+  defp normalize_id(other), do: other
 
   defp repo do
     Application.get_env(:broadway_quantum_flow, :repo, Singularity.Repo)

@@ -72,7 +72,7 @@ defmodule CentralCloud.Engines.ParserEngine do
   # Delegate to Singularity via QuantumFlow (Rust NIFs compiled only in Singularity)
   defp parser_engine_call(operation, request) do
     # Route to Singularity via QuantumFlow
-    case QuantumFlow.send_with_notify("engine.parser.#{operation}", request, CentralCloud.Repo, timeout: 30_000) do
+    case QuantumFlow.Notifications.send_with_notify("engine.parser.#{operation}", request, CentralCloud.Repo, timeout: 30_000) do
       {:ok, response} ->
         {:ok, response}
       

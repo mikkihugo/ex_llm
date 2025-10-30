@@ -1,16 +1,16 @@
-defmodule Genesis.PgFlowWorkflowConsumer do
+defmodule Genesis.QuantumFlowWorkflowConsumer do
   @moduledoc """
-  Genesis PgFlow Workflow Consumer - Autonomous Agent for Code Improvement
+  Genesis QuantumFlow Workflow Consumer - Autonomous Agent for Code Improvement
 
-  Consumes three types of workflow messages from PgFlow queues and executes
+  Consumes three types of workflow messages from QuantumFlow queues and executes
   them autonomously with full workflow state management.
 
   ## Architecture
 
   Genesis is a separate Elixir application that safely executes improvement
-  experiments via PgFlow. It implements a reactive agent pattern where it:
+  experiments via QuantumFlow. It implements a reactive agent pattern where it:
 
-  1. **Consumes** from three PgFlow queues:
+  1. **Consumes** from three QuantumFlow queues:
      - `genesis_rule_updates` - Rule evolution (new linting/validation rules)
      - `genesis_llm_config_updates` - LLM configuration (model/parameter changes)
      - `code_execution_requests` - Job requests (code analysis jobs)
@@ -20,7 +20,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
      - LLM config: Update local model selection and parameters
      - Job requests: Execute code analysis, validation, or testing
 
-  3. **Publishes** results via PgFlow:
+  3. **Publishes** results via QuantumFlow:
      - Success: Results with metrics (execution time, quality score, etc.)
      - Failure: Error details with recovery suggestions
      - Metrics: Per-job execution statistics and SLO breach tracking
@@ -92,12 +92,12 @@ defmodule Genesis.PgFlowWorkflowConsumer do
 
   Start the consumer:
   ```elixir
-  {:ok, _pid} = Genesis.PgFlowWorkflowConsumer.start_link([])
+  {:ok, _pid} = Genesis.QuantumFlowWorkflowConsumer.start_link([])
   ```
 
   Or add to supervision tree:
   ```elixir
-  {Genesis.PgFlowWorkflowConsumer, []}
+  {Genesis.QuantumFlowWorkflowConsumer, []}
   ```
   """
 
@@ -114,9 +114,9 @@ defmodule Genesis.PgFlowWorkflowConsumer do
 
   @impl true
   def init(_opts) do
-    Logger.info("[Genesis.PgFlowWorkflowConsumer] Starting PgFlow workflow consumer")
+    Logger.info("[Genesis.QuantumFlowWorkflowConsumer] Starting QuantumFlow workflow consumer")
 
-    # Verify PgFlow integration
+    # Verify QuantumFlow integration
     verify_quantum_flow_integration()
 
     # Start polling immediately
@@ -144,7 +144,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
   # --- Main Workflow Consumption ---
 
   @doc """
-  Consume and process workflows from all three PgFlow queues.
+  Consume and process workflows from all three QuantumFlow queues.
   """
   def consume_workflows(state) do
     batch_size = config()[:batch_size] || 10
@@ -152,7 +152,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
 
     case read_workflow_messages(batch_size) do
       {:ok, messages} when is_list(messages) and length(messages) > 0 ->
-        Logger.info("[Genesis.PgFlowWorkflowConsumer] Processing workflows",
+        Logger.info("[Genesis.QuantumFlowWorkflowConsumer] Processing workflows",
           count: length(messages),
           parallel: enable_parallel
         )
@@ -170,7 +170,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
         state
 
       {:error, reason} ->
-        Logger.error("[Genesis.PgFlowWorkflowConsumer] Failed to read workflows",
+        Logger.error("[Genesis.QuantumFlowWorkflowConsumer] Failed to read workflows",
           error: reason
         )
 
@@ -196,7 +196,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
         result
 
       {:exit, _reason}, acc ->
-        Logger.warning("[Genesis.PgFlowWorkflowConsumer] Workflow processing timeout")
+        Logger.warning("[Genesis.QuantumFlowWorkflowConsumer] Workflow processing timeout")
         update_metrics(acc, :failed)
     end)
   end
@@ -454,7 +454,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
         end
       rescue
         e ->
-          Logger.error("[Genesis.PgFlowWorkflowConsumer] Exception reading workflows",
+          Logger.error("[Genesis.QuantumFlowWorkflowConsumer] Exception reading workflows",
             error: inspect(e)
           )
 
@@ -465,7 +465,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
 
   defp read_from_queue(queue_name, limit) do
     # In production, this would use pgmq.read() with proper database access
-    # For now, return empty list - integration with PgFlow will handle this
+    # For now, return empty list - integration with QuantumFlow will handle this
     repo = config()[:repo] || Genesis.Repo
 
     try do
@@ -673,7 +673,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
   end
 
   defp verify_quantum_flow_integration do
-    Logger.info("[Genesis.PgFlowWorkflowConsumer] Verifying PgFlow integration")
+    Logger.info("[Genesis.QuantumFlowWorkflowConsumer] Verifying QuantumFlow integration")
 
     # Check if required queues exist
     required_queues = [

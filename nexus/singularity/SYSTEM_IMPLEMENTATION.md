@@ -2,14 +2,14 @@
 
 ## Overview
 
-A unified, production-ready agent system for autonomous code analysis, planning, refactoring, and self-improvement. All components are integrated into a single PgFlow-based workflow system with Arbiter-controlled approvals and safe dry-run-first execution.
+A unified, production-ready agent system for autonomous code analysis, planning, refactoring, and self-improvement. All components are integrated into a single QuantumFlow-based workflow system with Arbiter-controlled approvals and safe dry-run-first execution.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   Singularity.Workflows                     │
-│              (Unified HTDAG + PgFlow System)                │
+│              (Unified HTDAG + QuantumFlow System)                │
 ├─────────────────────────────────────────────────────────────┤
 │ • create_workflow/1      - Persist workflow to ETS          │
 │ • fetch_workflow/1       - Retrieve workflow by ID          │
@@ -40,7 +40,7 @@ Coordinator          Worker              Agent
 **Location:** `lib/singularity/workflows.ex`
 
 - **Core function:** Unified interface for all workflow operations
-- **Storage:** ETS table `:quantum_flow_workflows` (in-memory, no DB dependency)
+- **Storage:** ETS table `:quantum_flow.workflow_runs` (in-memory, no DB dependency)
 - **Workflow structure:**
   ```elixir
   %{
@@ -167,7 +167,7 @@ Coordinator          Worker              Agent
   6. Returns `{:ok, {:workflow_created, workflow_id}}`
 
 ### 10. **Backward Compatibility Shims**
-- **`Singularity.PgFlowAdapter`** - Delegates to Workflows
+- **`Singularity.QuantumFlowAdapter`** - Delegates to Workflows
 - **`Singularity.HTDAG.Executor`** - Delegates to Workflows
 - All existing code continues to work unchanged
 
@@ -195,7 +195,7 @@ Coordinator          Worker              Agent
 [3. PERSIST]
     Workflows.create_workflow(workflow_plan)
          ↓
-    Stores in ETS table `:quantum_flow_workflows`
+    Stores in ETS table `:quantum_flow.workflow_runs`
          ↓
     Returns: {:ok, "refactor_codebase_12345"}
 
@@ -271,7 +271,7 @@ Coordinator          Worker              Agent
 ```
 
 ### 6. **Backward Compatibility**
-- Old code using `PgFlowAdapter.persist_workflow/1` still works
+- Old code using `QuantumFlowAdapter.persist_workflow/1` still works
 - Old code using `HTDAG.Executor.execute_workflow_token/2` still works
 - Both are now shims delegating to unified `Workflows` module
 
@@ -333,7 +333,7 @@ workflow = %{
 - `lib/singularity/smoke_tests/end_to_end_workflow.ex` - Smoke test
 - `lib/singularity/QuantumFlow/workflow.ex` - Ecto schema (unused for now, ETS-based)
 - `lib/singularity/QuantumFlow/repo.ex` - Ecto repo (unused for now)
-- `lib/singularity/QuantumFlow.ex` - PgFlow context (unused for now)
+- `lib/singularity/QuantumFlow.ex` - QuantumFlow context (unused for now)
 
 **Modified:**
 - `lib/singularity/quantum_flow_adapter.ex` - Now delegates to Workflows
@@ -351,7 +351,7 @@ workflow = %{
 ## Next Steps (Optional)
 
 1. **Real CodeEngine integration** - Replace mock smell detection with actual analysis
-2. **Database persistence** - Use PgFlow.Workflow schema + Ecto for durability
+2. **Database persistence** - Use QuantumFlow.Workflow schema + Ecto for durability
 3. **Callback-based approvals** - Hook into external approval systems
 4. **Metrics & telemetry** - Track workflow success rates, timing, worker performance
 5. **Multi-signature approvals** - Require multiple Arbiter tokens for critical workflows

@@ -138,7 +138,7 @@ lib/                    # Elixir application, supervision tree
 lib/singularity/agents/ # Autonomous agent system
 lib/singularity/workflows/ # QuantumFlow workflow definitions
 lib/singularity/debug.ex # BEAM debugging toolkit
-packages/               # Publishable packages (Rust NIF engines, ex_quantum_flow)
+packages/               # Publishable packages (Rust NIF engines, quantum_flow)
 config/                 # Application configuration
 priv/repo/migrations/   # Database migrations
 docs/                   # Documentation (debugging guides, etc.)

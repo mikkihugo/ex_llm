@@ -1177,7 +1177,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
 
           # Use transaction to ensure atomicity
           case Singularity.Repo.transaction(fn ->
-                 case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("goal_queue", message) do
+                 case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("goal_queue", message) do
                    {:ok, :sent} ->
                      # Also store goal in local database for tracking
                      store_goal_locally(goal_id, goal, nil)

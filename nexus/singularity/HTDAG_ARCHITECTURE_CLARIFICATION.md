@@ -1,6 +1,6 @@
-# HTDAG Architecture with PgFlow - Current Implementation ✅
+# HTDAG Architecture with QuantumFlow - Current Implementation ✅
 
-## **How HTDAG Works with PgFlow**
+## **How HTDAG Works with QuantumFlow**
 
 ### **Current Architecture (Corrected)**
 
@@ -11,14 +11,14 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 # 2. Store workflow in ETS (fast access)
 {:ok, _workflow} = Workflows.create_workflow(workflow)
 
-# 3. Execute via PgFlow WorkflowSupervisor (reliable execution)
+# 3. Execute via QuantumFlow WorkflowSupervisor (reliable execution)
 {:ok, _pid} = QuantumFlow.WorkflowSupervisor.start_workflow(workflow, [])
 
-# 4. Update status via PgFlow (database persistence)
-{:ok, _} = PgFlow.update_workflow_status(workflow, status)
+# 4. Update status via QuantumFlow (database persistence)
+{:ok, _} = QuantumFlow.update_workflow_status(workflow, status)
 
-# 5. Send notifications via PgFlow (reliable messaging)
-{:ok, _} = PgFlow.send_with_notify("notifications", notification)
+# 5. Send notifications via QuantumFlow (reliable messaging)
+{:ok, _} = QuantumFlow.send_with_notify("notifications", notification)
 ```
 
 ## **Key Components**
@@ -32,13 +32,13 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 - **Purpose**: Fast workflow storage and retrieval
 - **Location**: `lib/singularity/workflows.ex`
 - **Role**: In-memory workflow state management
-- **Storage**: ETS table `:quantum_flow_workflows`
+- **Storage**: ETS table `:quantum_flow.workflow_runs`
 
-### **3. PgFlow (Database + Messaging)**
+### **3. QuantumFlow (Database + Messaging)**
 - **Purpose**: Database persistence and real-time messaging
 - **Location**: `lib/singularity/QuantumFlow.ex`
 - **Role**: 
-  - Database persistence via `Singularity.PgFlow.Workflow` schema
+  - Database persistence via `Singularity.QuantumFlow.Workflow` schema
   - Real-time messaging via PGMQ + PostgreSQL NOTIFY
 
 ### **4. QuantumFlow.WorkflowSupervisor**
@@ -54,8 +54,8 @@ graph TD
     B --> C[Workflows.create_workflow/1]
     C --> D[QuantumFlow.WorkflowSupervisor.start_workflow/2]
     D --> E[HTDAG Node Execution]
-    E --> F[PgFlow.update_workflow_status/2]
-    F --> G[PgFlow.send_with_notify/3]
+    E --> F[QuantumFlow.update_workflow_status/2]
+    F --> G[QuantumFlow.send_with_notify/3]
     
     C --> H[ETS Storage]
     F --> I[Database Storage]
@@ -94,7 +94,7 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 # Store in ETS for fast access
 {:ok, _workflow} = Workflows.create_workflow(workflow)
 
-# Execute via PgFlow WorkflowSupervisor
+# Execute via QuantumFlow WorkflowSupervisor
 {:ok, _pid} = QuantumFlow.WorkflowSupervisor.start_workflow(workflow, [])
 ```
 
@@ -107,8 +107,8 @@ defp execute_htdag_nodes(workflow) do
       # Update workflow state
       updated_payload = update_payload(payload, result)
       
-      # Persist via PgFlow
-      PgFlow.update_workflow_status(workflow, updated_payload)
+      # Persist via QuantumFlow
+      QuantumFlow.update_workflow_status(workflow, updated_payload)
       
       # Continue to next node
       execute_htdag_nodes(%{workflow | payload: updated_payload})
@@ -120,12 +120,12 @@ end
 
 ### **1. ETS (In-Memory)**
 - **Purpose**: Fast workflow state access
-- **Table**: `:quantum_flow_workflows`
+- **Table**: `:quantum_flow.workflow_runs`
 - **Usage**: Active workflow state, node execution
 
 ### **2. PostgreSQL (Persistent)**
 - **Purpose**: Workflow persistence and durability
-- **Table**: `quantum_flow_workflows`
+- **Table**: `quantum_flow.workflow_runs`
 - **Usage**: Workflow history, recovery, analytics
 
 ### **3. PGMQ (Message Queue)**
@@ -137,7 +137,7 @@ end
 ### **✅ Performance**
 - ETS for fast workflow state access
 - Rust NIFs for high-performance calculations
-- PgFlow for reliable execution orchestration
+- QuantumFlow for reliable execution orchestration
 
 ### **✅ Reliability**
 - Database persistence for workflow state
@@ -146,13 +146,13 @@ end
 
 ### **✅ Scalability**
 - HTDAG load balancer prevents system overload
-- PgFlow handles workflow orchestration
+- QuantumFlow handles workflow orchestration
 - ETS + PostgreSQL hybrid storage
 
 ### **✅ Observability**
 - Workflow state in ETS for real-time monitoring
 - Database persistence for historical analysis
-- Rich notifications via PgFlow messaging
+- Rich notifications via QuantumFlow messaging
 
 ## **Configuration**
 
@@ -169,12 +169,12 @@ config :singularity, :htdag_auto_ingestion,
 
 ## **Summary**
 
-**HTDAG is NOT provided by PgFlow** - it's a separate workflow definition system that:
+**HTDAG is NOT provided by QuantumFlow** - it's a separate workflow definition system that:
 
 1. **Defines** hierarchical task workflows
-2. **Uses** PgFlow for execution orchestration
+2. **Uses** QuantumFlow for execution orchestration
 3. **Stores** state in ETS for performance
-4. **Persists** to database via PgFlow
-5. **Sends** notifications via PgFlow messaging
+4. **Persists** to database via QuantumFlow
+5. **Sends** notifications via QuantumFlow messaging
 
-**PgFlow provides the execution engine, not the workflow definition!** 🚀
+**QuantumFlow provides the execution engine, not the workflow definition!** 🚀

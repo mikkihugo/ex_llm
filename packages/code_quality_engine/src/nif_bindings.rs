@@ -1,3 +1,4 @@
+#![cfg(feature = "nif")]
 //! NIF bindings for Elixir integration
 //!
 //! Exposes code_engine functions to Elixir via Rustler NIFs

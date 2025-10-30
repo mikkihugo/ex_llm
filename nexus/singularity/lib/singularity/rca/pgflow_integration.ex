@@ -1,6 +1,6 @@
 defmodule Singularity.RCA.QuantumFlowIntegration do
   @moduledoc """
-  RCA + PgFlow Integration - Tracks workflow execution within RCA sessions
+  RCA + QuantumFlow Integration - Tracks workflow execution within RCA sessions
 
   Enables RCA system to understand which QuantumFlow workflows are used in code generation
   and record their execution metrics for learning.

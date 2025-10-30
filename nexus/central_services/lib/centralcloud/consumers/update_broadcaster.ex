@@ -33,6 +33,7 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
   require Logger
   alias CentralCloud.Repo
   alias CentralCloud.SharedQueueRepo
+  alias QuantumFlow.Messaging
 
   @doc """
   Sync a single pattern in real-time (event-driven).
@@ -141,7 +142,7 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
       # Broadcast via QuantumFlow for immediate updates
       Enum.each(templates, fn template ->
         subject = "template.sync.#{template["category"]}.#{template["id"]}"
-        QuantumFlow.send_with_notify(subject, template, CentralCloud.Repo, expect_reply: false)
+        Messaging.publish(CentralCloud.Repo, subject, template, expect_reply: false)
       end)
 
       Logger.info("[UpdateBroadcaster] ✓ Templates queued for replication",

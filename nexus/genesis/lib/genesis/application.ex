@@ -3,18 +3,18 @@ defmodule Genesis.Application do
   Genesis Application - Autonomous Improvement Agent
 
   Genesis is a separate Elixir application that autonomously executes code
-  improvement experiments via PgFlow. It is a reactive agent that consumes
+  improvement experiments via QuantumFlow. It is a reactive agent that consumes
   workflow messages from three queues and executes them in an isolated sandbox.
 
   ## Architecture
 
   Genesis operates with complete isolation:
   - Separate PostgreSQL database (genesis)
-  - **NEW:** Reads from three PgFlow queues:
+  - **NEW:** Reads from three QuantumFlow queues:
     - `genesis_rule_updates` - Rule evolution from Singularity instances
     - `genesis_llm_config_updates` - LLM configuration changes
     - `code_execution_requests` - Job requests for code analysis
-  - Publishes results back via PgFlow with full workflow state tracking
+  - Publishes results back via QuantumFlow with full workflow state tracking
   - Separate Git history and filesystem isolation
   - Aggressive hotreload for safe testing of breaking changes
   - Auto-rollback on regression detection
@@ -23,16 +23,16 @@ defmodule Genesis.Application do
 
   ```
   Singularity publishes message
-       ↓ (via PgFlow)
+       ↓ (via QuantumFlow)
   Genesis queue (pending)
        ↓
-  PgFlowWorkflowConsumer reads message
+  QuantumFlowWorkflowConsumer reads message
        ↓
   Workflow state → running
        ↓
   Execute handler (rule/config/job)
        ↓
-  Publish results via PgFlow
+  Publish results via QuantumFlow
        ↓
   Workflow state → completed or failed
        ↓
@@ -49,7 +49,7 @@ defmodule Genesis.Application do
   ## Key Services
 
   **NEW:**
-  - **Genesis.PgFlowWorkflowConsumer** - Main consumer for PgFlow queues
+  - **Genesis.QuantumFlowWorkflowConsumer** - Main consumer for QuantumFlow queues
     - Reads from three queues with batching
     - Routes messages to appropriate handlers
     - Implements full workflow state management
@@ -66,11 +66,11 @@ defmodule Genesis.Application do
 
   **Legacy (can be deprecated):**
   - Genesis.SharedQueueConsumer - Polls shared_queue for job_requests
-    (Functionality now covered by PgFlowWorkflowConsumer)
+    (Functionality now covered by QuantumFlowWorkflowConsumer)
 
   ## Configuration
 
-  Enable PgFlow consumer in `config/config.exs`:
+  Enable QuantumFlow consumer in `config/config.exs`:
 
   ```elixir
   config :genesis, :quantum_flow_consumer,
@@ -100,7 +100,7 @@ defmodule Genesis.Application do
   3. **Job Requests** - Via existing job submission
      ```elixir
      {:ok, :sent} =
-       Singularity.PgFlow.send_with_notify("code_execution_requests", payload)
+       Singularity.QuantumFlow.Notifications.send_with_notify("code_execution_requests", payload)
      ```
 
   Genesis consumes these and publishes results to corresponding results queues.
@@ -124,14 +124,14 @@ defmodule Genesis.Application do
       {Task.Supervisor, name: Genesis.TaskSupervisor},
 
       # Services: Job execution and isolation
-      # PgFlowWorkflowConsumer - Consumes from three PgFlow queues:
+      # QuantumFlowWorkflowConsumer - Consumes from three QuantumFlow queues:
       #   - genesis_rule_updates (rule evolution from Singularity)
       #   - genesis_llm_config_updates (LLM config changes from Singularity)
       #   - code_execution_requests (job requests from Singularity)
-      # Implements full workflow state management and publishes results via PgFlow
-      Genesis.PgFlowWorkflowConsumer,
+      # Implements full workflow state management and publishes results via QuantumFlow
+      Genesis.QuantumFlowWorkflowConsumer,
 
-      # Legacy: SharedQueueConsumer - Can be disabled when PgFlowWorkflowConsumer is stable
+      # Legacy: SharedQueueConsumer - Can be disabled when QuantumFlowWorkflowConsumer is stable
       Genesis.SharedQueueConsumer,
 
       Genesis.IsolationManager,

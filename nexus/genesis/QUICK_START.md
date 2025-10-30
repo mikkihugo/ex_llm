@@ -1,8 +1,8 @@
-# Genesis PgFlow Integration - Quick Start
+# Genesis QuantumFlow Integration - Quick Start
 
 ## What Changed
 
-✅ **PgFlow Consumer Enabled** - Consumes from 3 queues with parallel processing
+✅ **QuantumFlow Consumer Enabled** - Consumes from 3 queues with parallel processing
 ❌ **Legacy Consumer Disabled** - SharedQueueConsumer no longer runs
 ⚡ **Parallel Processing** - 4 concurrent workers for 4x throughput
 📝 **Configuration Applied** - All settings auto-configured in `config/config.exs`
@@ -17,8 +17,8 @@ mix phx.server
 
 You should see:
 ```
-[Genesis.PgFlowWorkflowConsumer] Starting PgFlow workflow consumer
-[Genesis.PgFlowWorkflowConsumer] Verifying PgFlow integration
+[Genesis.QuantumFlowWorkflowConsumer] Starting QuantumFlow workflow consumer
+[Genesis.QuantumFlowWorkflowConsumer] Verifying QuantumFlow integration
 ```
 
 ## Test Rule Evolution
@@ -31,7 +31,7 @@ iex(singularity)> {:ok, result} = GenesisPublisher.publish_rules()
 
 In Genesis logs, you'll see:
 ```
-[Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
+[Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
 [Genesis.RuleEngine] Applying rule
 [Genesis] Workflow completed, execution_time_ms: 42
 ```
@@ -53,10 +53,10 @@ In Genesis logs:
 
 In Singularity shell:
 ```elixir
-iex(singularity)> alias Singularity.PgFlow
+iex(singularity)> alias Singularity.QuantumFlow
 
 iex(singularity)> for i <- 1..8 do
-...>   Singularity.PgFlow.send_with_notify("code_execution_requests", %{
+...>   Singularity.QuantumFlow.send_with_notify("code_execution_requests", %{
 ...>     "type" => "code_execution_request",
 ...>     "id" => "job_#{i}",
 ...>     "code" => "def foo, do: 42",
@@ -68,7 +68,7 @@ iex(singularity)> for i <- 1..8 do
 
 In Genesis logs, you'll see 4 jobs processing in parallel:
 ```
-[Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 8, parallel: true
+[Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 8, parallel: true
 [Genesis] Processing workflow, workflow_id: uuid-1, type: code_execution_request
 [Genesis] Processing workflow, workflow_id: uuid-2, type: code_execution_request
 [Genesis] Processing workflow, workflow_id: uuid-3, type: code_execution_request
@@ -101,7 +101,7 @@ config :genesis, :shared_queue,
 3. Starts processing with 4 concurrent workers
 4. Each worker processes one workflow independently
 5. When a worker finishes, it takes the next workflow from the batch
-6. All results published back via PgFlow
+6. All results published back via QuantumFlow
 
 **Example:** 10 workflows, 4 workers
 - Time 0-150ms: Workers 1-4 process workflows 1-4
@@ -113,7 +113,7 @@ config :genesis, :shared_queue,
 
 | File | Change |
 |------|--------|
-| `config/config.exs` | Added PgFlow consumer config, disabled legacy |
+| `config/config.exs` | Added QuantumFlow consumer config, disabled legacy |
 | `lib/genesis/quantum_flow_workflow_consumer.ex` | Added parallel processing |
 | `lib/genesis/application.ex` | Already integrated |
 
@@ -122,7 +122,7 @@ config :genesis, :shared_queue,
 ### Check Metrics
 ```bash
 # In Genesis shell:
-iex(genesis)> GenServer.call(Genesis.PgFlowWorkflowConsumer, :get_state)
+iex(genesis)> GenServer.call(Genesis.QuantumFlowWorkflowConsumer, :get_state)
 # Returns metrics: processed, succeeded, failed, last_poll
 ```
 
@@ -145,7 +145,7 @@ tail -f log/dev.log | grep Genesis
 3. Look for errors in `log/dev.log`
 
 ### No messages processed?
-1. Check PgFlow queues exist:
+1. Check QuantumFlow queues exist:
    - `genesis_rule_updates`
    - `genesis_llm_config_updates`
    - `code_execution_requests`
@@ -173,8 +173,8 @@ tail -f log/dev.log | grep Genesis
 
 ## Documentation
 
-- `PGFLOW_INTEGRATION.md` - Complete technical reference
-- `TEST_PGFLOW_INTEGRATION.md` - Detailed test scenarios
+- `QUANTUM_FLOW_INTEGRATION.md` - Complete technical reference
+- `TEST_QUANTUM_FLOW_INTEGRATION.md` - Detailed test scenarios
 - `lib/genesis/quantum_flow_workflow_consumer.ex` - Source code with extensive docs
 - `lib/genesis/rule_engine.ex` - Rule application logic
 - `lib/genesis/llm_config_manager.ex` - LLM configuration updates

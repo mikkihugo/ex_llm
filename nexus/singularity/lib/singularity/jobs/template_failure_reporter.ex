@@ -61,7 +61,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_failures", message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("centralcloud_failures", message) do
       {:ok, :sent} ->
         Logger.info("Template failure reported to CentralCloud via QuantumFlow",
           template_id: template_id,

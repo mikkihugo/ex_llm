@@ -30,7 +30,7 @@
 
 ✅ **COMPLETE**
 - [x] Located all HTDAG implementations across codebase
-- [x] Located all PgFlow implementations
+- [x] Located all QuantumFlow implementations
 - [x] Created unified Workflows system as single source of truth
 - [x] Maintained backward compatibility (shims)
 - [x] Migrated TodoSwarmCoordinator to use Workflows
@@ -324,7 +324,7 @@ Ready for immediate deployment with optional enhancements:
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
 | Agents have basic tools | ✅ YES | Toolkit, HotReloader, Arbiter implemented |
-| HTDAG + PgFlow merged | ✅ YES | Workflows.ex unifies both systems |
+| HTDAG + QuantumFlow merged | ✅ YES | Workflows.ex unifies both systems |
 | Todo/Plan/Execute complete | ✅ YES | Smoke test demonstrates full flow |
 | Agents scanned and integrated | ✅ YES | 3 agents + 2 workers orchestrated |
 | No duplicates created | ✅ YES | Existing agents reused, not wrapped |

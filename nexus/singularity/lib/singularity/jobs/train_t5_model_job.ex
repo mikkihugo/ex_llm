@@ -27,15 +27,15 @@ defmodule Singularity.Jobs.TrainT5ModelJob do
         epochs: 12
       }
       |> Singularity.Jobs.TrainT5ModelJob.new()
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
 
       # Schedule with custom priority
       %{name: "urgent_training", languages: ["elixir"]}
       |> Singularity.Jobs.TrainT5ModelJob.new(priority: 0)
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :ml_training,
     max_attempts: 3,
     priority: 1

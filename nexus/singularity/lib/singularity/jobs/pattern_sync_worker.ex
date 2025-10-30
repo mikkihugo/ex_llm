@@ -38,7 +38,7 @@ defmodule Singularity.Jobs.PatternSyncWorker do
   end
 
   defp notify_sync_complete(sync_type) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_completed",
@@ -59,7 +59,7 @@ defmodule Singularity.Jobs.PatternSyncWorker do
   end
 
   defp notify_sync_failed(sync_type, error) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_failed",

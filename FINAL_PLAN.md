@@ -36,7 +36,7 @@
    `Singularity.LLM.Service`, `Singularity.Jobs.PgmqClient`, and `Singularity.Knowledge.TemplateService` now describe the queue-first architecture; `await_responses_result/2` ships with unit coverage and `RESPONSES_API_PGMQ_INTEGRATION.md` documents the flow. Remaining work: align secondary docs (CLAUDE.md, README) and ensure callers adopt the new helper.
 
 4. **CentralCloud intelligence alignment**  
-   Keep framework/architecture pattern learning centralized in CentralCloud and share it back through pgmq/ex_quantum_flow so Observer and the pipeline can consume the latest pattern metadata.
+   Keep framework/architecture pattern learning centralized in CentralCloud and share it back through pgmq/quantum_flow so Observer and the pipeline can consume the latest pattern metadata.
 
 ## Implementation Plan
 
@@ -87,7 +87,7 @@
 - **Moon tasks:** `observer/moon.yml` already defines `deps`, `compile`, `test`, `format`, and `server`; keep workspace-level Moon config aligned if cross-project dependencies change.
 - **Databases:**
   - Observer uses its own Postgres schema (via `Observer.Repo`) for approvals and cached snapshots so the UI can remain responsive even if upstream services are slow.
-  - Shared artefacts (pgmq queues, ex_quantum_flow tables) remain in the shared “queue” database so Singularity, Nexus, Genesis, and CentralCloud can collaborate without tight coupling.
+  - Shared artefacts (pgmq queues, quantum_flow tables) remain in the shared “queue” database so Singularity, Nexus, Genesis, and CentralCloud can collaborate without tight coupling.
 
 ## Appendix — Verified Components
 

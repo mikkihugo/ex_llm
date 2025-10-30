@@ -254,7 +254,7 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2Test do
     end
 
     test "handles invalid token type gracefully" do
-      token = 12345
+      token = 12_345
 
       {:error, reason} = OAuth2.refresh(token)
 

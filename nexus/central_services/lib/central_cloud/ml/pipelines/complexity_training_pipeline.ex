@@ -7,7 +7,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipeline do
 
   ## Migration Notes
 
-  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **Legacy Mode**: Uses Broadway + Broadway.QuantumFlowProducer
   - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
@@ -63,13 +63,16 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {BroadwayPGMQ.Producer,
-          queue: "complexity_training_tasks",
-          config: [
-            host: System.get_env("CENTRALCLOUD_DATABASE_URL", "postgres://localhost/central_services"),
-            port: 5432
-          ]
-        }
+        module:
+          {Broadway.QuantumFlowProducer,
+           [
+             workflow_name: "central_complexity_training_broadway",
+             queue_name: "central_complexity_training_jobs",
+             concurrency: 4,
+             batch_size: 20,
+             quantum_flow_config: [timeout_ms: 300_000, retries: 4],
+             resource_hints: [cpu_cores: 8]
+           ]}
       ],
       processors: [
         data_collection: [concurrency: 5],

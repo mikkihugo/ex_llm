@@ -4,7 +4,7 @@ defmodule Singularity.Execution.RefactorAssimilateSwarmCoordinator do
 
   This module provides a safe scaffold to:
   - analyze a codebase for smells and refactor opportunities
-  - generate hierarchical tasks (PgFlow/HTDAG compatible maps)
+  - generate hierarchical tasks (QuantumFlow/HTDAG compatible maps)
   - spawn dedicated workers to perform transformations and assimilation
   - validate changes, run tests, and rollback on failure
 

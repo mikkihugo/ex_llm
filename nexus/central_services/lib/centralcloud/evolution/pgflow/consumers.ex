@@ -1,8 +1,8 @@
 defmodule CentralCloud.Evolution.QuantumFlow.Consumers do
   @moduledoc """
-  PgFlow Consumers - Handle messages from Singularity instance queues.
+  QuantumFlow Consumers - Handle messages from Singularity instance queues.
 
-  Processes incoming messages from Singularity instances via ex_quantum_flow.
+  Processes incoming messages from Singularity instances via quantum_flow.
   Each message is processed atomically with automatic retry on failure.
 
   ## AI Navigation Metadata
@@ -22,7 +22,7 @@ defmodule CentralCloud.Evolution.QuantumFlow.Consumers do
   ```yaml
   Consumers:
     calls_from:
-      - ExQuantumFlow (proposal, metrics, pattern messages)
+      - QuantumFlow.Messaging (proposal, metrics, pattern messages)
     calls_to:
       - Consensus.Engine.propose_change
       - Guardian.RollbackService.report_metrics

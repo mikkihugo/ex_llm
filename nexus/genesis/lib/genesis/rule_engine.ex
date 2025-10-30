@@ -12,9 +12,9 @@ defmodule Genesis.RuleEngine do
 
   ```
   Singularity Instance
-        ↓ (publishes via PgFlow)
+        ↓ (publishes via QuantumFlow)
   genesis_rule_updates queue
-        ↓ (consumed by PgFlowWorkflowConsumer)
+        ↓ (consumed by QuantumFlowWorkflowConsumer)
   RuleEngine.apply_rule()
         ↓ (applies to current rule set)
   Genesis code analysis

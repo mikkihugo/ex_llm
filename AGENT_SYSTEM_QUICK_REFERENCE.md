@@ -63,7 +63,7 @@ iex> RefactorPlanner.plan(%{codebase_id: "myapp", issues: [long_function, deep_n
 ```elixir
 # TodoSwarmCoordinator calls:
 {:ok, workflow} = Workflows.create_workflow(htdag_from_planner)
-# → Stores to ETS `:quantum_flow_workflows`
+# → Stores to PostgreSQL table `quantum_flow_workflows`
 # → Workflow ID: "full_refactor_myapp_12345"
 
 # Then executes dry-run:

@@ -133,7 +133,7 @@ Switching cost rises (would lose personalized rules)
 | **Hot Reload** | 95% complete | Safe, with rollback |
 | **Embeddings** | 90% complete | GPU-aware, local inference |
 | **Code Generation** | 90% complete | 5+ generators working |
-| **ex_quantum_flow** | 100% complete | Published to Hex |
+| **quantum_flow** | 100% complete | Published to Hex |
 
 ---
 

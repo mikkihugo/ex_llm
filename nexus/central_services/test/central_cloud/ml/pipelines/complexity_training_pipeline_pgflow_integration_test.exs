@@ -46,13 +46,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegra
       # Execute workflow
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion (in real test, would poll for status)
       Process.sleep(100)
 
       # Verify workflow completed all steps
-      assert {:ok, status} = QuantumFlow.WorkflowAPI.status(execution_id)
+      assert {:ok, status} = QuantumFlow.Workflow.status(execution_id)
       assert status.state == :completed
 
       # Verify all steps executed
@@ -79,13 +79,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegra
 
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
 
       # Verify workflow failed at training step
-      assert {:ok, status} = QuantumFlow.WorkflowAPI.status(execution_id)
+      assert {:ok, status} = QuantumFlow.Workflow.status(execution_id)
       assert status.state == :failed
 
       # Check that training step failed
@@ -109,15 +109,15 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegra
       # Start multiple workflows
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id1} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
-      assert {:ok, execution_id2} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id1} = QuantumFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id2} = QuantumFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(200)
 
       # Both should complete successfully
-      assert {:ok, status1} = QuantumFlow.WorkflowAPI.status(execution_id1)
-      assert {:ok, status2} = QuantumFlow.WorkflowAPI.status(execution_id2)
+      assert {:ok, status1} = QuantumFlow.Workflow.status(execution_id1)
+      assert {:ok, status2} = QuantumFlow.Workflow.status(execution_id2)
 
       assert status1.state == :completed
       assert status2.state == :completed
@@ -137,13 +137,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegra
 
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
 
       # Check metrics
-      assert {:ok, metrics} = QuantumFlow.WorkflowAPI.metrics(execution_id)
+      assert {:ok, metrics} = QuantumFlow.Workflow.metrics(execution_id)
 
       assert Map.has_key?(metrics, :execution_time)
       assert Map.has_key?(metrics, :success_rate)
@@ -176,7 +176,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegra
         [
           name: ComplexityTrainingPipeline,
           producer: [
-            module: {BroadwayPGMQ.Producer, _},
+            module: {Broadway.QuantumFlowProducer, _},
             _
           ],
           processors: _,

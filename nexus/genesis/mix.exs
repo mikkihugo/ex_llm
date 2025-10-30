@@ -23,6 +23,7 @@ defmodule Genesis.MixProject do
       {:ecto_sql, "~> 3.10"},
       {:postgrex, "~> 0.17"},
       {:jason, "~> 1.4"},
+      {:pgmq, "~> 0.4"},
 
       # Background Jobs (Oban handles scheduling via Cron plugin)
       {:oban, "~> 2.18"},

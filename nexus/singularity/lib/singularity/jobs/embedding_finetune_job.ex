@@ -63,7 +63,7 @@ defmodule Singularity.Jobs.EmbeddingFinetuneJob do
   - **Other GPU** → Auto-detected via nvidia-smi
   """
 
-  use Oban.Worker, queue: :training, max_attempts: 1
+  use Singularity.JobQueue.Worker, queue: :training, max_attempts: 1
 
   require Logger
 

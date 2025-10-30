@@ -76,21 +76,20 @@ defmodule Singularity.Infrastructure.Overseer do
 
   defp compose_status(previous_state) do
     database = check_database()
-    QuantumFlow = check_quantum_flow_workflows()
+    quantum_flow = check_quantum_flow()
     health_server = check_health_server()
 
     overall =
-      case {database.status, QuantumFlow.overall, health_server.status} do
-        {:ok, :ok, :ok} -> :ok
-        {status, _, _} when status != :ok -> :critical
-        {_, :degraded, _} -> :degraded
-        {_, _, status} when status != :ok -> :degraded
-        _ -> :ok
+      cond do
+        database.status != :ok -> :critical
+        quantum_flow.status == :critical -> :critical
+        quantum_flow.status == :degraded || health_server.status != :ok -> :degraded
+        true -> :ok
       end
 
     %{
       database: database,
-      QuantumFlow: QuantumFlow,
+      quantum_flow: quantum_flow,
       health_server: health_server,
       adopted_postgres: PidManager.get_adopted(:postgres),
       overall: overall,
@@ -115,10 +114,10 @@ defmodule Singularity.Infrastructure.Overseer do
     %{status: status, detail: result}
   end
 
-  defp check_quantum_flow_workflows do
+  defp check_quantum_flow do
     loaded? = Code.ensure_loaded?(QuantumFlow.WorkflowSupervisor)
 
-    workflows =
+    supervisors =
       Enum.map(@workflow_supervisors, fn {key, name} ->
         pid = Process.whereis(name)
         status = if is_pid(pid), do: :ok, else: :not_running
@@ -127,25 +126,15 @@ defmodule Singularity.Infrastructure.Overseer do
       end)
       |> Enum.into(%{})
 
-    overall =
+    status =
       cond do
-        not loaded? ->
-          :unknown
-
-        Enum.all?(workflows, fn {_k, %{status: status}} -> status == :ok end) ->
-          :ok
-
-        Enum.any?(workflows, fn
-          {_k, %{status: :ok}} -> true
-          _ -> false
-        end) ->
-          :degraded
-
-        true ->
-          :critical
+        not loaded? -> :unknown
+        Enum.all?(supervisors, fn {_k, %{status: s}} -> s == :ok end) -> :ok
+        Enum.any?(supervisors, fn {_k, %{status: :ok}} -> true; _ -> false end) -> :degraded
+        true -> :critical
       end
 
-    %{overall: overall, loaded?: loaded?, workflows: workflows}
+    %{status: status, supervisors: supervisors, loaded?: loaded?}
   end
 
   defp check_health_server do

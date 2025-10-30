@@ -127,7 +127,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   end
 
   defp notify_coordination_complete(source_agent, target_agent, message_type, duration_ms) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "agent_coordination_notifications",
            %{
              type: "coordination_completed",
@@ -154,7 +154,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   end
 
   defp notify_coordination_failed(source_agent, target_agent, message_type, error) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "agent_coordination_notifications",
            %{
              type: "coordination_failed",

@@ -360,7 +360,7 @@ defmodule Singularity.Knowledge.Requests do
       |> build_event()
       |> Jason.encode!()
 
-    case Singularity.Infrastructure.PgFlow.Queue.notify_only(@notify_channel, payload, Repo) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.notify_only(@notify_channel, payload, Repo) do
       :ok ->
         :ok
 

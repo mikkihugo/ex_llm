@@ -3,7 +3,7 @@ defmodule Singularity.Workflows.RulePublish do
   QuantumFlow workflow for publishing confident rules to Genesis.
 
   Replaces the direct in-process publication path and ensures all rule
-  publishing runs through the durable ex_quantum_flow executor.
+  publishing runs through the durable quantum_flow executor.
   """
 
   require Logger

@@ -1,8 +1,8 @@
 defmodule Singularity.Evolution.QuantumFlow.Producers do
   @moduledoc """
-  PgFlow Producers - Send messages to CentralCloud queues.
+  QuantumFlow producers responsible for publishing messages to CentralCloud queues.
 
-  Handles asynchronous, durable messaging to CentralCloud services via ex_quantum_flow.
+  Handles asynchronous, durable messaging to CentralCloud services via quantum_flow.
   All messages are persisted in PostgreSQL and automatically retried on failure.
 
   ## AI Navigation Metadata
@@ -54,6 +54,8 @@ defmodule Singularity.Evolution.QuantumFlow.Producers do
 
   require Logger
 
+  alias Singularity.Infrastructure.QuantumFlow.Queue
+
   @doc """
   Publish proposal to consensus queue for voting.
 
@@ -67,9 +69,7 @@ defmodule Singularity.Evolution.QuantumFlow.Producers do
 
     case publish_message("proposals_for_consensus_queue", message) do
       {:ok, message_id} ->
-        Logger.info(
-          "Published proposal #{proposal.id} for consensus (msg_id: #{message_id})"
-        )
+        Logger.info("Published proposal #{proposal.id} for consensus (msg_id: #{message_id})")
 
         :telemetry.execute(
           [:evolution, :quantum_flow, :proposal_published],
@@ -199,14 +199,11 @@ defmodule Singularity.Evolution.QuantumFlow.Producers do
   defp publish_message(queue_name, message) do
     try do
       # Publish via QuantumFlow notifications (PostgreSQL NOTIFY + persistence)
-      {:ok, message_id} =
-        QuantumFlow.Notifications.send_with_notify(queue_name, message, Singularity.Repo,
-          expect_reply: false,
-          max_retries: 3,
-          retry_delay_ms: 1000
-        )
-
-      {:ok, message_id}
+      Queue.send_with_notify(queue_name, message, Singularity.Repo,
+        expect_reply: false,
+        max_retries: 3,
+        retry_delay_ms: 1_000
+      )
     rescue
       e ->
         Logger.error("Exception publishing to #{queue_name}: #{inspect(e)}")

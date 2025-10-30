@@ -140,7 +140,7 @@ defmodule Singularity.Workflows.LlmRequest do
       api_version: payload["api_version"]
     )
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("ai_requests", payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("ai_requests", payload) do
       {:ok, :sent} ->
         Logger.info("LLM Workflow: Request enqueued successfully via QuantumFlow",
           request_id: payload["request_id"]

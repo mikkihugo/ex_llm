@@ -30,15 +30,15 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ## Performance Notes
 
-  - Change proposal: 10-50ms (async via ex_quantum_flow)
-  - Pattern recording: 5-20ms (async via ex_quantum_flow)
+  - Change proposal: 10-50ms (async via quantum_flow)
+  - Pattern recording: 5-20ms (async via quantum_flow)
   - Consensus await: 100ms-30s (configurable timeout)
   - Rollback handling: 50-200ms
 
   ## Concurrency Semantics
 
   - Single-threaded GenServer for state management
-  - Async messaging via ex_quantum_flow (pgmq + NOTIFY)
+  - Async messaging via quantum_flow (pgmq + NOTIFY)
   - Thread-safe change tracking
   - Parallel consensus awaiting support
 
@@ -76,7 +76,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ## Relationships
 
-  - **Uses**: `ExQuantumFlow` - Message queue orchestration
+  - **Uses**: `QuantumFlow.Messaging` - Message queue orchestration
   - **Uses**: `Singularity.Database.MessageQueue` - pgmq integration
   - **Uses**: `Singularity.Evolution.SafetyProfiles` - Safety threshold lookup
   - **Used by**: All agents via AgentBehavior callbacks
@@ -100,7 +100,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "CentralCloud.Guardian": "Sends change proposals",
       "CentralCloud.PatternAggregator": "Sends patterns",
       "CentralCloud.Consensus": "Receives approval decisions",
-      "ExQuantumFlow": "Message transport layer"
+      "QuantumFlow.Messaging": "Message transport layer"
     }
   }
   ```
@@ -109,7 +109,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ```mermaid
   graph TD
-    A[AgentCoordinator] -->|propose_change| B[ExQuantumFlow]
+    A[AgentCoordinator] -->|propose_change| B[QuantumFlow.Messaging]
     A -->|record_pattern| B
     A -->|await_consensus| C[Consensus Tracker]
 
@@ -138,11 +138,11 @@ defmodule Singularity.Evolution.AgentCoordinator do
     propose_change/3:
       - validate_change/1
       - SafetyProfiles.get_profile/1
-      - ExQuantumFlow.publish/2
+      - QuantumFlow.Messaging.publish/2
       - track_change/2
     record_pattern/3:
       - validate_pattern/1
-      - ExQuantumFlow.publish/2
+      - QuantumFlow.Messaging.publish/2
     await_consensus/1:
       - poll_consensus_response/1
       - handle_consensus_result/2
@@ -499,7 +499,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_changes_queue, message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(@centralcloud_changes_queue, message) do
       {:ok, _} ->
         {:ok, :published}
 
@@ -555,7 +555,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_patterns_queue, message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(@centralcloud_patterns_queue, message) do
       {:ok, _} ->
         {:ok, :published}
 

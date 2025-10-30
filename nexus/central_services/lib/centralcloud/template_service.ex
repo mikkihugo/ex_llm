@@ -17,7 +17,7 @@ defmodule CentralCloud.TemplateService do
       ↓
   PostgreSQL (templates) + pgvector
       ↓
-  QuantumFlow.send_with_notify() → Singularity instances
+  QuantumFlow.Notifications.send_with_notify() → Singularity instances
       ↓
   Logical Replication → Singularity DB (mirrored, read-only)
   ```
@@ -311,13 +311,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, template} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -334,13 +334,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, templates} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{templates: templates}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{templates: templates}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -352,13 +352,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, template} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.Notifications.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -553,7 +553,7 @@ defmodule CentralCloud.TemplateService do
 
   defp broadcast_template_update(template) do
     subject = "template.updated.#{template.category}.#{template.id}"
-    QuantumFlow.send_with_notify(subject, template_to_map(template), CentralCloud.Repo, expect_reply: false)
+    QuantumFlow.Notifications.send_with_notify(subject, template_to_map(template), CentralCloud.Repo, expect_reply: false)
   end
 
   defp distribute_templates_to_instances do

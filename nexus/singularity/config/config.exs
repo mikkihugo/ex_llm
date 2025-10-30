@@ -58,7 +58,7 @@ config :singularity, :auto_ingestion,
 # Broadway Embedding Pipeline Configuration
 # =============================================================================
 # High-performance concurrent embedding generation with QuantumFlow orchestration
-# See docs/EMBEDDING_PIPELINE_PGFLOW.md for detailed documentation
+# See docs/EMBEDDING_PIPELINE_QUANTUM_FLOW.md for detailed documentation
 
 # Embedding Pipeline Settings
 # Enable/disable the Broadway embedding pipeline
@@ -66,12 +66,12 @@ config :singularity, :broadway_embedding_pipeline,
   enabled: System.get_env("EMBEDDING_PIPELINE_ENABLED", "true") == "true",
   # QuantumFlow workflow orchestration settings
   QuantumFlow: %{
-    enabled: System.get_env("EMBEDDING_PGFLOW_ENABLED", "true") == "true",
+    enabled: System.get_env("EMBEDDING_QUANTUM_FLOW_ENABLED", "true") == "true",
     queue_name: System.get_env("EMBEDDING_QUEUE_NAME", "embedding_jobs"),
-    timeout_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_TIMEOUT_MS", "300000")),
-    concurrency: String.to_integer(System.get_env("EMBEDDING_PGFLOW_CONCURRENCY", "5")),
-    retries: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRIES", "3")),
-    retry_delay_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_RETRY_DELAY_MS", "5000"))
+    timeout_ms: String.to_integer(System.get_env("EMBEDDING_QUANTUM_FLOW_TIMEOUT_MS", "300000")),
+    concurrency: String.to_integer(System.get_env("EMBEDDING_QUANTUM_FLOW_CONCURRENCY", "5")),
+    retries: String.to_integer(System.get_env("EMBEDDING_QUANTUM_FLOW_RETRIES", "3")),
+    retry_delay_ms: String.to_integer(System.get_env("EMBEDDING_QUANTUM_FLOW_RETRY_DELAY_MS", "5000"))
   },
   # Pipeline performance and hardware settings
   pipeline: %{
@@ -90,7 +90,7 @@ config :singularity, :broadway_embedding_pipeline,
 # =============================================================================
 # HTDAG Auto-Bootstrap Configuration (Consolidated)
 # =============================================================================
-# Enables HTDAG-based automatic code ingestion with PgFlow orchestration
+# Enables HTDAG-based automatic code ingestion with QuantumFlow orchestration
 config :singularity, :htdag_auto_ingestion,
   enabled: System.get_env("HTDAG_AUTO_INGESTION_ENABLED", "false") == "true",
   # File watching configuration
@@ -327,7 +327,7 @@ import_config "#{config_env()}.exs"
 # QuantumFlow migration for architecture learning pipeline with canary rollout support
 config :singularity, :architecture_learning_pipeline,
   # Enable QuantumFlow mode (canary rollout)
-  quantum_flow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
+  quantum_flow_enabled: System.get_env("QUANTUM_FLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
   # Canary rollout percentage (0-100)
   canary_percentage:
     String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
@@ -365,7 +365,7 @@ config :singularity, :architecture_learning_workflow,
 # QuantumFlow migration for embedding training pipeline with canary rollout support
 config :singularity, :embedding_training_pipeline,
   # Enable QuantumFlow mode (canary rollout)
-  quantum_flow_enabled: System.get_env("PGFLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
+  quantum_flow_enabled: System.get_env("QUANTUM_FLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
   # Canary rollout percentage (0-100)
   canary_percentage: String.to_integer(System.get_env("EMBEDDING_TRAINING_CANARY_PERCENT", "10"))
 
@@ -885,11 +885,11 @@ config :singularity, :workflows,
     sync: :centralcloud_sync
   ]
 
-# PgFlow Queue Configuration - Listeners for messages from CentralCloud
+# QuantumFlow Queue Configuration - Listeners for messages from CentralCloud
 # Enables receiving workflow consensus patterns and other responses from CentralCloud
 config :singularity, :quantum_flow_queues,
   enabled:
-    System.get_env("PGFLOW_QUEUES_ENABLED", "true") == "true" &&
+    System.get_env("QUANTUM_FLOW_QUEUES_ENABLED", "true") == "true" &&
       System.get_env("CENTRALCLOUD_ENABLED", "true") == "true",
   # Queues to listen on for incoming messages from CentralCloud
   # Messages on these queues are routed to appropriate consumer handlers

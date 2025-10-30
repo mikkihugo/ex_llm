@@ -263,9 +263,9 @@ The `QuantumFlow.Workflow` module doesn't expose `create_workflow/2` or `subscri
 **Recommended Fix:**
 1. Check `QuantumFlow` package documentation for current API
 2. Replace with correct functions (possibly `QuantumFlow.Workflows.create/2` or similar)
-3. Check `ex_quantum_flow` for available workflow functions
+3. Check `quantum_flow` for available workflow functions
 
-**Effort:** 30 minutes (requires reviewing ex_quantum_flow API)
+**Effort:** 30 minutes (requires reviewing quantum_flow API)
 
 ---
 

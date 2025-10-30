@@ -40,7 +40,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
     - Singularity.CodeAnalysis.Scanners.QualityScanner
     - Singularity.CodeAnalysis.Scanners.SecurityScanner
     - Singularity.CodeAnalysis.Scanners.LintingScanner
-    - Singularity.PgFlow (optional async workflows)
+    - Singularity.QuantumFlow (optional async workflows)
 
   called_by:
     - Agents (code quality workflows)
@@ -197,7 +197,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
       submitted_at: DateTime.utc_now()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("scan_requests", request) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("scan_requests", request) do
       {:ok, :sent} ->
         Logger.info("Scan workflow submitted", workflow_id: workflow_id, path: path)
         {:ok, workflow_id}

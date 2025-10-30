@@ -353,8 +353,8 @@ defmodule CentralCloud.Jobs.StatisticsJob do
       knowledge_growth: statistics.knowledge_growth
     }
 
-    QuantumFlow.send_with_notify("intelligence.statistics.global", summary, CentralCloud.Repo)
-    Logger.debug("Published global statistics summary to intelligence.statistics.global via PgFlow")
+    QuantumFlow.Notifications.send_with_notify("intelligence.statistics.global", summary, CentralCloud.Repo)
+    Logger.debug("Published global statistics summary to intelligence.statistics.global via QuantumFlow")
   end
 
   defp get_cached_value(cache_key) do

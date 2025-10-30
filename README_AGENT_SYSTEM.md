@@ -27,7 +27,7 @@ See: **`DOCUMENTATION_INDEX.md`** for reading paths
 
 ✅ **Unified Workflows Hub** (`lib/singularity/workflows.ex`)
 - Central orchestration point for all workflows
-- Backward compatible with PgFlow + HTDAG
+- Backward compatible with QuantumFlow + HTDAG
 
 ✅ **4-Phase HTDAG Generation** (RefactorPlanner)
 - Phase 0: Technology Analysis
@@ -89,7 +89,7 @@ See: **`DOCUMENTATION_INDEX.md`** for reading paths
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
 | "Do agents have basic tools?" | ✅ YES | Toolkit, HotReloader, SelfImprovementAgent, Arbiter |
-| "Merge HTDAG + PgFlow" | ✅ YES | Workflows.ex unified system |
+| "Merge HTDAG + QuantumFlow" | ✅ YES | Workflows.ex unified system |
 | "Todo/Plan/Execute complete?" | ✅ YES | End-to-end smoke test passing |
 | "Scan agents and integrate?" | ✅ YES | 3 agents + 2 workers integrated |
 
@@ -161,7 +161,7 @@ Workflows.execute_workflow(workflow)  # dry_run: true by default
 - Full observability
 
 ✅ **100% Backward Compatible**
-- Old PgFlow API still works
+- Old QuantumFlow API still works
 - Old HTDAG API still works
 - No breaking changes
 

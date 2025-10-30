@@ -464,7 +464,7 @@ defmodule CentralCloud.Evolution.Patterns.Aggregator do
       count: length(patterns)
     )
 
-    # In production: Export patterns to Genesis via ex_quantum_flow
+    # In production: Export patterns to Genesis via quantum_flow
     # For each pattern:
     # 1. Create Genesis RuleEvolutionProposal
     # 2. Mark pattern as promoted_to_genesis
@@ -477,7 +477,7 @@ defmodule CentralCloud.Evolution.Patterns.Aggregator do
         changeset = Ecto.Changeset.change(pattern, %{promoted_to_genesis: true})
         Repo.update(changeset)
 
-        # TODO: Publish to Genesis via ex_quantum_flow queue "genesis_rule_proposals"
+        # TODO: Publish to Genesis via quantum_flow queue "genesis_rule_proposals"
         Logger.info("[PatternAggregator] Promoted pattern",
           pattern_id: pattern.id,
           pattern_name: pattern.code_pattern["name"]

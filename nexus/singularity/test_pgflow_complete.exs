@@ -5,7 +5,7 @@
 # Run with: elixir test_quantum_flow_complete.exs
 
 # This script tests the complete integration between:
-# - ex_quantum_flow (PGMQ + NOTIFY)
+# - quantum_flow (PGMQ + NOTIFY)
 # - Singularity (WebChat integration)
 # - Observer (Web UI integration)
 

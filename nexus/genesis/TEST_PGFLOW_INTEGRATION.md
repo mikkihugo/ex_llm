@@ -1,10 +1,10 @@
-# Genesis PgFlow Integration - Complete Test Scenario
+# Genesis QuantumFlow Integration - Complete Test Scenario
 
 **Status:** ✅ All Configuration Complete (October 30, 2025)
 
 ## Automated Configuration Changes
 
-### ✅ 1. PgFlow Consumer Enabled
+### ✅ 1. QuantumFlow Consumer Enabled
 **File:** `config/config.exs`
 
 ```elixir
@@ -18,14 +18,14 @@ config :genesis, :quantum_flow_consumer,
   repo: Genesis.Repo
 ```
 
-**Impact:** Genesis will now consume from three PgFlow queues with parallel processing enabled.
+**Impact:** Genesis will now consume from three QuantumFlow queues with parallel processing enabled.
 
 ### ✅ 2. Legacy Consumer Disabled
 **File:** `config/config.exs`
 
 ```elixir
 config :genesis, :shared_queue,
-  enabled: false,  # ✅ DISABLED - Use PgFlow consumer instead
+  enabled: false,  # ✅ DISABLED - Use QuantumFlow consumer instead
   ...
 ```
 
@@ -50,10 +50,10 @@ Added `process_workflows_parallel/2` function that:
 ### Rule Evolution Flow
 ```
 Singularity.Evolution.GenesisPublisher.publish_rules()
-    ↓ (call QuantumFlow.Executor or PgFlow.send_with_notify)
-genesis_rule_updates queue (PgFlow)
+    ↓ (call QuantumFlow.Executor or QuantumFlow.send_with_notify)
+genesis_rule_updates queue (QuantumFlow)
     ↓
-Genesis.PgFlowWorkflowConsumer.consume_workflows()
+Genesis.QuantumFlowWorkflowConsumer.consume_workflows()
     ↓
 Route: payload["type"] == "genesis_rule_update"
     ↓
@@ -62,7 +62,7 @@ Genesis.RuleEngine.apply_rule()
     └─→ Validate rule structure
         └─→ Apply to Genesis rule engine
     ↓
-genesis_rule_updates_results queue (PgFlow)
+genesis_rule_updates_results queue (QuantumFlow)
     ↓
 Results published: status, namespace, confidence, timestamp
     ↓
@@ -73,9 +73,9 @@ Archive message from genesis_rule_updates
 ```
 Singularity.Evolution.GenesisPublisher.publish_llm_config_rules()
     ↓
-genesis_llm_config_updates queue (PgFlow)
+genesis_llm_config_updates queue (QuantumFlow)
     ↓
-Genesis.PgFlowWorkflowConsumer.consume_workflows()
+Genesis.QuantumFlowWorkflowConsumer.consume_workflows()
     ↓
 Route: payload["type"] == "genesis_llm_config_update"
     ↓
@@ -84,7 +84,7 @@ Genesis.LlmConfigManager.update_config()
     └─→ Validate config (provider, complexity, models)
         └─→ Apply to Genesis LLM settings
     ↓
-genesis_llm_config_updates_results queue (PgFlow)
+genesis_llm_config_updates_results queue (QuantumFlow)
     ↓
 Results published: status, provider, complexity, models_count
     ↓
@@ -93,11 +93,11 @@ Archive message from genesis_llm_config_updates
 
 ### Job Request Flow
 ```
-Singularity.PgFlow.send_with_notify("code_execution_requests", payload)
+Singularity.QuantumFlow.send_with_notify("code_execution_requests", payload)
     ↓
-code_execution_requests queue (PgFlow)
+code_execution_requests queue (QuantumFlow)
     ↓
-Genesis.PgFlowWorkflowConsumer.consume_workflows()
+Genesis.QuantumFlowWorkflowConsumer.consume_workflows()
     ↓
 Route: payload["type"] == "code_execution_request"
     ↓
@@ -107,7 +107,7 @@ Genesis.JobExecutor.execute()
     ├─→ Execute analysis (quality, security, linting, testing)
     └─→ Calculate metrics (execution_ms, quality_score, issues_count)
     ↓
-code_execution_results queue (PgFlow)
+code_execution_results queue (QuantumFlow)
     ↓
 Results published: output, metrics, execution_ms, timestamp
     ↓
@@ -137,7 +137,7 @@ config :genesis, :shared_queue,
 ```elixir
 # config/config.exs
 config :genesis, :quantum_flow_consumer,
-  enabled: true,                        # ✅ PgFlow-based
+  enabled: true,                        # ✅ QuantumFlow-based
   poll_interval_ms: 1000,
   batch_size: 10,                       # Smaller, faster batches
   timeout_ms: 30000,                    # Explicit timeout
@@ -193,7 +193,7 @@ children = [
   {Oban, ...},                     # Background jobs
   {Task.Supervisor, ...},          # Task timeout handling
 
-  Genesis.PgFlowWorkflowConsumer,  # ✅ NEW: Enabled
+  Genesis.QuantumFlowWorkflowConsumer,  # ✅ NEW: Enabled
 
   Genesis.SharedQueueConsumer,     # ❌ DISABLED (legacy)
 
@@ -217,10 +217,10 @@ iex(singularity)> alias Singularity.Evolution.GenesisPublisher
 iex(singularity)> {:ok, result} = GenesisPublisher.publish_rules(min_confidence: 0.85)
 
 # Expected in Genesis logs:
-# [Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
+# [Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
 # [Genesis.RuleEngine] Applying rule, confidence: 0.92
 # [Genesis] Workflow completed, execution_time_ms: 42
-# [Genesis.PgFlowWorkflowConsumer] Published workflow result
+# [Genesis.QuantumFlowWorkflowConsumer] Published workflow result
 ```
 
 ### Test 2: LLM Config Update
@@ -229,7 +229,7 @@ iex(singularity)> {:ok, result} = GenesisPublisher.publish_rules(min_confidence:
 iex(singularity)> {:ok, result} = GenesisPublisher.publish_llm_config_rules()
 
 # Expected in Genesis logs:
-# [Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
+# [Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 1, parallel: true
 # [Genesis.LlmConfigManager] Updating LLM configuration, provider: claude
 # [Genesis] Workflow completed, execution_time_ms: 18
 ```
@@ -237,10 +237,10 @@ iex(singularity)> {:ok, result} = GenesisPublisher.publish_llm_config_rules()
 ### Test 3: Job Request (Parallel Processing)
 ```bash
 # In Singularity shell:
-iex(singularity)> alias Singularity.PgFlow
+iex(singularity)> alias Singularity.QuantumFlow
 iex(singularity)>
 iex(singularity)> for i <- 1..8 do
-...>   Singularity.PgFlow.send_with_notify("code_execution_requests", %{
+...>   Singularity.QuantumFlow.send_with_notify("code_execution_requests", %{
 ...>     "type" => "code_execution_request",
 ...>     "id" => "job_#{i}",
 ...>     "code" => "def foo, do: 42",
@@ -250,7 +250,7 @@ iex(singularity)> for i <- 1..8 do
 ...> end
 
 # Expected in Genesis logs (parallel processing):
-# [Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 8, parallel: true
+# [Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 8, parallel: true
 # [Genesis] Processing workflow, workflow_id: uuid-1, type: code_execution_request
 # [Genesis] Processing workflow, workflow_id: uuid-2, type: code_execution_request
 # [Genesis] Processing workflow, workflow_id: uuid-3, type: code_execution_request
@@ -270,16 +270,16 @@ config :logger, level: :debug
 ### Check Consumer Status
 ```bash
 # In Genesis shell:
-iex(genesis)> GenServer.call(Genesis.PgFlowWorkflowConsumer, :get_state)
+iex(genesis)> GenServer.call(Genesis.QuantumFlowWorkflowConsumer, :get_state)
 # Returns: %{metrics: %{processed: 42, succeeded: 40, failed: 2, last_poll: ...}}
 ```
 
 ### Monitor Metrics
 ```bash
 # In Genesis logs, look for:
-[Genesis.PgFlowWorkflowConsumer] Processing workflows, count: 10, parallel: true
+[Genesis.QuantumFlowWorkflowConsumer] Processing workflows, count: 10, parallel: true
 [Genesis] Workflow completed, execution_time_ms: 142
-[Genesis.PgFlowWorkflowConsumer] Published workflow result
+[Genesis.QuantumFlowWorkflowConsumer] Published workflow result
 ```
 
 ## Rollback Instructions
@@ -307,7 +307,7 @@ config :genesis, :shared_queue,
 
 ## Production Readiness Checklist
 
-- ✅ **Code:** PgFlowWorkflowConsumer + RuleEngine + LlmConfigManager + JobExecutor
+- ✅ **Code:** QuantumFlowWorkflowConsumer + RuleEngine + LlmConfigManager + JobExecutor
 - ✅ **Configuration:** Enabled in `config/config.exs`
 - ✅ **Parallel Processing:** Enabled with 4 workers by default
 - ✅ **Legacy Consumer:** Disabled by default
@@ -321,23 +321,23 @@ config :genesis, :shared_queue,
 
 | Aspect | Before | After |
 |--------|--------|-------|
-| **Queues** | 1 (bare PGMQ) | 3 (PgFlow) |
+| **Queues** | 1 (bare PGMQ) | 3 (QuantumFlow) |
 | **Processing** | Sequential | Parallel (4 workers) |
 | **Message Types** | Jobs only | Rules + Config + Jobs |
 | **State Management** | Implicit | Explicit (pending→running→completed/failed) |
 | **Error Handling** | Basic | Comprehensive with recovery |
-| **Integration** | Direct PGMQ | PgFlow abstraction |
+| **Integration** | Direct PGMQ | QuantumFlow abstraction |
 | **Autonomy** | Reactive to jobs | Reactive to rules + config + jobs |
-| **Consumer** | SharedQueueConsumer | PgFlowWorkflowConsumer |
+| **Consumer** | SharedQueueConsumer | QuantumFlowWorkflowConsumer |
 
 ## Summary
 
-✅ **Configuration:** Auto-enabled PgFlow consumer with parallel processing
+✅ **Configuration:** Auto-enabled QuantumFlow consumer with parallel processing
 ✅ **Legacy:** Auto-disabled SharedQueueConsumer
 ✅ **Optimization:** Parallel processing with Task.async_stream (4 workers)
 ✅ **Production:** Ready for immediate deployment
 ✅ **Testing:** All integration points configured and ready
 
-Genesis is now a **fully autonomous agent** that reactively consumes from three PgFlow queues and processes workflows in parallel. The system is production-ready and can handle 4x more throughput than before.
+Genesis is now a **fully autonomous agent** that reactively consumes from three QuantumFlow queues and processes workflows in parallel. The system is production-ready and can handle 4x more throughput than before.
 
 **Next: Start Genesis and test with Singularity queries.**

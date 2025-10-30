@@ -70,7 +70,7 @@ singularity/                          ← Repo name (lowercase)
 │   └── genesis/                      ← (Optional future)
 │
 └── packages/                         ← Shared libraries
-    ├── ex_quantum_flow/
+    ├── quantum_flow/
     ├── ex_llm/
     ├── code_quality_engine/
     ├── parser_engine/

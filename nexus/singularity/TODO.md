@@ -7,7 +7,7 @@
 - [x] Compilation Error - system_health_page.ex - Fixed type matching
 - [x] SASL logging configured for all environments (dev/test/prod)
 - [x] All NATS references removed - Migrated to QuantumFlow
-- [x] Dependency conflict with ex_quantum_flow - Fixed with `override: true`
+- [x] Dependency conflict with quantum_flow - Fixed with `override: true`
 
 ### Documentation Tasks - COMPLETED ✅
 - [x] Updated README.md - Removed outdated sections
@@ -88,7 +88,7 @@
   - Test: `:silent` (errors via ExUnit)
   - Prod: `{:file, ~c"log/sasl-error.log"}` with UTC timestamps
 - **NATS Removal:** ✅ Complete - all migrated to QuantumFlow
-- **Dependencies:** ✅ Fixed ex_quantum_flow conflict with override: true
+- **Dependencies:** ✅ Fixed quantum_flow conflict with override: true
 - **Simple Implementations:** ✅ Completed (26+ implementations)
 - **Complex ML Features:** ✅ Production-grade scaffolding completed
 - **Architectural Placeholders:** ✅ All QuantumFlow migrations completed

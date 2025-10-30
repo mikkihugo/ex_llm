@@ -251,30 +251,30 @@ QuantumFlow.Workflow.subscribe(...)            # Line 108, 139
 ```
 
 **Research Steps:**
-1. Check ex_quantum_flow package for current API:
+1. Check quantum_flow package for current API:
    ```bash
-   grep -r "def create" packages/ex_quantum_flow/lib/
-   grep -r "def subscribe" packages/ex_quantum_flow/lib/
+   grep -r "def create" packages/quantum_flow/lib/
+   grep -r "def subscribe" packages/quantum_flow/lib/
    ```
 
 2. Check what's actually exported from QuantumFlow module:
    ```bash
-   grep -r "^  def " packages/ex_quantum_flow/lib/QuantumFlow/workflow.ex
+   grep -r "^  def " packages/quantum_flow/lib/QuantumFlow/workflow.ex
    ```
 
 3. Look for examples in test files:
    ```bash
-   grep -r "create_workflow\|subscribe" packages/ex_quantum_flow/test/
+   grep -r "create_workflow\|subscribe" packages/quantum_flow/test/
    ```
 
 **Possible Fixes:**
 - Replace with `QuantumFlow.Workflows.create/2` if API changed
-- Or use `ExQuantumFlow.create_workflow/2` with correct namespace
+- Or use `QuantumFlow.create_workflow/2` with correct namespace
 - Or implement wrapper functions
 
 **Validation:**
 ```bash
-grep -A 3 "def create\|def subscribe" packages/ex_quantum_flow/lib/QuantumFlow/*.ex
+grep -A 3 "def create\|def subscribe" packages/quantum_flow/lib/QuantumFlow/*.ex
 ```
 
 ---

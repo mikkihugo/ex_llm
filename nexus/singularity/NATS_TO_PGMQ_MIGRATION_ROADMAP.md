@@ -10,7 +10,7 @@ This document outlines the migration from NATS (JetStream) messaging to pgmq (Po
 
 **Current Status:**
 - ✅ NATS code removed from codebase
-- ✅ pgmq infrastructure deployed (in packages/ex_quantum_flow)
+- ✅ pgmq infrastructure deployed (in packages/quantum_flow)
 - ✅ LLM request/response pipeline migrated to pgmq
 - ⏳ 7 test suites awaiting pgmq integration (see Phase breakdown below)
 
@@ -67,7 +67,7 @@ Job marked complete
 
 ### Phase 1: Foundation (COMPLETED)
 - [x] Remove NATS from codebase
-- [x] Verify pgmq infrastructure in ex_quantum_flow
+- [x] Verify pgmq infrastructure in quantum_flow
 - [x] Document test dependencies
 - [x] Create test exclusion strategy
 
@@ -452,7 +452,7 @@ If issues arise, we can temporarily:
 **Pgmq Documentation:**
 - [pgmq GitHub](https://github.com/tembo-io/pgmq)
 - [pgmq Elixir Client](https://github.com/zcm/pgmq-elixir)
-- [Examples in codebase](packages/ex_quantum_flow)
+- [Examples in codebase](packages/quantum_flow)
 
 **Similar Implementations:**
 - `singularity/test/singularity/llm/service_pgmq_integration_test.exs`

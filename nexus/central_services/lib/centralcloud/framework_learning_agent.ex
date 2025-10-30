@@ -206,7 +206,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
   defp load_framework_discovery_prompt do
     # Prompts CAN be cached (they change less frequently than frameworks)
     # Use JetStream KV with TTL for prompts
-    # Replace NATS KV with PgFlow or DB lookup
+    # Replace NATS KV with QuantumFlow or DB lookup
     case fetch_prompt_from_cache("prompt:framework-discovery") do
       {:ok, prompt} ->
         Logger.debug("Loaded framework_discovery prompt from JetStream KV cache")
@@ -245,7 +245,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
     Logger.info("Calling LLM for #{package.name}, request_id=#{request_id}")
 
-    case QuantumFlow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
+    case QuantumFlow.Notifications.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",

@@ -197,7 +197,7 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
       }
 
       # Publish to CentralCloud via QuantumFlow (pgmq + NOTIFY)
-      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_push_queue, message) do
+      case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(@centralcloud_push_queue, message) do
         {:ok, :sent} ->
           Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via QuantumFlow",
             capability_count: length(capabilities),

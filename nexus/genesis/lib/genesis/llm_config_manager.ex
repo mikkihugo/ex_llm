@@ -12,9 +12,9 @@ defmodule Genesis.LlmConfigManager do
 
   ```
   Singularity Instance (learns optimal mappings)
-        ↓ (publishes via PgFlow)
+        ↓ (publishes via QuantumFlow)
   genesis_llm_config_updates queue
-        ↓ (consumed by PgFlowWorkflowConsumer)
+        ↓ (consumed by QuantumFlowWorkflowConsumer)
   LlmConfigManager.update_config()
         ↓ (updates local configuration)
   Genesis job execution

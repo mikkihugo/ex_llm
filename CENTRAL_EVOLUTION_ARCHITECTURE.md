@@ -7,7 +7,7 @@ Singularity is a multi-instance, multi-AI autonomous learning system with three 
 2. **Genesis** - Autonomous improvement hub in `nexus/genesis/` (rule evolution, experiment trials)
 3. **CentralCloud** - Pattern intelligence aggregator in `nexus/central_services/lib/centralcloud/`
 
-All three are **required** for full system functionality. Communication via pgmq, ex_quantum_flow, NATS.
+All three are **required** for full system functionality. Communication via pgmq, quantum_flow, NATS.
 
 ---
 
@@ -454,7 +454,7 @@ Concrete Types (FrameworkDetector, TechnologyDetector, etc.)
 └──────────────────┘ └──────────────────┘ └──────────────────┘
         ↑                      ↑                      ↑
         └──────────────────────┼──────────────────────┘
-                      pgmq/ex_quantum_flow/NATS
+                      pgmq/quantum_flow/NATS
          (Durable inter-service communication)
 ```
 

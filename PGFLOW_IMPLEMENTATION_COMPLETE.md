@@ -1,4 +1,4 @@
-# PgFlow Implementation - Complete Package
+# QuantumFlow Implementation - Complete Package
 
 **Status:** ✅ **PRODUCTION-READY** - Phases 1-3 Fully Implemented
 
@@ -10,7 +10,7 @@
 
 ### 🎯 Phase 1: Foundation (Complete) ✅
 
-#### 1. Singularity PgFlow Producers
+#### 1. Singularity QuantumFlow Producers
 **File:** `nexus/singularity/lib/singularity/evolution/QuantumFlow/producers.ex` (380 lines)
 
 Asynchronous, durable message publishing:
@@ -20,7 +20,7 @@ Asynchronous, durable message publishing:
 - ✅ Error handling with automatic retry (3 attempts)
 - ✅ Telemetry integration at every step
 
-#### 2. Singularity PgFlow Consumers
+#### 2. Singularity QuantumFlow Consumers
 **File:** `nexus/singularity/lib/singularity/evolution/QuantumFlow/consumers.ex` (380 lines)
 
 Process incoming messages from CentralCloud:
@@ -30,7 +30,7 @@ Process incoming messages from CentralCloud:
 - ✅ Message validation before processing
 - ✅ Automatic retry on failure
 
-#### 3. CentralCloud PgFlow Producers
+#### 3. CentralCloud QuantumFlow Producers
 **File:** `nexus/central_services/lib/centralcloud/evolution/QuantumFlow/producers.ex` (320 lines)
 
 Send results back to instances:
@@ -40,7 +40,7 @@ Send results back to instances:
 - ✅ High-priority rollback messages
 - ✅ Broadcast support (all instances)
 
-#### 4. CentralCloud PgFlow Consumers
+#### 4. CentralCloud QuantumFlow Consumers
 **File:** `nexus/central_services/lib/centralcloud/evolution/QuantumFlow/consumers.ex` (380 lines)
 
 Receive messages from instances:
@@ -52,8 +52,8 @@ Receive messages from instances:
 
 ### 📋 Configuration & Setup
 
-#### 5. PgFlow Configuration Guide
-**File:** `PGFLOW_CONFIGURATION.md` (500+ lines)
+#### 5. QuantumFlow Configuration Guide
+**File:** `QUANTUM_FLOW_CONFIGURATION.md` (500+ lines)
 
 Complete setup instructions:
 - ✅ Dependencies (mix.exs)
@@ -65,7 +65,7 @@ Complete setup instructions:
 - ✅ Monitoring & troubleshooting
 
 #### 6. Implementation Checklist
-**File:** `PGFLOW_IMPLEMENTATION_CHECKLIST.md` (400+ lines)
+**File:** `QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md` (400+ lines)
 
 Step-by-step deployment guide:
 - ✅ Phase 1: Foundation checklist (12 items)
@@ -156,11 +156,11 @@ Step-by-step deployment guide:
 
 ### Before Deployment
 ```
-1. Add ex_quantum_flow to mix.exs
+1. Add quantum_flow to mix.exs
    ✅ Code ready
 
-2. Configure PgFlow
-   ✅ PGFLOW_CONFIGURATION.md provided
+2. Configure QuantumFlow
+   ✅ QUANTUM_FLOW_CONFIGURATION.md provided
    - Environment variables
    - Queue definitions
    - Worker counts
@@ -169,7 +169,7 @@ Step-by-step deployment guide:
    ✅ mix QuantumFlow.init
 
 4. Update supervision tree
-   ✅ Add ExQuantumFlow.Consumer
+   ✅ Add QuantumFlow.Consumer
 ```
 
 ### During Development
@@ -299,10 +299,10 @@ CentralCloud:
     └── consumers.ex      (380 lines) ✅
 
 Configuration & Docs:
-  ├── PGFLOW_CONFIGURATION.md           (500+ lines) ✅
-  ├── PGFLOW_IMPLEMENTATION_CHECKLIST.md (400+ lines) ✅
-  ├── EVOLUTION_PGFLOW_INTEGRATION_GUIDE.md (already exists) ✅
-  └── PGFLOW_IMPLEMENTATION_COMPLETE.md (this file)
+  ├── QUANTUM_FLOW_CONFIGURATION.md           (500+ lines) ✅
+  ├── QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md (400+ lines) ✅
+  ├── EVOLUTION_QUANTUM_FLOW_INTEGRATION_GUIDE.md (already exists) ✅
+  └── QUANTUM_FLOW_IMPLEMENTATION_COMPLETE.md (this file)
 
 Total: 1,700+ lines of production code + documentation
 ```
@@ -311,12 +311,12 @@ Total: 1,700+ lines of production code + documentation
 
 ## Next Steps: The Checklist
 
-Follow `PGFLOW_IMPLEMENTATION_CHECKLIST.md` for:
+Follow `QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md` for:
 
 ### Phase 1: Foundation (3 hours)
 - [x] Code written
 - [ ] Add to mix.exs
-- [ ] Configure (use PGFLOW_CONFIGURATION.md)
+- [ ] Configure (use QUANTUM_FLOW_CONFIGURATION.md)
 - [ ] Run migrations
 - [ ] Update supervision tree
 - [ ] Test locally
@@ -349,7 +349,7 @@ Follow `PGFLOW_IMPLEMENTATION_CHECKLIST.md` for:
 # Test each consumer processes correctly
 # Test error handling and retry
 
-See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
+See QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md for examples
 ```
 
 ### Integration Tests (Recommended)
@@ -359,7 +359,7 @@ See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
 # Test metrics: execute → report → Guardian receives
 # Test rollback: Guardian decides → sends → instance rollback
 
-See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
+See QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md for examples
 ```
 
 ### System Tests (Recommended)
@@ -370,7 +370,7 @@ See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
 # Rollback across instances
 # Patterns learned
 
-See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
+See QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md for examples
 ```
 
 ---
@@ -380,10 +380,10 @@ See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
 ### Queue Status
 ```elixir
 # In iex:
-ExQuantumFlow.list_queues()
-ExQuantumFlow.get_queue_stats("proposals_for_consensus_queue")
-ExQuantumFlow.list_pending_messages("proposals_for_consensus_queue")
-ExQuantumFlow.list_dlq_messages()
+QuantumFlow.list_queues()
+QuantumFlow.get_queue_stats("proposals_for_consensus_queue")
+QuantumFlow.list_pending_messages("proposals_for_consensus_queue")
+QuantumFlow.list_dlq_messages()
 ```
 
 ### Database Queries
@@ -444,7 +444,7 @@ GROUP BY queue_name;
 
 ## Benefits Over Direct Calls
 
-| Aspect | Direct Calls | PgFlow Queues |
+| Aspect | Direct Calls | QuantumFlow Queues |
 |--------|-------------|---------------|
 | **Reliability** | No retry on failure | Auto-retry (3 attempts) |
 | **Persistence** | Lost if service down | Persisted in DB |
@@ -461,18 +461,18 @@ GROUP BY queue_name;
 
 ### Messages Not Processing
 1. Check consumer running: `Supervisor.which_children(Singularity.Supervisor)`
-2. Check pending messages: `ExQuantumFlow.list_pending_messages("queue_name")`
-3. Check DLQ for errors: `ExQuantumFlow.list_dlq_messages()`
+2. Check pending messages: `QuantumFlow.list_pending_messages("queue_name")`
+3. Check DLQ for errors: `QuantumFlow.list_dlq_messages()`
 4. Review logs: `Logger.info` at each step
 
 ### High Latency
-1. Increase worker count: `export PGFLOW_WORKERS=4`
+1. Increase worker count: `export QUANTUM_FLOW_WORKERS=4`
 2. Check database: `SELECT * FROM quantum_flow_messages WHERE status='processing'`
 3. Monitor slow queries
 4. Profile with `mix profile.fprof`
 
 ### Database Issues
-1. Verify connection: `psql $PGFLOW_DATABASE_URL`
+1. Verify connection: `psql $QUANTUM_FLOW_DATABASE_URL`
 2. Check tables exist: `\dt quantum_flow_*`
 3. Check disk space: `SELECT pg_database.datname, pg_size_pretty(pg_database_size(pg_database.datname))`
 4. Run VACUUM: `VACUUM quantum_flow_messages`
@@ -483,9 +483,9 @@ GROUP BY queue_name;
 
 | Document | Purpose | Status |
 |----------|---------|--------|
-| **PGFLOW_CONFIGURATION.md** | How to set up | ✅ Complete |
-| **PGFLOW_IMPLEMENTATION_CHECKLIST.md** | Step-by-step deployment | ✅ Complete |
-| **EVOLUTION_PGFLOW_INTEGRATION_GUIDE.md** | Design & concepts | ✅ Complete |
+| **QUANTUM_FLOW_CONFIGURATION.md** | How to set up | ✅ Complete |
+| **QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md** | Step-by-step deployment | ✅ Complete |
+| **EVOLUTION_QUANTUM_FLOW_INTEGRATION_GUIDE.md** | Design & concepts | ✅ Complete |
 | **Producer @moduledoc** | API reference | ✅ Complete |
 | **Consumer @moduledoc** | API reference | ✅ Complete |
 | **This file** | Overview & summary | ✅ Complete |
@@ -511,14 +511,14 @@ GROUP BY queue_name;
 ### Day 1: Setup (2 hours)
 ```bash
 # 1. Add dependency
-echo '{:ex_quantum_flow, "~> 0.1"}' >> nexus/singularity/mix.exs
-echo '{:ex_quantum_flow, "~> 0.1"}' >> nexus/central_services/mix.exs
+echo '{:quantum_flow, "~> 0.1"}' >> nexus/singularity/mix.exs
+echo '{:quantum_flow, "~> 0.1"}' >> nexus/central_services/mix.exs
 
 # 2. Get dependencies
 cd nexus/singularity && mix deps.get
 cd ../central_services && mix deps.get
 
-# 3. Copy configuration from PGFLOW_CONFIGURATION.md to config/config.exs
+# 3. Copy configuration from QUANTUM_FLOW_CONFIGURATION.md to config/config.exs
 
 # 4. Run migrations
 cd nexus/singularity && mix QuantumFlow.init
@@ -529,7 +529,7 @@ mix test test/singularity/evolution/QuantumFlow/
 ```
 
 ### Day 2-3: Integration (6-8 hours)
-Follow `PGFLOW_IMPLEMENTATION_CHECKLIST.md` for Phase 2-3
+Follow `QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md` for Phase 2-3
 
 ### Day 4: Cleanup (2 hours)
 Complete Phase 4 checklist
@@ -539,8 +539,8 @@ Complete Phase 4 checklist
 ## Support
 
 If you have questions:
-1. Check **PGFLOW_CONFIGURATION.md** (setup help)
-2. Check **PGFLOW_IMPLEMENTATION_CHECKLIST.md** (step-by-step)
+1. Check **QUANTUM_FLOW_CONFIGURATION.md** (setup help)
+2. Check **QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md** (step-by-step)
 3. Review **Producer/Consumer @moduledoc** (API docs)
 4. Check **Troubleshooting** section above
 
@@ -554,6 +554,6 @@ If you have questions:
 ✅ **Step-by-step deployment checklist**
 ✅ **Ready for production deployment**
 
-**Next:** Follow PGFLOW_IMPLEMENTATION_CHECKLIST.md to integrate into ProposalQueue and ExecutionFlow, then deploy!
+**Next:** Follow QUANTUM_FLOW_IMPLEMENTATION_CHECKLIST.md to integrate into ProposalQueue and ExecutionFlow, then deploy!
 
-🚀 **Production-ready PgFlow integration complete!**
+🚀 **Production-ready QuantumFlow integration complete!**

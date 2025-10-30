@@ -335,7 +335,7 @@ end
    - Wait for callback before proceeding past approval nodes
 
 5. **Database persistence for workflows**
-   - Use `Singularity.PgFlow.Workflow` Ecto schema
+   - Use `Singularity.QuantumFlow.Workflow` Ecto schema
    - Persist to PostgreSQL for durability + audit log
    - Keep ETS for fast lookups
 

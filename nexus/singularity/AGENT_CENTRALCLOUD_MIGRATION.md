@@ -29,7 +29,7 @@ Defines behavior contract with optional CentralCloud callbacks:
 **Path:** `lib/singularity/evolution/agent_coordinator.ex`
 
 GenServer managing agent ↔ CentralCloud communication:
-- `propose_change/3` - Send change to Guardian via ex_quantum_flow
+- `propose_change/3` - Send change to Guardian via quantum_flow
 - `record_pattern/3` - Send pattern to Aggregator
 - `await_consensus/1` - Wait for Consensus approval (blocks up to 30s)
 - `handle_rollback/1` - Propagate rollback to agents

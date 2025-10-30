@@ -45,7 +45,7 @@ A comprehensive system that tracks **every code generation attempt** from prompt
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ INTEGRATION LAYER                                        │  │
 │  │ ├─ LLM.Service (automatic session tracking)             │  │
-│  │ ├─ PgFlow Workflows (RcaWorkflow base class)            │  │
+│  │ ├─ QuantumFlow Workflows (RcaWorkflow base class)            │  │
 │  │ └─ Agents (query learnings, optimize selection)         │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
@@ -166,8 +166,8 @@ priv/repo/migrations/
 Documentation/
 ├── RCA_SYSTEM_GUIDE.md              (500+ lines, complete guide)
 ├── RCA_IMPLEMENTATION_SUMMARY.md    (300+ lines, technical summary)
-├── RCA_PGFLOW_INTEGRATION.md        (300+ lines, integration guide)
-├── RCA_PGFLOW_OPTIMAL_USAGE.md      (500+ lines, usage patterns)
+├── RCA_QUANTUM_FLOW_INTEGRATION.md        (300+ lines, integration guide)
+├── RCA_QUANTUM_FLOW_OPTIMAL_USAGE.md      (500+ lines, usage patterns)
 └── RCA_COMPLETE_SYSTEM_OVERVIEW.md  (this file)
 ```
 
@@ -256,7 +256,7 @@ end
 |------|--------|
 | Database Schema | ✅ Complete |
 | Session Management | ✅ Complete |
-| PgFlow Integration | ✅ Complete |
+| QuantumFlow Integration | ✅ Complete |
 | Query Modules | ✅ Complete |
 | Workflow Base Class | ✅ Complete |
 | Example Workflows | ✅ Complete |
@@ -412,7 +412,7 @@ Singularity.RCA.LearningQueries.improvement_recommendations()
 
 ### Fully Integrated ✅
 - Works with LLM.Service
-- Works with PgFlow workflows
+- Works with QuantumFlow workflows
 - Works with existing agents
 - Backwards compatible
 
@@ -436,8 +436,8 @@ Singularity.RCA.LearningQueries.improvement_recommendations()
 |----------|---------|--------|
 | **RCA_SYSTEM_GUIDE.md** | Complete RCA system overview | 500+ lines |
 | **RCA_IMPLEMENTATION_SUMMARY.md** | Technical architecture & implementation | 300+ lines |
-| **RCA_PGFLOW_INTEGRATION.md** | PgFlow workflow integration | 300+ lines |
-| **RCA_PGFLOW_OPTIMAL_USAGE.md** | Optimal usage patterns & examples | 500+ lines |
+| **RCA_QUANTUM_FLOW_INTEGRATION.md** | QuantumFlow workflow integration | 300+ lines |
+| **RCA_QUANTUM_FLOW_OPTIMAL_USAGE.md** | Optimal usage patterns & examples | 500+ lines |
 | **RCA_COMPLETE_SYSTEM_OVERVIEW.md** | This document | Complete view |
 
 ---
@@ -506,7 +506,7 @@ The **RCA system is complete, production-ready, and fully integrated** with Sing
 
 ## 📖 Read Next
 
-1. Start with **RCA_PGFLOW_OPTIMAL_USAGE.md** for usage patterns
+1. Start with **RCA_QUANTUM_FLOW_OPTIMAL_USAGE.md** for usage patterns
 2. Review **RCA_SYSTEM_GUIDE.md** for complete system overview
-3. Check **RCA_PGFLOW_INTEGRATION.md** for workflow integration
+3. Check **RCA_QUANTUM_FLOW_INTEGRATION.md** for workflow integration
 4. See example workflow in **code_quality_improvement_rca.ex**

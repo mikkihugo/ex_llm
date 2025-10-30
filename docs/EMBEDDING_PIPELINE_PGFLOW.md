@@ -103,7 +103,7 @@ config :singularity, Singularity.Execution.Planning.HTDAGAutoBootstrap,
 ```bash
 # QuantumFlow Configuration
 PGFLOW_ENABLED=true
-PGFLOW_QUEUE_NAME=embedding_jobs
+PGFLOW_QUEUE_NAME=embedding_training_jobs
 PGFLOW_TIMEOUT_MS=300000
 PGFLOW_CONCURRENCY=5
 PGFLOW_RETRIES=3
@@ -131,7 +131,7 @@ EMBEDDING_TIMEOUT_MS=300000
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `queue_name` | `"embedding_jobs"` | QuantumFlow queue name |
+| `queue_name` | `"embedding_training_jobs"` | QuantumFlow queue name |
 | `concurrency` | `5` | Max concurrent workflow jobs |
 | `retries` | `3` | Max retry attempts per job |
 | `retry_delay_ms` | `5000` | Delay between retries |

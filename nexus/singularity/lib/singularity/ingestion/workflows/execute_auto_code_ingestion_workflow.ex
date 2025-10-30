@@ -1,8 +1,8 @@
 defmodule Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow do
   @moduledoc """
-  PgFlow Workflow for Automatic Code Ingestion
+  QuantumFlow workflow for automatic code ingestion
 
-  This workflow automatically ingests code changes into the database using PgFlow
+  This workflow automatically ingests code changes into the database using QuantumFlow
   for orchestration, providing a robust, scalable, and observable code ingestion system.
 
   ## Workflow Steps
@@ -14,9 +14,9 @@ defmodule Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow do
   5. **Indexing** - Update search indexes
   6. **Notification** - Notify completion
 
-  ## PgFlow Integration
+  ## QuantumFlow Integration
 
-  Uses PgFlow for:
+  Uses QuantumFlow for:
   - Workflow orchestration and state management
   - Retry logic and error handling
   - Progress tracking and observability
@@ -49,7 +49,7 @@ defmodule Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow do
   """
 
   require Logger
-  alias Singularity.{Workflows, PgFlow}
+  alias Singularity.Workflows
   alias Singularity.Code.{UnifiedIngestionService, CodebaseDetector}
 
   @workflow_type "auto_code_ingestion"

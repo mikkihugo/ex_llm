@@ -26,7 +26,7 @@
 
 1. Run migration
 2. Add to supervision tree
-3. Set up ex_quantum_flow queues
+3. Set up quantum_flow queues
 4. Implement handlers
 5. Test end-to-end
 

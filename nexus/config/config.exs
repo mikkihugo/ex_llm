@@ -8,15 +8,17 @@ defmodule Nexus.ConfigHelpers do
     scheme = if System.get_env("HTTPS") == "true", do: "https", else: "http"
     "#{scheme}://#{hostname}:#{port}/auth/codex/callback"
   end
-  
+
   defp detect_hostname do
     case System.get_env("HOSTNAME") do
-      nil -> 
+      nil ->
         case :inet.gethostname() do
           {:ok, h} -> List.to_string(h)
           _ -> System.get_env("COMPUTERNAME") || "localhost"
         end
-      hostname -> hostname
+
+      hostname ->
+        hostname
     end
   end
 end
@@ -40,7 +42,7 @@ config :nexus, :codex,
   client_secret: System.get_env("CODEX_CLIENT_SECRET"),
   redirect_uri:
     System.get_env("CODEX_REDIRECT_URI") ||
-    Nexus.ConfigHelpers.build_redirect_uri(),
+      Nexus.ConfigHelpers.build_redirect_uri(),
   scopes: ["openai.user.read", "model.request", "model.read"]
 
 # Gemini Code Assist configuration

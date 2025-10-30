@@ -10,7 +10,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
   - Cron schedule (every 5 minutes via MetricsAggregationWorker)
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :metrics,
     max_attempts: 3,
     priority: 9
@@ -32,8 +32,8 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
     |> Singularity.JobQueue.insert()
   end
 
-  @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"codebase_path" => codebase_path}}) do
+  @impl true
+  def perform(%{args: %{"codebase_path" => codebase_path}}) do
     Logger.debug("Recording health metrics", codebase: codebase_path)
 
     case CodebaseHealthTracker.snapshot_codebase(codebase_path) do

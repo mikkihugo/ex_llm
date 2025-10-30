@@ -24,7 +24,7 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
     E --> C
     C --> F{Consensus Met?}
     F -->|Yes, 2/3+ votes, 85%+ confidence| G[execute_if_consensus/1]
-    G --> H[Broadcast via ex_quantum_flow]
+    G --> H[Broadcast via quantum_flow]
     H --> I[All Instances Apply Change]
     F -->|No| J[Wait for More Votes]
   ```
@@ -50,11 +50,11 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
       "distributed_voting",
       "consensus_computation",
       "auto_execution",
-      "ex_quantum_flow_broadcast"
+      "quantum_flow_broadcast"
     ],
     "dependencies": [
       "CentralCloud.Repo",
-      "QuantumFlow (ex_quantum_flow)",
+      "QuantumFlow (quantum_flow)",
       "Guardian (safety validation)",
       "Pattern Aggregator (pattern lookup)"
     ]
@@ -75,7 +75,7 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
       - triggers execute_if_consensus if met
     execute_if_consensus/1:
       - validates consensus met
-      - broadcasts change via ex_quantum_flow
+      - broadcasts change via quantum_flow
       - marks proposal as executed
       - returns execution_id
   ```
@@ -85,13 +85,13 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
   - **DO NOT** execute changes without 2/3 majority - governance requirement
   - **DO NOT** allow votes after consensus reached - immutable decisions
   - **DO NOT** skip confidence checks - prevent low-quality approvals
-  - **DO NOT** broadcast without ex_quantum_flow - durable delivery required
+  - **DO NOT** broadcast without quantum_flow - durable delivery required
   - **DO NOT** approve with strong rejections - safety override
 
   ## Search Keywords
 
   consensus, distributed_voting, multi_instance_coordination, autonomous_approval,
-  governance, ex_quantum_flow_broadcast, change_execution, collective_intelligence,
+  governance, quantum_flow_broadcast, change_execution, collective_intelligence,
   vote_aggregation, quorum
   """
 
@@ -219,7 +219,7 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
   Execute a change if consensus has been reached.
 
   Checks that consensus rules are met, then broadcasts the change to all instances
-  via ex_quantum_flow for synchronized execution.
+  via quantum_flow for synchronized execution.
 
   ## Parameters
 
@@ -483,27 +483,27 @@ defmodule CentralCloud.Evolution.Consensus.Engine do
   end
 
   defp broadcast_for_voting(change_id, code_change, metadata) do
-    # In production: Publish to ex_quantum_flow queue "evolution_voting_requests"
+    # In production: Publish to quantum_flow queue "evolution_voting_requests"
     Logger.info("[ConsensusEngine] Broadcasting for voting",
       change_id: change_id,
       change_type: code_change[:change_type]
     )
 
-    # TODO: Implement ex_quantum_flow broadcast
+    # TODO: Implement quantum_flow broadcast
     :ok
   end
 
   defp broadcast_change(change_id, code_change, metadata) do
     execution_id = Ecto.UUID.generate()
 
-    # In production: Publish to ex_quantum_flow queue "evolution_approved_changes"
+    # In production: Publish to quantum_flow queue "evolution_approved_changes"
     Logger.info("[ConsensusEngine] Broadcasting approved change",
       execution_id: execution_id,
       change_id: change_id,
       change_type: code_change[:change_type]
     )
 
-    # TODO: Implement ex_quantum_flow broadcast
+    # TODO: Implement quantum_flow broadcast
     {:ok, execution_id}
   end
 end

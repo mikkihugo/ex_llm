@@ -1,10 +1,10 @@
 # HTDAG Automatic Code Ingestion System
 
-This document describes the HTDAG (Hierarchical Task Directed Acyclic Graph) automatic code ingestion system integrated with PgFlow for robust, scalable, and observable code ingestion.
+This document describes the HTDAG (Hierarchical Task Directed Acyclic Graph) automatic code ingestion system integrated with QuantumFlow for robust, scalable, and observable code ingestion.
 
 ## Overview
 
-The HTDAG automatic code ingestion system provides a comprehensive solution for automatically ingesting code changes into the database using a hierarchical task graph approach. It combines real-time file watching with PgFlow workflow orchestration to create a robust, scalable, and observable system.
+The HTDAG automatic code ingestion system provides a comprehensive solution for automatically ingesting code changes into the database using a hierarchical task graph approach. It combines real-time file watching with QuantumFlow workflow orchestration to create a robust, scalable, and observable system.
 
 ## Architecture
 
@@ -44,7 +44,7 @@ graph TD
 1. **HTDAG.AutoCodeIngestionDAG** - Main HTDAG workflow management
 2. **HTDAG.Supervisor** - Supervision tree for HTDAG components
 3. **CodeFileWatcher** - Real-time file system monitoring
-4. **PgFlow Integration** - Workflow orchestration and state management
+4. **QuantumFlow Integration** - Workflow orchestration and state management
 5. **UnifiedIngestionService** - Code parsing and storage
 
 ## Features
@@ -61,7 +61,7 @@ graph TD
 - Progress tracking and observability
 - Error handling and recovery
 
-### PgFlow Integration
+### QuantumFlow Integration
 - Workflow state persistence
 - Task dependency tracking
 - Integration with other system workflows
@@ -251,7 +251,7 @@ config :singularity, :htdag_auto_ingestion,
 
 ## Integration Points
 
-### PgFlow Workflows
+### QuantumFlow Workflows
 - Workflow state persistence
 - Task dependency tracking
 - Integration with other workflows
@@ -323,4 +323,4 @@ IO.inspect(workflow.payload)
 
 ## Conclusion
 
-The HTDAG automatic code ingestion system provides a robust, scalable, and observable solution for automatically ingesting code changes into the database. By combining real-time file watching with hierarchical task execution and PgFlow orchestration, it ensures reliable, efficient, and maintainable code ingestion at scale.
+The HTDAG automatic code ingestion system provides a robust, scalable, and observable solution for automatically ingesting code changes into the database. By combining real-time file watching with hierarchical task execution and QuantumFlow orchestration, it ensures reliable, efficient, and maintainable code ingestion at scale.

@@ -247,7 +247,7 @@ defmodule CentralCloud.IntelligenceHub do
       end
     end)
 
-    # PgFlow notifications are handled via handle_info/2 GenServer callback
+    # QuantumFlow notifications are handled via handle_info/2 GenServer callback
     # No separate process needed - GenServer receives {:quantum_flow_notification, notification} messages
 
     :ok
@@ -314,7 +314,7 @@ defmodule CentralCloud.IntelligenceHub do
         # Query aggregated insights from templates and patterns
         insights = query_global_insights(query)
         reply = %{insights: insights, status: "ok"}
-        QuantumFlow.send_with_notify(msg.reply_to, reply, CentralCloud.Repo)
+        QuantumFlow.Notifications.send_with_notify(msg.reply_to, reply, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode insights query: #{inspect(reason)}")
@@ -379,12 +379,12 @@ defmodule CentralCloud.IntelligenceHub do
       {:ok, query} ->
         # Process query and return enriched context
         response = process_intelligence_query(query)
-        QuantumFlow.send_with_notify(msg.reply_to, response, CentralCloud.Repo)
+        QuantumFlow.Notifications.send_with_notify(msg.reply_to, response, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode intelligence query: #{inspect(reason)}")
         error_response = %{error: "invalid_query", reason: inspect(reason)}
-        QuantumFlow.send_with_notify(msg.reply_to, error_response, CentralCloud.Repo)
+        QuantumFlow.Notifications.send_with_notify(msg.reply_to, error_response, CentralCloud.Repo)
     end
   end
 
@@ -1455,7 +1455,7 @@ defmodule CentralCloud.IntelligenceHub do
   # Helper Functions
   # ===========================
 
-  # Handle PgFlow notifications via GenServer handle_info
+  # Handle QuantumFlow notifications via GenServer handle_info
   # QuantumFlow.listen calls will send {:quantum_flow_notification, notification} messages
   # These are handled by handle_info/2 callback (not this function)
   
@@ -1497,7 +1497,7 @@ defmodule CentralCloud.IntelligenceHub do
         Logger.warning("No reply_to in message, cannot send response")
         :ok
       reply_to ->
-        QuantumFlow.send_with_notify(reply_to, response, CentralCloud.Repo)
+        QuantumFlow.Notifications.send_with_notify(reply_to, response, CentralCloud.Repo)
         Logger.debug("Sent response to #{reply_to}")
     end
   end

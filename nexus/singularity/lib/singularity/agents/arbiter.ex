@@ -1,225 +1,199 @@
 defmodule Singularity.Agents.Arbiter do
   @moduledoc """
-  Simple approval arbiter for edits and HTDAG task execution.
+  Approval arbiter responsible for issuing and authorizing QuantumFlow workflow tokens.
 
-  This is intentionally lightweight: it issues short-lived tokens for planned edits
-  and can authorize/consume them. Tokens are stored in an ETS table under
-  :singularity_arbiter_tokens.
+  Tokens are persisted in PostgreSQL (`workflow_approval_tokens`) for durability so we no
+  longer rely on transient ETS caches. Notifications are published through QuantumFlow's
+  messaging helpers so CentralCloud and Observer receive instant updates.
   """
 
   use GenServer
+
   require Logger
 
-  @table :singularity_arbiter_tokens
+  import Ecto.Query
+
+  alias Singularity.Repo
+  alias Singularity.Schemas.WorkflowApprovalToken
+  alias Singularity.Infrastructure.QuantumFlow.Queue
+
   @token_ttl_ms 60_000
+  @cleanup_interval_ms 60_000
+
+  @type token :: String.t()
+
+  # GenServer lifecycle -----------------------------------------------------------------
 
   def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  def issue_approval(payload, _opts \\ []) do
-    token = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
-    now = :erlang.system_time(:millisecond)
-    entry = %{token: token, payload: payload, issued_at: now, expires_at: now + @token_ttl_ms}
-
-    # store in local ETS for fast lookup
-    :ets.insert(@table, {token, entry})
-
-    # persist into PgFlow for reliable approval tracking
-    workflow_attrs = %{
-      workflow_id: token,
-      type: "approval",
-      status: "pending",
-      payload: entry
-    }
-
-    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
-      {:ok, _workflow} ->
-        # Send approval notification via PgFlow
-        notification = %{
-          type: "approval_issued",
-          token: token,
-          payload: payload,
-          issued_at: now,
-          expires_at: now + @token_ttl_ms
-        }
-
-        case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("approval_notifications", notification) do
-          {:ok, _} ->
-            Logger.info("Approval issued and notification sent", token: token)
-            token
-
-          {:error, reason} ->
-            Logger.warning("Approval issued but notification failed",
-              token: token,
-              reason: reason
-            )
-
-            token
-        end
-
-      {:error, reason} ->
-        Logger.error("Failed to create approval workflow", token: token, reason: reason)
-        token
-    end
-  end
-
-  @doc "Issue an approval for a planned workflow. Persists to PgFlow for visibility."
-  def issue_workflow_approval(workflow_map, _opts \\ []) when is_map(workflow_map) do
-    token = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
-    now = :erlang.system_time(:millisecond)
-
-    entry = %{
-      token: token,
-      workflow: workflow_map,
-      issued_at: now,
-      expires_at: now + @token_ttl_ms
-    }
-
-    :ets.insert(@table, {token, entry})
-
-    # persist into PgFlow for reliable workflow approval tracking
-    workflow_attrs = %{
-      workflow_id: token,
-      type: "workflow_approval",
-      status: "pending",
-      payload: entry
-    }
-
-    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
-      {:ok, _workflow} ->
-        # Send workflow approval notification via PgFlow
-        notification = %{
-          type: "workflow_approval_issued",
-          token: token,
-          workflow: workflow_map,
-          issued_at: now,
-          expires_at: now + @token_ttl_ms
-        }
-
-        case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("workflow_approval_notifications", notification) do
-          {:ok, _} ->
-            Logger.info("Workflow approval issued and notification sent", token: token)
-            token
-
-          {:error, reason} ->
-            Logger.warning("Workflow approval issued but notification failed",
-              token: token,
-              reason: reason
-            )
-
-            token
-        end
-
-      {:error, reason} ->
-        Logger.error("Failed to create workflow approval", token: token, reason: reason)
-        token
-    end
-  end
-
-  @doc "Authorize a workflow execution using a token"
-  def authorize_workflow(token) when is_binary(token) do
-    case Singularity.Infrastructure.PgFlow.Adapter.fetch_workflow(token) do
-      {:ok, workflow} when is_map(workflow) ->
-        entry = Map.get(workflow, :payload)
-        now = :erlang.system_time(:millisecond)
-
-        if entry && entry.expires_at > now do
-          # Use the token for cleanup and logging
-          Logger.info("Authorizing workflow", token: token, workflow_id: workflow.id)
-
-          :ets.delete(@table, token)
-
-          try do
-            :ets.delete(:quantum_flow_workflows, token)
-          rescue
-            _ -> :ok
-          end
-
-          :ok
-        else
-          :ets.delete(@table, token)
-          {:error, :expired}
-        end
-
-      :not_found ->
-        {:error, :not_found}
-    end
-  end
-
-  def authorize_edit(token, _context) when is_binary(token) do
-    # Prefer PgFlow-backed check (visibility), fall back to local ETS
-    case Singularity.Infrastructure.PgFlow.Adapter.fetch_workflow(token) do
-      {:ok, workflow} when is_map(workflow) ->
-        entry = Map.get(workflow, :payload) || Map.get(workflow, :payload)
-        now = :erlang.system_time(:millisecond)
-
-        if entry && entry.expires_at > now do
-          # consume token from both stores
-          :ets.delete(@table, token)
-          # remove persisted record for safety/consumption
-          try do
-            :ets.delete(:quantum_flow_workflows, token)
-          rescue
-            _ -> :ok
-          end
-
-          :ok
-        else
-          # expired
-          :ets.delete(@table, token)
-
-          try do
-            :ets.delete(:quantum_flow_workflows, token)
-          rescue
-            _ -> :ok
-          end
-
-          {:error, :expired}
-        end
-
-      :not_found ->
-        # fallback to local ETS lookup
-        case :ets.lookup(@table, token) do
-          [{^token, entry}] ->
-            now = :erlang.system_time(:millisecond)
-
-            if entry.expires_at > now do
-              :ets.delete(@table, token)
-              :ok
-            else
-              :ets.delete(@table, token)
-              {:error, :expired}
-            end
-
-          [] ->
-            {:error, :not_found}
-        end
-    end
-  end
-
-  ## GenServer callbacks
-  def init(_state) do
-    :ets.new(@table, [:named_table, :public, read_concurrency: true])
-    # schedule periodic cleanup
+  @impl GenServer
+  def init(state) do
     schedule_cleanup()
-    {:ok, %{}}
+    {:ok, state}
   end
 
+  @impl GenServer
   def handle_info(:cleanup, state) do
-    now = :erlang.system_time(:millisecond)
-
-    for {token, entry} <- :ets.tab2list(@table) do
-      if entry.expires_at <= now do
-        :ets.delete(@table, token)
-      end
-    end
-
+    expire_overdue_tokens()
     schedule_cleanup()
     {:noreply, state}
   end
 
+  # Public API --------------------------------------------------------------------------
+
+  @doc """
+  Issue a generic approval token for an arbitrary payload.
+  """
+  @spec issue_approval(map(), keyword()) :: token | {:error, term()}
+  def issue_approval(payload, opts \\ []) when is_map(payload) do
+    issue_token(:approval, payload, opts)
+  end
+
+  @doc """
+  Issue a workflow-specific approval token.
+  """
+  @spec issue_workflow_approval(map(), keyword()) :: token | {:error, term()}
+  def issue_workflow_approval(workflow_map, opts \\ []) when is_map(workflow_map) do
+    issue_token(:workflow_approval, workflow_map, opts)
+  end
+
+  @doc """
+  Authorize a workflow execution using a previously issued token.
+  """
+  @spec authorize_workflow(token()) :: :ok | {:error, term()}
+  def authorize_workflow(token) when is_binary(token) do
+    consume_token(token)
+  end
+
+  @doc """
+  Authorize an edit gate using a token.
+  """
+  @spec authorize_edit(token(), map()) :: :ok | {:error, term()}
+  def authorize_edit(token, _context) when is_binary(token) do
+    consume_token(token)
+  end
+
+  # Internal helpers --------------------------------------------------------------------
+
+  defp issue_token(kind, payload, opts) do
+    token = generate_token()
+    issued_at = DateTime.utc_now()
+    expires_at = DateTime.add(issued_at, @token_ttl_ms, :millisecond)
+
+    attrs = %{
+      token: token,
+      workflow_slug: Keyword.get(opts, :workflow_slug),
+      payload: %{
+        type: kind,
+        data: payload,
+        issued_at: issued_at,
+        expires_at: expires_at
+      },
+      expires_at: expires_at,
+      status: "pending"
+    }
+
+    case Repo.insert(WorkflowApprovalToken.creation_changeset(attrs)) do
+      {:ok, _record} ->
+        publish_notification(kind, token, payload, issued_at, expires_at, opts)
+        token
+
+      {:error, changeset} ->
+        Logger.error("Failed to persist approval token", errors: inspect(changeset.errors))
+        {:error, changeset}
+    end
+  end
+
+  defp consume_token(token) do
+    now = DateTime.utc_now()
+
+    Repo.transaction(fn ->
+      query =
+        from t in WorkflowApprovalToken,
+          where: t.token == ^token,
+          lock: "FOR UPDATE"
+
+      case Repo.one(query) do
+        nil ->
+          Repo.rollback(:not_found)
+
+        %WorkflowApprovalToken{status: "consumed"} ->
+          Repo.rollback(:consumed)
+
+        %WorkflowApprovalToken{status: "expired"} ->
+          Repo.rollback(:expired)
+
+        %WorkflowApprovalToken{} = record ->
+          cond do
+            DateTime.compare(record.expires_at, now) == :lt ->
+              Repo.update!(WorkflowApprovalToken.expire_changeset(record, now))
+              Repo.rollback(:expired)
+
+            true ->
+              case Repo.update(WorkflowApprovalToken.consume_changeset(record, now)) do
+                {:ok, updated} -> updated
+                {:error, changeset} -> Repo.rollback({:error, changeset})
+              end
+          end
+      end
+    end)
+    |> case do
+      {:ok, _record} -> :ok
+      {:error, :not_found} -> {:error, :not_found}
+      {:error, :consumed} -> {:error, :already_used}
+      {:error, :expired} -> {:error, :expired}
+      {:error, {:error, changeset}} -> {:error, changeset}
+    end
+  end
+
+  defp publish_notification(kind, token, payload, issued_at, expires_at, opts) do
+    queue =
+      case kind do
+        :workflow_approval -> "workflow_approval_notifications"
+        _ -> Keyword.get(opts, :queue, "approval_notifications")
+      end
+
+    message = %{
+      type: to_string(kind),
+      token: token,
+      issued_at: issued_at,
+      expires_at: expires_at,
+      payload: payload
+    }
+
+    case Queue.send_with_notify(queue, message, Repo) do
+      {:ok, _} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Approval notification dispatch failed", reason: inspect(reason))
+    end
+  end
+
+  defp expire_overdue_tokens do
+    now = DateTime.utc_now()
+
+    {count, _} =
+      from(t in WorkflowApprovalToken,
+        where: t.status == "pending" and t.expires_at <= ^now,
+        update: [set: [status: "expired", consumed_at: ^now, updated_at: ^now]]
+      )
+      |> Repo.update_all([])
+
+    if count > 0 do
+      Logger.debug("Expired overdue approval tokens", count: count)
+    end
+
+    :ok
+  end
+
   defp schedule_cleanup do
-    Process.send_after(self(), :cleanup, @token_ttl_ms)
+    Process.send_after(self(), :cleanup, @cleanup_interval_ms)
+  end
+
+  defp generate_token do
+    :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
   end
 end

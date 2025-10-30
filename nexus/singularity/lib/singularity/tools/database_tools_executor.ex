@@ -191,7 +191,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
       end
 
     # Send response via workflow
-    case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
+    case Singularity.Infrastructure.QuantumFlow.Workflow.create_workflow(
            Singularity.Workflows.DatabaseToolExecutionWorkflow,
            %{
              "request" => decoded_request,
@@ -744,7 +744,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     # Create QuantumFlow workflow subscription for tool execution requests
     workflow_name = "database_tool_execution_#{String.replace(subject, ".", "_")}"
 
-    case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
+    case Singularity.Infrastructure.QuantumFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_tool_workflow_completion(workflow_result)
          end) do
       {:ok, subscription_id} ->

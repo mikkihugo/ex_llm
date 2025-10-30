@@ -67,7 +67,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
       insights: length(insights)
     )
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_updates", message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("centralcloud_updates", message) do
       {:ok, :sent} ->
         Logger.info("Knowledge update sent to CentralCloud via QuantumFlow",
           instance_id: instance_id,

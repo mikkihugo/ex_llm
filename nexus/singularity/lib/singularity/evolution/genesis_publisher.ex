@@ -998,7 +998,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_llm_config_updates", payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("genesis_llm_config_updates", payload) do
       {:ok, :sent} ->
         Logger.debug("GenesisPublisher: LLM config rule published to Genesis via QuantumFlow",
           pattern: inspect(rule.pattern)
@@ -1099,7 +1099,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_workflow_patterns", payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("genesis_workflow_patterns", payload) do
       {:ok, :sent} ->
         Logger.info("GenesisPublisher: Workflow pattern published to Genesis",
           workflow_type: workflow_pattern.workflow_type,

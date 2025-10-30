@@ -1,8 +1,8 @@
 defmodule CentralCloud.Evolution.QuantumFlow.Producers do
   @moduledoc """
-  PgFlow Producers - Send messages to Singularity instance queues.
+  QuantumFlow Producers - Send messages to Singularity instance queues.
 
-  Handles asynchronous, durable messaging to Singularity instances via ex_quantum_flow.
+  Handles asynchronous, durable messaging to Singularity instances via quantum_flow.
   All messages are persisted in PostgreSQL and automatically retried on failure.
 
   ## AI Navigation Metadata
@@ -26,7 +26,7 @@ defmodule CentralCloud.Evolution.QuantumFlow.Producers do
       - Guardian.RollbackService (send_rollback)
       - PatternLearningLoop (send_profiles)
     calls_to:
-      - ExQuantumFlow.publish
+      - QuantumFlow.Messaging.publish
       - Telemetry
   ```
 
@@ -200,7 +200,7 @@ defmodule CentralCloud.Evolution.QuantumFlow.Producers do
 
   defp publish_message(queue_name, message) do
     try do
-      {:ok, message_id} = ExQuantumFlow.publish(
+      {:ok, message_id} = QuantumFlow.Messaging.publish(
         :centralcloud,
         queue_name,
         message,

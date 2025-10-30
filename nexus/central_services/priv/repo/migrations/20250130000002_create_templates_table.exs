@@ -43,7 +43,30 @@ defmodule CentralCloud.Repo.Migrations.CreateTemplatesTable do
     create index(:templates, :content, using: "gin")  # For JSONB queries
     
     # Vector index for semantic search
-    create index(:templates, :embedding, using: "ivfflat", with: "lists = 100")
+    execute """
+    DO $$
+    DECLARE
+      max_dims CONSTANT INTEGER := 2000;
+      embedding_dims CONSTANT INTEGER := 2560;
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') THEN
+        RAISE NOTICE 'vector extension not available - skipping embedding index';
+        RETURN;
+      END IF;
+
+      IF embedding_dims > max_dims THEN
+        RAISE NOTICE 'Skipping ivfflat index: embedding dimension % exceeds ivfflat limit %', embedding_dims, max_dims;
+        RETURN;
+      END IF;
+
+      EXECUTE '
+        CREATE INDEX IF NOT EXISTS templates_embedding_idx
+        ON templates
+        USING ivfflat (embedding vector_cosine_ops)
+        WITH (lists = 100)
+      ';
+    END $$;
+    """
     
     # Composite indexes for common queries
     create index(:templates, [:category, :deprecated])
@@ -54,7 +77,17 @@ defmodule CentralCloud.Repo.Migrations.CreateTemplatesTable do
   end
 
   def down do
-    drop index(:templates, [:embedding])
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = 'public' AND indexname = 'templates_embedding_idx'
+      ) THEN
+        EXECUTE 'DROP INDEX IF EXISTS templates_embedding_idx';
+      END IF;
+    END $$;
+    """
     drop index(:templates, ["(metadata->>'language')", :category])
     drop index(:templates, [:category, :deprecated])
     drop index(:templates, :content, using: "gin")

@@ -34,7 +34,7 @@ All services are production-ready with complete documentation, database schema, 
 - ✅ `approve_change?/1` - Semantic similarity-based auto-approval
 - ✅ `auto_rollback_on_threshold_breach/3` - Automatic rollback on violations
 - ✅ Threshold rules (success_rate, error_rate, latency, cost)
-- ✅ ex_quantum_flow broadcast integration
+- ✅ quantum_flow broadcast integration
 - ✅ Complete AI navigation metadata (@moduledoc)
 
 **Safety Thresholds**:
@@ -87,7 +87,7 @@ All services are production-ready with complete documentation, database schema, 
 - ✅ `execute_if_consensus/1` - Execute approved changes
 - ✅ 2/3 majority + 85%+ confidence consensus rules
 - ✅ Strong rejection override (confidence > 0.90 veto)
-- ✅ ex_quantum_flow broadcast for voting/execution
+- ✅ quantum_flow broadcast for voting/execution
 - ✅ Integration with Guardian for auto-approval bypass
 - ✅ Complete AI navigation metadata
 
@@ -150,7 +150,7 @@ All services are production-ready with complete documentation, database schema, 
 3. Integration Point 2: Pattern Aggregator (API, promotion criteria, examples)
 4. Integration Point 3: Consensus Engine (API, consensus rules, examples)
 5. Complete Evolution Flow Example (full Elixir code)
-6. ex_quantum_flow Queue Integration (5 queues defined)
+6. quantum_flow Queue Integration (5 queues defined)
 7. Background Jobs (Oban configuration)
 8. Decision Tree (when to use each service)
 9. Summary (quick reference table)
@@ -160,7 +160,7 @@ All services are production-ready with complete documentation, database schema, 
 - ✅ Metric monitoring loop
 - ✅ Consensus voting handler
 - ✅ Approved change handler
-- ✅ ex_quantum_flow queue listeners
+- ✅ quantum_flow queue listeners
 - ✅ Oban background jobs
 
 ---
@@ -222,7 +222,7 @@ Root Documentation:
 
 ## Integration Points Summary
 
-### ex_quantum_flow Queues (5 queues)
+### quantum_flow Queues (5 queues)
 
 | Queue Name | Direction | Purpose | Handler |
 |------------|-----------|---------|---------|
@@ -277,14 +277,14 @@ children = [
   CentralCloud.Evolution.Guardian.RollbackService,
   CentralCloud.Evolution.Consensus.Engine,
 
-  # ex_quantum_flow Consumers
+  # quantum_flow Consumers
   {QuantumFlow.Consumer,
    queue: "pattern_discoveries",
    handler: CentralCloud.Evolution.Patterns.PatternHandler}
 ]
 ```
 
-### Step 3: Configure ex_quantum_flow Queues
+### Step 3: Configure quantum_flow Queues
 ```elixir
 # In config/config.exs
 
@@ -362,8 +362,8 @@ alias CentralCloud.Evolution.Consensus.Engine
 - **latency_p95_ms > 3000**: 3s max latency for internal tooling acceptable
 - **cost_cents > 10.0**: $0.10 per execution = reasonable cost ceiling
 
-### 5. ex_quantum_flow over NATS
-- **Why ex_quantum_flow**: Durable queues (ACID), built-in retry, PostgreSQL-native
+### 5. quantum_flow over NATS
+- **Why quantum_flow**: Durable queues (ACID), built-in retry, PostgreSQL-native
 - **Why not NATS**: Requires separate infrastructure, ephemeral by default
 - **Rationale**: Evolution commands must not be lost (durability critical)
 
@@ -456,7 +456,7 @@ end
 | **Pattern Aggregator** | 4 API functions, pgvector, schemas | ✅ Complete |
 | **Consensus Engine** | 3 API functions, GenServer, schemas | ✅ Complete |
 | **Database Migration** | 5 tables, indexes, constraints | ✅ Complete |
-| **Integration Guide** | Flow examples, ex_quantum_flow queues | ✅ Complete |
+| **Integration Guide** | Flow examples, quantum_flow queues | ✅ Complete |
 | **Decision Trees** | 7 diagrams, threshold matrix | ✅ Complete |
 | **AI Metadata** | @moduledoc for all modules | ✅ Complete |
 | **Code Quality** | No compilation errors, proper specs | ✅ Complete |
@@ -483,7 +483,7 @@ children = [
 ```
 **Why**: Starts Guardian and Consensus Engine GenServers when CentralCloud boots.
 
-### 3. **Set Up ex_quantum_flow Queues** (15 min)
+### 3. **Set Up quantum_flow Queues** (15 min)
 - Create 5 queues: `evolution_voting_requests`, `evolution_approved_changes`, `guardian_rollback_commands`, `pattern_discoveries`, `genesis_rule_proposals`
 - Add consumers in Singularity instances for voting/rollback
 - Add producers in CentralCloud for broadcasting

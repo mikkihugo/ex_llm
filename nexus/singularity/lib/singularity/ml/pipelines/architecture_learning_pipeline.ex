@@ -7,7 +7,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
 
   ## Migration Notes
 
-  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **Legacy Mode**: Uses Broadway + Broadway.QuantumFlowProducer
   - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
@@ -64,11 +64,14 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
       name: __MODULE__,
       producer: [
         module:
-          {BroadwayPGMQ.Producer,
-           queue: "architecture_learning_tasks",
-           config: [
-             host: System.get_env("DATABASE_URL", "postgres://localhost/singularity"),
-             port: 5432
+          {Broadway.QuantumFlowProducer,
+           [
+             workflow_name: "architecture_learning_broadway",
+             queue_name: "architecture_learning_jobs",
+             concurrency: 3,
+             batch_size: 12,
+             quantum_flow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [cpu_cores: 8]
            ]}
       ],
       processors: [

@@ -1,15 +1,15 @@
 # GitHub Copilot Project Briefing
 
-Updated for the pgmq/ex_quantum_flow architecture (October 2025).
+Updated for the pgmq/quantum_flow architecture (October 2025).
 
 ---
 
 ## 1. What Singularity Is
 
-- **Core**: Elixir monorepo with multiple applications (`singularity/`, `centralcloud/`, `genesis/`, `ex_quantum_flow/`) + Rust NIF packages in `packages/`.
+- **Core**: Elixir monorepo with multiple applications (`singularity/`, `centralcloud/`, `genesis/`, `quantum_flow/`) + Rust NIF packages in `packages/`.
 - **Mission**: Autonomous code-improvement agents + rule evolution + knowledge retention.
-- **Messaging / Workflows**: PostgreSQL (`singularity` DB) with pgmq + ex_quantum_flow.
-  (NATS is gone; everything queues through pgmq/ex_quantum_flow.)
+- **Messaging / Workflows**: PostgreSQL (`singularity` DB) with pgmq + quantum_flow.
+  (NATS is gone; everything queues through pgmq/quantum_flow.)
 - **Embeddings**: Local ONNX/Nx pipeline (Qodo-Embed-1 + Jina v3 concatenated → 2560‑dim vectors).
 - **Rule Evolution**: `Singularity.Evolution.*` modules synthesize rules, publish/import via QuantumFlow workflows.
 - **Agents**: 6 specialized agent types (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat) using unified infrastructure.
@@ -29,7 +29,7 @@ confidence gate → publish via QuantumFlow → other services import → feedba
 | `singularity/` | Main Elixir app (agents, embeddings, workflows) | `cd singularity && mix phx.server` |
 | `centralcloud/` | Pattern aggregation & consensus (multi-instance learning) | `cd centralcloud && mix phx.server` |
 | `genesis/` | Autonomous improvement workflows & rule evolution | `cd genesis && mix phx.server` |
-| `ex_quantum_flow/` | Workflow orchestration library | `cd ex_quantum_flow && mix compile` |
+| `quantum_flow/` | Workflow orchestration library | `cd quantum_flow && mix compile` |
 | `packages/` | Rust NIF engines (parsing, analysis, quality) | `cd packages/<engine> && cargo test` |
 | `observer/` | Phoenix web UI for monitoring | `cd observer && mix phx.server` |
 | `scripts/` | Setup scripts (`setup-database.sh`, helpers) | `./scripts/setup-database.sh` |
@@ -45,7 +45,7 @@ lib/singularity/
 ├── evolution/                 # Rule synthesis & publishing
 ├── interfaces/                # MCP/NATS interfaces
 ├── tools/                     # Tool definitions
-└── workflows/                 # ex_quantum_flow workflow steps
+└── workflows/                 # quantum_flow workflow steps
 ```
 
 ---
@@ -240,4 +240,4 @@ ExLLM.chat(:claude, messages)
 
 ---
 
-Keep this document aligned with the pgmq/ex_quantum_flow architecture. For deeper details, see `README.md`, `AGENTS.md`, and `CLAUDE.md`.
+Keep this document aligned with the pgmq/quantum_flow architecture. For deeper details, see `README.md`, `AGENTS.md`, and `CLAUDE.md`.

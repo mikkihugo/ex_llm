@@ -41,8 +41,8 @@ config :genesis, Oban,
     ]}
   ]
 
-# ===== NEW: PgFlow Workflow Consumer (Primary - October 2025) =====
-# Autonomous agent that consumes from three PgFlow queues:
+# ===== NEW: QuantumFlow Workflow Consumer (Primary - October 2025) =====
+# Autonomous agent that consumes from three QuantumFlow queues:
 # - genesis_rule_updates: Rule evolution from Singularity instances
 # - genesis_llm_config_updates: LLM configuration changes
 # - code_execution_requests: Code analysis job requests
@@ -56,7 +56,7 @@ config :genesis, :quantum_flow_consumer,
   repo: Genesis.Repo
 
 # ===== DEPRECATED: Legacy Shared Queue Consumer =====
-# Use PgFlow consumer above instead. Can be disabled when migration is complete.
+# Use QuantumFlow consumer above instead. Can be disabled when migration is complete.
 config :genesis, :shared_queue,
   enabled: false,
   database_url: "postgresql://postgres:@localhost:5432/shared_queue",

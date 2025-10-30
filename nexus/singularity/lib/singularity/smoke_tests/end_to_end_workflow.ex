@@ -35,7 +35,7 @@ defmodule Singularity.SmokeTests.EndToEndWorkflow do
     end)
 
     # Step 3: Persist workflow to unified system
-    Logger.info("\n[Step 3] Persisting workflow to PgFlow...")
+    Logger.info("\n[Step 3] Persisting workflow to QuantumFlow...")
 
     workflow_attrs =
       Map.merge(workflow_plan, %{

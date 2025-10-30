@@ -3,18 +3,17 @@
 //! This example shows how to use the consolidated Rust architecture engine
 //! that replaces the Elixir architecture_engine.
 
-use std::path::Path;
 #[cfg(feature = "examples")]
 use code_quality_engine::{
     architecture::{
-        PatternDetectorRegistry, PatternDetectorOrchestrator,
-        FrameworkDetector, TechnologyDetector, ServiceArchitectureDetector,
-        PatternType, DetectionOptions
+        DetectionOptions, FrameworkDetector, PatternDetectorOrchestrator, PatternDetectorRegistry,
+        PatternType, ServiceArchitectureDetector, TechnologyDetector,
     },
     infrastructure::InfrastructureDetector,
-    orchestrators::{AnalysisOrchestrator, AnalysisInput, AnalysisType},
+    orchestrators::{AnalysisInput, AnalysisOrchestrator, AnalysisType},
     registry::MetaRegistry,
 };
+use std::path::Path;
 
 #[cfg(feature = "examples")]
 #[tokio::main]
@@ -30,7 +29,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     registry.register(ServiceArchitectureDetector::new());
     registry.register(InfrastructureDetector::new());
 
-    println!("✅ Registered {} pattern detectors", registry.registered_types().len());
+    println!(
+        "✅ Registered {} pattern detectors",
+        registry.registered_types().len()
+    );
 
     // 2. Create pattern orchestrator
     let pattern_orchestrator = PatternDetectorOrchestrator::new(registry);
@@ -55,20 +57,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("🔍 Detecting patterns in project...");
-    let pattern_results = pattern_orchestrator.detect_all(
-        project_path,
-        None, // All pattern types
-        &detection_opts,
-    ).await?;
+    let pattern_results = pattern_orchestrator
+        .detect_all(
+            project_path,
+            None, // All pattern types
+            &detection_opts,
+        )
+        .await?;
 
     // Display results
     for (pattern_type, detections) in &pattern_results {
-        println!("📋 {}: {} detections", format!("{:?}", pattern_type), detections.len());
+        println!(
+            "📋 {}: {} detections",
+            format!("{:?}", pattern_type),
+            detections.len()
+        );
         for detection in detections.iter().take(3) {
-            println!("  • {} ({:.1}%) - {}",
+            println!(
+                "  • {} ({:.1}%) - {}",
                 detection.name,
                 detection.confidence * 100.0,
-                detection.description.as_deref().unwrap_or(""));
+                detection.description.as_deref().unwrap_or("")
+            );
         }
         if detections.len() > 3 {
             println!("  ... and {} more", detections.len() - 3);
@@ -85,14 +95,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         context: Default::default(),
     };
 
-    let analysis_results = analysis_orchestrator.analyze_all(
-        &analysis_input,
-        Some(vec![AnalysisType::Feedback, AnalysisType::Quality]),
-    ).await?;
+    let analysis_results = analysis_orchestrator
+        .analyze_all(
+            &analysis_input,
+            Some(vec![AnalysisType::Feedback, AnalysisType::Quality]),
+        )
+        .await?;
 
     println!("📊 Analysis complete:");
-    println!("  • Pattern results: {} types", analysis_results.pattern_results.as_ref().map(|r| r.len()).unwrap_or(0));
-    println!("  • Analysis results: {} types", analysis_results.analysis_results.len());
+    println!(
+        "  • Pattern results: {} types",
+        analysis_results
+            .pattern_results
+            .as_ref()
+            .map(|r| r.len())
+            .unwrap_or(0)
+    );
+    println!(
+        "  • Analysis results: {} types",
+        analysis_results.analysis_results.len()
+    );
     println!("  • Errors: {}", analysis_results.errors.len());
 
     // 7. Learn from results

@@ -36,7 +36,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
       task_count: length(tasks)
     )
 
-    # Create PgFlow workflow for agent coordination
+    # Create QuantumFlow workflow for agent coordination
     workflow_attrs = %{
       workflow_id: execution_id,
       type: "agent_coordination",
@@ -48,7 +48,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
       }
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created agent coordination workflow", execution_id: execution_id)
 
@@ -77,7 +77,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             task_count: length(final_results)
           )
 
-          # Send completion notification via PgFlow
+          # Send completion notification via QuantumFlow
           notification = %{
             type: "agent_coordination_completed",
             execution_id: execution_id,
@@ -85,7 +85,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             completed_at: :erlang.system_time(:millisecond)
           }
 
-          Singularity.Infrastructure.PgFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
+          Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
 
           {:ok, final_results}
 
@@ -95,7 +95,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             reason: inspect(reason)
           )
 
-          # Send failure notification via PgFlow
+          # Send failure notification via QuantumFlow
           notification = %{
             type: "agent_coordination_failed",
             execution_id: execution_id,
@@ -103,7 +103,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             failed_at: :erlang.system_time(:millisecond)
           }
 
-          Singularity.Infrastructure.PgFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
+          Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
 
           {:error, reason}
       end

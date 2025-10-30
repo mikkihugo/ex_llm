@@ -59,7 +59,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("search_analytics", message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("search_analytics", message) do
       {:ok, :sent} ->
         Logger.debug("Search analytics sent via QuantumFlow",
           query: query

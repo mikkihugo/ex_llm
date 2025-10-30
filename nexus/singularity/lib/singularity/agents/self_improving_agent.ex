@@ -340,7 +340,7 @@ defmodule Singularity.SelfImprovingAgent do
     # Subscribe to QuantumFlow workflow completion events for Genesis experiment results
     workflow_name = "genesis_experiment_#{agent_id}"
 
-    case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
+    case Singularity.Infrastructure.QuantumFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_genesis_workflow_completion(agent_id, workflow_result)
          end) do
       {:ok, subscription_id} ->
@@ -695,7 +695,7 @@ defmodule Singularity.SelfImprovingAgent do
     }
 
     # Publish request to Genesis via QuantumFlow workflow
-    case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
+    case Singularity.Infrastructure.QuantumFlow.Workflow.create_workflow(
            Singularity.Workflows.GenesisExperimentRequestWorkflow,
            %{
              "request" => request,

@@ -127,7 +127,7 @@ end
 
 ---
 
-## 🔌 ex_quantum_flow Queues
+## 🔌 quantum_flow Queues
 
 | Queue | Direction | Purpose |
 |-------|-----------|---------|
@@ -188,7 +188,7 @@ children = [
 ```
 
 ### 3. Set Up Queues (15 min)
-- Create 5 ex_quantum_flow queues
+- Create 5 quantum_flow queues
 - Add consumers in Singularity instances
 - Add producers in CentralCloud
 

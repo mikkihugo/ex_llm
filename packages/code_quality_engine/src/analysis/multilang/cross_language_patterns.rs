@@ -24,6 +24,8 @@
 //! patterns for each language pair (e.g., BEAM↔Systems patterns differ from Web↔Scripting).
 
 use std::collections::HashMap;
+
+#[cfg(feature = "nif")]
 use std::sync::Mutex;
 
 use crate::analysis::semantic::custom_tokenizers::DataToken;
@@ -462,6 +464,7 @@ impl CrossLanguageCodePatternsDetector {
     /// - Kafka: `producer.send`, `consumer.poll`
     /// - RabbitMQ: `channel.basic_publish`
     /// - Redis: `redis.publish`, `redis.subscribe`
+    #[allow(dead_code)]
     fn has_messaging_pattern(&self, code: &str, language_id: &str) -> bool {
         match language_id {
             "rust" => {
@@ -472,7 +475,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("lapin")
                     || code.contains("redis")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
             "python" => {
                 code.contains("nats")
@@ -481,7 +484,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("redis.publish")
                     || code.contains("asyncio_nats")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
             "javascript" | "typescript" => {
                 code.contains("nats")
@@ -490,7 +493,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("redis")
                     || code.contains("message")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
             "java" => {
                 code.contains("NATS")
@@ -498,7 +501,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("RabbitMQ")
                     || code.contains("Redis")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
             "elixir" => {
                 code.contains("NATS")
@@ -506,14 +509,14 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("publish")
                     || code.contains("subscribe")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
             _ => {
                 code.contains("nats")
                     || code.contains("kafka")
                     || code.contains("message")
                     || code.contains("pgmq")
-                    || code.contains("ex_quantum_flow")
+                    || code.contains("quantum_flow")
             }
         }
     }

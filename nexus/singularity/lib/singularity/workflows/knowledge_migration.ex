@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.KnowledgeMigration do
   @moduledoc """
-  PgFlow workflow for durable knowledge artifact migration from Git to PostgreSQL.
+  QuantumFlow workflow for durable knowledge artifact migration from Git to PostgreSQL.
 
   Replaces manual `mix knowledge.migrate` with observable, retryable QuantumFlow execution.
 

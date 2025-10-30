@@ -23,13 +23,16 @@ defmodule CentralCloud.ML.Pipelines.ModelIngestionPipeline do
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
       producer: [
-        module: {BroadwayPGMQ.Producer, 
-          queue: "model_ingestion_tasks",
-          config: [
-            host: System.get_env("CENTRALCLOUD_DATABASE_URL", "postgres://localhost/central_services"),
-            port: 5432
-          ]
-        }
+        module:
+          {Broadway.QuantumFlowProducer,
+           [
+             workflow_name: "central_model_ingestion_broadway",
+             queue_name: "central_model_ingestion_jobs",
+             concurrency: 4,
+             batch_size: 20,
+             quantum_flow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [cpu_cores: 4]
+           ]}
       ],
       processors: [
         data_collection: [concurrency: 3],

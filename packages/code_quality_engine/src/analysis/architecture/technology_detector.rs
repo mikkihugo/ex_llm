@@ -10,9 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use super::{PatternDetection, PatternDetector, PatternError, PatternType, DetectionOptions};
 
-// NIF callback for ExFlow integration
+// NIF callback for Quantum Flow integration
+#[cfg(feature = "nif")]
 extern "C" {
-    fn ex_flow_send_learning_data(data: &str) -> Result<(), String>;
+    fn quantum_flow_send_learning_data(data: &str) -> Result<(), String>;
 }
 
 /// Technology detector implementation
@@ -37,9 +38,17 @@ impl TechnologyDetector {
     async fn detect_from_files(&self, path: &Path) -> Result<Vec<PatternDetection>, PatternError> {
         let mut detections = Vec::new();
         let mut tech_counts = HashMap::new();
-
-        // Walk directory and count file extensions
-        self.walk_directory(path, &mut tech_counts, 0, 3).await?;
+        // Walk directory (sync traversal within async fn is fine for now)
+        for entry in walkdir::WalkDir::new(path).max_depth(4).into_iter().filter_map(|e| e.ok()) {
+            let entry_path = entry.path();
+            if entry_path.is_file() {
+                if let Some(ext) = entry_path.extension() {
+                    if let Some(tech) = self.extension_to_technology(ext) {
+                        *tech_counts.entry(tech.to_string()).or_insert(0) += 1;
+                    }
+                }
+            }
+        }
 
         // Convert counts to detections
         for (tech, count) in tech_counts {
@@ -65,35 +74,7 @@ impl TechnologyDetector {
         Ok(detections)
     }
 
-    async fn walk_directory(
-        &self,
-        path: &Path,
-        tech_counts: &mut HashMap<String, usize>,
-        depth: usize,
-        max_depth: usize,
-    ) -> Result<(), PatternError> {
-        if depth > max_depth {
-            return Ok(());
-        }
-
-        let mut entries = tokio::fs::read_dir(path).await?;
-        while let Some(entry) = entries.next_entry().await? {
-            let entry_path = entry.path();
-
-            if entry_path.is_dir() {
-                // Skip common directories that don't indicate technology
-                if !self.should_skip_directory(&entry_path) {
-                    self.walk_directory(&entry_path, tech_counts, depth + 1, max_depth).await?;
-                }
-            } else if let Some(extension) = entry_path.extension() {
-                if let Some(tech) = self.extension_to_technology(extension) {
-                    *tech_counts.entry(tech.to_string()).or_insert(0) += 1;
-                }
-            }
-        }
-
-        Ok(())
-    }
+    // removed recursive async walk_directory (replaced by walkdir traversal)
 
     fn should_skip_directory(&self, path: &Path) -> bool {
         if let Some(name) = path.file_name() {
@@ -263,8 +244,9 @@ impl PatternDetector for TechnologyDetector {
             "timestamp": chrono::Utc::now().to_rfc3339()
         });
 
-        // Call Elixir callback to send via ExFlow workflow
-        match ex_flow_send_learning_data(&learning_data.to_string()) {
+        // Call Elixir callback to send via Quantum Flow workflow
+        #[cfg(feature = "nif")]
+        match unsafe { quantum_flow_send_learning_data(&learning_data.to_string()) } {
             Ok(_) => {
                 let learned = LearnedTechnologyPattern {
                     name: result.name.clone(),
@@ -280,6 +262,11 @@ impl PatternDetector for TechnologyDetector {
                 eprintln!("Failed to send technology learning data via ExFlow: {}", e);
                 Ok(())
             }
+        }
+        #[cfg(not(feature = "nif"))]
+        {
+            let _ = learning_data;
+            Ok(())
         }
     }
 

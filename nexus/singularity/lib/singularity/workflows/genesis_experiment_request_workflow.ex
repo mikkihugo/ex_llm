@@ -134,7 +134,7 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
       "type" => "experiment_request"
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("job_requests", message_payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("job_requests", message_payload) do
       {:ok, _msg_id} ->
         Logger.info("Routed experiment request to Genesis via queue",
           agent_id: agent_id,

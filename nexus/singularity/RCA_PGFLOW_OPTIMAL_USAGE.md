@@ -1,4 +1,4 @@
-# RCA + PgFlow - Optimal Usage Guide
+# RCA + QuantumFlow - Optimal Usage Guide
 
 **Complete guide to using RCA with QuantumFlow workflows for maximum learning and optimization.**
 
@@ -646,4 +646,4 @@ expensive_steps = QuantumFlowIntegration.analyze_workflow_steps()
 - `lib/singularity/workflows/rca_workflow.ex` - RcaWorkflow base class
 - `lib/singularity/workflows/code_quality_improvement_rca.ex` - Example implementation
 - `RCA_SYSTEM_GUIDE.md` - Complete RCA system guide
-- `RCA_PGFLOW_INTEGRATION.md` - QuantumFlow integration details
+- `RCA_QUANTUM_FLOW_INTEGRATION.md` - QuantumFlow integration details

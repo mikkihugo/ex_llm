@@ -413,7 +413,7 @@ mix test test/centralcloud/evolution/
 ### Why CentralCloud?
 1. **Already exists** in Singularity architecture
 2. **pgvector support** for semantic search
-3. **ex_quantum_flow integration** for distributed messaging
+3. **quantum_flow integration** for distributed messaging
 4. **Genesis integration** point for rule evolution
 
 ### Why Guardian is Central (Not Per-Instance)?

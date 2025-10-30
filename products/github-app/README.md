@@ -4,20 +4,20 @@
 ## Overview
 The Singularity GitHub App automatically analyzes code quality on every push and pull request, providing AI-powered insights directly in your GitHub workflow.
 
-**Part of the Singularity Monorepo**: This GitHub App is fully integrated with the existing Singularity system, leveraging the same core Rust analysis engines, PostgreSQL workflow orchestration (ex_quantum_flow), and intelligence collection infrastructure used across all Singularity services.
+**Part of the Singularity Monorepo**: This GitHub App is fully integrated with the existing Singularity system, leveraging the same core Rust analysis engines, PostgreSQL workflow orchestration (quantum_flow), and intelligence collection infrastructure used across all Singularity services.
 
 ## Integration with Singularity Ecosystem
 
 This GitHub App shares infrastructure with:
 - **Core Analysis Engine**: Uses `packages/code_quality_engine/` (Rust NIF)
-- **Workflow Orchestration**: Leverages `packages/ex_quantum_flow/` for async processing
+- **Workflow Orchestration**: Leverages `packages/quantum_flow/` for async processing
 - **Intelligence Collection**: Feeds anonymized patterns back to main Singularity system
 - **Database**: Shares PostgreSQL instance with main Singularity services
 - **Business Logic**: Same analysis modules as CLI and CI/CD integrations
 
 ### Architecture Flow
 ```
-GitHub Webhook → GitHub App → ex_quantum_flow Workflows → Rust Analysis Engine → Results → Intelligence Database
+GitHub Webhook → GitHub App → quantum_flow Workflows → Rust Analysis Engine → Results → Intelligence Database
                                       ↓
                             Shared with CLI & CI/CD tools
 ```

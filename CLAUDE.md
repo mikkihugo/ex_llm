@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **CentralCloud** - Multi-instance learning hub (pattern aggregation, consensus, framework learning) [REQUIRED]
 - **Genesis** - Autonomous improvement workflows and rule evolution [REQUIRED]
 - **Observer** - Phoenix web UI with dashboards for observability + HITL (Human-in-the-Loop) approvals
-- **Messaging** - pgmq (PostgreSQL queues) + ex_quantum_flow (workflow orchestration) for durable inter-service communication
+- **Messaging** - pgmq (PostgreSQL queues) + quantum_flow (workflow orchestration) for durable inter-service communication
 - **Rust NIF Engines** via Rustler (Architecture, Code Analysis, Parser, Quality, Language Detection, Graph PageRank)
 - **Pure Elixir ML** (Embeddings via Nx: Qodo + Jina v3 multi-vector 2560-dim)
 - **GPU-Accelerated Search** (RTX 4080 + pgvector for semantic code search)
@@ -349,7 +349,7 @@ Uses PostgreSQL with:
 ## Key Files & Directories
 
 - `singularity/` - Main Elixir/Phoenix application
-- `packages/` - Publishable packages (ex_llm, ex_quantum_flow, + 5 Rust NIF engines)
+- `packages/` - Publishable packages (ex_llm, quantum_flow, + 5 Rust NIF engines)
   - ✅ `packages/code_quality_engine/` - Code metrics (Rust NIF, Moon project)
   - ✅ `packages/linting_engine/` - Multi-language linting (Rust NIF, Moon project)
   - ✅ `packages/parser_engine/` - Tree-sitter parsing (Rust NIF, Moon project)

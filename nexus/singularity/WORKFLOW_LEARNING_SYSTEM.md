@@ -29,7 +29,7 @@ Layer 3: CENTRALCLOUD AGGREGATION (Cross-Instance Intelligence)
 ├─ GenesisWorkflowLearner
 │  ├─ report_to_centralcloud() → send patterns (confidence 0.80+)
 │  └─ request_consensus_from_centralcloud() → request aggregated results
-├─ PgFlow.Producers
+├─ QuantumFlow.Producers
 │  └─ publish to "centralcloud_workflow_patterns" queue
 └─ CentralCloud Service (separate, port 4001)
     └─ Aggregates patterns from all instances
@@ -37,9 +37,9 @@ Layer 3: CENTRALCLOUD AGGREGATION (Cross-Instance Intelligence)
     └─ Sends back to "singularity_workflow_consensus_patterns" queue
 
 Layer 4: CONSENSUS REGISTRATION (Local Adoption)
-├─ PgFlow.Listener
+├─ QuantumFlow.Listener
 │  └─ Listens to "singularity_workflow_consensus_patterns" queue
-├─ PgFlow.MessageRouter
+├─ QuantumFlow.MessageRouter
 │  └─ Routes message type "workflow_consensus_patterns" to handler
 ├─ Consumers.handle_workflow_consensus_patterns()
 │  └─ Validates patterns (confidence 0.80+)
@@ -136,7 +136,7 @@ config :singularity, :workflows,
   ]
 ```
 
-### 3. PgFlow Integration (lib/singularity/evolution/QuantumFlow/)
+### 3. QuantumFlow Integration (lib/singularity/evolution/QuantumFlow/)
 
 **Queue Structure:**
 
@@ -226,7 +226,7 @@ config :singularity, :workflows,
 ┌───────────────────────┐   ┌──────────────────────┐
 │ LAYER 2: GENESIS      │   │ LAYER 3: CENTRALCLOUD│
 │                       │   │                      │
-│ GenesisPublisher      │   │ PgFlow Producer      │
+│ GenesisPublisher      │   │ QuantumFlow Producer      │
 │ .publish_workflow_    │   │                      │
 │  pattern()            │   │ Send patterns to:    │
 │                       │   │ "centralcloud_      │
@@ -266,11 +266,11 @@ config :singularity, :workflows,
 ┌──────────────────────────────────────────────────────────────────────┐
 │ LAYER 4: CONSENSUS REGISTRATION (Local Adoption)                    │
 │                                                                      │
-│ PgFlow.Listener                                                      │
+│ QuantumFlow.Listener                                                      │
 │ ↓                                                                    │
 │ Listens to "singularity_workflow_consensus_patterns"                │
 │ ↓                                                                    │
-│ PgFlow.MessageRouter                                                │
+│ QuantumFlow.MessageRouter                                                │
 │ ↓                                                                    │
 │ Routes type "workflow_consensus_patterns"                           │
 │ ↓                                                                    │
@@ -291,8 +291,8 @@ config :singularity, :workflows,
 ### Environment Variables
 
 ```bash
-# Enable PgFlow queue listeners (default: true if CENTRALCLOUD_ENABLED)
-export PGFLOW_QUEUES_ENABLED=true
+# Enable QuantumFlow queue listeners (default: true if CENTRALCLOUD_ENABLED)
+export QUANTUM_FLOW_QUEUES_ENABLED=true
 
 # Enable CentralCloud integration (default: true)
 export CENTRALCLOUD_ENABLED=true
@@ -418,7 +418,7 @@ CentralCloud service needs to:
 | `lib/singularity/evolution/QuantumFlow/listener.ex` | Auto-start queue listeners (NEW, 280 lines) |
 | `lib/singularity/evolution/QuantumFlow/consumers.ex` | Message handlers (extended, +50 lines) |
 | `lib/singularity/evolution/QuantumFlow/producers.ex` | Message publishing (existing) |
-| `config/config.exs` | Workflow + PgFlow config (extended) |
+| `config/config.exs` | Workflow + QuantumFlow config (extended) |
 
 ## Testing the System
 
@@ -514,7 +514,7 @@ GROUP BY workflow_type;
 - **0.85+** for Genesis: Very high confidence, worth persisting to framework
 - Prevents spreading unproven patterns; allows conservative adoption
 
-### Why PgFlow?
+### Why QuantumFlow?
 
 - **Durable messaging** - PostgreSQL PGMQ handles retries, no message loss
 - **Asynchronous** - Singularity continues operating if CentralCloud is slow/down
@@ -533,7 +533,7 @@ IO.inspect(patterns, label: "Analyzed patterns")
 patterns |> Enum.map(& &1.confidence) |> IO.inspect()
 
 # 3. Check if CentralCloud queue exists
-Singularity.PgFlow.list_queues()
+Singularity.QuantumFlow.list_queues()
 
 # 4. Try manual reporting
 {:ok, result} = GenesisWorkflowLearner.report_to_centralcloud(min_confidence: 0.75)
@@ -546,7 +546,7 @@ Singularity.PgFlow.list_queues()
 Process.whereis(Singularity.Evolution.QuantumFlow.Listener)
 
 # 2. Check queue for pending messages
-Singularity.PgFlow.read_from_queue("singularity_workflow_consensus_patterns")
+Singularity.QuantumFlow.read_from_queue("singularity_workflow_consensus_patterns")
 
 # 3. Enable debug logging
 Logger.configure(level: :debug)

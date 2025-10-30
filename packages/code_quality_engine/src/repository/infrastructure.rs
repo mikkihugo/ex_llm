@@ -163,7 +163,7 @@ impl InfrastructureAnalyzer {
         };
 
         // Register all detectors
-        // NATS detector removed in Phase 4 - use ex_quantum_flow/pgmq via Elixir
+        // NATS detector removed in Phase 4 - use quantum_flow/pgmq via Elixir
         analyzer.register_detector(Box::new(KafkaDetector));
         analyzer.register_detector(Box::new(RabbitMQDetector));
         analyzer.register_detector(Box::new(RedisDetector));
@@ -258,7 +258,7 @@ pub struct InfrastructureAnalysis {
 // - Detected nats.conf, .nats, nats:// patterns
 // - Supported JetStream detection
 // - Integrated with docker-compose
-// Now use ex_quantum_flow/pgmq via Elixir for persistent storage
+// Now use quantum_flow/pgmq via Elixir for persistent storage
 /// Kafka detector
 struct KafkaDetector;
 

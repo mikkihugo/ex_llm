@@ -9,6 +9,7 @@ defmodule Singularity.Knowledge.RequestListener do
 
   alias Singularity.Knowledge.Requests
   alias Singularity.Repo
+  alias Singularity.Infrastructure.QuantumFlow.Queue
 
   @channel "knowledge_requests"
   @default_poll_ms 60_000
@@ -37,7 +38,7 @@ defmodule Singularity.Knowledge.RequestListener do
       poll_interval_ms: poll_interval_ms
     }
 
-    case PgFlow.listen(@channel, Repo) do
+    case Queue.listen(@channel, Repo) do
       {:ok, listener_pid} ->
         Logger.info("KnowledgeRequestListener subscribed to #{@channel}")
         Process.monitor(listener_pid)
@@ -69,7 +70,7 @@ defmodule Singularity.Knowledge.RequestListener do
       "KnowledgeRequestListener lost NOTIFY subscription, reason: #{inspect(reason)}"
     )
 
-    case PgFlow.listen(@channel, Repo) do
+    case Queue.listen(@channel, Repo) do
       {:ok, listener_pid} ->
         Logger.info("KnowledgeRequestListener re-subscribed to #{@channel}")
         Process.monitor(listener_pid)

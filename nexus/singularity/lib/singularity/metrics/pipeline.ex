@@ -2,8 +2,8 @@ defmodule Singularity.Metrics.Pipeline do
   @moduledoc """
   Entry point for the code metrics pipeline.
 
-  Uses PgFlow for all workflow execution and messaging.
-  All requests are processed through PgFlow workflows for consistency and reliability.
+  Uses QuantumFlow for all workflow execution and messaging.
+  All requests are processed through QuantumFlow workflows for consistency and reliability.
   """
 
   use GenServer
@@ -35,7 +35,7 @@ defmodule Singularity.Metrics.Pipeline do
 
   defp execute(payload) do
     Logger.info("Submitting code metrics workflow via QuantumFlow", payload: redact(payload))
-    QuantumFlow.WorkflowAPI.execute(CodeMetricsWorkflow, payload)
+    QuantumFlow.Workflow.execute(CodeMetricsWorkflow, payload)
   end
 
   # -- GenServer callbacks --------------------------------------------------------

@@ -27,7 +27,7 @@ defmodule Singularity.Jobs.PatternMinerJob do
         min_quality_score: 0.7
       }
       |> Singularity.Jobs.PatternMinerJob.new()
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
 
       # Mine patterns with clustering
       %{
@@ -36,10 +36,10 @@ defmodule Singularity.Jobs.PatternMinerJob do
         similarity_threshold: 0.75
       }
       |> Singularity.Jobs.PatternMinerJob.new()
-      |> Oban.insert()
+      |> Singularity.JobQueue.insert()
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :pattern_mining,
     max_attempts: 3,
     priority: 2

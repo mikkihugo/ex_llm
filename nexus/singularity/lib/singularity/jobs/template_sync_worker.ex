@@ -12,7 +12,7 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
 
   require Logger
 
-  @impl Oban.Worker
+  @impl true
   def perform(_job) do
     Logger.info("Syncing templates from /templates_data...")
 
@@ -38,7 +38,7 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   end
 
   defp notify_sync_complete(sync_type, count) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_completed",
@@ -57,7 +57,7 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   end
 
   defp notify_sync_failed(sync_type, error) do
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_failed",

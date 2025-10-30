@@ -32,7 +32,7 @@ All 24 Singularity agents have been refactored to report metrics and patterns to
 
 **File:** `/home/mhugo/code/singularity/nexus/singularity/lib/singularity/evolution/agent_coordinator.ex`
 
-**Purpose:** GenServer managing agent ↔ CentralCloud communication via ex_quantum_flow.
+**Purpose:** GenServer managing agent ↔ CentralCloud communication via quantum_flow.
 
 **Key Features:**
 - `propose_change/3` - Send change proposals to Guardian
@@ -235,7 +235,7 @@ Singularity Agent
     ↓
 AgentCoordinator
     ↓
-    3. Publish to ex_quantum_flow (pgmq + NOTIFY)
+    3. Publish to quantum_flow (pgmq + NOTIFY)
     ↓
 CentralCloud Guardian
     ↓
@@ -260,7 +260,7 @@ CentralCloud Pattern Aggregator
     9. Aggregate patterns across instances
 ```
 
-### Message Queues (ex_quantum_flow/pgmq)
+### Message Queues (quantum_flow/pgmq)
 
 **Singularity → CentralCloud:**
 - `centralcloud_changes` - Change proposals from agents
@@ -289,7 +289,7 @@ CentralCloud Pattern Aggregator
 
 ### 3. Non-Blocking Execution ✅
 - Metric recording: < 0.1ms (in-memory buffer)
-- Change proposal: 10-50ms (async via ex_quantum_flow)
+- Change proposal: 10-50ms (async via quantum_flow)
 - Pattern recording: 5-20ms (async)
 - Consensus await: Configurable timeout (default: 30s)
 

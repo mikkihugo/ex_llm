@@ -16,6 +16,16 @@ use code_quality_engine::orchestrators::{Analyzer, AnalysisError, AnalysisType};
 use sha2::{Sha256, Digest};
 #[path = "scanner/scan_cache.rs"]
 mod scan_cache;
+#[path = "scanner/incremental.rs"]
+pub mod incremental;
+#[path = "scanner/config.rs"]
+pub mod config;
+#[path = "scanner/dependency.rs"]
+pub mod dependency;
+#[path = "scanner/webhook.rs"]
+pub mod webhook;
+#[path = "scanner/trends.rs"]
+pub mod trends;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AnalysisResult {
@@ -44,6 +54,17 @@ pub struct PerFileMetric {
     pub cc: Option<f64>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ScanOptions {
+    pub security_only: bool,
+    pub performance_only: bool,
+    pub quality_only: bool,
+    pub skip_security: bool,
+    pub skip_performance: bool,
+    pub skip_quality: bool,
+    pub incremental: bool,
+}
+
 pub struct CodeScanner {
     orchestrator: AnalysisOrchestrator,
     registry: MetaRegistry,
@@ -59,8 +80,10 @@ impl CodeScanner {
         registry.register(code_quality_engine::analysis::architecture::technology_detector::TechnologyDetector::new());
         registry.register(code_quality_engine::analysis::architecture::service_architecture_detector::ServiceArchitectureDetector::new());
         let mut orchestrator = AnalysisOrchestrator::new(registry);
-        // Register a default quality analyzer so results are non-empty
+        // Register all analyzers
         orchestrator.register_analyzer(DefaultQualityAnalyzer);
+        orchestrator.register_analyzer(SecurityAnalyzer);
+        orchestrator.register_analyzer(PerformanceAnalyzer);
         Self {
             orchestrator,
             registry: MetaRegistry::new(),
@@ -68,7 +91,13 @@ impl CodeScanner {
         }
     }
 
-    pub async fn scan(&self, path: &Path) -> Result<AnalysisResult> {
+    pub async fn scan(&self, path: &Path, options: Option<ScanOptions>) -> Result<AnalysisResult> {
+        let opts = options.unwrap_or_default();
+        
+        // Handle incremental scanning (git diff)
+        // For incremental, we'll filter files during analysis
+        // The path stays the same, analyzers will check changed files
+
         // Generate monotonic-ish run ID (UUIDv7)
         let run_id = Uuid::now_v7().to_string();
 
@@ -93,8 +122,23 @@ impl CodeScanner {
             },
         };
 
+        // Determine which analyzers to run based on options
+        let analysis_types: Option<Vec<AnalysisType>> = if opts.security_only {
+            Some(vec![AnalysisType::Security])
+        } else if opts.performance_only {
+            Some(vec![AnalysisType::Performance])
+        } else if opts.quality_only {
+            Some(vec![AnalysisType::Quality])
+        } else {
+            let mut types = vec![AnalysisType::Quality, AnalysisType::Security, AnalysisType::Performance];
+            if opts.skip_security { types.retain(|t| *t != AnalysisType::Security); }
+            if opts.skip_performance { types.retain(|t| *t != AnalysisType::Performance); }
+            if opts.skip_quality { types.retain(|t| *t != AnalysisType::Quality); }
+            if types.is_empty() { None } else { Some(types) }
+        };
+
         // Run comprehensive analysis (includes pattern detection internally)
-        let analysis_results = self.orchestrator.analyze_all(&input, None).await?;
+        let analysis_results = self.orchestrator.analyze_all(&input, analysis_types).await?;
 
         // Extract detected patterns from analysis results (no extra scanning)
         let patterns_detected = Self::extract_detected_patterns(&analysis_results);
@@ -381,7 +425,7 @@ impl Analyzer for DefaultQualityAnalyzer {
                 }
 
                 // Long line detection
-                for (idx, line) in content.lines().enumerate() {
+                for (_idx, line) in content.lines().enumerate() {
                     if line.len() > 160 {
                         findings.push(code_quality_engine::orchestrators::AnalysisFinding {
                             category: "style".to_string(),
@@ -439,9 +483,214 @@ impl Analyzer for DefaultQualityAnalyzer {
     fn description(&self) -> &'static str { "Default quality analyzer (baseline heuristics)" }
 }
 
+// Security analyzer
+struct SecurityAnalyzer;
+
+#[async_trait::async_trait]
+impl Analyzer for SecurityAnalyzer {
+    async fn analyze(&self, input: &code_quality_engine::orchestrators::AnalysisInput) -> Result<code_quality_engine::orchestrators::AnalysisResult, AnalysisError> {
+        use walkdir::WalkDir;
+        use std::fs;
+        use regex::Regex;
+
+        let mut findings = Vec::new();
+        let mut files_checked = 0;
+
+        // Common security patterns
+        let secret_patterns = vec![
+            (r#"(?i)(api[_-]?key|secret|password|token|private[_-]?key)\s*[:=]\s*['"]([^'"]{8,})['"]"#, "Hardcoded secret detected"),
+            (r#"(?i)password\s*[:=]\s*['"][^'"]+['"]"#, "Hardcoded password"),
+            (r"(?i)(aws_access_key|aws_secret_key|aws_session_token)", "AWS credentials detected"),
+            (r"(?i)(BEGIN\s+(RSA|OPENSSH|PGP)\s+PRIVATE\s+KEY)", "Private key file"),
+        ];
+
+        let sql_injection_patterns = vec![
+            (r#"(?i)(execute|exec|query|raw|sql)\s*\(\s*['"](?:.*\+.*|.*\{.*\}.*)['"]"#, "Potential SQL injection"),
+            (r"(?i)\.(execute|query|raw)\s*\([^)]*\+", "String concatenation in SQL"),
+        ];
+
+        let xss_patterns = vec![
+            (r"(?i)\.innerHTML\s*=\s*[^;]+\+", "Potential XSS via innerHTML"),
+            (r"(?i)\.outerHTML\s*=\s*[^;]+\+", "Potential XSS via outerHTML"),
+            (r"(?i)eval\s*\([^)]+\)", "Use of eval() - potential XSS"),
+        ];
+
+        for entry in WalkDir::new(&input.path).max_depth(6).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if !path.is_file() { continue; }
+            
+            let path_str = path.to_string_lossy();
+            // Skip build artifacts and dependencies
+            if path_str.contains("target/") || path_str.contains("node_modules/") 
+                || path_str.contains("dist/") || path_str.contains("build/") 
+                || path_str.contains(".git/") { continue; }
+
+            if let Ok(content) = fs::read_to_string(path) {
+                files_checked += 1;
+
+                // Check for hardcoded secrets
+                for (pattern, desc) in &secret_patterns {
+                    if let Ok(re) = Regex::new(pattern) {
+                        if re.is_match(&content) {
+                            findings.push(code_quality_engine::orchestrators::AnalysisFinding {
+                                category: "security".to_string(),
+                                severity: code_quality_engine::orchestrators::FindingSeverity::Critical,
+                                description: desc.to_string(),
+                                location: Some(path_str.to_string()),
+                                suggestion: Some("Use environment variables or secret management system".to_string()),
+                            });
+                        }
+                    }
+                }
+
+                // Check for SQL injection
+                for (pattern, desc) in &sql_injection_patterns {
+                    if let Ok(re) = Regex::new(pattern) {
+                        if re.is_match(&content) {
+                            findings.push(code_quality_engine::orchestrators::AnalysisFinding {
+                                category: "security".to_string(),
+                                severity: code_quality_engine::orchestrators::FindingSeverity::High,
+                                description: desc.to_string(),
+                                location: Some(path_str.to_string()),
+                                suggestion: Some("Use parameterized queries or prepared statements".to_string()),
+                            });
+                        }
+                    }
+                }
+
+                // Check for XSS vulnerabilities (JavaScript/TypeScript)
+                if path_str.ends_with(".js") || path_str.ends_with(".ts") || path_str.ends_with(".jsx") || path_str.ends_with(".tsx") {
+                    for (pattern, desc) in &xss_patterns {
+                        if let Ok(re) = Regex::new(pattern) {
+                            if re.is_match(&content) {
+                                findings.push(code_quality_engine::orchestrators::AnalysisFinding {
+                                    category: "security".to_string(),
+                                    severity: code_quality_engine::orchestrators::FindingSeverity::High,
+                                    description: desc.to_string(),
+                                    location: Some(path_str.to_string()),
+                                    suggestion: Some("Sanitize user input and use safe DOM methods".to_string()),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                if files_checked >= 500 { break; } // Limit to avoid timeout
+            }
+        }
+
+        let score = if findings.is_empty() { 10.0 } else { (10.0 - (findings.len() as f64 * 0.5)).min(9.0) };
+        let mut metadata = HashMap::new();
+        metadata.insert("files_checked".to_string(), serde_json::json!(files_checked));
+
+        Ok(code_quality_engine::orchestrators::AnalysisResult {
+            analysis_type: AnalysisType::Security,
+            score,
+            findings,
+            recommendations: vec!["Regularly audit for security vulnerabilities".to_string()],
+            metadata,
+        })
+    }
+
+    async fn learn(&self, _result: &code_quality_engine::orchestrators::AnalysisResult) -> Result<(), AnalysisError> {
+        Ok(())
+    }
+
+    fn analysis_type(&self) -> AnalysisType { AnalysisType::Security }
+    fn description(&self) -> &'static str { "Security vulnerability detection analyzer" }
+}
+
+// Performance analyzer
+struct PerformanceAnalyzer;
+
+#[async_trait::async_trait]
+impl Analyzer for PerformanceAnalyzer {
+    async fn analyze(&self, input: &code_quality_engine::orchestrators::AnalysisInput) -> Result<code_quality_engine::orchestrators::AnalysisResult, AnalysisError> {
+        use walkdir::WalkDir;
+        use std::fs;
+        use regex::Regex;
+
+        let mut findings = Vec::new();
+
+        // N+1 query patterns
+        let nplus1_patterns = vec![
+            (r"(?i)for\s+.*\s+in\s+.*\s*:\s*.*\.(query|filter|find|get)\(", "Potential N+1 query pattern"),
+            (r"(?i)\.map\s*\(\s*[^)]*=>\s*[^)]*\.(query|filter|find|get)\(", "Potential N+1 in map"),
+        ];
+
+        // Inefficient algorithms
+        let inefficient_patterns = vec![
+            (r"(?i)O\(n\^2\)", "O(n?) complexity detected in comment"),
+            (r"(?i)\.sort\(\).*\.sort\(\)", "Multiple sorts - consider combining"),
+            (r"(?i)\.filter\(.*\)\.filter\(.*\)\.filter\(", "Multiple filters - consider combining"),
+        ];
+
+        for entry in WalkDir::new(&input.path).max_depth(6).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if !path.is_file() { continue; }
+            
+            let path_str = path.to_string_lossy();
+            if path_str.contains("target/") || path_str.contains("node_modules/") { continue; }
+
+            if let Ok(content) = fs::read_to_string(path) {
+                // Check for N+1 patterns
+                for (pattern, desc) in &nplus1_patterns {
+                    if let Ok(re) = Regex::new(pattern) {
+                        if re.is_match(&content) {
+                            findings.push(code_quality_engine::orchestrators::AnalysisFinding {
+                                category: "performance".to_string(),
+                                severity: code_quality_engine::orchestrators::FindingSeverity::Medium,
+                                description: desc.to_string(),
+                                location: Some(path_str.to_string()),
+                                suggestion: Some("Use eager loading or batch queries to avoid N+1 problems".to_string()),
+                            });
+                        }
+                    }
+                }
+
+                // Check for inefficient patterns
+                for (pattern, desc) in &inefficient_patterns {
+                    if let Ok(re) = Regex::new(pattern) {
+                        if re.is_match(&content) {
+                            findings.push(code_quality_engine::orchestrators::AnalysisFinding {
+                                category: "performance".to_string(),
+                                severity: code_quality_engine::orchestrators::FindingSeverity::Low,
+                                description: desc.to_string(),
+                                location: Some(path_str.to_string()),
+                                suggestion: Some("Optimize algorithm complexity or combine operations".to_string()),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        let score = if findings.is_empty() { 10.0 } else { (10.0 - (findings.len() as f64 * 0.5)).max(1.0) };
+        let mut metadata = HashMap::new();
+        metadata.insert("performance_issues".to_string(), serde_json::json!(findings.len()));
+
+        Ok(code_quality_engine::orchestrators::AnalysisResult {
+            analysis_type: AnalysisType::Performance,
+            score,
+            findings,
+            recommendations: vec!["Profile code to identify actual bottlenecks".to_string()],
+            metadata,
+        })
+    }
+
+    async fn learn(&self, _result: &code_quality_engine::orchestrators::AnalysisResult) -> Result<(), AnalysisError> {
+        Ok(())
+    }
+
+    fn analysis_type(&self) -> AnalysisType { AnalysisType::Performance }
+    fn description(&self) -> &'static str { "Performance issue detection analyzer" }
+}
+
 fn main() {}
 
-pub async fn analyze_local(path: &Path) -> Result<AnalysisResult> {
+pub async fn analyze_local(path: &Path, options: Option<ScanOptions>) -> Result<AnalysisResult> {
     let scanner = CodeScanner::new();
-    scanner.scan(path).await
+    scanner.scan(path, options).await
 }
+
+// Incremental scanning is handled by the incremental module

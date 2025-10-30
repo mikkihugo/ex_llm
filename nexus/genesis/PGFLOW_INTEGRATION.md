@@ -1,10 +1,10 @@
-# Genesis PgFlow Integration - Implementation Guide
+# Genesis QuantumFlow Integration - Implementation Guide
 
 **Status:** ✅ Implementation Complete (October 30, 2025)
 
 ## Overview
 
-Genesis has been upgraded from a simple PGMQ consumer to a full **autonomous agent** that reactively consumes from three PgFlow queues and executes workflows with complete state management. This integration enables Genesis to dynamically respond to rule evolution, LLM configuration changes, and code analysis job requests from Singularity instances.
+Genesis has been upgraded from a simple PGMQ consumer to a full **autonomous agent** that reactively consumes from three QuantumFlow queues and executes workflows with complete state management. This integration enables Genesis to dynamically respond to rule evolution, LLM configuration changes, and code analysis job requests from Singularity instances.
 
 ## Architecture
 
@@ -18,31 +18,31 @@ Singularity → bare PGMQ queue → Genesis.SharedQueueConsumer
 ```
 Singularity
 ├─ GenesisPublisher.publish_rules()
-│  ↓ (publishes via PgFlow)
+│  ↓ (publishes via QuantumFlow)
 ├─ genesis_rule_updates
 │  ↓
 ├─ GenesisPublisher.publish_llm_config_rules()
-│  ↓ (publishes via PgFlow)
+│  ↓ (publishes via QuantumFlow)
 ├─ genesis_llm_config_updates
 │  ↓
 └─ Job submission
-   ↓ (publishes via PgFlow)
+   ↓ (publishes via QuantumFlow)
    code_execution_requests
    ↓
-Genesis.PgFlowWorkflowConsumer
+Genesis.QuantumFlowWorkflowConsumer
 ├─ Reads from all three queues with batching
 ├─ Routes to appropriate handler:
 │  ├─ RuleEngine.apply_rule()
 │  ├─ LlmConfigManager.update_config()
 │  └─ JobExecutor.execute()
 ├─ Manages workflow state: pending → running → completed/failed
-├─ Publishes results via PgFlow
+├─ Publishes results via QuantumFlow
 └─ Archives messages
 ```
 
 ## Components Created
 
-### 1. Genesis.PgFlowWorkflowConsumer
+### 1. Genesis.QuantumFlowWorkflowConsumer
 **File:** `lib/genesis/quantum_flow_workflow_consumer.ex`
 
 Main consumer GenServer that:
@@ -132,7 +132,7 @@ Executes code analysis jobs in isolated environment:
   )
 ```
 → Publishes to `genesis_rule_updates` queue
-→ Genesis.PgFlowWorkflowConsumer consumes
+→ Genesis.QuantumFlowWorkflowConsumer consumes
 → Genesis.RuleEngine.apply_rule() applies
 → Results published to `genesis_rule_updates_results`
 
@@ -145,15 +145,15 @@ Executes code analysis jobs in isolated environment:
   )
 ```
 → Publishes to `genesis_llm_config_updates` queue
-→ Genesis.PgFlowWorkflowConsumer consumes
+→ Genesis.QuantumFlowWorkflowConsumer consumes
 → Genesis.LlmConfigManager.update_config() updates
 → Results published to `genesis_llm_config_updates_results`
 
-### With Singularity.PgFlow
+### With Singularity.QuantumFlow
 
 **Publishing Job Requests:**
 ```elixir
-{:ok, :sent} = Singularity.PgFlow.send_with_notify(
+{:ok, :sent} = Singularity.QuantumFlow.send_with_notify(
   "code_execution_requests",
   %{
     "type" => "code_execution_request",
@@ -165,7 +165,7 @@ Executes code analysis jobs in isolated environment:
 )
 ```
 → Message added to `code_execution_requests` queue
-→ Genesis.PgFlowWorkflowConsumer consumes
+→ Genesis.QuantumFlowWorkflowConsumer consumes
 → Genesis.JobExecutor.execute() analyzes code
 → Results published to `code_execution_results`
 
@@ -267,8 +267,8 @@ children = [
   {Oban, name: Genesis.Oban, repo: Genesis.Repo},
   {Task.Supervisor, name: Genesis.TaskSupervisor},
 
-  # NEW: Main PgFlow workflow consumer
-  Genesis.PgFlowWorkflowConsumer,
+  # NEW: Main QuantumFlow workflow consumer
+  Genesis.QuantumFlowWorkflowConsumer,
 
   # Legacy (can be deprecated)
   Genesis.SharedQueueConsumer,
@@ -285,7 +285,7 @@ Strategy: `:one_for_one` - Each service is independent, restarts don't cascade
 
 ## Enabling/Disabling
 
-### Enable PgFlow Consumer
+### Enable QuantumFlow Consumer
 ```elixir
 config :genesis, :quantum_flow_consumer,
   enabled: true,
@@ -298,7 +298,7 @@ config :genesis, :quantum_flow_consumer,
 ### Disable Legacy Consumer
 ```elixir
 config :genesis, :shared_queue,
-  enabled: false  # When PgFlowWorkflowConsumer is stable
+  enabled: false  # When QuantumFlowWorkflowConsumer is stable
 ```
 
 ## Testing
@@ -315,12 +315,12 @@ All modules compiled successfully with proper type checking and validation.
 ## Migration Path
 
 **Phase 1 (Current):** Both consumers run in parallel
-- `Genesis.PgFlowWorkflowConsumer` - NEW, handles PgFlow
+- `Genesis.QuantumFlowWorkflowConsumer` - NEW, handles QuantumFlow
 - `Genesis.SharedQueueConsumer` - Legacy, can be deprecated
 
 **Phase 2 (Future):** Deprecate legacy consumer
 - Disable `Genesis.SharedQueueConsumer`
-- Keep `Genesis.PgFlowWorkflowConsumer` as primary
+- Keep `Genesis.QuantumFlowWorkflowConsumer` as primary
 
 **Phase 3 (Future):** Remove legacy code
 - Remove `Genesis.SharedQueueConsumer` module entirely
@@ -381,7 +381,7 @@ All dependencies already available in Genesis.
 - `lib/genesis/rule_engine.ex` - Rule management (232 lines)
 - `lib/genesis/llm_config_manager.ex` - LLM config (294 lines)
 - `lib/genesis/job_executor.ex` - Job execution (436 lines)
-- `PGFLOW_INTEGRATION.md` - This document
+- `QUANTUM_FLOW_INTEGRATION.md` - This document
 
 **Modified:**
 - `lib/genesis/application.ex` - Added consumer to supervision tree
@@ -392,10 +392,10 @@ All dependencies already available in Genesis.
 
 Genesis has been successfully upgraded from a simple PGMQ consumer to a full autonomous agent that:
 
-✅ Consumes from three PgFlow queues
+✅ Consumes from three QuantumFlow queues
 ✅ Routes messages to appropriate handlers
 ✅ Implements complete workflow state management
-✅ Publishes results via PgFlow
+✅ Publishes results via QuantumFlow
 ✅ Handles errors gracefully with recovery suggestions
 ✅ Supports three distinct message types (rules, config, jobs)
 ✅ Integrated into Genesis supervision tree

@@ -37,7 +37,16 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute "CREATE EXTENSION IF NOT EXISTS btree_gist"
     
     # Time-series data (replaces InfluxDB)
-    execute "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'timescaledb') THEN
+        CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+      ELSE
+        RAISE NOTICE 'timescaledb extension not available - skipping';
+      END IF;
+    END $$;
+    """
     
     # Graph relationships (replaces Neo4j)
     execute "CREATE EXTENSION IF NOT EXISTS ltree"
@@ -51,13 +60,31 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute "CREATE EXTENSION IF NOT EXISTS pg_prewarm"
     
     # Geographic data (if needed for package sources)
-    execute "CREATE EXTENSION IF NOT EXISTS postgis"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'postgis') THEN
+        CREATE EXTENSION IF NOT EXISTS postgis;
+      ELSE
+        RAISE NOTICE 'postgis extension not available - skipping';
+      END IF;
+    END $$;
+    """
     
     # Job scheduling (replaces cron) - disabled for now
     # execute "CREATE EXTENSION IF NOT EXISTS pg_cron"
     
     # Testing framework
-    execute "CREATE EXTENSION IF NOT EXISTS pgtap"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pgtap') THEN
+        CREATE EXTENSION IF NOT EXISTS pgtap;
+      ELSE
+        RAISE NOTICE 'pgtap extension not available - skipping';
+      END IF;
+    END $$;
+    """
 
     # ============================================================================
     # PACKAGE METADATA (from package_registry_server)
@@ -171,7 +198,16 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute "ALTER TABLE analysis_results ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable for time-series analytics
-    execute "SELECT create_hypertable('analysis_results', 'created_at')"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_hypertable') THEN
+        PERFORM create_hypertable('analysis_results', 'created_at');
+      ELSE
+        RAISE NOTICE 'timescaledb not available - skipping hypertable for analysis_results';
+      END IF;
+    END $$;
+    """
 
     # ============================================================================
     # PACKAGE EXAMPLES (from package_analysis_server)
@@ -251,7 +287,16 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute "ALTER TABLE usage_analytics ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable
-    execute "SELECT create_hypertable('usage_analytics', 'created_at')"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_hypertable') THEN
+        PERFORM create_hypertable('usage_analytics', 'created_at');
+      ELSE
+        RAISE NOTICE 'timescaledb not available - skipping hypertable for usage_analytics';
+      END IF;
+    END $$;
+    """
 
     # ============================================================================
     # SEARCH QUERY LOG - TIMESERIES
@@ -273,7 +318,16 @@ defmodule CentralServices.Repo.Migrations.CreateCentralServicesDatabase do
     execute "ALTER TABLE search_queries ADD PRIMARY KEY (id, created_at)"
 
     # Convert to timescaledb hypertable
-    execute "SELECT create_hypertable('search_queries', 'created_at')"
+    execute """
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_hypertable') THEN
+        PERFORM create_hypertable('search_queries', 'created_at');
+      ELSE
+        RAISE NOTICE 'timescaledb not available - skipping hypertable for search_queries';
+      END IF;
+    END $$;
+    """
 
     # ============================================================================
     # INDEXES FOR PERFORMANCE

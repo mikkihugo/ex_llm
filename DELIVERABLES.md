@@ -69,7 +69,7 @@
 ### Backward Compatibility (2 Shim Files)
 
 9. **`lib/singularity/quantum_flow_adapter.ex`** 🔀 SHIM
-   - Purpose: Maintain backward compatibility for PgFlow API
+   - Purpose: Maintain backward compatibility for QuantumFlow API
    - Change: Now delegates to Workflows
    - Status: ✅ All old code still works
 

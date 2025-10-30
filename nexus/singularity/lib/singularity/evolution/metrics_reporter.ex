@@ -75,7 +75,7 @@ defmodule Singularity.Evolution.MetricsReporter do
 
   ## Relationships
 
-  - **Uses**: `ExQuantumFlow` - Message queue for batch reports
+  - **Uses**: `QuantumFlow.Messaging` - Message queue for batch reports
   - **Uses**: `Singularity.Database.MessageQueue` - pgmq integration
   - **Used by**: All agents for performance tracking
   - **Sends to**: CentralCloud Guardian for monitoring
@@ -97,7 +97,7 @@ defmodule Singularity.Evolution.MetricsReporter do
     "relationships": {
       "All Agents": "Record metrics during execution",
       "CentralCloud.Guardian": "Receives batched metrics",
-      "ExQuantumFlow": "Message transport layer"
+      "QuantumFlow.Messaging": "Message transport layer"
     }
   }
   ```
@@ -114,7 +114,7 @@ defmodule Singularity.Evolution.MetricsReporter do
     F[RefactoringAgent] -->|record_metric| A
 
     A -->|every 60s| G[Batch Report Task]
-    G --> H[ExQuantumFlow]
+    G --> H[QuantumFlow.Messaging]
     H --> I[pgmq: agent_metrics]
     I --> J[CentralCloud.Guardian]
 
@@ -434,7 +434,7 @@ defmodule Singularity.Evolution.MetricsReporter do
       "metrics" => serialize_buffer(buffer)
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_metrics_queue, message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify(@centralcloud_metrics_queue, message) do
       {:ok, _} ->
         Logger.debug("[MetricsReporter] Batched metrics sent to CentralCloud",
           agent_count: map_size(buffer),

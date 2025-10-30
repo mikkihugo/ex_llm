@@ -1,4 +1,4 @@
-# RCA + PgFlow Integration Guide
+# RCA + QuantumFlow Integration Guide
 
 Complete guide to integrating Singularity's **QuantumFlow workflow orchestration** with the **RCA (Root Cause Analysis) system** for comprehensive workflow execution tracking and learning.
 
@@ -20,7 +20,7 @@ QuantumFlow workflows (CodeQualityImprovement, AgentImprovement, etc.) can now b
 └──────────────────────┬──────────────────────────────┘
                        ↓
 ┌─────────────────────────────────────────────────────┐
-│ PgFlow Workflow begins                             │
+│ QuantumFlow Workflow begins                             │
 │ (CodeQualityImprovement, Architecture, etc.)      │
 │ track_workflow_start/2                             │
 └──────────────────────┬──────────────────────────────┘

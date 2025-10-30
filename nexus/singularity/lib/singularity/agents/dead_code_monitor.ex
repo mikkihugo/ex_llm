@@ -481,7 +481,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
 
   defp publish_report(subject, report) do
     # Publish via QuantumFlow workflow
-    case QuantumFlow.WorkflowAPI.create_workflow(
+    case QuantumFlow.Workflow.create_workflow(
            Singularity.Workflows.DeadCodeReportWorkflow,
            %{
              "report" => report,

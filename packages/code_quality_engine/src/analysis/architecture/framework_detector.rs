@@ -10,9 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use super::{PatternDetection, PatternDetector, PatternError, PatternType, DetectionOptions};
 
-// NIF callback for ExFlow integration
+// NIF callback for Quantum Flow integration (only when building NIF)
+#[cfg(feature = "nif")]
 extern "C" {
-    fn ex_flow_send_learning_data(data: &str) -> Result<(), String>;
+    fn quantum_flow_send_learning_data(data: &str) -> Result<(), String>;
 }
 
 /// Framework detector implementation
@@ -69,13 +70,18 @@ impl FrameworkDetector {
     fn detect_nodejs_frameworks(&self, package_json: &PackageJson) -> Vec<PatternDetection> {
         let mut detections = Vec::new();
 
-        // Check dependencies and devDependencies
-        let all_deps = package_json.dependencies.iter()
-            .chain(package_json.dev_dependencies.iter())
-            .collect::<HashMap<_, _>>();
+        // Check dependencies and devDependencies (normalize keys as Strings)
+        let mut all_deps: HashMap<String, String> = HashMap::new();
+        for (k, v) in &package_json.dependencies {
+            all_deps.insert(k.clone(), v.clone());
+        }
+        for (k, v) in &package_json.dev_dependencies {
+            all_deps.insert(k.clone(), v.clone());
+        }
+        let has = |name: &str| all_deps.contains_key(name);
 
         // Web UI frameworks
-        if all_deps.contains_key("react") {
+        if has("react") {
             detections.push(PatternDetection {
                 name: "React".to_string(),
                 pattern_type: "web_ui_framework".to_string(),
@@ -85,7 +91,7 @@ impl FrameworkDetector {
             });
         }
 
-        if all_deps.contains_key("vue") {
+        if has("vue") {
             detections.push(PatternDetection {
                 name: "Vue.js".to_string(),
                 pattern_type: "web_ui_framework".to_string(),
@@ -95,7 +101,7 @@ impl FrameworkDetector {
             });
         }
 
-        if all_deps.contains_key("angular") || all_deps.contains_key("@angular/core") {
+        if has("angular") || has("@angular/core") {
             detections.push(PatternDetection {
                 name: "Angular".to_string(),
                 pattern_type: "web_ui_framework".to_string(),
@@ -106,7 +112,7 @@ impl FrameworkDetector {
         }
 
         // Web server frameworks
-        if all_deps.contains_key("express") {
+        if has("express") {
             detections.push(PatternDetection {
                 name: "Express".to_string(),
                 pattern_type: "web_server_framework".to_string(),
@@ -116,7 +122,7 @@ impl FrameworkDetector {
             });
         }
 
-        if all_deps.contains_key("next") {
+        if has("next") {
             detections.push(PatternDetection {
                 name: "Next.js".to_string(),
                 pattern_type: "web_server_framework".to_string(),
@@ -127,7 +133,7 @@ impl FrameworkDetector {
         }
 
         // Build tools
-        if all_deps.contains_key("webpack") {
+        if has("webpack") {
             detections.push(PatternDetection {
                 name: "Webpack".to_string(),
                 pattern_type: "build_tool".to_string(),
@@ -137,7 +143,7 @@ impl FrameworkDetector {
             });
         }
 
-        if all_deps.contains_key("vite") {
+        if has("vite") {
             detections.push(PatternDetection {
                 name: "Vite".to_string(),
                 pattern_type: "build_tool".to_string(),
@@ -322,7 +328,7 @@ impl FrameworkDetector {
     }
 
     // Simple parsers (in real implementation, use proper parsers)
-    fn parse_pom_xml(content: &str) -> Result<PomXml, PatternError> {
+    fn parse_pom_xml(_content: &str) -> Result<PomXml, PatternError> {
         // Simplified parsing - extract dependencies
         let dependencies = Vec::new(); // TODO: Implement proper XML parsing
         Ok(PomXml { dependencies })
@@ -384,9 +390,10 @@ impl PatternDetector for FrameworkDetector {
             "timestamp": chrono::Utc::now().to_rfc3339()
         });
 
-        // Call Elixir callback to send via ExFlow workflow
+        // Call Elixir callback to send via Quantum Flow workflow
         // This triggers the RulePublish workflow in Singularity for cross-instance learning
-        match ex_flow_send_learning_data(&learning_data.to_string()) {
+        #[cfg(feature = "nif")]
+        match unsafe { quantum_flow_send_learning_data(&learning_data.to_string()) } {
             Ok(_) => {
                 // Update local confidence based on successful sharing
                 let learned = LearnedFrameworkPattern {
@@ -406,6 +413,12 @@ impl PatternDetector for FrameworkDetector {
                 eprintln!("Failed to send learning data via ExFlow: {}", e);
                 Ok(())
             }
+        }
+        #[cfg(not(feature = "nif"))]
+        {
+            // CLI build: learning disabled; succeed silently
+            let _ = learning_data; // avoid unused warning
+            Ok(())
         }
     }
 

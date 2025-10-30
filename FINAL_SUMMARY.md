@@ -12,7 +12,7 @@
 
 ### 1. Unified Workflows Hub ✅
 - Central orchestration point for all agent operations
-- Replaces scattered PgFlow + HTDAG implementations
+- Replaces scattered QuantumFlow + HTDAG implementations
 - Backward compatible (old APIs still work)
 - ETS-based storage for fast lookups
 
@@ -210,7 +210,7 @@ Workflows.execute_workflow(workflow)  # Defaults to dry_run: true
 **Asked**: Safe file I/O, hot reload, self-improvement capability  
 **Delivered**: ✅ Toolkit, HotReloader, SelfImprovementAgent, Arbiter with approvals
 
-### Request 2: "Merge HTDAG and PgFlow"
+### Request 2: "Merge HTDAG and QuantumFlow"
 **Asked**: Consolidate fragmented systems into one unified approach  
 **Delivered**: ✅ Workflows.ex as central hub, backward compatibility maintained
 

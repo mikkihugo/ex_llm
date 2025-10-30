@@ -66,7 +66,7 @@ defmodule CentralCloud.Engines.LintingEngine do
   # ---------------------------------------------------------------------------
 
   defp linting_engine_call(operation, request) do
-    case QuantumFlow.send_with_notify("engine.linting.#{operation}", request, CentralCloud.Repo,
+    case QuantumFlow.Notifications.send_with_notify("engine.linting.#{operation}", request, CentralCloud.Repo,
            timeout: 30_000
          ) do
       {:ok, response} ->

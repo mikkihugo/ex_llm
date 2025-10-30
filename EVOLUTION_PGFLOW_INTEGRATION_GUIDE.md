@@ -1,10 +1,10 @@
-# Evolution System + ex_quantum_flow Integration Guide
+# Evolution System + quantum_flow Integration Guide
 
 **Purpose:** Replace direct function calls with durable message queues for distributed messaging
 
 ---
 
-## Why ex_quantum_flow?
+## Why quantum_flow?
 
 Current implementation makes **direct function calls** between instances and CentralCloud:
 ```elixir
@@ -19,7 +19,7 @@ Problems:
 - ❌ Synchronous blocks execution
 - ❌ If CentralCloud is down, proposal hangs
 
-**Solution: Use ex_quantum_flow queues** for asynchronous, durable messaging:
+**Solution: Use quantum_flow queues** for asynchronous, durable messaging:
 ```elixir
 # ✅ Asynchronous, durable, reliable
 QuantumFlowQueues.propose_for_consensus(proposal_id, ...)
@@ -33,26 +33,26 @@ QuantumFlowQueues.propose_for_consensus(proposal_id, ...)
 ```
 Singularity Instance
 ├─ LOCAL: proposals (ETS cache)
-├─ PGFLOW → proposals_for_consensus_queue
+├─ QUANTUM_FLOW → proposals_for_consensus_queue
 │           (async, durable, retried)
 │           ↓
-├─ PGFLOW ← consensus_results_queue
+├─ QUANTUM_FLOW ← consensus_results_queue
 │           (results from CentralCloud)
 │           ↓
-├─ PGFLOW → proposals_for_execution_queue
-├─ PGFLOW → metrics_to_guardian_queue
+├─ QUANTUM_FLOW → proposals_for_execution_queue
+├─ QUANTUM_FLOW → metrics_to_guardian_queue
 │           ↓
-└─ PGFLOW ← rollback_triggers_queue
+└─ QUANTUM_FLOW ← rollback_triggers_queue
            (from Guardian)
 
 CentralCloud
-├─ PGFLOW → proposals_for_consensus_queue (receives)
-├─ PGFLOW ← consensus_results_queue (sends)
-├─ PGFLOW → metrics_to_guardian_queue (receives)
-├─ PGFLOW ← guardian_safety_profiles_queue (sends)
-├─ PGFLOW → patterns_for_aggregator_queue (receives)
-├─ PGFLOW ← rollback_triggers_queue (sends)
-└─ PGFLOW → learning_loop_queue (receives)
+├─ QUANTUM_FLOW → proposals_for_consensus_queue (receives)
+├─ QUANTUM_FLOW ← consensus_results_queue (sends)
+├─ QUANTUM_FLOW → metrics_to_guardian_queue (receives)
+├─ QUANTUM_FLOW ← guardian_safety_profiles_queue (sends)
+├─ QUANTUM_FLOW → patterns_for_aggregator_queue (receives)
+├─ QUANTUM_FLOW ← rollback_triggers_queue (sends)
+└─ QUANTUM_FLOW → learning_loop_queue (receives)
 ```
 
 ---
@@ -274,7 +274,7 @@ defmodule Singularity.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :singularity,
       "proposals_for_consensus_queue",
       message
@@ -302,7 +302,7 @@ defmodule Singularity.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :singularity,
       "metrics_to_guardian_queue",
       message
@@ -330,7 +330,7 @@ defmodule Singularity.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :singularity,
       "patterns_for_aggregator_queue",
       message
@@ -429,7 +429,7 @@ defmodule Singularity.Evolution.QuantumFlowConsumers do
 end
 ```
 
-### Step 4: Update ProposalQueue to Use PgFlow
+### Step 4: Update ProposalQueue to Use QuantumFlow
 
 **File:** `lib/singularity/evolution/proposal_queue.ex` (update `broadcast_to_consensus`)
 
@@ -464,7 +464,7 @@ defp broadcast_to_consensus(proposal) do
 end
 ```
 
-### Step 5: Update ExecutionFlow to Use PgFlow
+### Step 5: Update ExecutionFlow to Use QuantumFlow
 
 **File:** `lib/singularity/evolution/execution_flow.ex` (update `report_to_guardian`)
 
@@ -608,7 +608,7 @@ defmodule CentralCloud.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :centralcloud,
       "consensus_results_queue",
       message
@@ -634,7 +634,7 @@ defmodule CentralCloud.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :centralcloud,
       "rollback_triggers_queue",
       message
@@ -660,7 +660,7 @@ defmodule CentralCloud.Evolution.QuantumFlowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExQuantumFlow.publish(
+    case QuantumFlow.publish(
       :centralcloud,
       "guardian_safety_profiles_queue",
       message
@@ -707,7 +707,7 @@ end
 
 ---
 
-## Testing with PgFlow
+## Testing with QuantumFlow
 
 ```elixir
 # Test publishing a proposal
@@ -715,7 +715,7 @@ end
 assert msg_id
 
 # Verify message in queue
-messages = ExQuantumFlow.list_messages("proposals_for_consensus_queue")
+messages = QuantumFlow.list_messages("proposals_for_consensus_queue")
 assert Enum.any?(messages, &(&1.proposal_id == proposal.id))
 
 # Manually consume and process
@@ -724,7 +724,7 @@ message = Enum.find(messages, ...)
 assert status == "proposal_recorded"
 
 # Verify instance received consensus result
-received_messages = ExQuantumFlow.list_messages("consensus_results_queue")
+received_messages = QuantumFlow.list_messages("consensus_results_queue")
 assert Enum.any?(received_messages, &(&1.proposal_id == proposal.id))
 ```
 
@@ -735,19 +735,19 @@ assert Enum.any?(received_messages, &(&1.proposal_id == proposal.id))
 **Environment variables:**
 ```bash
 # Database for QuantumFlow queues (can be same as app DB)
-export PGFLOW_DATABASE_URL=postgresql://user:pass@localhost/singularity
+export QUANTUM_FLOW_DATABASE_URL=postgresql://user:pass@localhost/singularity
 
 # Queue configuration
-export PGFLOW_QUEUE_WORKERS=2
-export PGFLOW_MESSAGE_RETRY_DELAY=1000  # ms
-export PGFLOW_MESSAGE_MAX_RETRIES=3
+export QUANTUM_FLOW_QUEUE_WORKERS=2
+export QUANTUM_FLOW_MESSAGE_RETRY_DELAY=1000  # ms
+export QUANTUM_FLOW_MESSAGE_MAX_RETRIES=3
 ```
 
 ---
 
 ## Migration Path
 
-### Phase 1: Add PgFlow Alongside (Backward Compatible)
+### Phase 1: Add QuantumFlow Alongside (Backward Compatible)
 - [x] Define new QuantumFlowProducers and QuantumFlowConsumers
 - [x] Keep old direct calls working
 - [x] Both work in parallel
@@ -786,4 +786,4 @@ export PGFLOW_MESSAGE_MAX_RETRIES=3
 | **Scalability** | Limited | Scales independently |
 | **Observability** | No history | Full message audit trail |
 
-**Next step:** Implement PgFlow integration in phases, starting with proposal broadcasting and consensus results.
+**Next step:** Implement QuantumFlow integration in phases, starting with proposal broadcasting and consensus results.

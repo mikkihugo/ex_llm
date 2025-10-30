@@ -1,6 +1,7 @@
 defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
   @moduledoc """
-  PgFlow Message Router - Routes incoming QuantumFlow messages to appropriate consumer handlers.
+  QuantumFlow message router that dispatches decoded queue payloads to the
+  appropriate consumer handlers.
 
   This module listens to QuantumFlow queues and routes messages to the appropriate handler
   based on message type. Handles acknowledgment, retries, and dead-letter queue routing.
@@ -16,7 +17,7 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
     "role": "orchestrator",
     "layer": "integration",
     "introduced_in": "October 2025",
-    "depends_on": ["Consumers", "ExQuantumFlow", "PgFlow"],
+    "depends_on": ["Consumers", "QuantumFlow.Messaging", "QuantumFlow.Queue"],
     "features": ["message_routing", "handler_dispatch", "acknowledgment", "retry_handling"]
   }
   ```
@@ -25,7 +26,7 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
 
   ```mermaid
   graph LR
-      Queue1["PgFlow Queue"]
+      Queue1["QuantumFlow Queue"]
       Queue2["CentralCloud Queue"]
       Router["MessageRouter"]
       Handlers["Consumer Handlers"]
@@ -51,8 +52,8 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
 
   depends_on:
     - Singularity.Evolution.QuantumFlow.Consumers
-    - ExQuantumFlow (QuantumFlow library)
-    - Singularity.PgFlow (message queue API)
+    - QuantumFlow.Messaging (QuantumFlow library)
+    - Singularity.Infrastructure.QuantumFlow.Queue
   ```
 
   ### Anti-Patterns
@@ -73,6 +74,7 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
   require Logger
 
   alias Singularity.Evolution.QuantumFlow.Consumers
+  alias Singularity.Infrastructure.QuantumFlow.Queue
 
   @doc """
   Route incoming QuantumFlow message to appropriate consumer handler.
@@ -143,7 +145,7 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
   # ============================================================================
 
   defp loop_listen(queue_name) do
-    case PgFlow.receive_from_queue(queue_name) do
+    case Queue.read_from_queue(queue_name, limit: 10, vt: 30) do
       {:ok, messages} when is_list(messages) and length(messages) > 0 ->
         # Process each message
         Enum.each(messages, fn msg ->
@@ -166,16 +168,15 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
     end
   end
 
-  defp process_message(queue_name, %{"msg_id" => msg_id, "message" => message_data} = _msg) do
-    # Parse message if it's a JSON string
-    parsed_message = parse_message(message_data)
+  defp process_message(queue_name, %{msg_id: msg_id, payload: payload} = message) do
+    parsed_message = parse_message(payload)
 
     Logger.info("Processing message #{msg_id} from queue #{queue_name}")
 
     case route_message(parsed_message) do
       {:ok, _} ->
         # Message processed successfully, acknowledge it
-        case PgFlow.acknowledge_message(queue_name, msg_id) do
+        case Queue.delete_message(queue_name, msg_id) do
           :ok ->
             Logger.debug("Message #{msg_id} acknowledged")
 
@@ -185,16 +186,15 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
 
       {:error, reason} ->
         Logger.warning("Failed to process message #{msg_id}: #{inspect(reason)}")
-        # For retryable errors, message stays in queue
-        # For non-retryable errors, move to dead-letter queue
+
         case reason do
           :invalid_message_format ->
             # Non-retryable - move to DLQ
-            move_to_dlq(queue_name, msg_id, reason)
+            move_to_dlq(queue_name, message, reason)
 
           :unknown_message_type ->
             # Non-retryable - move to DLQ
-            move_to_dlq(queue_name, msg_id, reason)
+            move_to_dlq(queue_name, message, reason)
 
           _ ->
             # Retryable - leave in queue for retry
@@ -206,25 +206,29 @@ defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
       Logger.error("Exception processing message from #{queue_name}: #{inspect(e)}")
   end
 
+  defp process_message(queue_name, %{"msg_id" => msg_id, "message" => message_data} = raw) do
+    parsed_message = parse_message(message_data)
+
+    process_message(queue_name, %{msg_id: msg_id, payload: parsed_message, raw: raw})
+  end
+
   defp process_message(queue_name, message) do
     Logger.error("Invalid message format from #{queue_name}: #{inspect(message)}")
   end
 
   defp parse_message(data) when is_map(data), do: data
+
   defp parse_message(data) when is_binary(data) do
     case Jason.decode(data) do
       {:ok, parsed} -> parsed
       {:error, _} -> %{"type" => "unknown", "raw_data" => data}
     end
   end
+
   defp parse_message(data), do: %{"type" => "unknown", "raw_data" => data}
 
-  defp move_to_dlq(queue_name, msg_id, reason) do
-    dlq_name = "#{queue_name}_dlq"
-    Logger.warning("Moving message #{msg_id} to DLQ: #{dlq_name}, reason: #{inspect(reason)}")
-
-    # In a real implementation, copy to DLQ and delete from main queue
-    # For now, just log the intention
-    {:ok, dlq_name}
+  defp move_to_dlq(queue_name, message, reason) do
+    Logger.warning("Moving message to DLQ", queue: queue_name, reason: inspect(reason))
+    Queue.move_to_dead_letter(queue_name, message, reason)
   end
 end

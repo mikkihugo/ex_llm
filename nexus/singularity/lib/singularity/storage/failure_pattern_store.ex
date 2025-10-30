@@ -136,7 +136,7 @@ defmodule Singularity.Storage.FailurePatternStore do
   def sync_with_centralcloud(filters \\ %{}) do
     patterns = query(filters)
 
-    # Publish failure patterns to CentralCloud via PgFlow
+    # Publish failure patterns to CentralCloud via QuantumFlow
     # Queue: patterns_learned_published (consumed by CentralCloud.Consumers.PatternLearningConsumer)
     message = %{
       "type" => "patterns_learned",
@@ -147,7 +147,7 @@ defmodule Singularity.Storage.FailurePatternStore do
       "timestamp" => DateTime.utc_now()
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("patterns_learned_published", message) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("patterns_learned_published", message) do
       {:ok, _} ->
         Logger.debug("Failure patterns published to CentralCloud",
           pattern_count: length(patterns)

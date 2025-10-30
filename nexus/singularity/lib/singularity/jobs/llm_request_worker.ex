@@ -18,7 +18,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   - ✅ Single language ecosystem
   """
 
-  use QuantumFlow.Worker, queue: :default, max_attempts: 3
+  use Singularity.JobQueue.Worker, queue: :default, max_attempts: 3
 
   require Logger
   alias Singularity.Workflows.LlmRequest
@@ -92,7 +92,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
       task_type: args["task_type"]
     )
 
-    # Execute the LLM workflow directly via ExQuantumFlow (no network overhead!)
+    # Execute the LLM workflow directly via QuantumFlow.Messaging (no network overhead!)
     case QuantumFlow.Executor.execute(LlmRequest, args, timeout: 30000) do
       {:ok, result} ->
         duration_ms = System.monotonic_time(:millisecond) - start_time

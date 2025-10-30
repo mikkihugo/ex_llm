@@ -10,9 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use super::{PatternDetection, PatternDetector, PatternError, PatternType, DetectionOptions};
 
-// NIF callback for ExFlow integration
+// NIF callback for Quantum Flow integration
+#[cfg(feature = "nif")]
 extern "C" {
-    fn ex_flow_send_learning_data(data: &str) -> Result<(), String>;
+    fn quantum_flow_send_learning_data(data: &str) -> Result<(), String>;
 }
 
 /// Service architecture detector implementation
@@ -162,7 +163,7 @@ impl ServiceArchitectureDetector {
         Ok(count)
     }
 
-    async fn detect_api_communication(&self, path: &Path) -> Result<bool, PatternError> {
+    async fn detect_api_communication(&self, _path: &Path) -> Result<bool, PatternError> {
         // Check for API communication patterns (HTTP clients, message queues, etc.)
         let api_indicators = vec![
             "axios", "fetch", "requests", "reqwest", // HTTP clients
@@ -171,7 +172,7 @@ impl ServiceArchitectureDetector {
         ];
 
         // This is a simplified check - in real implementation, would scan code files
-        for indicator in api_indicators {
+        for _indicator in api_indicators {
             // TODO: Implement actual code scanning for these patterns
         }
 
@@ -193,7 +194,7 @@ impl ServiceArchitectureDetector {
     }
 
     fn calculate_architecture_confidence(&self, analysis: &ArchitectureAnalysis) -> f64 {
-        let mut confidence = 0.5; // Base confidence
+        let mut confidence: f64 = 0.5; // Base confidence
 
         // Service count factor
         if analysis.service_count > 2 {
@@ -217,12 +218,12 @@ impl ServiceArchitectureDetector {
             confidence += 0.1;
         }
 
-        confidence.min(0.95)
+        confidence.min(0.95_f64)
     }
 
     async fn detect_specific_patterns(
         &self,
-        path: &Path,
+        _path: &Path,
         analysis: &ArchitectureAnalysis
     ) -> Result<Vec<PatternDetection>, PatternError> {
         let mut detections = Vec::new();
@@ -293,8 +294,9 @@ impl PatternDetector for ServiceArchitectureDetector {
             "timestamp": chrono::Utc::now().to_rfc3339()
         });
 
-        // Call Elixir callback to send via ExFlow workflow
-        match ex_flow_send_learning_data(&learning_data.to_string()) {
+        // Call Elixir callback to send via Quantum Flow workflow
+        #[cfg(feature = "nif")]
+        match unsafe { quantum_flow_send_learning_data(&learning_data.to_string()) } {
             Ok(_) => {
                 let learned = LearnedArchitecturePattern {
                     name: result.name.clone(),
@@ -310,6 +312,11 @@ impl PatternDetector for ServiceArchitectureDetector {
                 eprintln!("Failed to send architecture learning data via ExFlow: {}", e);
                 Ok(())
             }
+        }
+        #[cfg(not(feature = "nif"))]
+        {
+            let _ = learning_data;
+            Ok(())
         }
     }
 

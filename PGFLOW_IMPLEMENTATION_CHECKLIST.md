@@ -1,4 +1,4 @@
-# PgFlow Integration Implementation Checklist
+# QuantumFlow Integration Implementation Checklist
 
 **Status:** Phase 1-3 Implementation Plan
 
@@ -28,30 +28,30 @@
   - [x] `handle_pattern_discovered/1`
 
 ### ⏳ Configuration
-- [ ] Add `ex_quantum_flow` to `mix.exs` (both projects)
+- [ ] Add `quantum_flow` to `mix.exs` (both projects)
   ```elixir
-  {:ex_quantum_flow, "~> 0.1"}
+  {:quantum_flow, "~> 0.1"}
   ```
 
-- [ ] Create PgFlow configuration in `config/config.exs` (Singularity)
+- [ ] Create QuantumFlow configuration in `config/config.exs` (Singularity)
   - [ ] Producer queues (proposals, metrics, patterns)
   - [ ] Consumer queues (consensus_results, rollback_triggers, safety_profiles)
   - [ ] Telemetry events
 
-- [ ] Create PgFlow configuration in `config/config.exs` (CentralCloud)
+- [ ] Create QuantumFlow configuration in `config/config.exs` (CentralCloud)
   - [ ] Producer queues (consensus_results, rollback_triggers, safety_profiles)
   - [ ] Consumer queues (proposals, metrics, patterns)
   - [ ] Telemetry events
 
 - [ ] Set environment variables (.env or export)
   ```bash
-  export PGFLOW_DATABASE_URL=postgresql://user:pass@localhost/singularity
-  export PGFLOW_PROPOSALS_WORKERS=2
-  export PGFLOW_METRICS_WORKERS=2
+  export QUANTUM_FLOW_DATABASE_URL=postgresql://user:pass@localhost/singularity
+  export QUANTUM_FLOW_PROPOSALS_WORKERS=2
+  export QUANTUM_FLOW_METRICS_WORKERS=2
   # ... etc
   ```
 
-- [ ] Run PgFlow migrations
+- [ ] Run QuantumFlow migrations
   ```bash
   cd nexus/singularity && mix QuantumFlow.init
   cd ../central_services && mix QuantumFlow.init
@@ -59,16 +59,16 @@
 
 ### ⏳ Supervision Tree
 - [ ] Update `Singularity.Application`
-  - [ ] Add ExQuantumFlow.Consumer to supervision tree
+  - [ ] Add QuantumFlow.Consumer to supervision tree
   - [ ] Configure with consumers from config
 
 - [ ] Update `CentralCloud.Application`
-  - [ ] Add ExQuantumFlow.Consumer to supervision tree
+  - [ ] Add QuantumFlow.Consumer to supervision tree
   - [ ] Configure with consumers from config
 
 ### ⏳ Testing
 - [ ] Unit test Singularity.Producers
-  - [ ] Mock ExQuantumFlow.publish
+  - [ ] Mock QuantumFlow.publish
   - [ ] Verify message format
   - [ ] Test error handling
 
@@ -78,7 +78,7 @@
   - [ ] Test database updates
 
 - [ ] Unit test CentralCloud.Producers
-  - [ ] Mock ExQuantumFlow.publish
+  - [ ] Mock QuantumFlow.publish
   - [ ] Test message formats
 
 - [ ] Unit test CentralCloud.Consumers
@@ -265,7 +265,7 @@ Singularity.Evolution.ProposalQueue.trigger_rollback(proposal_id)
 
 **After:**
 ```elixir
-# Use PgFlow to send rollback trigger
+# Use QuantumFlow to send rollback trigger
 CentralCloud.Evolution.QuantumFlow.Producers.send_rollback_trigger(
   instance_id,
   proposal_id,
@@ -285,7 +285,7 @@ CentralCloud.Evolution.QuantumFlow.Producers.send_rollback_trigger(
 - [ ] Rollback flow: metrics breach → Guardian → rollback trigger → instance rollback
 - [ ] Multi-instance: 3 instances submitting proposals simultaneously
 - [ ] Failure scenarios:
-  - [ ] PgFlow database down → messages queue, retry when up
+  - [ ] QuantumFlow database down → messages queue, retry when up
   - [ ] Instance down → CentralCloud queues messages, delivers when up
   - [ ] CentralCloud down → Singularity queues messages, sends when CentralCloud up
 
@@ -295,7 +295,7 @@ CentralCloud.Evolution.QuantumFlow.Producers.send_rollback_trigger(
 
 ### ⏳ Remove Old Direct Calls
 
-After verifying all PgFlow flows work:
+After verifying all QuantumFlow flows work:
 
 - [ ] Remove direct imports of ConsensusEngine (Singularity)
 - [ ] Remove direct imports of RollbackService (Singularity)
@@ -339,7 +339,7 @@ test "propose_for_consensus publishes message" do
 end
 
 test "propose_for_consensus handles errors" do
-  # Mock ExQuantumFlow.publish to return error
+  # Mock QuantumFlow.publish to return error
   {:error, reason} = Producers.propose_for_consensus(proposal)
   assert reason
 end
@@ -377,7 +377,7 @@ test "proposal flows through QuantumFlow from instance to consensus" do
   {:ok, msg_id} = QuantumFlow.Producers.propose_for_consensus(proposal)
 
   # 3. Verify message in queue
-  messages = ExQuantumFlow.list_pending_messages("proposals_for_consensus_queue")
+  messages = QuantumFlow.list_pending_messages("proposals_for_consensus_queue")
   assert Enum.any?(messages, &(&1["proposal_id"] == proposal.id))
 
   # 4. Process message (simulates CentralCloud)
@@ -407,9 +407,9 @@ end
 - [ ] Rollback plan documented
 
 ### Deployment
-1. [ ] Add `ex_quantum_flow` to mix.exs
+1. [ ] Add `quantum_flow` to mix.exs
 2. [ ] Run `mix deps.get`
-3. [ ] Run PgFlow migrations
+3. [ ] Run QuantumFlow migrations
 4. [ ] Update config files
 5. [ ] Update supervision trees
 6. [ ] Set environment variables
@@ -417,15 +417,15 @@ end
 
 ### Post-Deployment
 - [ ] Verify consumers are running: `Supervisor.which_children(Singularity.Supervisor)`
-- [ ] Check queue status: `ExQuantumFlow.list_queues()`
+- [ ] Check queue status: `QuantumFlow.list_queues()`
 - [ ] Submit test proposal and verify flow
-- [ ] Monitor dead-letter queue: `ExQuantumFlow.list_dlq_messages()`
+- [ ] Monitor dead-letter queue: `QuantumFlow.list_dlq_messages()`
 - [ ] Monitor metrics: check telemetry events
 
 ### Rollback Plan
 If issues:
 1. [ ] Revert config changes
-2. [ ] Disable PgFlow consumers in supervision tree
+2. [ ] Disable QuantumFlow consumers in supervision tree
 3. [ ] Restart services
 4. [ ] Direct calls still work as fallback during this phase
 
@@ -511,7 +511,7 @@ Both projects:
 ## Questions?
 
 Refer to:
-- **PGFLOW_CONFIGURATION.md** - Setup guide
-- **EVOLUTION_PGFLOW_INTEGRATION_GUIDE.md** - Design guide
+- **QUANTUM_FLOW_CONFIGURATION.md** - Setup guide
+- **EVOLUTION_QUANTUM_FLOW_INTEGRATION_GUIDE.md** - Design guide
 - **Producer/Consumer @moduledoc** - API reference
 

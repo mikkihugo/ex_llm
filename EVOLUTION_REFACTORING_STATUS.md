@@ -335,7 +335,7 @@ Singularity's self-evolution system has been refactored from **isolated per-inst
 ### ✅ Why CentralCloud?
 1. Already exists in Singularity architecture
 2. Has pgvector support for semantic search
-3. Integrates with ex_quantum_flow for messaging
+3. Integrates with quantum_flow for messaging
 4. Genesis connection point for rule evolution
 
 ### ✅ Why Pattern Consensus?

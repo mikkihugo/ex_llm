@@ -88,9 +88,9 @@ packages/code_quality_engine (Rust NIF + CLI binaries)
     └─→ Binaries: singularity-scanner, scanner, formatter, api_client
 ```
 
-### Why ex_quantum_flow is Important
+### Why quantum_flow is Important
 
-`packages/ex_quantum_flow` is the messaging backbone:
+`packages/quantum_flow` is the messaging backbone:
 - Scanner → CentralCloud communication
 - GitHub App async workflow orchestration
 - Internal pgmq queues (learning, checks, patterns_sync)

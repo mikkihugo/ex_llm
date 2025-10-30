@@ -184,6 +184,6 @@ pub enum MessageBroker {
     RabbitMQ,
     Kafka,
     Redis,
-    // NATS removed in Phase 4 - use ex_quantum_flow/pgmq via Elixir
+    // NATS removed in Phase 4 - use quantum_flow/pgmq via Elixir
     Other(String),
 }

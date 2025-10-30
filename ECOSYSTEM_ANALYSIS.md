@@ -7,7 +7,7 @@
 
 Singularity is a **multi-layered AI development platform** with:
 - **3 Shippable Products** (GitHub App, Scanner CLI, CentralCloud backend)
-- **5 Publishable Packages** (ex_quantum_flow, code_quality_engine, linting_engine, parser_engine, prompt_engine)
+- **5 Publishable Packages** (quantum_flow, code_quality_engine, linting_engine, parser_engine, prompt_engine)
 - **20+ Autonomous Agents** with self-improvement loops
 - **5-Phase Self-Evolving Pipeline** (Context → Generation → Validation → Refinement → Learning)
 - **Multi-Instance Learning Hub** (CentralCloud + Genesis)
@@ -26,7 +26,7 @@ Singularity is a **multi-layered AI development platform** with:
 | **Status** | 90% ready (production deployment ready) |
 | **What It Does** | Automatic code quality analysis on every GitHub push/PR |
 | **Features** | Quality scores, AI recommendations, pattern detection, trend analysis, check runs |
-| **Architecture** | Webhook receiver → ex_quantum_flow tasks → Rust analyzer (code_quality_engine) → Results posted to GitHub |
+| **Architecture** | Webhook receiver → quantum_flow tasks → Rust analyzer (code_quality_engine) → Results posted to GitHub |
 | **API Interface** | GitHub webhook endpoints + GitHub REST API for check creation |
 | **Integration Points** | **Produces:** code quality metrics, issue patterns, performance data **Consumes:** CentralCloud policies (telemetry_enabled, learning_enabled), evolved patterns |
 | **Ecosystem Role** | **Data collection hub** - Collects anonymized patterns from every analyzed repo, feeds back to CentralCloud for multi-instance learning |
@@ -78,7 +78,7 @@ Singularity is a **multi-layered AI development platform** with:
 |--------|---------|
 | **Status** | 85% ready (API fully defined, implementation in progress) |
 | **What It Does** | Multi-instance learning hub, pattern aggregation, policy enforcement, canonical ID issuing |
-| **Architecture** | Elixir/Phoenix backend + PostgreSQL + pgmq + ex_quantum_flow workflows |
+| **Architecture** | Elixir/Phoenix backend + PostgreSQL + pgmq + quantum_flow workflows |
 | **Core Responsibilities** | Issue canonical `server_run_id` (UUIDv7) for scanner runs, enforce policies, serve encrypted pattern snapshots, queue internal processing |
 | **API Interface** | **3 External REST endpoints:** (1) POST `/scanner/runs` (register run, get policies), (2) POST `/scanner/events` (submit results), (3) GET `/patterns/snapshot` (fetch evolved patterns with ETag) |
 | **Internal Processing** | pgmq queues: `centralcloud_learning` (ingest patterns), `centralcloud_checks` (PR checks), `centralcloud_patterns_sync` (snapshot build) |
@@ -426,7 +426,7 @@ Example:
 ### Core Packages (Publishable)
 | Package | Status | Current Use | Could Be Product |
 |---------|--------|------------|-----------------|
-| **ex_quantum_flow** | 100% | Singularity + Broadway (producer) | ✅✅ Already published to Hex! |
+| **quantum_flow** | 100% | Singularity + Broadway (producer) | ✅✅ Already published to Hex! |
 | **code_quality_engine** | 95% | Scanner + GitHub App | ✅ Already a product (via Scanner) |
 | **parser_engine** | 95% | Core analysis, 30+ languages | ✅ Could be standalone service |
 | **linting_engine** | 90% | Quality enforcement, code fixes | ⚠️ Partially used |
@@ -562,7 +562,7 @@ Internal Processing (Async)
 
 ### Current State
 - **3 products ready** (GitHub App 90%, Scanner 95%, CentralCloud 85%)
-- **5 packages published/publishable** (ex_quantum_flow already on Hex)
+- **5 packages published/publishable** (quantum_flow already on Hex)
 - **20+ agents working** with self-improvement loops
 - **5-phase pipeline complete** with continuous learning
 

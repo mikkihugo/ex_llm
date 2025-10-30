@@ -2,7 +2,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   @moduledoc """
   HTDAG (Hierarchical Task Directed Acyclic Graph) for Automatic Code Ingestion
 
-  This module defines a hierarchical task graph for automatic code ingestion using PgFlow
+  This module defines a hierarchical task graph for automatic code ingestion using QuantumFlow
   for workflow orchestration. It provides a robust, scalable, and observable system for
   automatically ingesting code changes into the database.
 
@@ -37,9 +37,9 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
       F --> F3[Progress Update]
   ```
 
-  ## PgFlow Integration
+  ## QuantumFlow Integration
 
-  Uses PgFlow for:
+  Uses QuantumFlow for:
   - Workflow state management
   - Task dependency tracking
   - Retry logic and error handling
@@ -85,6 +85,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
 
   require Logger
   alias QuantumFlow.WorkflowSupervisor
+  alias Singularity.Infrastructure.QuantumFlow.Queue
   alias Singularity.Ingestion.Core.{IngestCodeArtifacts, DetectCurrentCodebase}
 
   @dag_type "htdag_auto_code_ingestion"
@@ -222,7 +223,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
     # Build HTDAG workflow payload
     workflow_payload = build_htdag_workflow(dag_id, attrs[:file_path], codebase_id, attrs)
 
-    # Create workflow directly in PgFlow (single source of truth)
+    # Create workflow directly in QuantumFlow (single source of truth)
     workflow_attrs = %{
       workflow_id: dag_id,
       type: @dag_type,
@@ -230,25 +231,25 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
       payload: workflow_payload
     }
 
-    case PgFlow.create_workflow(workflow_attrs) do
+    case Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Started HTDAG auto code ingestion",
           dag_id: dag_id,
           file_path: attrs[:file_path]
         )
 
-        # Execute DAG via PgFlow WorkflowSupervisor for reliable workflow management
+        # Execute DAG via QuantumFlow WorkflowSupervisor for reliable workflow management
         case WorkflowSupervisor.start_workflow(workflow_payload, []) do
           {:ok, _pid} ->
             {:ok, dag_id}
 
           {:error, reason} ->
-            Logger.error("Failed to execute HTDAG via PgFlow", reason: reason)
+            Logger.error("Failed to execute HTDAG via QuantumFlow", reason: reason)
             {:error, reason}
         end
 
       {:error, reason} ->
-        Logger.error("Failed to create HTDAG workflow in PgFlow",
+        Logger.error("Failed to create HTDAG workflow in QuantumFlow",
           error: reason,
           file_path: attrs[:file_path]
         )
@@ -587,7 +588,10 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
     file_path = args[:file_path]
     relationships = args[:relationships]
 
-    Logger.debug("Updating graph", file_path: file_path, relationships_count: length(relationships || []))
+    Logger.debug("Updating graph",
+      file_path: file_path,
+      relationships_count: length(relationships || [])
+    )
 
     # Update code graph with relationships
     {:ok, %{file_path: file_path, relationships: relationships || [], graph_updated: true}}
@@ -602,7 +606,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
       file_path: file_path
     )
 
-    # Send completion notification via PgFlow
+    # Send completion notification via QuantumFlow
     notification = %{
       type: "code_ingestion_complete",
       file_path: file_path,
@@ -610,7 +614,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
       timestamp: System.system_time(:millisecond)
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("code_ingestion_notifications", notification) do
+    case Queue.send_with_notify("code_ingestion_notifications", notification) do
       {:ok, _message_id} ->
         {:ok, %{file_path: file_path, notification_sent: true}}
 
@@ -643,7 +647,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   end
 
   defp execute_dag(dag_id) do
-    case PgFlow.get_workflow(dag_id) do
+    case Queue.get_workflow(dag_id) do
       {:ok, workflow} ->
         execute_htdag_nodes(workflow)
 
@@ -721,6 +725,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
 
     # Execute the worker function
     Logger.debug("Executing worker", node: node_name, timeout_ms: timeout)
+
     case apply(elem(worker, 0), elem(worker, 1), [args, []]) do
       {:ok, result} ->
         {:ok, result}
@@ -919,15 +924,15 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   end
 
   defp update_workflow_payload(dag_id, payload) do
-    case PgFlow.get_workflow(dag_id) do
+    case Queue.get_workflow(dag_id) do
       {:ok, workflow} ->
-        # Update payload directly via PgFlow
-        case PgFlow.update_workflow_status(workflow, payload) do
+        # Update payload directly via QuantumFlow
+        case Queue.update_workflow_status(workflow, payload) do
           {:ok, _} ->
             :ok
 
           {:error, reason} ->
-            Logger.error("Failed to update workflow payload via PgFlow", reason: reason)
+            Logger.error("Failed to update workflow payload via QuantumFlow", reason: reason)
         end
 
       :not_found ->
@@ -936,15 +941,15 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   end
 
   defp update_workflow_status(dag_id, status) do
-    case PgFlow.get_workflow(dag_id) do
+    case Queue.get_workflow(dag_id) do
       {:ok, workflow} ->
-        # Update via PgFlow for reliable persistence
-        case PgFlow.update_workflow_status(workflow, status) do
+        # Update via QuantumFlow for reliable persistence
+        case Queue.update_workflow_status(workflow, status) do
           {:ok, _} ->
             :ok
 
           {:error, reason} ->
-            Logger.error("Failed to update workflow status via PgFlow", reason: reason)
+            Logger.error("Failed to update workflow status via QuantumFlow", reason: reason)
         end
 
       :not_found ->

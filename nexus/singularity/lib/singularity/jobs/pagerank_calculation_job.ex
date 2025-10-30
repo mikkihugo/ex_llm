@@ -167,8 +167,8 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
   code-significance, architecture-health, dependency-importance
   """
 
-  require Logger
-  use Oban.Worker, queue: :default, max_attempts: 3
+require Logger
+use Singularity.JobQueue.Worker, queue: :default, max_attempts: 3
 
   alias Singularity.Repo
   alias Singularity.Schemas.GraphNode
@@ -186,7 +186,7 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
       - iterations (optional, default: 20)
       - damping_factor (optional, default: 0.85)
   """
-  def perform(job) do
+def perform(job) do
     codebase_id = job.args["codebase_id"] || "singularity"
     iterations = job.args["iterations"] || 20
     damping_factor = job.args["damping_factor"] || 0.85

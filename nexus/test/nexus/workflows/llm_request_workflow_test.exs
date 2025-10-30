@@ -1,6 +1,6 @@
 defmodule Nexus.Workflows.LLMRequestWorkflowTest do
   @moduledoc """
-  Unit tests for Nexus.Workflows.LLMRequestWorkflow - ex_quantum_flow LLM request pipeline.
+  Unit tests for Nexus.Workflows.LLMRequestWorkflow - quantum_flow LLM request pipeline.
 
   ## What This Tests
 

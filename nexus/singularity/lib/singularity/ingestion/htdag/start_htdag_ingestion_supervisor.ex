@@ -3,19 +3,19 @@ defmodule Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor do
   HTDAG Supervisor - Manages HTDAG-based automatic code ingestion infrastructure.
 
   Supervises HTDAG workflows, file watchers, and related processes for automatic
-  code ingestion using PgFlow for workflow orchestration.
+  code ingestion using QuantumFlow for workflow orchestration.
 
   ## Managed Processes
 
   - `Singularity.Ingestion.WatchFilesAndEnqueueIngestion` - Real-time file watching
   - `Singularity.Ingestion.HTDAG.RunCodeIngestionDAG` - HTDAG workflow management
-  - `Singularity.Workflows` - PgFlow workflow orchestration
+  - `Singularity.Workflows` - QuantumFlow workflow orchestration
 
   ## Dependencies
 
   Depends on:
   - Repo - For database access
-  - PgFlow - For workflow persistence
+  - QuantumFlow - For workflow persistence
   - FileSystem - For file watching
   - UnifiedIngestionService - For code parsing and storage
 
@@ -54,7 +54,7 @@ defmodule Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor do
           # Load balancer for gentle operation
           Singularity.HTDAG.LoadBalancer,
 
-          # PgFlow workflow orchestration
+          # QuantumFlow workflow orchestration
           Singularity.Workflows
         ]
       else

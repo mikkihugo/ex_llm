@@ -7,7 +7,7 @@
 ## Build (local)
 
 ```bash
-cargo build --release -p code_quality_engine --features cli
+cargo build --release -p code_quality_engine --no-default-features --features cli
 # Output: target/release/singularity-scanner
 ```
 

@@ -26,6 +26,8 @@ defmodule CentralCloud.PgmqConsumer do
 
   use GenServer
   require Logger
+  alias Pgmq
+  alias Pgmq.Message
 
   defmodule State do
     @moduledoc """
@@ -136,15 +138,9 @@ defmodule CentralCloud.PgmqConsumer do
 
   defp read_messages(repo, queue_name, batch_size) do
     try do
-      # Use pgmq.read to get messages without removing them yet
-      # Format: SELECT * FROM pgmq.read('queue_name', vt=null, limit)
-      query = """
-      SELECT msg_id, read_ct, enqueued_at, vt, msg
-      FROM pgmq.read($1, NULL, $2)
-      """
-
       messages =
-        repo.query!(query, [queue_name, batch_size])
+        repo
+        |> Pgmq.read_messages(queue_name, 30, batch_size)
         |> Enum.map(&format_message/1)
 
       {:ok, messages}
@@ -155,19 +151,13 @@ defmodule CentralCloud.PgmqConsumer do
     end
   end
 
-  defp format_message(row) do
-    # Drizzle returns a map, raw Postgrex returns a tuple
-    case row do
-      %{"msg_id" => msg_id, "msg" => msg} ->
-        %{msg_id: msg_id, msg: msg}
+  defp format_message(%Message{id: msg_id, body: body}) do
+    %{msg_id: msg_id, msg: body}
+  end
 
-      [msg_id, _read_ct, _enqueued_at, _vt, msg] ->
-        %{msg_id: msg_id, msg: msg}
-
-      other ->
-        Logger.warning("Unexpected message format: #{inspect(other)}")
-        nil
-    end
+  defp format_message(other) do
+    Logger.warning("Unexpected message format: #{inspect(other)}")
+    %{msg_id: nil, msg: other}
   end
 
   defp process_messages(state, messages) do
@@ -215,7 +205,7 @@ defmodule CentralCloud.PgmqConsumer do
 
   defp ack_message(repo, queue_name, msg_id) do
     try do
-      repo.query!("SELECT pgmq.pop($1, $2)", [queue_name, msg_id])
+      :ok = Pgmq.delete_messages(repo, queue_name, [msg_id])
     rescue
       e -> Logger.error("Failed to ack message #{msg_id}: #{inspect(e)}")
     end
@@ -224,7 +214,7 @@ defmodule CentralCloud.PgmqConsumer do
   defp requeue_message(repo, queue_name, msg_id) do
     try do
       # Set visibility timeout to 60 seconds (message will be retryable after)
-      repo.query!("SELECT pgmq.set_vt($1, $2, '60 seconds'::interval)", [queue_name, msg_id])
+      :ok = Pgmq.set_message_vt(repo, queue_name, msg_id, 60)
     rescue
       e -> Logger.error("Failed to requeue message #{msg_id}: #{inspect(e)}")
     end

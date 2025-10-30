@@ -298,8 +298,8 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
       }
     }
 
-    QuantumFlow.send_with_notify("intelligence.insights.aggregated", payload, CentralCloud.Repo)
-    Logger.debug("Published aggregated insights to intelligence.insights.aggregated via PgFlow")
+    QuantumFlow.Notifications.send_with_notify("intelligence.insights.aggregated", payload, CentralCloud.Repo)
+    Logger.debug("Published aggregated insights to intelligence.insights.aggregated via QuantumFlow")
   end
 
   defp count_active_instances do

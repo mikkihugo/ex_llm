@@ -7,7 +7,7 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
 
   ## Migration Notes
 
-  - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
+  - **Legacy Mode**: Uses Broadway + Broadway.QuantumFlowProducer
   - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
@@ -63,11 +63,14 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
       name: __MODULE__,
       producer: [
         module:
-          {BroadwayPGMQ.Producer,
-           queue: "code_quality_training_tasks",
-           config: [
-             host: System.get_env("DATABASE_URL", "postgres://localhost/singularity"),
-             port: 5432
+          {Broadway.QuantumFlowProducer,
+           [
+             workflow_name: "code_quality_training_broadway",
+             queue_name: "code_quality_training_jobs",
+             concurrency: 3,
+             batch_size: 15,
+             quantum_flow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [cpu_cores: 8]
            ]}
       ],
       processors: [

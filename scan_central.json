@@ -1,0 +1,391 @@
+{
+  "quality_score": 6.55,
+  "issues_count": 50,
+  "recommendations": [
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (192 chars)",
+      "file": "./examples/htdag_self_evolution.exs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1391 lines)",
+      "file": "./packages/linting_engine/src/lib.rs",
+      "line": null
+    },
+    {
+      "type": "maintainability",
+      "severity": "medium",
+      "message": "Low Maintainability Index (29.0)",
+      "file": "./packages/code_quality_engine/examples/sample_python_code.py",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (667 lines)",
+      "file": "./packages/code_quality_engine/src/vectors/tokenizers.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (621 lines)",
+      "file": "./packages/code_quality_engine/src/nif/mod.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (515 lines)",
+      "file": "./packages/code_quality_engine/src/testing/coverage.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (751 lines)",
+      "file": "./packages/code_quality_engine/src/testing/visualization.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (615 lines)",
+      "file": "./packages/code_quality_engine/src/testing/coverage_collection.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (631 lines)",
+      "file": "./packages/code_quality_engine/src/testing/parser_integration.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (551 lines)",
+      "file": "./packages/code_quality_engine/src/graph/mod.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (795 lines)",
+      "file": "./packages/code_quality_engine/src/graph/insights.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (651 lines)",
+      "file": "./packages/code_quality_engine/src/graph/code_graph.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1677 lines)",
+      "file": "./packages/code_quality_engine/src/graph/dag.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (196 chars)",
+      "file": "./packages/code_quality_engine/src/graph/dag.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (645 lines)",
+      "file": "./packages/code_quality_engine/src/repository/infrastructure.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (528 lines)",
+      "file": "./packages/code_quality_engine/src/repository/architecture.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (792 lines)",
+      "file": "./packages/code_quality_engine/src/repository/infrastructure_registry.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (573 lines)",
+      "file": "./packages/code_quality_engine/src/repository/techstack.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (166 chars)",
+      "file": "./packages/code_quality_engine/src/bin/scanner.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1291 lines)",
+      "file": "./packages/code_quality_engine/src/parsing/parser_engine_rust.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (166 chars)",
+      "file": "./packages/code_quality_engine/src/parsing/parser_engine_rust.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (641 lines)",
+      "file": "./packages/code_quality_engine/src/analyzer.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (534 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/performance/profiler.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (723 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/graph/code_graph.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (794 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/graph/code_insights.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (209 chars)",
+      "file": "./packages/code_quality_engine/src/analysis/architecture/mod.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (758 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/semantic/search_index.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (900 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/semantic/custom_tokenizers.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (672 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/dependency/graph.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (663 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/dependency/detector.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (632 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/dependency/health.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1659 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/dag/vector_integration.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (196 chars)",
+      "file": "./packages/code_quality_engine/src/analysis/dag/vector_integration.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (615 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/multilang/cross_language_patterns.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (899 lines)",
+      "file": "./packages/code_quality_engine/src/analysis/multilang/language_specific_rules.rs",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (186 chars)",
+      "file": "./packages/code_quality_engine/src/orchestrators/mod.rs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (506 lines)",
+      "file": "./packages/broadway_quantum_flow/test/broadway/pgflow_producer_integration_test.exs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (661 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/postgrex/lib/postgrex.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (2007 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/db_connection/lib/db_connection.ex",
+      "line": null
+    },
+    {
+      "type": "style",
+      "severity": "low",
+      "message": "Line longer than 160 characters (162 chars)",
+      "file": "./packages/broadway_quantum_flow/deps/ex_pgflow/optimize_models.exs",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (657 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/jason/lib/encode.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (708 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/jason/lib/decoder.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (957 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/gen_stage/lib/consumer_supervisor.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (2781 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/gen_stage/lib/gen_stage.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (754 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/ecto/lib/ecto.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (2106 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/decimal/lib/decimal.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1464 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/broadway/lib/broadway.ex",
+      "line": null
+    },
+    {
+      "type": "size",
+      "severity": "low",
+      "message": "File exceeds 500 lines (1095 lines)",
+      "file": "./packages/broadway_quantum_flow/deps/nimble_options/lib/nimble_options.ex",
+      "line": null
+    },
+    {
+      "type": "documentation",
+      "severity": "medium",
+      "message": "Improve README and module docs for key components.",
+      "file": "README.md",
+      "line": null
+    },
+    {
+      "type": "quality",
+      "severity": "medium",
+      "message": "Adopt a CONTRIBUTING guide and CODEOWNERS for clearer workflow.",
+      "file": null,
+      "line": null
+    }
+  ],
+  "metrics": {
+    "quality": 6.55
+  },
+  "patterns_detected": [
+    "technology:html",
+    "technology:python",
+    "technology:shell",
+    "technology:xml",
+    "technology:toml",
+    "technology:json",
+    "technology:ruby",
+    "technology:rust",
+    "technology:lua",
+    "technology:yaml",
+    "technology:css",
+    "technology:typescript",
+    "technology:c/c++",
+    "technology:c++",
+    "technology:elixir",
+    "technology:javascript",
+    "technology:node.js/npm",
+    "technology:rust/cargo",
+    "technology:docker",
+    "technology:docker compose",
+    "servicearchitecture:unknown",
+    "servicearchitecture:shared libraries"
+  ],
+  "intelligence_collected": false,
+  "per_file_metrics": [
+    {
+      "file": "./packages/code_quality_engine/examples/sample_python_code.py",
+      "mi": 28.97,
+      "cc": 2.2
+    }
+  ]
+}

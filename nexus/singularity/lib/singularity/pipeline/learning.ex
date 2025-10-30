@@ -362,7 +362,7 @@ defmodule Singularity.Pipeline.Learning do
   end
 
   defp publish_to_central_cloud(result) do
-    # Publish execution learning to CentralCloud via PgFlow
+    # Publish execution learning to CentralCloud via QuantumFlow
     # Queue: patterns_learned_published (consumed by CentralCloud.Consumers.PatternLearningConsumer)
     try do
       message = %{
@@ -372,7 +372,7 @@ defmodule Singularity.Pipeline.Learning do
         "timestamp" => DateTime.utc_now()
       }
 
-      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("patterns_learned_published", message) do
+      case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("patterns_learned_published", message) do
         {:ok, _} ->
           Logger.debug("Execution learning published to CentralCloud")
 

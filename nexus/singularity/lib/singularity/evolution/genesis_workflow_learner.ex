@@ -634,7 +634,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   defp send_to_centralcloud(payload) do
     # Uses QuantumFlow to send to CentralCloud service (port 4001)
     # Topic: "centralcloud/workflow_patterns" for reliable delivery
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_workflow_patterns", payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("centralcloud_workflow_patterns", payload) do
       {:ok, :sent} -> {:ok, :sent}
       {:ok, msg_id} when is_integer(msg_id) -> {:ok, msg_id}
       {:error, reason} -> {:error, reason}

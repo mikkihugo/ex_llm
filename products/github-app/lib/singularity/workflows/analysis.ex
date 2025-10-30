@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.Analysis do
   @moduledoc """
-  Analysis workflows using ex_quantum_flow for orchestration.
+  Analysis workflows using quantum_flow for orchestration.
   """
 
   alias Singularity.Analysis
@@ -15,7 +15,7 @@ defmodule Singularity.Workflows.Analysis do
     repo_name: repo_name,
     commit_sha: commit_sha
   } = params) do
-    # Create analysis workflow using ex_quantum_flow
+    # Create analysis workflow using quantum_flow
     workflow_params = %{
       "type" => Atom.to_string(type),
       "installation_id" => installation_id,
@@ -64,7 +64,7 @@ defmodule Singularity.Workflows.Analysis do
   end
 
   defp wait_for_completion(workflow_id) do
-    # Simple polling - in production use ex_quantum_flow webhooks
+    # Simple polling - in production use quantum_flow webhooks
     Enum.reduce_while(1..60, nil, fn _attempt, _acc ->
       case check_workflow_status(workflow_id) do
         {:completed, results} -> {:halt, {:completed, results}}
@@ -78,7 +78,7 @@ defmodule Singularity.Workflows.Analysis do
   end
 
   defp check_workflow_status(workflow_id) do
-    # Check ex_quantum_flow workflow status
+    # Check quantum_flow workflow status
     case Singularity.Workflows.get_status(workflow_id) do
       {:ok, %{status: "completed", results: results}} ->
         {:completed, results}

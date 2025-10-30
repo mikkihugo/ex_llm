@@ -12,9 +12,9 @@ defmodule Genesis.JobExecutor do
 
   ```
   Singularity Instance (requests analysis)
-        ↓ (publishes via PgFlow)
+        ↓ (publishes via QuantumFlow)
   code_execution_requests queue
-        ↓ (consumed by PgFlowWorkflowConsumer)
+        ↓ (consumed by QuantumFlowWorkflowConsumer)
   JobExecutor.execute()
         ↓ (executes analysis in sandbox)
   code_execution_results queue

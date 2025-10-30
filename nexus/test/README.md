@@ -23,7 +23,7 @@ Tests for AI provider integrations:
 ### Workflow Modules (`test/nexus/workflows/`)
 Tests for workflow execution:
 
-- **`llm_request_workflow_test.exs`** - ex_quantum_flow workflow execution
+- **`llm_request_workflow_test.exs`** - quantum_flow workflow execution
 
 ### Integration Tests (`test/nexus/integration/`)
 End-to-end workflow tests:

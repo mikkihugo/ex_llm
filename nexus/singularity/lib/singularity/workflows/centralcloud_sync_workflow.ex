@@ -190,7 +190,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
       }
     }
 
-    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_updates", message_payload) do
+    case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("centralcloud_updates", message_payload) do
       {:ok, _msg_id} ->
         Logger.info("Data sent to CentralCloud via queue",
           sync_type: sync_type,

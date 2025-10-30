@@ -1,8 +1,8 @@
 defmodule Singularity.Evolution.QuantumFlow.Consumers do
   @moduledoc """
-  PgFlow Consumers - Handle messages from CentralCloud queues.
+  QuantumFlow consumers that handle messages from CentralCloud queues.
 
-  Processes incoming messages from CentralCloud services via ex_quantum_flow queues.
+  Processes incoming messages from CentralCloud services via quantum_flow queues.
   Each message is processed atomically - either succeeds or retries automatically.
 
   ## AI Navigation Metadata

@@ -1,9 +1,10 @@
 defmodule Singularity.Evolution.QuantumFlow.Listener do
   @moduledoc """
-  PgFlow Listener - Starts queue listeners to receive messages from CentralCloud.
+  QuantumFlow listener that subscribes to CentralCloud queues and forwards messages
+  to the appropriate consumers.
 
-  This GenServer starts listeners for each QuantumFlow queue that Singularity receives
-  messages from (e.g., consensus results, workflow patterns, etc.).
+  Each listener polls the configured pgmq queue (backed by QuantumFlow) and routes
+  decoded payloads through `MessageRouter` for domain-specific handling.
 
   When the application starts, this supervisor starts listeners for:
   - `singularity_workflow_consensus_patterns` - Consensus patterns from CentralCloud
@@ -22,7 +23,7 @@ defmodule Singularity.Evolution.QuantumFlow.Listener do
     "role": "service",
     "layer": "integration",
     "introduced_in": "October 2025",
-    "depends_on": ["MessageRouter", "PgFlow"]
+    "depends_on": ["MessageRouter", "QuantumFlow.Queue"]
   }
   ```
 
@@ -43,6 +44,7 @@ defmodule Singularity.Evolution.QuantumFlow.Listener do
   require Logger
 
   alias Singularity.Evolution.QuantumFlow.MessageRouter
+  alias Singularity.Infrastructure.QuantumFlow.Queue
 
   @doc """
   Start the QuantumFlow listener supervisor.
@@ -55,7 +57,7 @@ defmodule Singularity.Evolution.QuantumFlow.Listener do
 
   @impl true
   def init(_opts) do
-    Logger.info("Initializing PgFlow Listener supervisor")
+    Logger.info("Initializing QuantumFlow listener supervisor")
 
     # Get configuration for enabled queues
     config = Application.get_env(:singularity, :quantum_flow_queues, %{})
@@ -126,12 +128,9 @@ defmodule Singularity.Evolution.QuantumFlow.Listener do
   end
 
   defp receive_from_queue(queue_name) do
-    # Implementation: Read from pgmq queue
-    # For now, returns empty list (actual implementation in PgFlow module)
-    case Singularity.Infrastructure.PgFlow.Queue.read_from_queue(queue_name, limit: 10, poll_interval_ms: 1000) do
+    case Queue.read_from_queue(queue_name, limit: 10, vt: 30) do
       {:ok, messages} -> {:ok, messages}
       {:error, reason} -> {:error, reason}
-      :timeout -> {:ok, []}
     end
   rescue
     _e ->
@@ -168,29 +167,29 @@ defmodule Singularity.Evolution.QuantumFlow.Listener do
       Logger.error("Exception processing message from #{queue_name}: #{inspect(e)}")
   end
 
-  defp extract_message_data(%{"msg_id" => msg_id, "message" => msg_data}) do
-    # Parse message if it's JSON
-    parsed_data =
-      case msg_data do
-        data when is_map(data) -> data
-        data when is_binary(data) ->
-          case Jason.decode(data) do
-            {:ok, parsed} -> parsed
-            {:error, _} -> %{}
-          end
-        _ -> %{}
-      end
-
-    {:ok, msg_id, parsed_data}
+  defp extract_message_data(%{msg_id: msg_id, payload: payload}) do
+    {:ok, msg_id, payload}
   end
 
-  defp extract_message_data(message) do
-    {:error, {:invalid_message_format, message}}
+  defp extract_message_data(%{"msg_id" => msg_id} = legacy) do
+    payload = Map.get(legacy, "message") || Map.get(legacy, "msg") || %{}
+    {:ok, msg_id, normalize_payload(payload)}
   end
 
-  defp acknowledge_message(_queue_name, _msg_id) do
-    # Implementation: Mark message as processed in pgmq
-    # For now, just return :ok
-    :ok
+  defp extract_message_data(message), do: {:error, {:invalid_message_format, message}}
+
+  defp normalize_payload(payload) when is_map(payload), do: payload
+
+  defp normalize_payload(payload) when is_binary(payload) do
+    case Jason.decode(payload) do
+      {:ok, decoded} -> decoded
+      {:error, _} -> %{"raw" => payload}
+    end
+  end
+
+  defp normalize_payload(other), do: %{"raw" => other}
+
+  defp acknowledge_message(queue_name, msg_id) do
+    Queue.delete_message(queue_name, msg_id)
   end
 end

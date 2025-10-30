@@ -30,14 +30,14 @@
 
 ## Core Packages (Publishable)
 
-### 1. ex_quantum_flow (PostgreSQL workflow orchestration)
-- **Location:** `/home/mhugo/code/singularity/packages/ex_quantum_flow/`
+### 1. quantum_flow (PostgreSQL workflow orchestration)
+- **Location:** `/home/mhugo/code/singularity/packages/quantum_flow/`
 - **Status:** 100% complete, published to Hex
 - **Key Files:**
   - `lib/QuantumFlow/executor.ex` - Workflow execution engine
   - `lib/QuantumFlow/flow_builder.ex` - Dynamic workflow creation
   - `lib/QuantumFlow/notifications.ex` - Real-time NOTIFY support
-- **README:** `packages/ex_quantum_flow/README.md`
+- **README:** `packages/quantum_flow/README.md`
 
 ### 2. code_quality_engine (Rust NIF)
 - **Location:** `/home/mhugo/code/singularity/packages/code_quality_engine/`
@@ -216,7 +216,7 @@ Your Code
 ### Test Locations
 - **Singularity:** `/home/mhugo/code/singularity/nexus/singularity/test/`
 - **Rust Packages:** `packages/*/tests/` and `packages/*/benches/`
-- **ex_quantum_flow:** `/home/mhugo/code/singularity/packages/ex_quantum_flow/test/`
+- **quantum_flow:** `/home/mhugo/code/singularity/packages/quantum_flow/test/`
 
 ### Running Tests
 ```bash
@@ -242,7 +242,7 @@ Scanner (Rust binary)
 
 GitHub App (Elixir)
   └─→ code_quality_engine (NIF)
-  └─→ ex_quantum_flow (workflows)
+  └─→ quantum_flow (workflows)
   └─→ CentralCloud API (patterns)
 
 Singularity Core
@@ -270,7 +270,7 @@ find /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_generat
 # Find all NIF bindings
 grep -r "rustler::" /home/mhugo/code/singularity/packages/*/src --include="*.rs"
 
-# Find all ex_quantum_flow usage
+# Find all quantum_flow usage
 grep -r "QuantumFlow\|QuantumFlow" /home/mhugo/code/singularity/nexus/singularity/lib --include="*.ex"
 
 # Find CentralCloud integration points

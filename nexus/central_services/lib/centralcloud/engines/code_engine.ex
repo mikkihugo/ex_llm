@@ -54,7 +54,7 @@ defmodule CentralCloud.Engines.CodeEngine do
   # ---------------------------------------------------------------------------
 
   defp code_quality_engine_call(operation, request) do
-    case QuantumFlow.send_with_notify("engine.code.#{operation}", request, CentralCloud.Repo,
+    case QuantumFlow.Notifications.send_with_notify("engine.code.#{operation}", request, CentralCloud.Repo,
            timeout: 30_000
          ) do
       {:ok, response} ->

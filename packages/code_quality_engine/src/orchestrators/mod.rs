@@ -169,6 +169,8 @@ pub enum AnalysisType {
     Feedback,
     Quality,
     Refactoring,
+    Security,
+    Performance,
 }
 
 /// Analysis input

@@ -699,7 +699,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
         "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
       }
 
-      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_rule_updates", payload) do
+      case Singularity.Infrastructure.QuantumFlow.Queue.send_with_notify("genesis_rule_updates", payload) do
         {:ok, :sent} ->
           Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via QuantumFlow",
             pattern: inspect(rule.pattern),

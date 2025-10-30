@@ -113,7 +113,7 @@ impl DockerfileDocument {
 - `QuantumFlow.Workflow.create_workflow/2` doesn't exist
 - `QuantumFlow.Workflow.subscribe/2` doesn't exist
 - **Status:** Workflow execution completely broken
-- **Fix Strategy:** Research current ex_quantum_flow API and update calls
+- **Fix Strategy:** Research current quantum_flow API and update calls
 
 ---
 
