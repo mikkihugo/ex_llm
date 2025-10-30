@@ -1,0 +1,76 @@
+name: Code Quality Scanner
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.19.x"
+          otp-version: "27.x"
+
+      - name: Install dependencies
+        run: |
+          cd nexus/singularity
+          mix deps.get
+
+      - name: Auto-format Rust code
+        run: |
+          cargo fmt --all -- --check || cargo fmt --all
+
+      - name: Auto-format Elixir code
+        run: |
+          cd nexus/singularity
+          mix format --check-formatted || mix format
+
+      - name: Build scanner CLI
+        run: |
+          cargo build --release -p code_quality_engine --features cli
+
+      - name: Run scanner on codebase
+        run: |
+          ./target/release/singularity-scanner analyze \
+            --path nexus/singularity \
+            --format json || true
+
+      - name: Commit auto-fixes
+        if: github.event_name == 'pull_request'
+        run: |
+          git config --local user.email "17744793+mikkihugo@users.noreply.github.com"
+          git config --local user.name "mikkihugo"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore: auto-format code [skip ci]"
+          git push || true
+
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scan-results
+          path: "*.json"
+          retention-days: 30
