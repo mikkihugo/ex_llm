@@ -47,3 +47,12 @@ jobs:
         with:
           sarif_file: singularity.sarif
           category: singularity-scanner
+
+      - name: Fail PR on high severity (error) findings
+        run: |
+          ERRORS=$(jq '[.runs[0].results[] | select(.level == "error")] | length' singularity.sarif)
+          echo "High severity findings: ${ERRORS}"
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Blocking PR due to high severity findings"
+            exit 1
+          fi
