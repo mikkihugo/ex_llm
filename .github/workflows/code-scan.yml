@@ -33,30 +33,10 @@ jobs:
           fetch-depth: 1
           clean: true
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-
-      - name: Setup Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          elixir-version: "1.19.x"
-          otp-version: "27.x"
-
-      - name: Install dependencies
-        run: |
-          cd nexus/singularity
-          mix deps.get
-
       - name: Build scanner CLI
-        run: |
-          cargo build --release -p code_quality_engine --features cli
+        run: cargo build --release -p code_quality_engine --features cli
 
-      - name: Run scanner (auto-fix enabled by default)
+      - name: Run code quality scan
         run: |
           ./target/release/singularity-scanner analyze \
             --path nexus/singularity \
