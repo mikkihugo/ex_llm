@@ -555,6 +555,11 @@ config :singularity, :scanner_types,
     module: Singularity.CodeAnalysis.Scanners.SecurityScanner,
     enabled: true,
     description: "Detect code security vulnerabilities"
+  },
+  linting: %{
+    module: Singularity.CodeAnalysis.Scanners.LintingScanner,
+    enabled: true,
+    description: "Multi-language linting: style, performance, AI patterns"
   }
 
 # =============================================================================

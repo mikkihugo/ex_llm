@@ -261,9 +261,10 @@ defmodule Singularity.CodeQuality.AstSecurityScanner do
   # ============================================================================
 
   defp get_all_supported_languages do
-    case ParserEngine.ast_grep_supported_languages() do
+    case Singularity.CodeAnalyzer.ast_grep_supported_languages() do
       {:ok, languages} -> languages
       {:error, _} -> ["elixir", "rust", "javascript", "typescript", "python"]
+      _ -> ["elixir", "rust", "javascript", "typescript", "python"]
     end
   end
 

@@ -177,25 +177,11 @@ defmodule Singularity.Code.UnifiedIngestionService do
     language = detect_language(file_path)
     content = File.read!(file_path)
 
-    # Use AstExtractor to get AST (same as StartupCodeIngestion)
-    ast_result = AstExtractor.extract_ast(content, language)
-
-    # Validate metadata unless skipped
-    validated_ast =
-      if skip_validation do
-        ast_result
-      else
-        case MetadataValidator.validate_ast_metadata(ast_result, language) do
-          {:ok, validated} ->
-            validated
-
-          {:error, reason} ->
-            Logger.warning(
-              "[UnifiedIngestion] Validation failed: #{inspect(reason)}, using unvalidated AST"
-            )
-
-            ast_result
-        end
+    # Use CodeAnalyzer to get AST and metadata
+    ast_result =
+      case Singularity.CodeAnalyzer.analyze_language(content, language) do
+        {:ok, analysis} -> Map.get(analysis, :ast, %{})
+        {:error, _} -> %{}
       end
 
     # Build CodeFile changeset
@@ -204,7 +190,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
       module_name: extract_module_name(parse_result, file_path),
       language: Atom.to_string(language),
       content: content,
-      ast: validated_ast,
+      ast: ast_result,
       codebase_id: codebase_id,
       last_modified: File.stat!(file_path).mtime |> NaiveDateTime.from_erl!()
     }

@@ -64,9 +64,9 @@ impl DockerfileParser {
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
-                let text = &content[node.byte_range()];
-                let start = node.start_position();
-                let end = node.end_position();
+                let _text = &content[node.byte_range()];
+                let _start = node.start_position();
+                let _end = node.end_position();
                 
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
@@ -432,7 +432,15 @@ impl DockerfileDocument {
             strings: Vec::new(),
         }
     }
+}
 
+impl Default for DockerfileDocument {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DockerfileDocument {
     pub fn add_from(&mut self, from: FromInfo) {
         self.froms.push(from);
     }
@@ -744,7 +752,7 @@ impl LanguageParser for DockerfileParser {
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
 
-        while let Some(_) = matches.next() {
+        while matches.next().is_some() {
             instruction_count += 1;
         }
         

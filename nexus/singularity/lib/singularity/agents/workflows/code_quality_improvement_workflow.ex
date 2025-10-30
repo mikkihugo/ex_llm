@@ -444,21 +444,32 @@ defmodule Singularity.Agents.Workflows.CodeQualityImprovementWorkflow do
   end
 
   defp remove_pattern_from_file(file_path, pattern, language, dry_run) do
-    # Use Agent to get intelligent code removal suggestions
-    case Agent.analyze_code_removal(file_path, pattern, language) do
-      {:ok, removal_plan} ->
-        if dry_run do
-          {:ok, %{plan: removal_plan, message: "Dry run - no changes made"}}
-        else
-          # Apply the removal plan
-          case Agent.apply_code_removal(file_path, removal_plan) do
-            {:ok, result} -> {:ok, result}
-            {:error, reason} -> {:error, reason}
+    # Use ParserEngine to find and remove patterns via AST-grep
+    with {:ok, content} <- File.read(file_path) do
+      case ParserEngine.ast_grep_replace(content, pattern, "", language) do
+        {:ok, new_content} ->
+          removal_plan = %{
+            file: file_path,
+            original_size: byte_size(content),
+            new_size: byte_size(new_content),
+            pattern: pattern
+          }
+
+          if dry_run do
+            {:ok, %{plan: removal_plan, message: "Dry run - no changes made"}}
+          else
+            # Backup original
+            File.write!("#{file_path}.bak", content)
+            # Write fixed version
+            File.write!(file_path, new_content)
+            {:ok, removal_plan}
           end
-        end
-      
-      {:error, reason} ->
-        {:error, "Agent analysis failed: #{reason}"}
+
+        {:error, reason} ->
+          {:error, "Pattern removal failed: #{reason}"}
+      end
+    else
+      error -> {:error, error}
     end
   end
 
