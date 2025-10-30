@@ -34,12 +34,13 @@ jobs:
           clean: true
 
       - name: Build scanner CLI and run scan
+        shell: bash --login {0}
         run: |
           echo "=== Building scanner CLI ==="
-          nix develop --command cargo build --release -p code_quality_engine --features cli
+          cargo build --release -p code_quality_engine --features cli
 
           echo "=== Running code quality scan ==="
-          nix develop --command ./target/release/singularity-scanner analyze \
+          ./target/release/singularity-scanner analyze \
             --path nexus/singularity \
             --format json || true
 
