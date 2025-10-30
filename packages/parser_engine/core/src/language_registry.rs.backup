@@ -332,15 +332,7 @@ impl LanguageRegistry {
             tokenization_profile: TokenizationProfile {
                 keywords: vec![], // C keywords not implemented in custom_tokenizers.rs
             },
-            syntax_patterns: SyntaxPatterns {
-                function_definitions: vec!["void ".to_string(), "int ".to_string(), "char ".to_string(), "float ".to_string()],
-                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string()],
-                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string()],
-                opening_delimiters: vec!["{".to_string()],
-                closing_delimiters: vec!["}".to_string()],
-                comments: vec!["//".to_string(), "/*".to_string()],
-                error_handling: vec!["if".to_string(), "assert".to_string()],
-            },
+            syntax_patterns: SyntaxPatterns::default(),
         });
 
         self.register_language(LanguageInfo {

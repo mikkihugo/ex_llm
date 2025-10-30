@@ -222,7 +222,7 @@ impl CodeIndex {
         exports: &mut Vec<String>,
         classes: &mut Vec<String>,
         interfaces: &mut Vec<String>,
-    _patterns: &mut Vec<String>,
+    patterns: &mut Vec<String>,
     ) {
         for line in content.lines() {
             let trimmed = line.trim();

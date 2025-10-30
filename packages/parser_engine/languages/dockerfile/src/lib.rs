@@ -52,7 +52,7 @@ impl DockerfileParser {
     }
 
     /// Parse Dockerfile content and extract structured information
-    pub fn parse(
+    pub fn parse_document(
         &mut self,
         content: &str,
     ) -> Result<DockerfileDocument, Box<dyn std::error::Error>> {
@@ -695,7 +695,7 @@ CMD ["npm", "start"]
 "#;
 
         let mut parser = DockerfileParser::new().unwrap();
-        let doc = parser.parse(dockerfile).unwrap();
+        let doc = parser.parse_document(dockerfile).unwrap();
 
         assert_eq!(doc.froms.len(), 1);
         assert_eq!(doc.workdirs.len(), 1);

@@ -100,6 +100,6 @@ mod tests {
         let ast = parser.parse(content).unwrap();
         let metrics = parser.get_metrics(&ast).unwrap();
         assert_eq!(metrics.lines_of_code, 4);
-        assert_eq!(metrics.functions_count, 0);
+        assert_eq!(metrics.functions, 0);
     }
 }

@@ -314,7 +314,7 @@ impl CodeInsightsEngine {
     pub async fn analyze_file_stellar(
         &mut self,
         file_path: &str,
-    _content: &str,
+        content: &str,
     ) -> Result<CodeInsightsResult, String> {
         // Check cache first
         if let Some(cached) = self.analysis_cache.get(file_path) {
