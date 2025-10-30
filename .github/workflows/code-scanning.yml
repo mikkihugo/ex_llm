@@ -3,18 +3,21 @@ name: Code Scanning (Singularity Scanner)
 on:
   pull_request:
     branches: [ main ]
-  push:
-    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
   security-events: write
-  actions: read
+
+concurrency:
+  group: code-scanning-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   scan:
     name: Run Singularity Scanner and upload SARIF
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
 
     steps:
       - name: Checkout
@@ -22,21 +25,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          workspaces: |
+            .
 
       - name: Build scanner (CLI)
         run: |
