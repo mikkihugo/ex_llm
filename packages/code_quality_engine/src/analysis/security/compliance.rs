@@ -340,7 +340,7 @@ impl ComplianceAnalyzer {
             .sum();
 
         let score = 1.0 - (violation_penalty / total_requirements as f64);
-        score.max(0.0).min(1.0)
+        score.clamp(0.0, 1.0)
     }
 
     /// Publish compliance violations to CentralCloud for collective learning

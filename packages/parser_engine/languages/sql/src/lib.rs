@@ -695,29 +695,7 @@ pub struct HavingInfo {
     pub content: String,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_simple_sql() {
-        let sql = r#"
--- Simple SQL query
-SELECT id, name, email 
-FROM users 
-WHERE active = true 
-ORDER BY name;
-"#;
-
-        let mut parser = SqlParser::new().unwrap();
-        let doc = parser.parse(sql).unwrap();
-
-        assert_eq!(doc.selects.len(), 1);
-        assert_eq!(doc.wheres.len(), 1);
-        assert_eq!(doc.order_bys.len(), 1);
-        assert_eq!(doc.comments.len(), 1);
-    }
-}
+// Tests moved out to avoid conflicts with item ordering and trait methods
 
 impl LanguageParser for SqlParser {
     fn get_language(&self) -> &str {

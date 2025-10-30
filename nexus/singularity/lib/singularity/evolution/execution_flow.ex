@@ -69,9 +69,7 @@ defmodule Singularity.Evolution.ExecutionFlow do
   alias Singularity.Repo
   alias Singularity.Schemas.Evolution.Proposal
   alias CentralCloud.Guardian.RollbackService
-  alias Singularity.Agents.RemediationEngine
-  alias Singularity.HotReload.SafeCodeChangeDispatcher
-  alias Singularity.Evolution.ProposalQueue
+  alias Singularity.HotReload.ModuleReloader
 
   @doc """
   Execute an approved proposal end-to-end.
@@ -263,30 +261,239 @@ defmodule Singularity.Evolution.ExecutionFlow do
   end
 
   # ============================================================================
-  # Private Helpers
+  # Private Helpers - Specialized Change Executors
   # ============================================================================
 
-  defp apply_code_change(file, _change) do
-    try do
-      # This is a simplified example - real implementation would
-      # actually apply the code change to the file system
-      Logger.info("Applying change to file: #{file}")
+  defp execute_documentation_change(proposal, target_module, details) do
+    Logger.info("Executing documentation change for proposal #{proposal.id} on module #{target_module}")
 
-      # Placeholder: in real implementation, this would:
-      # 1. Read file
-      # 2. Apply change
-      # 3. Write file
-      # 4. Run tests to verify
-
+    with {:ok, updated_content} <- apply_documentation_change(target_module, details),
+         {:ok, validation} <- validate_change_result(updated_content),
+         :ok <- dispatch_change(proposal, target_module, updated_content, "documentation") do
       {:ok, %{
         status: "success",
-        file: file,
-        change_applied: true
+        change_type: "documentation",
+        proposal_id: proposal.id,
+        target_module: target_module,
+        change_applied: true,
+        validation: validation
       }}
-    rescue
-      e ->
-        Logger.error("Exception applying code change: #{inspect(e)}")
-        {:error, {:execution_error, e}}
+    else
+      error ->
+        Logger.error("Documentation change failed: #{inspect(error)}")
+        error
+    end
+  end
+
+  defp execute_refactoring_change(proposal, target_module, details) do
+    Logger.info("Executing refactoring change for proposal #{proposal.id} on module #{target_module}")
+
+    with {:ok, updated_content} <- apply_refactoring_change(target_module, details),
+         {:ok, validation} <- validate_change_result(updated_content),
+         :ok <- dispatch_change(proposal, target_module, updated_content, "refactoring") do
+      {:ok, %{
+        status: "success",
+        change_type: "refactoring",
+        proposal_id: proposal.id,
+        target_module: target_module,
+        change_applied: true,
+        validation: validation
+      }}
+    else
+      error ->
+        Logger.error("Refactoring change failed: #{inspect(error)}")
+        error
+    end
+  end
+
+  defp execute_bug_fix_change(proposal, target_module, details) do
+    Logger.info("Executing bug fix change for proposal #{proposal.id} on module #{target_module}")
+
+    with {:ok, updated_content} <- apply_bug_fix_change(target_module, details),
+         {:ok, validation} <- validate_change_result(updated_content),
+         :ok <- dispatch_change(proposal, target_module, updated_content, "bug_fix") do
+      {:ok, %{
+        status: "success",
+        change_type: "bug_fix",
+        proposal_id: proposal.id,
+        target_module: target_module,
+        change_applied: true,
+        validation: validation
+      }}
+    else
+      error ->
+        Logger.error("Bug fix change failed: #{inspect(error)}")
+        error
+    end
+  end
+
+  defp execute_quality_change(proposal, target_module, details) do
+    Logger.info("Executing quality improvement change for proposal #{proposal.id} on module #{target_module}")
+
+    with {:ok, updated_content} <- apply_quality_change(target_module, details),
+         {:ok, validation} <- validate_change_result(updated_content),
+         :ok <- dispatch_change(proposal, target_module, updated_content, "quality") do
+      {:ok, %{
+        status: "success",
+        change_type: "quality",
+        proposal_id: proposal.id,
+        target_module: target_module,
+        change_applied: true,
+        validation: validation
+      }}
+    else
+      error ->
+        Logger.error("Quality change failed: #{inspect(error)}")
+        error
+    end
+  end
+
+  defp execute_pattern_adoption(proposal, target_module, details) do
+    Logger.info("Executing pattern adoption change for proposal #{proposal.id} on module #{target_module}")
+
+    with {:ok, updated_content} <- apply_pattern_adoption_change(target_module, details),
+         {:ok, validation} <- validate_change_result(updated_content),
+         :ok <- dispatch_change(proposal, target_module, updated_content, "pattern_adoption") do
+      {:ok, %{
+        status: "success",
+        change_type: "pattern_adoption",
+        proposal_id: proposal.id,
+        target_module: target_module,
+        change_applied: true,
+        validation: validation
+      }}
+    else
+      error ->
+        Logger.error("Pattern adoption change failed: #{inspect(error)}")
+        error
+    end
+  end
+
+  defp apply_generic_code_change(proposal) do
+    Logger.info("Applying generic code change for proposal #{proposal.id}")
+
+    code_change = proposal.code_change || %{}
+    target_module = code_change["target_module"] || code_change["module"]
+
+    if target_module do
+      with {:ok, updated_content} <- apply_code_change_from_map(target_module, code_change),
+           {:ok, validation} <- validate_change_result(updated_content),
+           :ok <- dispatch_change(proposal, target_module, updated_content, "generic") do
+        {:ok, %{
+          status: "success",
+          change_type: "generic",
+          proposal_id: proposal.id,
+          target_module: target_module,
+          change_applied: true,
+          validation: validation
+        }}
+      else
+        error ->
+          Logger.error("Generic code change failed: #{inspect(error)}")
+          error
+      end
+    else
+      Logger.error("No target module specified for generic code change")
+      {:error, :missing_target_module}
+    end
+  end
+
+  # ============================================================================
+  # Change Application Helpers
+  # ============================================================================
+
+  defp apply_documentation_change(target_module, details) do
+    content = details["content"] || ""
+    Logger.debug("Applying documentation content to #{target_module}")
+    {:ok, content}
+  end
+
+  defp apply_refactoring_change(target_module, details) do
+    # For refactoring, apply the structured changes from details
+    new_code = details["new_code"] || details["code"] || ""
+
+    Logger.debug("Applying refactoring to #{target_module}")
+    {:ok, new_code}
+  end
+
+  defp apply_bug_fix_change(target_module, details) do
+    # Bug fixes contain the fixed code
+    new_code = details["fixed_code"] || details["code"] || ""
+
+    Logger.debug("Applying bug fix to #{target_module}")
+    {:ok, new_code}
+  end
+
+  defp apply_quality_change(target_module, details) do
+    # Quality improvements include formatting, type hints, documentation
+    new_code = details["improved_code"] || details["code"] || ""
+
+    Logger.debug("Applying quality improvements to #{target_module}")
+    {:ok, new_code}
+  end
+
+  defp apply_pattern_adoption_change(target_module, details) do
+    # Pattern adoption applies design patterns to code
+    new_code = details["refactored_code"] || details["code"] || ""
+
+    Logger.debug("Applying pattern adoption to #{target_module}")
+    {:ok, new_code}
+  end
+
+  defp apply_code_change_from_map(target_module, code_change) do
+    new_code =
+      code_change["content"] ||
+        code_change["new_code"] ||
+        code_change["code"] ||
+        ""
+
+    Logger.debug("Applying code change to #{target_module}")
+    {:ok, new_code}
+  end
+
+  # ============================================================================
+  # Change Validation & Dispatch
+  # ============================================================================
+
+  defp validate_change_result(content) do
+    # Validate the updated code is syntactically valid
+    # For now, just check it's not empty
+    if is_binary(content) and byte_size(content) > 0 do
+      {:ok, %{valid: true, checks: []}}
+    else
+      {:error, :empty_content}
+    end
+  end
+
+  defp dispatch_change(proposal, target_module, content, change_type) do
+    # Enqueue code change through ModuleReloader for hot reload
+    agent_id = "evolution-executor-#{proposal.agent_type}"
+
+    metadata = %{
+      proposal_id: proposal.id,
+      change_type: change_type,
+      target_module: target_module,
+      agent_type: proposal.agent_type,
+      agent_id: proposal.agent_id,
+      source: "evolution_execution_flow"
+    }
+
+    payload = %{
+      code: content,
+      target_module: target_module,
+      change_type: change_type,
+      proposal_id: proposal.id,
+      metadata: metadata
+    }
+
+    case ModuleReloader.enqueue(agent_id, payload) do
+      :ok ->
+        Logger.info("Code change enqueued in ModuleReloader for proposal #{proposal.id}")
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to enqueue code change: #{inspect(reason)}")
+        {:error, {:enqueue_failed, reason}}
     end
   end
 

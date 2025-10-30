@@ -1,0 +1,298 @@
+{
+  "framework_id": "spring",
+  "framework_name": "Spring Framework",
+  "version_target": "5.7+",
+  "description": "Security patterns and vulnerability detection for Spring Framework applications",
+
+  "vulnerability_patterns": [
+    {
+      "vulnerability_id": "spring_auth_bypass",
+      "name": "Authentication Bypass",
+      "cwe": "CWE-287",
+      "severity": "critical",
+      "description": "Misconfigured security allowing unauthorized access",
+
+      "bad_patterns": [
+        {
+          "code": "@Configuration\npublic class SecurityConfig extends WebSecurityConfigurerAdapter {\n  @Override\n  protected void configure(HttpSecurity http) throws Exception {\n    http.authorizeRequests().antMatchers(\"/admin/**\").permitAll();\n  }\n}",
+          "issue": "Admin endpoints accessible without authentication"
+        },
+        {
+          "code": "@Override\nprotected void configure(HttpSecurity http) throws Exception {\n  http.authorizeRequests()\n    .anyRequest().permitAll();\n}",
+          "issue": "All endpoints publicly accessible"
+        },
+        {
+          "code": "@GetMapping(\"/admin/users\")\npublic List<User> getUsers() {\n  // No @PreAuthorize or @Secured annotation\n  return userService.getAllUsers();\n}",
+          "issue": "Missing authorization annotations"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "@Configuration\n@EnableWebSecurity\npublic class SecurityConfig extends WebSecurityConfigurerAdapter {\n  @Override\n  protected void configure(HttpSecurity http) throws Exception {\n    http.authorizeRequests()\n      .antMatchers(\"/public/**\").permitAll()\n      .antMatchers(\"/admin/**\").hasRole(\"ADMIN\")\n      .anyRequest().authenticated()\n      .and().formLogin()\n      .and().logout();\n  }\n}",
+          "explanation": "Proper role-based access control configuration"
+        },
+        {
+          "code": "@PreAuthorize(\"hasRole('ADMIN')\")\n@GetMapping(\"/admin/users\")\npublic List<User> getUsers() {\n  return userService.getAllUsers();\n}",
+          "explanation": "Method-level security with PreAuthorize"
+        },
+        {
+          "code": "@Secured({\"ROLE_ADMIN\", \"ROLE_SUPERUSER\"})\n@DeleteMapping(\"/users/{id}\")\npublic void deleteUser(@PathVariable Long id) {\n  userService.delete(id);\n}",
+          "explanation": "Multiple roles with @Secured annotation"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_sql_injection",
+      "name": "SQL Injection in JPA/JDBC",
+      "cwe": "CWE-89",
+      "severity": "critical",
+      "description": "Dynamic query construction with user input",
+
+      "bad_patterns": [
+        {
+          "code": "@Repository\npublic class UserRepository {\n  @Autowired\n  private JdbcTemplate jdbcTemplate;\n  \n  public User findUser(String username) {\n    String sql = \"SELECT * FROM users WHERE username = '\" + username + \"'\";\n    return jdbcTemplate.queryForObject(sql, new UserRowMapper());\n  }\n}",
+          "issue": "String concatenation in SQL query"
+        },
+        {
+          "code": "@Query(\"SELECT u FROM User u WHERE u.name = '\" + name + \"'\")\nList<User> findByName(String name);",
+          "issue": "Dynamic JPQL query construction"
+        },
+        {
+          "code": "EntityManager em = entityManagerFactory.createEntityManager();\nQuery query = em.createNativeQuery(\"SELECT * FROM users WHERE id = \" + userId);\nreturn query.getResultList();",
+          "issue": "Native query with concatenation"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "@Repository\npublic class UserRepository {\n  @Autowired\n  private JdbcTemplate jdbcTemplate;\n  \n  public User findUser(String username) {\n    String sql = \"SELECT * FROM users WHERE username = ?\";\n    return jdbcTemplate.queryForObject(sql, new Object[]{username}, new UserRowMapper());\n  }\n}",
+          "explanation": "Use parameterized queries with JdbcTemplate"
+        },
+        {
+          "code": "@Query(\"SELECT u FROM User u WHERE u.name = :name\")\nList<User> findByName(@Param(\"name\") String name);",
+          "explanation": "Use named parameters in JPA queries"
+        },
+        {
+          "code": "CriteriaBuilder cb = em.getCriteriaBuilder();\nCriteriaQuery<User> query = cb.createQuery(User.class);\nRoot<User> user = query.from(User.class);\nquery.select(user).where(cb.equal(user.get(\"username\"), username));\nreturn em.createQuery(query).getSingleResult();",
+          "explanation": "Use Criteria API for type-safe queries"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_xss",
+      "name": "Cross-Site Scripting in Responses",
+      "cwe": "CWE-79",
+      "severity": "high",
+      "description": "Returning unescaped user input in responses",
+
+      "bad_patterns": [
+        {
+          "code": "@GetMapping(\"/search\")\n@ResponseBody\npublic String search(@RequestParam String query) {\n  return \"<h1>Results for: \" + query + \"</h1>\";\n}",
+          "issue": "Concatenating user input in HTML response"
+        },
+        {
+          "code": "@Controller\npublic class ViewController {\n  @GetMapping(\"/welcome\")\n  public String welcome(@RequestParam String name, Model model) {\n    model.addAttribute(\"message\", \"<script>alert('Welcome \" + name + \"')</script>\");\n    return \"welcome\";\n  }\n}",
+          "issue": "Injecting user input into JavaScript"
+        },
+        {
+          "code": "@GetMapping(produces = \"text/html\")\npublic ResponseEntity<String> getHtml(@RequestParam String content) {\n  return ResponseEntity.ok(\"<div>\" + content + \"</div>\");\n}",
+          "issue": "Direct HTML generation with user input"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "import org.springframework.web.util.HtmlUtils;\n\n@GetMapping(\"/search\")\n@ResponseBody\npublic String search(@RequestParam String query) {\n  return \"<h1>Results for: \" + HtmlUtils.htmlEscape(query) + \"</h1>\";\n}",
+          "explanation": "Use HtmlUtils.htmlEscape for HTML escaping"
+        },
+        {
+          "code": "@RestController\npublic class ApiController {\n  @GetMapping(\"/search\")\n  public Map<String, String> search(@RequestParam String query) {\n    return Map.of(\"query\", query, \"results\", \"10\");\n  }\n}",
+          "explanation": "Return JSON responses that are automatically escaped"
+        },
+        {
+          "code": "<!-- In Thymeleaf template -->\n<div th:text=\"${userContent}\"></div>\n<!-- th:text automatically escapes content -->",
+          "explanation": "Use template engines with auto-escaping"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_csrf_disabled",
+      "name": "Disabled CSRF Protection",
+      "cwe": "CWE-352",
+      "severity": "high",
+      "description": "CSRF protection disabled in configuration",
+
+      "bad_patterns": [
+        {
+          "code": "@Override\nprotected void configure(HttpSecurity http) throws Exception {\n  http.csrf().disable()\n    .authorizeRequests().anyRequest().authenticated();\n}",
+          "issue": "CSRF protection completely disabled"
+        },
+        {
+          "code": "@Configuration\npublic class SecurityConfig {\n  @Bean\n  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n    return http\n      .csrf().disabled()\n      .build();\n  }\n}",
+          "issue": "CSRF disabled in Spring Security 6+"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "@Override\nprotected void configure(HttpSecurity http) throws Exception {\n  http.csrf()\n    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())\n    .and()\n    .authorizeRequests().anyRequest().authenticated();\n}",
+          "explanation": "Enable CSRF with cookie repository for SPA"
+        },
+        {
+          "code": "@Configuration\npublic class SecurityConfig {\n  @Bean\n  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n    return http\n      .csrf(csrf -> csrf\n        .ignoringAntMatchers(\"/api/webhook/**\") // Only disable for specific endpoints\n        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())\n      )\n      .build();\n  }\n}",
+          "explanation": "Selective CSRF disabling for webhooks only"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_path_traversal",
+      "name": "Path Traversal in File Access",
+      "cwe": "CWE-22",
+      "severity": "critical",
+      "description": "Unvalidated file paths from user input",
+
+      "bad_patterns": [
+        {
+          "code": "@GetMapping(\"/download\")\npublic ResponseEntity<Resource> downloadFile(@RequestParam String filename) {\n  Path path = Paths.get(\"/uploads/\" + filename);\n  Resource resource = new FileSystemResource(path);\n  return ResponseEntity.ok().body(resource);\n}",
+          "issue": "User can traverse directories with ../"
+        },
+        {
+          "code": "@PostMapping(\"/upload\")\npublic void uploadFile(@RequestParam(\"file\") MultipartFile file, @RequestParam String path) {\n  File dest = new File(\"/uploads/\" + path);\n  file.transferTo(dest);\n}",
+          "issue": "User controls file destination path"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "@GetMapping(\"/download\")\npublic ResponseEntity<Resource> downloadFile(@RequestParam String filename) {\n  // Sanitize filename\n  String cleanFilename = Paths.get(filename).getFileName().toString();\n  \n  Path uploadDir = Paths.get(\"/uploads\").toAbsolutePath().normalize();\n  Path filePath = uploadDir.resolve(cleanFilename).normalize();\n  \n  // Verify the file is within the expected directory\n  if (!filePath.startsWith(uploadDir)) {\n    throw new BadRequestException(\"Invalid filename\");\n  }\n  \n  Resource resource = new UrlResource(filePath.toUri());\n  return ResponseEntity.ok().body(resource);\n}",
+          "explanation": "Validate and normalize file paths"
+        },
+        {
+          "code": "@Value(\"${upload.directory:/uploads}\")\nprivate String uploadDir;\n\n@PostMapping(\"/upload\")\npublic void uploadFile(@RequestParam(\"file\") MultipartFile file) {\n  String filename = StringUtils.cleanPath(file.getOriginalFilename());\n  \n  if (filename.contains(\"..\")) {\n    throw new BadRequestException(\"Invalid filename\");\n  }\n  \n  Path targetLocation = Paths.get(uploadDir).resolve(filename);\n  Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);\n}",
+          "explanation": "Clean and validate filenames before storage"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_xxe",
+      "name": "XML External Entity (XXE) Injection",
+      "cwe": "CWE-611",
+      "severity": "high",
+      "description": "Unsafe XML parsing allowing external entities",
+
+      "bad_patterns": [
+        {
+          "code": "DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\nDocumentBuilder db = dbf.newDocumentBuilder();\nDocument doc = db.parse(new InputSource(new StringReader(xmlContent)));",
+          "issue": "XXE not disabled in DocumentBuilder"
+        },
+        {
+          "code": "SAXParserFactory factory = SAXParserFactory.newInstance();\nSAXParser parser = factory.newSAXParser();\nparser.parse(inputStream, handler);",
+          "issue": "SAXParser with default settings vulnerable to XXE"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\ndbf.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\ndbf.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\ndbf.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\ndbf.setXIncludeAware(false);\ndbf.setExpandEntityReferences(false);\nDocumentBuilder db = dbf.newDocumentBuilder();\nDocument doc = db.parse(new InputSource(new StringReader(xmlContent)));",
+          "explanation": "Disable all XXE attack vectors"
+        },
+        {
+          "code": "@Bean\npublic Jackson2ObjectMapperBuilder jacksonBuilder() {\n  Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();\n  builder.featuresToEnable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);\n  return builder;\n}",
+          "explanation": "Configure Jackson for safe deserialization"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_insecure_random",
+      "name": "Insecure Random Number Generation",
+      "cwe": "CWE-330",
+      "severity": "medium",
+      "description": "Using predictable random numbers for security",
+
+      "bad_patterns": [
+        {
+          "code": "Random random = new Random();\nString token = String.valueOf(random.nextInt(999999));",
+          "issue": "java.util.Random is not cryptographically secure"
+        },
+        {
+          "code": "String sessionId = UUID.randomUUID().toString();",
+          "issue": "UUID.randomUUID() may not be cryptographically secure on all platforms"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "SecureRandom secureRandom = new SecureRandom();\nbyte[] token = new byte[32];\nsecureRandom.nextBytes(token);\nString tokenString = Base64.getEncoder().encodeToString(token);",
+          "explanation": "Use SecureRandom for cryptographic operations"
+        },
+        {
+          "code": "@Component\npublic class TokenGenerator {\n  private final SecureRandom secureRandom = new SecureRandom();\n  \n  public String generateToken() {\n    byte[] randomBytes = new byte[32];\n    secureRandom.nextBytes(randomBytes);\n    return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);\n  }\n}",
+          "explanation": "Centralized secure token generation"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "spring_ldap_injection",
+      "name": "LDAP Injection",
+      "cwe": "CWE-90",
+      "severity": "high",
+      "description": "Unvalidated user input in LDAP queries",
+
+      "bad_patterns": [
+        {
+          "code": "String filter = \"(cn=\" + username + \")\";\nNamingEnumeration<SearchResult> results = context.search(\"ou=users\", filter, searchControls);",
+          "issue": "Direct concatenation in LDAP filter"
+        },
+        {
+          "code": "String dn = \"uid=\" + uid + \",ou=users,dc=example,dc=com\";\ncontext.lookup(dn);",
+          "issue": "User input in Distinguished Name"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "import org.springframework.ldap.filter.EqualsFilter;\nimport org.springframework.ldap.filter.AndFilter;\n\nAndFilter filter = new AndFilter();\nfilter.and(new EqualsFilter(\"cn\", username));\nList<User> users = ldapTemplate.search(\"\", filter.encode(), new UserAttributesMapper());",
+          "explanation": "Use Spring LDAP filter builders"
+        },
+        {
+          "code": "// Escape special LDAP characters\npublic String escapeLDAPSearchFilter(String filter) {\n  StringBuilder sb = new StringBuilder();\n  for (char c : filter.toCharArray()) {\n    switch (c) {\n      case '\\\\': sb.append(\"\\\\5c\"); break;\n      case '*': sb.append(\"\\\\2a\"); break;\n      case '(': sb.append(\"\\\\28\"); break;\n      case ')': sb.append(\"\\\\29\"); break;\n      case '\\0': sb.append(\"\\\\00\"); break;\n      default: sb.append(c);\n    }\n  }\n  return sb.toString();\n}",
+          "explanation": "Manually escape LDAP special characters"
+        }
+      ]
+    }
+  ],
+
+  "security_settings": [
+    {
+      "setting": "spring.security.require-ssl",
+      "recommendation": "true",
+      "purpose": "Require HTTPS for all requests"
+    },
+    {
+      "setting": "server.servlet.session.cookie.secure",
+      "recommendation": "true",
+      "purpose": "Only send session cookies over HTTPS"
+    },
+    {
+      "setting": "server.servlet.session.cookie.http-only",
+      "recommendation": "true",
+      "purpose": "Prevent JavaScript access to session cookies"
+    },
+    {
+      "setting": "spring.jackson.serialization.fail-on-empty-beans",
+      "recommendation": "true",
+      "purpose": "Prevent serialization of empty beans"
+    },
+    {
+      "setting": "management.endpoints.web.exposure.include",
+      "recommendation": "health,info only",
+      "purpose": "Limit actuator endpoint exposure"
+    },
+    {
+      "setting": "spring.jpa.show-sql",
+      "recommendation": "false in production",
+      "purpose": "Prevent SQL query logging"
+    }
+  ]
+}

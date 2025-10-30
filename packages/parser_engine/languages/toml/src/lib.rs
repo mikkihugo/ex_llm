@@ -544,35 +544,7 @@ pub struct QuotedKeyInfo {
     pub line: usize,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_simple_toml() {
-        let toml = r#"
-# Simple TOML file
-title = "My Project"
-version = "1.0.0"
-debug = true
-
-[dependencies]
-serde = "1.0"
-tokio = { version = "1.0", features = ["full"] }
-
-[[build]]
-target = "x86_64-unknown-linux-gnu"
-"#;
-
-        let mut parser = TomlParser::new().unwrap();
-        let doc = parser.parse(toml).unwrap();
-
-        assert_eq!(doc.tables.len(), 1); // [dependencies]
-        assert_eq!(doc.table_arrays.len(), 1); // [[build]]
-        assert!(doc.key_values.len() > 0);
-        assert_eq!(doc.comments.len(), 1);
-    }
-}
+// Tests moved out to avoid conflicts with item ordering and trait methods
 
 impl LanguageParser for TomlParser {
     fn get_language(&self) -> &str {

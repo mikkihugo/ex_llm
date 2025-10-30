@@ -1,0 +1,118 @@
+{
+  "pattern_id": "owasp_xxe",
+  "name": "XML External Entity (XXE) Injection",
+  "cwe": "CWE-611",
+  "owasp_category": "A05:2021 - Security Misconfiguration",
+  "severity": "high",
+  "applicable_languages": ["python", "javascript", "java", "php", "ruby", "csharp", "go"],
+  "applicable_frameworks": ["django", "flask", "express", "spring", "rails", "laravel", "aspnet"],
+  "description": "XXE vulnerabilities occur when XML parsers process external entity references, allowing attackers to read files, perform SSRF attacks, or cause DoS",
+
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "# etree with default settings\nimport xml.etree.ElementTree as ET\ntree = ET.parse(user_xml)",
+        "# lxml with DTD processing\nfrom lxml import etree\nparser = etree.XMLParser()\ntree = etree.parse(user_xml, parser)",
+        "# defusedxml not used\nimport xml.sax\nxml.sax.parseString(user_xml, handler)",
+        "# minidom vulnerable\nfrom xml.dom import minidom\ndoc = minidom.parseString(user_xml)"
+      ],
+      "risk_description": "Default XML parsers process external entities allowing file disclosure",
+      "good_code": [
+        "# Use defusedxml\nimport defusedxml.ElementTree as ET\ntree = ET.parse(user_xml)",
+        "# Disable external entities in lxml\nfrom lxml import etree\nparser = etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False)\ntree = etree.parse(user_xml, parser)",
+        "# Safe SAX parser\nimport defusedxml.sax\ndefusedxml.sax.parseString(user_xml, handler)"
+      ],
+      "fix_explanation": "Use defusedxml or disable external entity processing"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "// Default DocumentBuilder\nDocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\nDocumentBuilder db = dbf.newDocumentBuilder();\nDocument doc = db.parse(userXml);",
+        "// SAXParser vulnerable\nSAXParserFactory factory = SAXParserFactory.newInstance();\nSAXParser parser = factory.newSAXParser();\nparser.parse(userXml, handler);",
+        "// XMLReader without features\nXMLReader reader = XMLReaderFactory.createXMLReader();\nreader.parse(new InputSource(userXml));"
+      ],
+      "risk_description": "Default XML parsers in Java are vulnerable to XXE",
+      "good_code": [
+        "// Secure DocumentBuilder\nDocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();\ndbf.setFeature(\"http://apache.org/xml/features/disallow-doctype-decl\", true);\ndbf.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\ndbf.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\ndbf.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\ndbf.setXIncludeAware(false);\ndbf.setExpandEntityReferences(false);\nDocumentBuilder db = dbf.newDocumentBuilder();\nDocument doc = db.parse(userXml);",
+        "// Secure SAXParser\nSAXParserFactory factory = SAXParserFactory.newInstance();\nfactory.setFeature(\"http://xml.org/sax/features/external-general-entities\", false);\nfactory.setFeature(\"http://xml.org/sax/features/external-parameter-entities\", false);\nfactory.setFeature(\"http://apache.org/xml/features/nonvalidating/load-external-dtd\", false);\nSAXParser parser = factory.newSAXParser();\nparser.parse(userXml, handler);"
+      ],
+      "fix_explanation": "Disable DTD processing and external entities"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "// Default SimpleXML\n$xml = simplexml_load_string($userXml);",
+        "// DOMDocument with LIBXML_NOENT\n$doc = new DOMDocument();\n$doc->loadXML($userXml, LIBXML_NOENT);",
+        "// XMLReader without settings\n$reader = new XMLReader();\n$reader->XML($userXml);"
+      ],
+      "risk_description": "Default XML functions process external entities",
+      "good_code": [
+        "// Disable external entities\nlibxml_disable_entity_loader(true);\n$xml = simplexml_load_string($userXml);",
+        "// Safe DOMDocument\n$doc = new DOMDocument();\n$doc->loadXML($userXml, LIBXML_NONET | LIBXML_NOENT);",
+        "// Configure XMLReader\n$reader = new XMLReader();\n$reader->XML($userXml, null, LIBXML_NONET | LIBXML_NOENT);"
+      ],
+      "fix_explanation": "Disable entity loader and use safe flags"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "// Default XmlDocument\nXmlDocument doc = new XmlDocument();\ndoc.LoadXml(userXml);",
+        "// XmlReader with DTD\nXmlReaderSettings settings = new XmlReaderSettings();\nsettings.DtdProcessing = DtdProcessing.Parse;\nXmlReader reader = XmlReader.Create(new StringReader(userXml), settings);"
+      ],
+      "risk_description": "Default XML settings allow XXE attacks",
+      "good_code": [
+        "// Secure XmlDocument\nXmlDocument doc = new XmlDocument();\ndoc.XmlResolver = null;\ndoc.LoadXml(userXml);",
+        "// Secure XmlReader\nXmlReaderSettings settings = new XmlReaderSettings();\nsettings.DtdProcessing = DtdProcessing.Prohibit;\nsettings.XmlResolver = null;\nXmlReader reader = XmlReader.Create(new StringReader(userXml), settings);"
+      ],
+      "fix_explanation": "Set XmlResolver to null and prohibit DTD processing"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "XML parsing without entity restrictions",
+      "DTD processing enabled",
+      "XmlResolver not set to null",
+      "External entity processing enabled"
+    ],
+    "regex_patterns": [
+      "XMLParser\\s*\\(\\s*\\)",
+      "DtdProcessing\\.Parse",
+      "LIBXML_NOENT",
+      "resolve_entities\\s*=\\s*True"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Disable DTD processing entirely when possible",
+      "Disable external entity resolution",
+      "Use safe XML parsing libraries",
+      "Validate and sanitize XML input",
+      "Use less complex formats like JSON when possible"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 8.2,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:L",
+    "business_impact": "Information disclosure, SSRF, denial of service",
+    "technical_impact": "File disclosure, internal network access, resource exhaustion",
+    "confidentiality": "high",
+    "integrity": "low",
+    "availability": "medium"
+  },
+
+  "references": [
+    "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing",
+    "https://cwe.mitre.org/data/definitions/611.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["xxe", "xml", "injection", "high"]
+  }
+}

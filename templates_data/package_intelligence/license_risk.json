@@ -1,0 +1,380 @@
+{
+  "pattern_id": "license_risk",
+  "name": "License Risk Classification",
+  "description": "Assess open source license compatibility and risk for commercial software",
+  "version": "1.0",
+  "created_at": "2025-01-30",
+  "artifact_type": "package_intelligence",
+
+  "license_categories": [
+    {
+      "category_id": "permissive",
+      "name": "Permissive (Low Risk)",
+      "description": "Allows commercial use with minimal restrictions",
+      "risk_level": "low",
+      "licenses": [
+        {
+          "license_id": "MIT",
+          "name": "MIT License",
+          "spdx_id": "MIT",
+          "commercial_friendly": true,
+          "attribution_required": true,
+          "derivative_allowed": true,
+          "modifications_allowed": true,
+          "patent_grant": false,
+          "risk_score": 1,
+          "description": "Minimal restrictions, requires attribution in all copies"
+        },
+        {
+          "license_id": "Apache-2.0",
+          "name": "Apache License 2.0",
+          "spdx_id": "Apache-2.0",
+          "commercial_friendly": true,
+          "attribution_required": true,
+          "patent_grant": true,
+          "modification_notification": true,
+          "derivative_allowed": true,
+          "risk_score": 1,
+          "description": "Permissive with patent protection and notice requirements"
+        },
+        {
+          "license_id": "BSD-2-Clause",
+          "name": "BSD 2-Clause License",
+          "spdx_id": "BSD-2-Clause",
+          "commercial_friendly": true,
+          "attribution_required": true,
+          "risk_score": 1,
+          "description": "Simple permissive license with minimal requirements"
+        },
+        {
+          "license_id": "BSD-3-Clause",
+          "name": "BSD 3-Clause License",
+          "spdx_id": "BSD-3-Clause",
+          "commercial_friendly": true,
+          "attribution_required": true,
+          "endorsement_clause": true,
+          "risk_score": 1,
+          "description": "BSD with non-endorsement clause"
+        },
+        {
+          "license_id": "ISC",
+          "name": "ISC License",
+          "spdx_id": "ISC",
+          "commercial_friendly": true,
+          "attribution_required": true,
+          "risk_score": 1,
+          "description": "Functionally equivalent to MIT/BSD licenses"
+        },
+        {
+          "license_id": "0BSD",
+          "name": "Zero-Clause BSD",
+          "spdx_id": "0BSD",
+          "commercial_friendly": true,
+          "attribution_required": false,
+          "risk_score": 1,
+          "description": "BSD without attribution requirement"
+        },
+        {
+          "license_id": "Unlicense",
+          "name": "The Unlicense",
+          "spdx_id": "Unlicense",
+          "commercial_friendly": true,
+          "public_domain": true,
+          "risk_score": 1,
+          "description": "Dedicates work to public domain"
+        },
+        {
+          "license_id": "WTFPL",
+          "name": "Do What The F*ck You Want To Public License",
+          "spdx_id": "WTFPL",
+          "commercial_friendly": true,
+          "risk_score": 1,
+          "description": "Maximally permissive, no restrictions"
+        }
+      ]
+    },
+    {
+      "category_id": "weak_copyleft",
+      "name": "Weak Copyleft (Low-Medium Risk)",
+      "description": "Allows linking with proprietary code under conditions",
+      "risk_level": "medium",
+      "licenses": [
+        {
+          "license_id": "LGPL-2.1",
+          "name": "GNU Lesser General Public License 2.1",
+          "spdx_id": "LGPL-2.1",
+          "commercial_friendly": true,
+          "weak_copyleft": true,
+          "dynamic_linking_ok": true,
+          "static_linking_restricted": true,
+          "risk_score": 4,
+          "description": "Allows proprietary linking with disclosure requirements"
+        },
+        {
+          "license_id": "LGPL-3.0",
+          "name": "GNU Lesser General Public License 3.0",
+          "spdx_id": "LGPL-3.0",
+          "commercial_friendly": true,
+          "weak_copyleft": true,
+          "anti_tivoization": true,
+          "risk_score": 5,
+          "description": "LGPL with additional patent and DRM provisions"
+        },
+        {
+          "license_id": "MPL-2.0",
+          "name": "Mozilla Public License 2.0",
+          "spdx_id": "MPL-2.0",
+          "commercial_friendly": true,
+          "file_level_copyleft": true,
+          "patent_grant": true,
+          "risk_score": 3,
+          "description": "File-level copyleft, allows proprietary combination"
+        },
+        {
+          "license_id": "EPL-2.0",
+          "name": "Eclipse Public License 2.0",
+          "spdx_id": "EPL-2.0",
+          "commercial_friendly": true,
+          "weak_copyleft": true,
+          "patent_grant": true,
+          "risk_score": 4,
+          "description": "Weak copyleft with patent provisions"
+        },
+        {
+          "license_id": "CDDL-1.0",
+          "name": "Common Development and Distribution License 1.0",
+          "spdx_id": "CDDL-1.0",
+          "commercial_friendly": true,
+          "file_level_copyleft": true,
+          "risk_score": 3,
+          "description": "File-level copyleft, Oracle/Sun origin"
+        }
+      ]
+    },
+    {
+      "category_id": "strong_copyleft",
+      "name": "Strong Copyleft (High Risk)",
+      "description": "Requires derivative works to use same license",
+      "risk_level": "high",
+      "licenses": [
+        {
+          "license_id": "GPL-2.0",
+          "name": "GNU General Public License 2.0",
+          "spdx_id": "GPL-2.0",
+          "commercial_friendly": false,
+          "viral": true,
+          "requires_source_disclosure": true,
+          "risk_score": 7,
+          "incompatible_with": ["proprietary", "Apache-2.0"],
+          "description": "Strong copyleft - requires source code disclosure"
+        },
+        {
+          "license_id": "GPL-3.0",
+          "name": "GNU General Public License 3.0",
+          "spdx_id": "GPL-3.0",
+          "commercial_friendly": false,
+          "viral": true,
+          "anti_tivoization": true,
+          "patent_provisions": true,
+          "risk_score": 8,
+          "incompatible_with": ["proprietary", "Apache-2.0", "GPL-2.0-only"],
+          "description": "Strong copyleft with patent and DRM provisions"
+        },
+        {
+          "license_id": "AGPL-3.0",
+          "name": "GNU Affero General Public License 3.0",
+          "spdx_id": "AGPL-3.0",
+          "commercial_friendly": false,
+          "viral": true,
+          "network_trigger": true,
+          "saas_trigger": true,
+          "risk_score": 9,
+          "incompatible_with": ["proprietary", "MIT", "Apache-2.0"],
+          "description": "Viral over network - applies to SaaS/web services"
+        },
+        {
+          "license_id": "GPL-2.0-or-later",
+          "name": "GNU GPL 2.0 or later",
+          "spdx_id": "GPL-2.0-or-later",
+          "commercial_friendly": false,
+          "viral": true,
+          "risk_score": 7,
+          "description": "GPL-2.0 with option to use later versions"
+        },
+        {
+          "license_id": "CC-BY-SA-4.0",
+          "name": "Creative Commons Attribution ShareAlike 4.0",
+          "spdx_id": "CC-BY-SA-4.0",
+          "commercial_friendly": false,
+          "share_alike": true,
+          "risk_score": 6,
+          "description": "Share-alike for creative works, not recommended for code"
+        },
+        {
+          "license_id": "OSL-3.0",
+          "name": "Open Software License 3.0",
+          "spdx_id": "OSL-3.0",
+          "commercial_friendly": false,
+          "network_trigger": true,
+          "risk_score": 8,
+          "description": "Strong copyleft with network provisions"
+        }
+      ]
+    },
+    {
+      "category_id": "proprietary",
+      "name": "Proprietary/Commercial (Variable Risk)",
+      "description": "Restricted use licenses",
+      "risk_level": "variable",
+      "licenses": [
+        {
+          "license_id": "proprietary",
+          "name": "Proprietary License",
+          "commercial_friendly": false,
+          "requires_purchase": true,
+          "risk_score": 9,
+          "description": "Fully restricted, requires license purchase"
+        },
+        {
+          "license_id": "CC-BY-NC-4.0",
+          "name": "Creative Commons Non-Commercial 4.0",
+          "spdx_id": "CC-BY-NC-4.0",
+          "commercial_friendly": false,
+          "non_commercial_only": true,
+          "risk_score": 8,
+          "description": "Prohibits commercial use"
+        },
+        {
+          "license_id": "SSPL",
+          "name": "Server Side Public License",
+          "spdx_id": "SSPL",
+          "commercial_friendly": false,
+          "service_trigger": true,
+          "risk_score": 9,
+          "description": "MongoDB license, extremely restrictive for services"
+        },
+        {
+          "license_id": "BSL-1.1",
+          "name": "Business Source License 1.1",
+          "commercial_friendly": false,
+          "time_delayed_oss": true,
+          "risk_score": 7,
+          "description": "Commercial license that converts to open source after time"
+        }
+      ]
+    }
+  ],
+
+  "compatibility_matrix": {
+    "MIT": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0", "LGPL-2.1", "LGPL-3.0"],
+    "Apache-2.0": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "MPL-2.0"],
+    "BSD-2-Clause": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"],
+    "BSD-3-Clause": ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"],
+    "GPL-2.0": ["GPL-2.0", "LGPL-2.1"],
+    "GPL-3.0": ["GPL-3.0", "AGPL-3.0", "LGPL-3.0"],
+    "AGPL-3.0": ["AGPL-3.0", "GPL-3.0"],
+    "LGPL-2.1": ["MIT", "Apache-2.0", "LGPL-2.1", "GPL-2.0"],
+    "LGPL-3.0": ["MIT", "Apache-2.0", "LGPL-3.0", "GPL-3.0"],
+    "MPL-2.0": ["MIT", "Apache-2.0", "MPL-2.0"]
+  },
+
+  "assessment_rules": [
+    {
+      "rule_id": "gpl_commercial_conflict",
+      "severity": "critical",
+      "description": "GPL dependency in commercial closed-source project",
+      "indicators": ["GPL-2.0 or GPL-3.0 dependency", "Commercial use", "Closed source"],
+      "recommendation": "Remove GPL dependency or open source your project"
+    },
+    {
+      "rule_id": "agpl_saas_conflict",
+      "severity": "critical",
+      "description": "AGPL dependency in proprietary SaaS",
+      "indicators": ["AGPL-3.0 dependency", "Network service", "Proprietary"],
+      "recommendation": "Remove AGPL dependency or comply with source disclosure"
+    },
+    {
+      "rule_id": "license_attribution_missing",
+      "severity": "high",
+      "description": "MIT/Apache dependencies without proper attribution",
+      "indicators": ["MIT or Apache-2.0 dependency", "No LICENSE file", "No attribution"],
+      "recommendation": "Add LICENSE file with all dependency attributions"
+    },
+    {
+      "rule_id": "incompatible_license_mix",
+      "severity": "high",
+      "description": "Incompatible licenses in same project",
+      "indicators": ["GPL-2.0 with Apache-2.0", "Conflicting copyleft"],
+      "recommendation": "Choose compatible licenses or separate components"
+    },
+    {
+      "rule_id": "lgpl_static_linking",
+      "severity": "medium",
+      "description": "LGPL library statically linked",
+      "indicators": ["LGPL dependency", "Static linking", "Proprietary code"],
+      "recommendation": "Use dynamic linking or provide object files"
+    },
+    {
+      "rule_id": "patent_risk_no_grant",
+      "severity": "medium",
+      "description": "Using licenses without patent grants",
+      "indicators": ["MIT or BSD licenses", "Patent-heavy domain"],
+      "recommendation": "Consider Apache-2.0 for patent protection"
+    },
+    {
+      "rule_id": "deprecated_license_version",
+      "severity": "low",
+      "description": "Using deprecated license versions",
+      "indicators": ["GPL-2.0-only", "LGPL-2.0", "Apache-1.1"],
+      "recommendation": "Update to current license versions"
+    }
+  ],
+
+  "remediation_strategies": [
+    {
+      "issue": "GPL contamination",
+      "strategies": [
+        "Replace GPL library with MIT/Apache alternative",
+        "Isolate GPL code in separate process",
+        "Open source affected components",
+        "Purchase commercial license if available"
+      ]
+    },
+    {
+      "issue": "Missing attributions",
+      "strategies": [
+        "Generate NOTICE file with all attributions",
+        "Include licenses in distribution",
+        "Add attribution comments in source",
+        "Create THIRD_PARTY_LICENSES document"
+      ]
+    },
+    {
+      "issue": "License uncertainty",
+      "strategies": [
+        "Contact package author for clarification",
+        "Assume most restrictive interpretation",
+        "Seek legal counsel",
+        "Replace with clearly licensed alternative"
+      ]
+    }
+  ],
+
+  "automated_checks": [
+    {
+      "check": "license_scanner",
+      "tools": ["license-checker", "scancode", "fossology"],
+      "purpose": "Identify all licenses in codebase"
+    },
+    {
+      "check": "compatibility_validator",
+      "tools": ["license-compatibility-checker"],
+      "purpose": "Verify license compatibility"
+    },
+    {
+      "check": "attribution_generator",
+      "tools": ["oss-attribution-generator"],
+      "purpose": "Generate attribution documents"
+    }
+  ]
+}

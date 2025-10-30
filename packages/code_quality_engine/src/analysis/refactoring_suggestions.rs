@@ -202,7 +202,7 @@ impl EngineRefactoring {
     /// Analyze code for refactoring opportunities
     pub async fn analyze_refactoring(
         &self,
-        content: &str,
+        _content: &str,
         _file_path: &str,
         _language: &str,
     ) -> Result<RefactoringAnalysis> {

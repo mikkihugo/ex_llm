@@ -45,7 +45,7 @@ pub struct Graph {
     /// Vector similarity cache
     similarity_cache: HashMap<(String, String), f64>,
     /// Relationship cache
-    relationship_cache: HashMap<(String, String), FileRelationship>,
+    #[allow(dead_code)] relationship_cache: HashMap<(String, String), FileRelationship>,
 }
 
 impl Graph {

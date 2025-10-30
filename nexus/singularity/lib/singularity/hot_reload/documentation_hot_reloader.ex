@@ -41,7 +41,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
   use GenServer
   require Logger
   alias Singularity.HotReload.{ModuleReloader, SafeCodeChangeDispatcher}
-  alias Singularity.Agents.{DocumentationPipeline, QualityEnforcer}
+  alias Singularity.Agents.{DocumentationPipeline, CodeQualityAgent}
 
   @type improvement_type :: :documentation | :quality | :code | :agent_behavior
   @type hot_reload_payload :: %{
@@ -246,7 +246,7 @@ defmodule Singularity.HotReload.DocumentationHotReloader do
     case File.write(payload.target_file, payload.content) do
       :ok ->
         # Trigger quality validation
-        case QualityEnforcer.validate_file_quality(payload.target_file) do
+        case CodeQualityAgent.validate_file(payload.target_file) do
           {:ok, _validation} ->
             Logger.info("Quality hot reload successful", file: payload.target_file)
             :ok

@@ -55,7 +55,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   ## Relationships
 
-  - **Uses**: `Singularity.Agents.QualityEnforcer` - Quality validation
+  - **Uses**: `Singularity.Agents.CodeQualityAgent` - Quality validation
   - **Uses**: All 6 autonomous agents - Specialized tasks
   - **Uses**: `Singularity.CodeStore` - File scanning
   - **Used by**: `Singularity.Application` - System integration
@@ -78,7 +78,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     "purpose": "orchestrate_documentation_upgrade_pipeline",
     "domain": "documentation_management",
     "capabilities": ["pipeline_orchestration", "agent_coordination", "multi_language", "automation"],
-    "dependencies": ["QualityEnforcer", "CodeStore"],
+    "dependencies": ["CodeQualityAgent", "CodeStore"],
     "quality_level": "production",
     "template_version": "2.6.0"
   }
@@ -88,7 +88,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   ```mermaid
   graph TD
-    A[DocumentationPipeline] --> B[QualityEnforcer]
+    A[DocumentationPipeline] --> B[CodeQualityAgent]
     A --> C[CodeStore]
     
     B --> E[SelfImprovingAgent]
@@ -136,7 +136,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
 
   use GenServer
   require Logger
-  alias Singularity.Agents.QualityEnforcer
+  alias Singularity.Agents.CodeQualityAgent
 
   ## Client API
 
@@ -427,7 +427,7 @@ defmodule Singularity.Agents.DocumentationPipeline do
     validation_results =
       files
       |> Enum.map(fn file_path ->
-        case QualityEnforcer.validate_file_quality(file_path) do
+        case CodeQualityAgent.validate_file(file_path) do
           {:ok, %{compliant: true}} -> %{file: file_path, status: :compliant}
           {:ok, %{compliant: false}} -> %{file: file_path, status: :non_compliant}
           {:error, _reason} -> %{file: file_path, status: :error}

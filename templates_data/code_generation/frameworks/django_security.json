@@ -1,0 +1,295 @@
+{
+  "framework_id": "django",
+  "framework_name": "Django",
+  "version_target": "3.2+",
+  "description": "Security patterns and vulnerability detection for Django web applications",
+
+  "vulnerability_patterns": [
+    {
+      "vulnerability_id": "django_sql_injection",
+      "name": "SQL Injection via Raw SQL",
+      "cwe": "CWE-89",
+      "severity": "critical",
+      "description": "Using raw SQL queries without parameterization",
+
+      "bad_patterns": [
+        {
+          "code": "User.objects.raw(f\"SELECT * FROM auth_user WHERE id={user_id}\")",
+          "issue": "String interpolation in raw query"
+        },
+        {
+          "code": "User.objects.raw('SELECT * FROM auth_user WHERE id=' + str(user_id))",
+          "issue": "String concatenation"
+        },
+        {
+          "code": "from django.db import connection\nwith connection.cursor() as cursor:\n    cursor.execute(f\"SELECT * FROM users WHERE id={user_id}\")",
+          "issue": "Direct cursor with interpolation"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "User.objects.filter(id=user_id)",
+          "explanation": "ORM automatically parameterizes queries"
+        },
+        {
+          "code": "User.objects.raw('SELECT * FROM auth_user WHERE id=%s', [user_id])",
+          "explanation": "Use placeholders with parameters"
+        },
+        {
+          "code": "from django.db import connection\nwith connection.cursor() as cursor:\n    cursor.execute('SELECT * FROM users WHERE id=%s', [user_id])",
+          "explanation": "Parameterized direct SQL query"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_csrf_missing",
+      "name": "Missing CSRF Protection",
+      "cwe": "CWE-352",
+      "severity": "high",
+      "description": "Forms without CSRF token protection",
+
+      "bad_patterns": [
+        {
+          "code": "<form method=\"POST\">\n  <input name=\"action\" value=\"delete\">\n  <button>Delete</button>\n</form>",
+          "issue": "No CSRF token"
+        },
+        {
+          "code": "@csrf_exempt\ndef delete_user(request):\n    # Disables CSRF protection globally",
+          "issue": "CSRF protection disabled"
+        },
+        {
+          "code": "from django.views.decorators.csrf import csrf_exempt\n\n@csrf_exempt\ndef payment_handler(request):\n    # Processing payments without CSRF",
+          "issue": "Sensitive endpoint without CSRF protection"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "<form method=\"POST\">\n  {% csrf_token %}\n  <input name=\"action\" value=\"delete\">\n  <button>Delete</button>\n</form>",
+          "explanation": "Django template tag includes CSRF token"
+        },
+        {
+          "code": "# In views.py\ndef delete_user(request):\n    if request.method == 'POST':\n        # CSRF protection is on by default",
+          "explanation": "Use default Django CSRF middleware"
+        },
+        {
+          "code": "# For AJAX requests\nfetch('/api/endpoint', {\n  method: 'POST',\n  headers: {\n    'X-CSRFToken': getCookie('csrftoken')\n  },\n  body: JSON.stringify(data)\n});",
+          "explanation": "Include CSRF token in AJAX headers"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_insecure_redirect",
+      "name": "Insecure Redirect",
+      "cwe": "CWE-601",
+      "severity": "medium",
+      "description": "User-controlled redirect without validation",
+
+      "bad_patterns": [
+        {
+          "code": "return HttpResponseRedirect(request.GET.get('next'))",
+          "issue": "Open redirect vulnerability"
+        },
+        {
+          "code": "return redirect(request.POST.get('return_url'))",
+          "issue": "User can redirect to arbitrary site"
+        },
+        {
+          "code": "next_url = request.META.get('HTTP_REFERER')\nreturn redirect(next_url)",
+          "issue": "Trusting referer header for redirects"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from django.http import HttpResponseRedirect\nfrom django.utils.http import url_has_allowed_host_and_scheme\n\nnext_url = request.GET.get('next')\nif url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):\n    return HttpResponseRedirect(next_url)\nreturn redirect('default_view')",
+          "explanation": "Use Django's built-in URL validation"
+        },
+        {
+          "code": "from django.shortcuts import resolve_url\nreturn redirect(resolve_url(next_url or 'home'))",
+          "explanation": "Use Django's resolve_url with relative paths only"
+        },
+        {
+          "code": "ALLOWED_REDIRECTS = ['/dashboard', '/profile', '/home']\nnext_url = request.GET.get('next', '/home')\nif next_url in ALLOWED_REDIRECTS:\n    return redirect(next_url)\nreturn redirect('/home')",
+          "explanation": "Whitelist allowed redirect destinations"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_xss_template",
+      "name": "XSS via Template Rendering",
+      "cwe": "CWE-79",
+      "severity": "high",
+      "description": "Unsafe template rendering of user input",
+
+      "bad_patterns": [
+        {
+          "code": "{{ user_input|safe }}",
+          "issue": "Marking user input as safe disables escaping"
+        },
+        {
+          "code": "{{ description|mark_safe }}",
+          "issue": "Explicitly marking user data as safe"
+        },
+        {
+          "code": "from django.utils.safestring import mark_safe\nhtml = mark_safe(f'<div>{user_input}</div>')",
+          "issue": "Marking concatenated user input as safe"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "{{ user_input }}",
+          "explanation": "Django auto-escapes variables by default"
+        },
+        {
+          "code": "{{ user_input|escape }}",
+          "explanation": "Explicit escaping"
+        },
+        {
+          "code": "import bleach\nclean_html = bleach.clean(user_input, tags=['p', 'br', 'strong', 'em'], attributes={})\nreturn mark_safe(clean_html)",
+          "explanation": "Sanitize HTML with bleach before marking safe"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_weak_password",
+      "name": "Weak Password Hashing",
+      "cwe": "CWE-327",
+      "severity": "high",
+      "description": "Passwords hashed with weak algorithms",
+
+      "bad_patterns": [
+        {
+          "code": "import hashlib\npassword_hash = hashlib.md5(password.encode()).hexdigest()",
+          "issue": "MD5 is cryptographically broken"
+        },
+        {
+          "code": "password_hash = hashlib.sha1(password.encode()).hexdigest()",
+          "issue": "SHA1 is deprecated for password hashing"
+        },
+        {
+          "code": "password_hash = hashlib.sha256(password.encode()).hexdigest()",
+          "issue": "No salt or key stretching"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from django.contrib.auth.hashers import make_password\npassword_hash = make_password(password)",
+          "explanation": "Django's default uses PBKDF2 with SHA256"
+        },
+        {
+          "code": "from django.contrib.auth.models import User\nuser = User.objects.create_user(username='john', password='secure_password')",
+          "explanation": "Use Django's user creation methods"
+        },
+        {
+          "code": "# In settings.py\nPASSWORD_HASHERS = [\n    'django.contrib.auth.hashers.Argon2PasswordHasher',\n    'django.contrib.auth.hashers.PBKDF2PasswordHasher',\n]",
+          "explanation": "Configure stronger password hashers like Argon2"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_path_traversal",
+      "name": "Path Traversal in File Operations",
+      "cwe": "CWE-22",
+      "severity": "critical",
+      "description": "Unvalidated file paths from user input",
+
+      "bad_patterns": [
+        {
+          "code": "filename = request.GET.get('file')\nwith open(f'/uploads/{filename}', 'r') as f:\n    content = f.read()",
+          "issue": "User can access files outside uploads directory"
+        },
+        {
+          "code": "from django.http import FileResponse\nfile_path = request.GET.get('path')\nreturn FileResponse(open(file_path, 'rb'))",
+          "issue": "Direct file path from user input"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "import os\nfrom django.core.exceptions import SuspiciousFileOperation\nfrom django.utils._os import safe_join\n\nbase_dir = '/uploads'\nfilename = request.GET.get('file')\ntry:\n    file_path = safe_join(base_dir, filename)\n    with open(file_path, 'r') as f:\n        content = f.read()\nexcept (SuspiciousFileOperation, ValueError):\n    raise Http404('Invalid file path')",
+          "explanation": "Use Django's safe_join to prevent traversal"
+        },
+        {
+          "code": "import os\nfrom pathlib import Path\n\nbase_dir = Path('/uploads')\nfilename = request.GET.get('file', '').replace('..', '').replace('/', '')\nfile_path = base_dir / filename\nif file_path.is_file() and file_path.parent == base_dir:\n    return FileResponse(open(file_path, 'rb'))",
+          "explanation": "Validate file path is within expected directory"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "django_insecure_deserialization",
+      "name": "Insecure Deserialization",
+      "cwe": "CWE-502",
+      "severity": "critical",
+      "description": "Deserializing untrusted data can lead to code execution",
+
+      "bad_patterns": [
+        {
+          "code": "import pickle\nuser_data = request.POST.get('data')\nobj = pickle.loads(base64.b64decode(user_data))",
+          "issue": "Pickle can execute arbitrary code"
+        },
+        {
+          "code": "import yaml\nconfig = yaml.load(request.body)",
+          "issue": "yaml.load is unsafe"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "import json\nuser_data = request.POST.get('data')\ntry:\n    obj = json.loads(user_data)\nexcept json.JSONDecodeError:\n    raise ValidationError('Invalid JSON')",
+          "explanation": "Use JSON for safe serialization"
+        },
+        {
+          "code": "import yaml\nconfig = yaml.safe_load(request.body)",
+          "explanation": "Use yaml.safe_load instead of yaml.load"
+        }
+      ]
+    }
+  ],
+
+  "security_settings": [
+    {
+      "setting": "SECURE_HSTS_SECONDS",
+      "recommendation": ">= 31536000 (1 year)",
+      "purpose": "Enable HTTP Strict Transport Security"
+    },
+    {
+      "setting": "SECURE_SSL_REDIRECT",
+      "recommendation": "True in production",
+      "purpose": "Force HTTPS redirect"
+    },
+    {
+      "setting": "SESSION_COOKIE_SECURE",
+      "recommendation": "True in production",
+      "purpose": "Only send session cookies over HTTPS"
+    },
+    {
+      "setting": "CSRF_COOKIE_SECURE",
+      "recommendation": "True in production",
+      "purpose": "Only send CSRF cookies over HTTPS"
+    },
+    {
+      "setting": "X_FRAME_OPTIONS",
+      "recommendation": "DENY or SAMEORIGIN",
+      "purpose": "Prevent clickjacking attacks"
+    },
+    {
+      "setting": "SECURE_CONTENT_TYPE_NOSNIFF",
+      "recommendation": "True",
+      "purpose": "Prevent MIME type sniffing"
+    },
+    {
+      "setting": "SECURE_BROWSER_XSS_FILTER",
+      "recommendation": "True",
+      "purpose": "Enable browser XSS protection"
+    },
+    {
+      "setting": "DEBUG",
+      "recommendation": "False in production",
+      "purpose": "Disable debug mode to prevent information leakage"
+    }
+  ]
+}

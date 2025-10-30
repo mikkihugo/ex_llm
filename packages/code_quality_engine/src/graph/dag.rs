@@ -545,6 +545,7 @@ impl VectorIntegration {
     }
 
     /// Generate comprehensive vectors for a file
+    #[allow(clippy::vec_init_then_push)]
     fn generate_file_vectors(&self, content: &str) -> Vec<String> {
         let mut vectors = Vec::new();
 
@@ -1484,6 +1485,11 @@ impl VectorIntegration {
         let prompts =
             self.generate_microservice_prompts(&ms_patterns, architecture_type, related_files);
 
+        // TODO(minimal): Add basic file-context prompt. In production,
+        // include richer, language-aware context slices and summaries.
+        let mut prompts = prompts;
+        prompts.push(format!("FILE_CONTEXT: Analyzing {}", file_path));
+
         // Inject prompts into SPARC system
         for prompt in prompts {
             self.prompt_manager
@@ -1633,11 +1639,11 @@ impl VectorIntegration {
 #[derive(Debug, Clone)]
 struct MicroserviceCodePattern {
     /// CodePattern name
-    name: String,
+    #[allow(dead_code)] name: String,
     /// CodePattern type
     pattern_type: MicroserviceCodePatternType,
     /// Confidence score
-    confidence: f64,
+    #[allow(dead_code)] confidence: f64,
 }
 
 /// Types of microservice patterns

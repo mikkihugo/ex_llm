@@ -1,0 +1,504 @@
+{
+  "pattern_id": "supply_chain_risk",
+  "name": "Supply Chain and Ecosystem Risks",
+  "description": "Assess risks from package ecosystem and supply chain attacks",
+  "version": "1.0",
+  "created_at": "2025-01-30",
+  "artifact_type": "package_intelligence",
+
+  "risk_categories": [
+    {
+      "category_id": "typosquatting",
+      "category": "Typosquatting",
+      "description": "Malicious packages with names similar to popular packages",
+      "severity": "critical",
+      "likelihood": "high",
+      "impact": "code_execution",
+      "examples": [
+        {
+          "legitimate": "lodash",
+          "typosquats": ["lodahs", "loadash", "lodassh", "1odash"]
+        },
+        {
+          "legitimate": "react",
+          "typosquats": ["reat", "reakt", "reactt", "raect"]
+        },
+        {
+          "legitimate": "express",
+          "typosquats": ["expres", "exress", "expresss", "expreess"]
+        },
+        {
+          "legitimate": "axios",
+          "typosquats": ["axois", "axious", "axioss", "axlos"]
+        },
+        {
+          "legitimate": "mongoose",
+          "typosquats": ["mongose", "mangoose", "mongosse", "mongooes"]
+        }
+      ],
+      "detection": {
+        "methods": [
+          "Levenshtein distance < 3 from popular packages",
+          "Homoglyph detection (replacing letters with similar looking characters)",
+          "Keyboard proximity analysis",
+          "Common typo patterns",
+          "Sudden appearance of similar named package"
+        ],
+        "indicators": [
+          "Similar name to popular package",
+          "Very recent publication date",
+          "No or minimal documentation",
+          "Different maintainer than expected",
+          "Suspicious code patterns"
+        ]
+      },
+      "prevention": [
+        "Package name allowlisting",
+        "Typosquatting detection in CI",
+        "Manual review of new dependencies",
+        "Use package-lock.json",
+        "Verify publisher identity"
+      ]
+    },
+    {
+      "category_id": "dependency_confusion",
+      "category": "Dependency Confusion",
+      "description": "Public packages overriding private/internal packages",
+      "severity": "critical",
+      "likelihood": "medium",
+      "impact": "code_execution",
+      "attack_vectors": [
+        "Public registry taking precedence over private",
+        "Higher version number in public registry",
+        "Misconfigured package managers",
+        "Missing scope configuration"
+      ],
+      "real_world_examples": [
+        {
+          "incident": "Alex Birsan 2021",
+          "description": "Uploaded packages to npm/PyPI/RubyGems with names of private packages",
+          "affected": "Microsoft, Apple, Tesla, others",
+          "impact": "Remote code execution in build systems"
+        }
+      ],
+      "detection": {
+        "indicators": [
+          "Package name matches internal naming convention",
+          "Unexpected source registry",
+          "Version number suspiciously high",
+          "Different package signature"
+        ]
+      },
+      "prevention": [
+        "Use scoped packages (@company/package)",
+        "Configure registry priority correctly",
+        "Block public registry for internal names",
+        "Use .npmrc with registry configuration",
+        "Implement package signing"
+      ]
+    },
+    {
+      "category_id": "maintainer_compromise",
+      "category": "Maintainer Account Compromise",
+      "description": "Legitimate package accounts hijacked to distribute malware",
+      "severity": "critical",
+      "likelihood": "low",
+      "impact": "widespread_compromise",
+      "notable_incidents": [
+        {
+          "package": "event-stream",
+          "date": "2018-11",
+          "description": "Maintainer handed over package, new maintainer added malicious code",
+          "impact": "Cryptocurrency wallet theft",
+          "downloads_affected": "8 million/week"
+        },
+        {
+          "package": "ua-parser-js",
+          "date": "2021-10",
+          "description": "NPM account hijacked, malware added",
+          "impact": "Cryptominer and password stealer",
+          "downloads_affected": "7 million/week"
+        },
+        {
+          "package": "coa",
+          "date": "2021-11",
+          "description": "Maintainer account compromised",
+          "impact": "Data theft malware",
+          "downloads_affected": "9 million/week"
+        }
+      ],
+      "detection": {
+        "indicators": [
+          "Sudden maintainer change",
+          "Unusual commit patterns",
+          "Obfuscated code additions",
+          "New binary dependencies",
+          "Unexpected network calls",
+          "Changes to build/install scripts"
+        ],
+        "monitoring": [
+          "Track maintainer changes",
+          "Monitor package updates",
+          "Analyze code diffs",
+          "Check for suspicious patterns"
+        ]
+      },
+      "prevention": [
+        "Enable 2FA for package maintainers",
+        "Use package signing",
+        "Review all updates before adoption",
+        "Delay updates by 7-14 days",
+        "Monitor security advisories"
+      ]
+    },
+    {
+      "category_id": "malicious_packages",
+      "category": "Intentionally Malicious Packages",
+      "description": "Packages created specifically to compromise systems",
+      "severity": "critical",
+      "likelihood": "medium",
+      "impact": "targeted_attack",
+      "common_techniques": [
+        {
+          "technique": "Install scripts",
+          "description": "Malicious code in postinstall scripts",
+          "detection": "Review package.json scripts section"
+        },
+        {
+          "technique": "Obfuscated code",
+          "description": "Hidden malicious functionality",
+          "detection": "Static analysis for obfuscation patterns"
+        },
+        {
+          "technique": "Time bombs",
+          "description": "Malicious code activates after delay",
+          "detection": "Look for date/time checks"
+        },
+        {
+          "technique": "Targeted attacks",
+          "description": "Only activates in specific environments",
+          "detection": "Check for environment detection code"
+        }
+      ],
+      "detection": {
+        "automated_checks": [
+          "Static code analysis",
+          "Behavioral analysis in sandbox",
+          "Network traffic monitoring",
+          "File system access patterns",
+          "Process spawning detection"
+        ]
+      }
+    },
+    {
+      "category_id": "protestware",
+      "category": "Protestware/Sabotage",
+      "description": "Packages modified by maintainers as protest or sabotage",
+      "severity": "high",
+      "likelihood": "low",
+      "impact": "denial_of_service",
+      "notable_incidents": [
+        {
+          "package": "colors.js / faker.js",
+          "date": "2022-01",
+          "description": "Maintainer added infinite loop as protest",
+          "impact": "Broke thousands of projects"
+        },
+        {
+          "package": "node-ipc",
+          "date": "2022-03",
+          "description": "Added code to corrupt files on Russian/Belarusian IPs",
+          "impact": "Data destruction based on geolocation"
+        },
+        {
+          "package": "left-pad",
+          "date": "2016-03",
+          "description": "Package unpublished breaking thousands of builds",
+          "impact": "Widespread build failures"
+        }
+      ],
+      "prevention": [
+        "Pin dependency versions",
+        "Use lockfiles",
+        "Mirror critical dependencies",
+        "Have rollback procedures"
+      ]
+    },
+    {
+      "category_id": "abandoned_takeover",
+      "category": "Abandoned Package Takeover",
+      "description": "Abandoned packages taken over by malicious actors",
+      "severity": "high",
+      "likelihood": "medium",
+      "impact": "varies",
+      "risk_factors": [
+        "No updates for 2+ years",
+        "Original maintainer unreachable",
+        "High download count",
+        "Requests for maintainership",
+        "Security vulnerabilities unfixed"
+      ],
+      "prevention": [
+        "Monitor maintenance status",
+        "Plan migration from abandoned packages",
+        "Consider forking critical dependencies",
+        "Implement dependency freshness policies"
+      ]
+    },
+    {
+      "category_id": "build_time_attacks",
+      "category": "Build-time Supply Chain Attacks",
+      "description": "Attacks during build/compilation process",
+      "severity": "critical",
+      "likelihood": "low",
+      "impact": "build_system_compromise",
+      "attack_vectors": [
+        "Compromised build tools",
+        "Malicious compiler plugins",
+        "Infected CI/CD pipelines",
+        "Poisoned build caches",
+        "Compromised artifact repositories"
+      ],
+      "notable_incidents": [
+        {
+          "incident": "SolarWinds",
+          "date": "2020",
+          "description": "Build system compromised to inject backdoor",
+          "impact": "Thousands of organizations affected"
+        },
+        {
+          "incident": "Codecov",
+          "date": "2021",
+          "description": "Bash uploader script compromised",
+          "impact": "Exposed credentials in CI environments"
+        }
+      ],
+      "prevention": [
+        "Secure build environments",
+        "Sign build artifacts",
+        "Reproducible builds",
+        "Build process monitoring",
+        "Isolated build systems"
+      ]
+    },
+    {
+      "category_id": "namespace_hijacking",
+      "category": "Namespace/Registry Hijacking",
+      "description": "Taking over abandoned namespaces or registry accounts",
+      "severity": "high",
+      "likelihood": "low",
+      "impact": "package_substitution",
+      "scenarios": [
+        "Expired domain takeover for scoped packages",
+        "Registry account recycling",
+        "Namespace squatting",
+        "Organization name changes"
+      ],
+      "prevention": [
+        "Maintain namespace ownership",
+        "Monitor domain expirations",
+        "Use verified publishers",
+        "Implement package signing"
+      ]
+    }
+  ],
+
+  "risk_assessment_framework": [
+    {
+      "check": "Package legitimacy verification",
+      "good_indicators": [
+        "Well-known package name",
+        "Verified publisher/organization",
+        "Long publication history",
+        "Many contributors",
+        "Active maintenance"
+      ],
+      "red_flags": [
+        "Similar name to popular package",
+        "New or unknown publisher",
+        "Recently published",
+        "No repository link",
+        "Minimal documentation"
+      ]
+    },
+    {
+      "check": "Publisher trustworthiness",
+      "good_indicators": [
+        "Verified organization account",
+        "Two-factor authentication enabled",
+        "Signing certificates",
+        "Consistent publishing history",
+        "Multiple packages maintained"
+      ],
+      "red_flags": [
+        "New account",
+        "No other packages",
+        "No profile information",
+        "Suspicious email domain",
+        "Recent account changes"
+      ]
+    },
+    {
+      "check": "Code integrity verification",
+      "good_indicators": [
+        "Package signatures match",
+        "Checksums verified",
+        "Source code available",
+        "Build reproducible",
+        "No obfuscated code"
+      ],
+      "red_flags": [
+        "Missing signatures",
+        "Checksum mismatches",
+        "Obfuscated/minified source",
+        "Binary blobs included",
+        "Suspicious install scripts"
+      ]
+    },
+    {
+      "check": "Behavioral analysis",
+      "good_indicators": [
+        "No network calls during install",
+        "No file system modifications",
+        "No process spawning",
+        "Predictable behavior",
+        "Well-documented actions"
+      ],
+      "red_flags": [
+        "Unexpected network connections",
+        "File system modifications outside package",
+        "Spawning external processes",
+        "Environment variable access",
+        "Privilege escalation attempts"
+      ]
+    }
+  ],
+
+  "detection_tools": [
+    {
+      "tool": "Socket Security",
+      "url": "https://socket.dev",
+      "capabilities": ["Supply chain attack detection", "Behavioral analysis"],
+      "ecosystem": ["npm", "pypi"]
+    },
+    {
+      "tool": "Snyk",
+      "url": "https://snyk.io",
+      "capabilities": ["Vulnerability scanning", "License compliance", "Container scanning"],
+      "ecosystem": ["multi"]
+    },
+    {
+      "tool": "npm audit",
+      "capabilities": ["Known vulnerability detection"],
+      "ecosystem": ["npm"]
+    },
+    {
+      "tool": "Dependabot",
+      "url": "https://github.com/features/security",
+      "capabilities": ["Automated updates", "Security alerts"],
+      "ecosystem": ["multi"]
+    },
+    {
+      "tool": "OWASP Dependency Check",
+      "url": "https://owasp.org/www-project-dependency-check/",
+      "capabilities": ["CVE scanning", "False positive suppression"],
+      "ecosystem": ["multi"]
+    },
+    {
+      "tool": "Packj",
+      "url": "https://github.com/ossillate-inc/packj",
+      "capabilities": ["Malicious package detection", "Risk scoring"],
+      "ecosystem": ["npm", "pypi", "rubygems"]
+    }
+  ],
+
+  "mitigation_strategies": [
+    {
+      "strategy": "defense_in_depth",
+      "description": "Multiple layers of security controls",
+      "controls": [
+        "Package allowlisting",
+        "Automated scanning",
+        "Manual review process",
+        "Runtime monitoring",
+        "Network segmentation"
+      ]
+    },
+    {
+      "strategy": "zero_trust_dependencies",
+      "description": "Never trust, always verify",
+      "controls": [
+        "Verify all packages before use",
+        "Continuous monitoring",
+        "Least privilege execution",
+        "Sandboxed builds",
+        "Isolated test environments"
+      ]
+    },
+    {
+      "strategy": "supply_chain_transparency",
+      "description": "Complete visibility into dependencies",
+      "controls": [
+        "Software Bill of Materials (SBOM)",
+        "Dependency tracking",
+        "Provenance verification",
+        "Build attestations",
+        "Audit logs"
+      ]
+    },
+    {
+      "strategy": "rapid_response",
+      "description": "Quick reaction to incidents",
+      "controls": [
+        "Incident response plan",
+        "Automated rollback",
+        "Package pinning",
+        "Mirror critical packages",
+        "Communication protocols"
+      ]
+    }
+  ],
+
+  "best_practices": [
+    {
+      "practice": "Dependency minimization",
+      "description": "Use fewer, well-maintained dependencies",
+      "benefit": "Reduces attack surface"
+    },
+    {
+      "practice": "Delayed adoption",
+      "description": "Wait 7-14 days before using new versions",
+      "benefit": "Allows time for community to detect issues"
+    },
+    {
+      "practice": "Vendoring critical dependencies",
+      "description": "Include source code of critical deps",
+      "benefit": "Protects against removal or hijacking"
+    },
+    {
+      "practice": "Automated security scanning",
+      "description": "Continuous scanning in CI/CD",
+      "benefit": "Early detection of vulnerabilities"
+    },
+    {
+      "practice": "Developer security training",
+      "description": "Educate on supply chain risks",
+      "benefit": "Human detection of suspicious patterns"
+    },
+    {
+      "practice": "Package signing verification",
+      "description": "Verify signatures when available",
+      "benefit": "Ensures package integrity"
+    },
+    {
+      "practice": "Registry configuration hardening",
+      "description": "Properly configure package registries",
+      "benefit": "Prevents dependency confusion"
+    },
+    {
+      "practice": "SBOM generation and tracking",
+      "description": "Maintain software bill of materials",
+      "benefit": "Complete dependency visibility"
+    }
+  ]
+}

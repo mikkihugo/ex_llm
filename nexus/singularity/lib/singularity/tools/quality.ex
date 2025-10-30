@@ -3,7 +3,6 @@ defmodule Singularity.Tools.Quality do
   Tool definitions that expose quality checks (Sobelow, mix_audit) via the tool runner.
   """
 
-  alias Singularity.Quality.Analyzer
   alias Singularity.Schemas.Tools.Tool
 
   @project_root Path.expand("../../..", __DIR__)
@@ -48,18 +47,19 @@ defmodule Singularity.Tools.Quality do
 
     finished = DateTime.utc_now()
 
-    case Analyzer.store_sobelow(%{
-           output: output,
-           exit_status: status,
-           started_at: start_time,
-           finished_at: finished
-         }) do
-      {:ok, run} ->
-        {:ok, "Sobelow run completed with #{run.warning_count} warnings"}
+    # Parse JSON output to count warnings
+    warning_count =
+      case Jason.decode(output) do
+        {:ok, %{"warnings" => warnings}} when is_list(warnings) ->
+          Enum.count(warnings)
 
-      {:error, reason} ->
-        {:error, "Failed to store Sobelow results: #{inspect(reason)}"}
-    end
+        _ ->
+          0
+      end
+
+    elapsed_ms = DateTime.diff(finished, start_time, :millisecond)
+
+    {:ok, "Sobelow scan completed in #{elapsed_ms}ms with #{warning_count} warnings (exit: #{status})"}
   end
 
   def mix_audit_exec(_args, _ctx) do
@@ -74,18 +74,19 @@ defmodule Singularity.Tools.Quality do
 
     finished = DateTime.utc_now()
 
-    case Analyzer.store_mix_audit(%{
-           output: output,
-           exit_status: status,
-           started_at: start_time,
-           finished_at: finished
-         }) do
-      {:ok, run} ->
-        {:ok, "Mix audit run completed with #{run.warning_count} warnings"}
+    # Parse JSON output to count vulnerabilities
+    vuln_count =
+      case Jason.decode(output) do
+        {:ok, %{"vulnerabilities" => vulns}} when is_list(vulns) ->
+          Enum.count(vulns)
 
-      {:error, reason} ->
-        {:error, "Failed to store mix audit results: #{inspect(reason)}"}
-    end
+        _ ->
+          0
+      end
+
+    elapsed_ms = DateTime.diff(finished, start_time, :millisecond)
+
+    {:ok, "Mix audit completed in #{elapsed_ms}ms with #{vuln_count} vulnerabilities (exit: #{status})"}
   end
 
   defp sobelow_env do

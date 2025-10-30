@@ -1,0 +1,528 @@
+{
+  "framework_id": "iso27001",
+  "name": "ISO 27001 - Information Security Management",
+  "description": "ISO/IEC 27001:2022 Information Security Management System (ISMS) compliance framework",
+  "version": "2022",
+  "applicable_to": ["all"],
+  "last_updated": "2025-10-30",
+
+  "compliance_controls": [
+    {
+      "control_id": "A.5.1",
+      "control_name": "Information Security Policies",
+      "category": "Organizational Controls",
+      "description": "Policies for information security shall be defined, approved by management, published and communicated.",
+      "code_requirements": [
+        {
+          "requirement": "Security policy implementation",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_security_policies",
+            "outdated_policies",
+            "unenforced_standards"
+          ],
+          "good_patterns": [
+            "documented_policies",
+            "enforced_standards",
+            "regular_policy_review"
+          ],
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "control_id": "A.5.15",
+      "control_name": "Access Control",
+      "category": "Organizational Controls",
+      "description": "Rules to control physical and logical access to information shall be established and implemented.",
+      "code_requirements": [
+        {
+          "requirement": "Access control implementation",
+          "languages": ["all"],
+          "bad_patterns": [
+            "unrestricted_access",
+            "no_access_policies",
+            "missing_authorization"
+          ],
+          "good_patterns": [
+            "role_based_access",
+            "least_privilege",
+            "access_review_process"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "A.5.31",
+      "control_name": "Legal and Regulatory Compliance",
+      "category": "Organizational Controls",
+      "description": "Legal, statutory, regulatory and contractual requirements shall be identified, documented and kept up to date.",
+      "code_requirements": [
+        {
+          "requirement": "Compliance tracking",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_compliance_tracking",
+            "unidentified_requirements",
+            "no_regulatory_updates"
+          ],
+          "good_patterns": [
+            "compliance_registry",
+            "requirement_tracking",
+            "regular_compliance_review"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.6.7",
+      "control_name": "Remote Working",
+      "category": "People Controls",
+      "description": "Security measures shall be implemented when personnel are working remotely.",
+      "code_requirements": [
+        {
+          "requirement": "Remote access security",
+          "languages": ["all"],
+          "bad_patterns": [
+            "unencrypted_remote_access",
+            "no_vpn_requirement",
+            "weak_remote_authentication"
+          ],
+          "good_patterns": [
+            "vpn_mandatory",
+            "encrypted_connections",
+            "mfa_for_remote"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.7.1",
+      "control_name": "Physical Security Perimeters",
+      "category": "Physical Controls",
+      "description": "Security perimeters shall be defined and used to protect areas containing information and information processing facilities.",
+      "code_requirements": [
+        {
+          "requirement": "Physical security boundaries",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_access_logging",
+            "unrestricted_server_access",
+            "no_visitor_controls"
+          ],
+          "good_patterns": [
+            "access_card_systems",
+            "visitor_management",
+            "secure_data_centers"
+          ],
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.1",
+      "control_name": "User Endpoint Devices",
+      "category": "Technological Controls",
+      "description": "Information stored on, processed by or accessible via user endpoint devices shall be protected.",
+      "code_requirements": [
+        {
+          "requirement": "Endpoint protection",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_device_encryption",
+            "no_endpoint_protection",
+            "unmanaged_devices"
+          ],
+          "good_patterns": [
+            "full_disk_encryption",
+            "endpoint_detection_response",
+            "mobile_device_management"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.2",
+      "control_name": "Privileged Access Rights",
+      "category": "Technological Controls",
+      "description": "The allocation and use of privileged access rights shall be restricted and managed.",
+      "code_requirements": [
+        {
+          "requirement": "Privileged access management",
+          "languages": ["all"],
+          "bad_patterns": [
+            "excessive_admin_accounts",
+            "permanent_elevated_access",
+            "shared_admin_credentials"
+          ],
+          "good_patterns": [
+            "just_in_time_access",
+            "privileged_access_management",
+            "separate_admin_accounts"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.5",
+      "control_name": "Secure Authentication",
+      "category": "Technological Controls",
+      "description": "Secure authentication technologies and procedures shall be implemented.",
+      "code_requirements": [
+        {
+          "requirement": "Strong authentication",
+          "languages": ["all"],
+          "bad_patterns": [
+            "weak_password_policy",
+            "no_mfa",
+            "basic_auth_only",
+            "hardcoded_credentials"
+          ],
+          "good_patterns": [
+            "multi_factor_auth",
+            "passwordless_auth",
+            "certificate_auth",
+            "biometric_auth"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.9",
+      "control_name": "Configuration Management",
+      "category": "Technological Controls",
+      "description": "Configurations, including security configurations, shall be established, documented, implemented, monitored and reviewed.",
+      "code_requirements": [
+        {
+          "requirement": "Configuration control",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_configuration_management",
+            "undocumented_changes",
+            "configuration_drift"
+          ],
+          "good_patterns": [
+            "infrastructure_as_code",
+            "configuration_versioning",
+            "automated_compliance_checks"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.10",
+      "control_name": "Information Deletion",
+      "category": "Technological Controls",
+      "description": "Information stored in information systems, devices or any other storage media shall be deleted when no longer required.",
+      "code_requirements": [
+        {
+          "requirement": "Secure data deletion",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_deletion_policy",
+            "soft_delete_only",
+            "data_remnants"
+          ],
+          "good_patterns": [
+            "secure_deletion",
+            "crypto_shredding",
+            "automated_purging"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.12",
+      "control_name": "Data Leakage Prevention",
+      "category": "Technological Controls",
+      "description": "Data leakage prevention measures shall be applied to systems, networks and other devices that process, store or transmit sensitive information.",
+      "code_requirements": [
+        {
+          "requirement": "DLP implementation",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_dlp_controls",
+            "unrestricted_data_export",
+            "sensitive_data_in_logs"
+          ],
+          "good_patterns": [
+            "dlp_policies",
+            "data_classification",
+            "controlled_data_export"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.16",
+      "control_name": "Monitoring Activities",
+      "category": "Technological Controls",
+      "description": "Networks, systems and applications shall be monitored for anomalous behavior.",
+      "code_requirements": [
+        {
+          "requirement": "Security monitoring",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_monitoring",
+            "unreviewed_logs",
+            "no_anomaly_detection"
+          ],
+          "good_patterns": [
+            "continuous_monitoring",
+            "siem_implementation",
+            "behavioral_analytics"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.23",
+      "control_name": "Web Filtering",
+      "category": "Technological Controls",
+      "description": "Access to external websites shall be managed to reduce exposure to malicious content.",
+      "code_requirements": [
+        {
+          "requirement": "Web security controls",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_url_filtering",
+            "unrestricted_web_access",
+            "no_content_scanning"
+          ],
+          "good_patterns": [
+            "url_categorization",
+            "malware_scanning",
+            "ssl_inspection"
+          ],
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.24",
+      "control_name": "Use of Cryptography",
+      "category": "Technological Controls",
+      "description": "Rules for the effective use of cryptography, including cryptographic key management, shall be defined and implemented.",
+      "code_requirements": [
+        {
+          "requirement": "Cryptographic controls",
+          "languages": ["all"],
+          "bad_patterns": [
+            "weak_encryption",
+            "hardcoded_keys",
+            "no_key_rotation",
+            "outdated_algorithms"
+          ],
+          "good_patterns": [
+            "strong_encryption",
+            "key_management_system",
+            "regular_key_rotation",
+            "approved_algorithms"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "A.8.28",
+      "control_name": "Secure Coding",
+      "category": "Technological Controls",
+      "description": "Secure coding principles shall be applied to software development.",
+      "code_requirements": [
+        {
+          "requirement": "Secure development practices",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_input_validation",
+            "sql_injection_vulnerable",
+            "buffer_overflow_risk",
+            "no_security_testing"
+          ],
+          "good_patterns": [
+            "input_sanitization",
+            "parameterized_queries",
+            "secure_coding_standards",
+            "security_testing_pipeline"
+          ],
+          "severity": "critical"
+        }
+      ]
+    }
+  ],
+
+  "code_checks": [
+    {
+      "check_name": "Authentication Security",
+      "check_id": "iso27001_authentication",
+      "description": "Verify secure authentication implementation",
+      "severity": "critical",
+      "framework_controls": ["A.8.5"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Weak password requirements",
+          "No MFA implementation",
+          "Hardcoded credentials",
+          "Basic auth usage"
+        ]
+      }
+    },
+    {
+      "check_name": "Access Control",
+      "check_id": "iso27001_access_control",
+      "description": "Verify access control implementation",
+      "severity": "critical",
+      "framework_controls": ["A.5.15", "A.8.2"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Missing authorization checks",
+          "Excessive privileges",
+          "No role separation",
+          "Shared admin accounts"
+        ]
+      }
+    },
+    {
+      "check_name": "Cryptography Usage",
+      "check_id": "iso27001_crypto",
+      "description": "Verify proper cryptographic implementation",
+      "severity": "critical",
+      "framework_controls": ["A.8.24"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Weak encryption algorithms",
+          "Hardcoded encryption keys",
+          "No key rotation",
+          "Deprecated crypto"
+        ]
+      }
+    },
+    {
+      "check_name": "Secure Coding",
+      "check_id": "iso27001_secure_coding",
+      "description": "Verify secure coding practices",
+      "severity": "critical",
+      "framework_controls": ["A.8.28"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "SQL injection vulnerabilities",
+          "XSS vulnerabilities",
+          "Buffer overflow risks",
+          "No input validation"
+        ]
+      }
+    },
+    {
+      "check_name": "Monitoring and Logging",
+      "check_id": "iso27001_monitoring",
+      "description": "Verify monitoring implementation",
+      "severity": "high",
+      "framework_controls": ["A.8.16"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "No audit logging",
+          "Insufficient log detail",
+          "No log monitoring",
+          "Missing security events"
+        ]
+      }
+    },
+    {
+      "check_name": "Data Protection",
+      "check_id": "iso27001_data_protection",
+      "description": "Verify data protection controls",
+      "severity": "high",
+      "framework_controls": ["A.8.10", "A.8.12"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "No data classification",
+          "Unencrypted sensitive data",
+          "No deletion mechanisms",
+          "Data leakage risks"
+        ]
+      }
+    },
+    {
+      "check_name": "Configuration Security",
+      "check_id": "iso27001_configuration",
+      "description": "Verify secure configuration",
+      "severity": "high",
+      "framework_controls": ["A.8.9"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Default configurations",
+          "Unmanaged changes",
+          "No version control",
+          "Configuration drift"
+        ]
+      }
+    }
+  ],
+
+  "remediation_roadmap": {
+    "phase_1": {
+      "timeline": "30 days",
+      "controls": ["A.8.5", "A.8.24", "A.8.28"],
+      "tasks": [
+        "Implement multi-factor authentication",
+        "Deploy strong encryption standards",
+        "Establish secure coding practices",
+        "Remove hardcoded credentials"
+      ]
+    },
+    "phase_2": {
+      "timeline": "60 days",
+      "controls": ["A.5.15", "A.8.2", "A.8.16"],
+      "tasks": [
+        "Implement role-based access control",
+        "Deploy privileged access management",
+        "Establish security monitoring",
+        "Configure audit logging"
+      ]
+    },
+    "phase_3": {
+      "timeline": "90 days",
+      "controls": ["A.8.9", "A.8.10", "A.8.12"],
+      "tasks": [
+        "Implement configuration management",
+        "Deploy data loss prevention",
+        "Establish data retention policies",
+        "Document security controls"
+      ]
+    },
+    "phase_4": {
+      "timeline": "120 days",
+      "controls": ["A.5.1", "A.5.31", "A.6.7"],
+      "tasks": [
+        "Develop comprehensive security policies",
+        "Establish compliance tracking",
+        "Implement remote working security",
+        "Conduct security awareness training"
+      ]
+    }
+  },
+
+  "references": [
+    "ISO/IEC 27001:2022",
+    "ISO/IEC 27002:2022",
+    "ISO 27001 Implementation Guide",
+    "NIST Cybersecurity Framework Mapping",
+    "ENISA Security Guidelines"
+  ]
+}

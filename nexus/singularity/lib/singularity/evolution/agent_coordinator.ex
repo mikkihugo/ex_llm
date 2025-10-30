@@ -56,7 +56,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
       # Propose change to CentralCloud Guardian
       {:ok, change} = AgentCoordinator.propose_change(
-        Singularity.Agents.QualityEnforcer,
+        Singularity.Agents.CodeQualityAgent,
         %{type: :refactor, files: ["lib/my_module.ex"]},
         %{confidence: 0.95}
       )
@@ -218,7 +218,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
   ## Examples
 
       {:ok, change} = AgentCoordinator.propose_change(
-        Singularity.Agents.QualityEnforcer,
+        Singularity.Agents.CodeQualityAgent,
         %{type: :refactor, files: ["lib/my_module.ex"]},
         %{confidence: 0.95, dry_run: true}
       )

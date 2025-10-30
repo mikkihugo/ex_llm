@@ -187,7 +187,7 @@ impl InfrastructureAnalyzer {
 
         // Sort by priority
         let mut detectors = self.detectors.iter().collect::<Vec<_>>();
-        detectors.sort_by(|a, b| b.priority().cmp(&a.priority()));
+        detectors.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
         let mut message_brokers = Vec::new();
         let mut databases = Vec::new();

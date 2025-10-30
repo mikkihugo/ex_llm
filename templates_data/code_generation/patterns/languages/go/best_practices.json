@@ -1,0 +1,351 @@
+{
+  "language": "go",
+  "language_name": "Go",
+  "version_target": "1.18+",
+  "description": "Best practices and patterns for writing idiomatic, efficient, and maintainable Go code",
+
+  "patterns": [
+    {
+      "pattern_id": "go_error_handling",
+      "name": "Proper Error Handling",
+      "category": "Error Handling",
+      "severity": "high",
+      "description": "Always check and handle errors explicitly",
+
+      "bad_example": {
+        "code": "// Ignoring errors\ndata, _ := ioutil.ReadFile(\"config.json\")\njson.Unmarshal(data, &config)\n\n// Panic on error\nfile, err := os.Open(\"data.txt\")\nif err != nil {\n    panic(err)  // Don't panic in libraries\n}\n\n// Generic error messages\nif err != nil {\n    return fmt.Errorf(\"error occurred\")\n}",
+        "issues": [
+          "Silent failures",
+          "Panics crash the program",
+          "Lost error context",
+          "Hard to debug"
+        ]
+      },
+
+      "good_example": {
+        "code": "import (\n    \"fmt\"\n    \"errors\"\n    \"os\"\n)\n\n// Always check errors\ndata, err := os.ReadFile(\"config.json\")\nif err != nil {\n    return fmt.Errorf(\"reading config: %w\", err)\n}\n\nvar config Config\nif err := json.Unmarshal(data, &config); err != nil {\n    return fmt.Errorf(\"parsing config: %w\", err)\n}\n\n// Custom error types\ntype ValidationError struct {\n    Field string\n    Value interface{}\n    Msg   string\n}\n\nfunc (e *ValidationError) Error() string {\n    return fmt.Sprintf(\"validation failed for %s: %s (got %v)\", \n        e.Field, e.Msg, e.Value)\n}\n\n// Sentinel errors\nvar (\n    ErrNotFound = errors.New(\"item not found\")\n    ErrInvalidInput = errors.New(\"invalid input\")\n)\n\nfunc FindUser(id string) (*User, error) {\n    user, err := db.Query(id)\n    if err != nil {\n        if errors.Is(err, sql.ErrNoRows) {\n            return nil, ErrNotFound\n        }\n        return nil, fmt.Errorf(\"querying user %s: %w\", id, err)\n    }\n    return user, nil\n}\n\n// Error wrapping for context\nfunc ProcessFile(path string) error {\n    data, err := os.ReadFile(path)\n    if err != nil {\n        return fmt.Errorf(\"ProcessFile(%q): %w\", path, err)\n    }\n    \n    if err := validate(data); err != nil {\n        return fmt.Errorf(\"ProcessFile(%q) validation: %w\", path, err)\n    }\n    \n    return nil\n}\n\n// Multiple return values for errors\nfunc Divide(a, b float64) (float64, error) {\n    if b == 0 {\n        return 0, errors.New(\"division by zero\")\n    }\n    return a / b, nil\n}",
+        "benefits": [
+          "Explicit error handling",
+          "Error context preservation",
+          "Type-safe error checking",
+          "Clear error chains"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/blog/error-handling-and-go",
+        "https://go.dev/blog/go1.13-errors",
+        "https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully"
+      ]
+    },
+    {
+      "pattern_id": "go_interface_design",
+      "name": "Interface-Based Design",
+      "category": "Architecture",
+      "severity": "high",
+      "description": "Design small, focused interfaces for flexibility",
+
+      "bad_example": {
+        "code": "// Large interface (hard to implement)\ntype DataStore interface {\n    Connect() error\n    Disconnect() error\n    Get(key string) (string, error)\n    Set(key, value string) error\n    Delete(key string) error\n    List() ([]string, error)\n    Backup() error\n    Restore(data []byte) error\n    GetStats() Stats\n}\n\n// Accepting concrete types\nfunc ProcessData(store *MySQLStore) error {\n    // Tied to specific implementation\n    return store.Process()\n}\n\n// Returning concrete types unnecessarily\nfunc NewLogger() *FileLogger {\n    return &FileLogger{}  // Limits flexibility\n}",
+        "issues": [
+          "Hard to mock/test",
+          "Tight coupling",
+          "Violates interface segregation",
+          "Difficult to extend"
+        ]
+      },
+
+      "good_example": {
+        "code": "// Small, focused interfaces\ntype Reader interface {\n    Read(key string) (string, error)\n}\n\ntype Writer interface {\n    Write(key, value string) error\n}\n\ntype ReadWriter interface {\n    Reader\n    Writer\n}\n\n// Accept interfaces\nfunc ProcessData(r Reader) error {\n    data, err := r.Read(\"key\")\n    if err != nil {\n        return fmt.Errorf(\"reading data: %w\", err)\n    }\n    // Process data\n    return nil\n}\n\n// Return structs (or interfaces when needed)\nfunc NewFileStore(path string) *FileStore {\n    return &FileStore{path: path}\n}\n\n// Standard library patterns\ntype Handler interface {\n    ServeHTTP(ResponseWriter, *Request)\n}\n\n// io.Writer is perfect - one method\ntype LogWriter struct {\n    prefix string\n}\n\nfunc (l *LogWriter) Write(p []byte) (n int, err error) {\n    return fmt.Printf(\"%s: %s\", l.prefix, p)\n}\n\n// Interface assertions\nvar _ io.Writer = (*LogWriter)(nil)  // Compile-time check\n\n// Conditional interfaces\ntype Store interface {\n    Get(key string) (string, error)\n}\n\ntype BatchGetter interface {\n    GetBatch(keys []string) (map[string]string, error)\n}\n\nfunc GetValues(s Store, keys []string) (map[string]string, error) {\n    // Check if store supports batch operations\n    if bg, ok := s.(BatchGetter); ok {\n        return bg.GetBatch(keys)\n    }\n    \n    // Fall back to individual gets\n    result := make(map[string]string)\n    for _, key := range keys {\n        val, err := s.Get(key)\n        if err != nil {\n            return nil, err\n        }\n        result[key] = val\n    }\n    return result, nil\n}",
+        "benefits": [
+          "Easy to test with mocks",
+          "Loose coupling",
+          "Flexible implementations",
+          "Follows Go idioms"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/doc/effective_go#interfaces",
+        "https://github.com/golang/go/wiki/CodeReviewComments#interfaces",
+        "https://rakyll.org/interface-pollution/"
+      ]
+    },
+    {
+      "pattern_id": "go_goroutine_safety",
+      "name": "Goroutine Safety and Synchronization",
+      "category": "Concurrency",
+      "severity": "high",
+      "description": "Properly manage goroutines and shared state",
+
+      "bad_example": {
+        "code": "// Race condition\nvar counter int\n\nfunc increment() {\n    counter++  // Not thread-safe!\n}\n\nfunc main() {\n    for i := 0; i < 1000; i++ {\n        go increment()  // Data race\n    }\n    time.Sleep(time.Second)\n    fmt.Println(counter)  // Unpredictable result\n}\n\n// Goroutine leak\nfunc process() {\n    for {\n        go doWork()  // Unbounded goroutines\n        // No way to stop these\n    }\n}\n\n// No synchronization\nfunc fetchAll(urls []string) []Result {\n    var results []Result\n    for _, url := range urls {\n        go func(u string) {\n            results = append(results, fetch(u))  // Race!\n        }(url)\n    }\n    time.Sleep(time.Second)  // Hope it's enough?\n    return results\n}",
+        "issues": [
+          "Data races",
+          "Goroutine leaks",
+          "Unpredictable behavior",
+          "Resource exhaustion"
+        ]
+      },
+
+      "good_example": {
+        "code": "import (\n    \"sync\"\n    \"sync/atomic\"\n    \"context\"\n)\n\n// Using sync.Mutex for shared state\ntype Counter struct {\n    mu    sync.Mutex\n    value int\n}\n\nfunc (c *Counter) Increment() {\n    c.mu.Lock()\n    defer c.mu.Unlock()\n    c.value++\n}\n\nfunc (c *Counter) Value() int {\n    c.mu.Lock()\n    defer c.mu.Unlock()\n    return c.value\n}\n\n// Or use atomic operations\ntype AtomicCounter struct {\n    value int64\n}\n\nfunc (c *AtomicCounter) Increment() {\n    atomic.AddInt64(&c.value, 1)\n}\n\nfunc (c *AtomicCounter) Value() int64 {\n    return atomic.LoadInt64(&c.value)\n}\n\n// Proper goroutine management with WaitGroup\nfunc fetchAll(urls []string) []Result {\n    var (\n        wg      sync.WaitGroup\n        mu      sync.Mutex\n        results []Result\n    )\n    \n    for _, url := range urls {\n        wg.Add(1)\n        go func(u string) {\n            defer wg.Done()\n            \n            result := fetch(u)\n            \n            mu.Lock()\n            results = append(results, result)\n            mu.Unlock()\n        }(url)\n    }\n    \n    wg.Wait()\n    return results\n}\n\n// Using channels for communication\nfunc fetchWithChannels(urls []string) []Result {\n    ch := make(chan Result, len(urls))\n    \n    for _, url := range urls {\n        go func(u string) {\n            ch <- fetch(u)\n        }(url)\n    }\n    \n    results := make([]Result, 0, len(urls))\n    for i := 0; i < len(urls); i++ {\n        results = append(results, <-ch)\n    }\n    return results\n}\n\n// Worker pool pattern\nfunc workerPool(ctx context.Context, jobs <-chan Job) {\n    const numWorkers = 10\n    var wg sync.WaitGroup\n    \n    for i := 0; i < numWorkers; i++ {\n        wg.Add(1)\n        go func() {\n            defer wg.Done()\n            for {\n                select {\n                case job, ok := <-jobs:\n                    if !ok {\n                        return\n                    }\n                    process(job)\n                case <-ctx.Done():\n                    return\n                }\n            }\n        }()\n    }\n    \n    wg.Wait()\n}\n\n// Preventing goroutine leaks with context\nfunc watchFile(ctx context.Context, path string) error {\n    ticker := time.NewTicker(time.Second)\n    defer ticker.Stop()\n    \n    for {\n        select {\n        case <-ticker.C:\n            if err := checkFile(path); err != nil {\n                return err\n            }\n        case <-ctx.Done():\n            return ctx.Err()\n        }\n    }\n}",
+        "benefits": [
+          "Thread-safe operations",
+          "Predictable behavior",
+          "Proper resource cleanup",
+          "No goroutine leaks"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/doc/effective_go#concurrency",
+        "https://go.dev/blog/pipelines",
+        "https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables"
+      ]
+    },
+    {
+      "pattern_id": "go_channels",
+      "name": "Effective Channel Usage",
+      "category": "Concurrency",
+      "severity": "high",
+      "description": "Use channels for communication between goroutines",
+
+      "bad_example": {
+        "code": "// Never closing channels\nfunc producer() chan int {\n    ch := make(chan int)\n    go func() {\n        for i := 0; i < 10; i++ {\n            ch <- i\n        }\n        // Channel never closed!\n    }()\n    return ch\n}\n\n// Unbuffered channel causing deadlock\nfunc deadlock() {\n    ch := make(chan int)\n    ch <- 42  // Blocks forever - no receiver\n    fmt.Println(\"sent\")\n}\n\n// Not handling channel closure\nfor val := range ch {\n    process(val)\n    // What if ch is never closed?\n}",
+        "issues": [
+          "Resource leaks",
+          "Deadlocks",
+          "Goroutine leaks",
+          "Blocking operations"
+        ]
+      },
+
+      "good_example": {
+        "code": "// Proper channel lifecycle\nfunc producer(ctx context.Context) <-chan int {\n    ch := make(chan int)\n    go func() {\n        defer close(ch)  // Always close when done\n        for i := 0; i < 10; i++ {\n            select {\n            case ch <- i:\n                // Sent successfully\n            case <-ctx.Done():\n                return  // Stop on context cancellation\n            }\n        }\n    }()\n    return ch\n}\n\n// Fan-in pattern\nfunc fanIn(inputs ...<-chan int) <-chan int {\n    out := make(chan int)\n    var wg sync.WaitGroup\n    \n    for _, input := range inputs {\n        wg.Add(1)\n        go func(ch <-chan int) {\n            defer wg.Done()\n            for val := range ch {\n                out <- val\n            }\n        }(input)\n    }\n    \n    go func() {\n        wg.Wait()\n        close(out)\n    }()\n    \n    return out\n}\n\n// Select with timeout\nfunc receiveWithTimeout(ch <-chan string, timeout time.Duration) (string, error) {\n    select {\n    case val := <-ch:\n        return val, nil\n    case <-time.After(timeout):\n        return \"\", errors.New(\"timeout waiting for value\")\n    }\n}\n\n// Buffered channels for performance\nfunc pipeline() {\n    // Buffer size prevents blocking\n    ch := make(chan Task, 100)\n    \n    // Producer\n    go func() {\n        defer close(ch)\n        for _, task := range tasks {\n            ch <- task  // Won't block if buffer available\n        }\n    }()\n    \n    // Consumer\n    for task := range ch {\n        process(task)\n    }\n}\n\n// Signal channels (chan struct{})\nfunc worker(done chan struct{}) {\n    defer close(done)\n    // Do work\n    fmt.Println(\"Working...\")\n}\n\nfunc main() {\n    done := make(chan struct{})\n    go worker(done)\n    <-done  // Wait for completion\n}\n\n// Directional channels\nfunc send(ch chan<- int) {  // Send-only\n    ch <- 42\n}\n\nfunc receive(ch <-chan int) {  // Receive-only\n    val := <-ch\n    fmt.Println(val)\n}",
+        "benefits": [
+          "Clear communication",
+          "No shared memory",
+          "Proper cleanup",
+          "Predictable behavior"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/tour/concurrency/2",
+        "https://go.dev/blog/pipelines",
+        "https://gobyexample.com/channels"
+      ]
+    },
+    {
+      "pattern_id": "go_context_usage",
+      "name": "Context for Cancellation and Values",
+      "category": "Concurrency",
+      "severity": "high",
+      "description": "Use context.Context for request scoping and cancellation",
+
+      "bad_example": {
+        "code": "// No cancellation mechanism\nfunc longRunning() {\n    for {\n        doWork()\n        time.Sleep(time.Second)\n        // No way to stop this\n    }\n}\n\n// Passing values without context\nfunc handler(userID string, isAdmin bool, logger *Logger) {\n    process(userID, isAdmin, logger)\n    // Parameter explosion\n}\n\n// Not propagating context\nfunc fetchData() (*Data, error) {\n    // No timeout/cancellation\n    return slowOperation()\n}",
+        "issues": [
+          "No cancellation",
+          "No timeout control",
+          "Parameter explosion",
+          "Resource leaks"
+        ]
+      },
+
+      "good_example": {
+        "code": "import (\n    \"context\"\n    \"time\"\n)\n\n// Context for cancellation\nfunc longRunning(ctx context.Context) error {\n    ticker := time.NewTicker(time.Second)\n    defer ticker.Stop()\n    \n    for {\n        select {\n        case <-ticker.C:\n            if err := doWork(); err != nil {\n                return err\n            }\n        case <-ctx.Done():\n            return ctx.Err()\n        }\n    }\n}\n\n// Context with timeout\nfunc fetchWithTimeout(ctx context.Context) (*Data, error) {\n    ctx, cancel := context.WithTimeout(ctx, 5*time.Second)\n    defer cancel()\n    \n    return slowOperation(ctx)\n}\n\n// Context with values (use sparingly)\ntype contextKey string\n\nconst (\n    userIDKey = contextKey(\"userID\")\n    traceIDKey = contextKey(\"traceID\")\n)\n\nfunc WithUserID(ctx context.Context, userID string) context.Context {\n    return context.WithValue(ctx, userIDKey, userID)\n}\n\nfunc UserIDFromContext(ctx context.Context) (string, bool) {\n    userID, ok := ctx.Value(userIDKey).(string)\n    return userID, ok\n}\n\n// HTTP handler with context\nfunc handler(w http.ResponseWriter, r *http.Request) {\n    ctx := r.Context()\n    \n    // Add request ID for tracing\n    requestID := r.Header.Get(\"X-Request-ID\")\n    ctx = context.WithValue(ctx, traceIDKey, requestID)\n    \n    // Set timeout for entire request\n    ctx, cancel := context.WithTimeout(ctx, 30*time.Second)\n    defer cancel()\n    \n    result, err := processRequest(ctx)\n    if err != nil {\n        if errors.Is(err, context.DeadlineExceeded) {\n            http.Error(w, \"Request timeout\", http.StatusGatewayTimeout)\n            return\n        }\n        http.Error(w, err.Error(), http.StatusInternalServerError)\n        return\n    }\n    \n    json.NewEncoder(w).Encode(result)\n}\n\n// Propagating context through layers\nfunc processRequest(ctx context.Context) (*Result, error) {\n    // Check if already cancelled\n    select {\n    case <-ctx.Done():\n        return nil, ctx.Err()\n    default:\n    }\n    \n    data, err := fetchData(ctx)\n    if err != nil {\n        return nil, err\n    }\n    \n    return transform(ctx, data)\n}\n\n// Context in goroutines\nfunc parallel(ctx context.Context, items []Item) error {\n    g, ctx := errgroup.WithContext(ctx)\n    \n    for _, item := range items {\n        item := item  // Capture loop variable\n        g.Go(func() error {\n            return process(ctx, item)\n        })\n    }\n    \n    return g.Wait()\n}",
+        "benefits": [
+          "Graceful cancellation",
+          "Timeout management",
+          "Request scoping",
+          "Clean shutdown"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/blog/context",
+        "https://pkg.go.dev/context",
+        "https://gobyexample.com/context"
+      ]
+    },
+    {
+      "pattern_id": "go_defer_usage",
+      "name": "Effective Defer Usage",
+      "category": "Resource Management",
+      "severity": "medium",
+      "description": "Use defer for cleanup and resource management",
+
+      "bad_example": {
+        "code": "// Forgetting to close resources\nfunc readFile(path string) ([]byte, error) {\n    file, err := os.Open(path)\n    if err != nil {\n        return nil, err\n    }\n    data, err := ioutil.ReadAll(file)\n    // Forgot to close file!\n    return data, err\n}\n\n// Defer in loops\nfor _, path := range paths {\n    f, _ := os.Open(path)\n    defer f.Close()  // All defers execute at function end!\n}",
+        "issues": [
+          "Resource leaks",
+          "Defers accumulate in loops",
+          "Order confusion"
+        ]
+      },
+
+      "good_example": {
+        "code": "// Proper resource cleanup\nfunc readFile(path string) ([]byte, error) {\n    file, err := os.Open(path)\n    if err != nil {\n        return nil, err\n    }\n    defer file.Close()  // Always executes\n    \n    return ioutil.ReadAll(file)\n}\n\n// Multiple defers (LIFO order)\nfunc process() error {\n    fmt.Println(\"Starting\")\n    defer fmt.Println(\"Finished\")  // Executes last\n    \n    conn, err := db.Connect()\n    if err != nil {\n        return err\n    }\n    defer conn.Close()  // Executes second\n    \n    tx, err := conn.Begin()\n    if err != nil {\n        return err\n    }\n    defer tx.Rollback()  // Executes first (unless committed)\n    \n    // Do work\n    if err := doWork(tx); err != nil {\n        return err  // Rollback happens\n    }\n    \n    return tx.Commit()  // Rollback becomes no-op\n}\n\n// Defer with error handling\nfunc writeData(path string, data []byte) (err error) {\n    f, err := os.Create(path)\n    if err != nil {\n        return err\n    }\n    defer func() {\n        if cerr := f.Close(); cerr != nil && err == nil {\n            err = cerr  // Capture close error\n        }\n    }()\n    \n    _, err = f.Write(data)\n    return err\n}\n\n// Avoid defer in loops - use function\nfor _, path := range paths {\n    if err := processFile(path); err != nil {\n        return err\n    }\n}\n\nfunc processFile(path string) error {\n    f, err := os.Open(path)\n    if err != nil {\n        return err\n    }\n    defer f.Close()  // Closes after each file\n    \n    return process(f)\n}\n\n// Defer for locks\nfunc (s *Store) Get(key string) string {\n    s.mu.RLock()\n    defer s.mu.RUnlock()\n    return s.data[key]\n}\n\n// Defer for timing\nfunc timeTrack(start time.Time, name string) {\n    elapsed := time.Since(start)\n    log.Printf(\"%s took %s\", name, elapsed)\n}\n\nfunc expensiveCall() {\n    defer timeTrack(time.Now(), \"expensiveCall\")\n    // Do work\n}",
+        "benefits": [
+          "Guaranteed cleanup",
+          "Clear resource management",
+          "Reduced error handling",
+          "Cleaner code"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/blog/defer-panic-and-recover",
+        "https://go.dev/doc/effective_go#defer",
+        "https://gobyexample.com/defer"
+      ]
+    },
+    {
+      "pattern_id": "go_struct_embedding",
+      "name": "Struct Embedding and Composition",
+      "category": "Design",
+      "severity": "medium",
+      "description": "Use embedding for composition over inheritance",
+
+      "bad_example": {
+        "code": "// Trying to simulate inheritance\ntype Animal struct {\n    Name string\n}\n\ntype Dog struct {\n    Animal Animal  // Not embedding\n    Breed  string\n}\n\n// Accessing nested fields\ndog := Dog{\n    Animal: Animal{Name: \"Rex\"},\n    Breed:  \"Labrador\",\n}\nfmt.Println(dog.Animal.Name)  // Verbose",
+        "issues": [
+          "Verbose access",
+          "No method promotion",
+          "Not idiomatic Go"
+        ]
+      },
+
+      "good_example": {
+        "code": "// Composition through embedding\ntype Logger struct {\n    prefix string\n}\n\nfunc (l *Logger) Log(msg string) {\n    fmt.Printf(\"%s: %s\\n\", l.prefix, msg)\n}\n\ntype Service struct {\n    *Logger  // Embedded\n    name string\n}\n\n// Logger methods promoted\nservice := &Service{\n    Logger: &Logger{prefix: \"[SERVICE]\"},\n    name:   \"auth\",\n}\nservice.Log(\"started\")  // Method promoted\n\n// Interface embedding\ntype Reader interface {\n    Read([]byte) (int, error)\n}\n\ntype Writer interface {\n    Write([]byte) (int, error)\n}\n\ntype ReadWriter interface {\n    Reader\n    Writer\n}\n\n// Selective embedding\ntype Response struct {\n    http.ResponseWriter\n    written bool\n}\n\nfunc (r *Response) Write(b []byte) (int, error) {\n    r.written = true\n    return r.ResponseWriter.Write(b)  // Delegate\n}\n\n// Multiple embedding with disambiguation\ntype MultiLogger struct {\n    *FileLogger\n    *ConsoleLogger\n}\n\nfunc (m *MultiLogger) Log(msg string) {\n    // Disambiguate which Log to call\n    m.FileLogger.Log(msg)\n    m.ConsoleLogger.Log(msg)\n}",
+        "benefits": [
+          "Method promotion",
+          "Clean composition",
+          "Interface satisfaction",
+          "Idiomatic Go"
+        ]
+      },
+
+      "learning_resources": [
+        "https://go.dev/doc/effective_go#embedding",
+        "https://gobyexample.com/struct-embedding",
+        "https://eli.thegreenplace.net/2020/embedding-in-go-part-1-structs-in-structs/"
+      ]
+    }
+  ],
+
+  "anti_patterns": [
+    {
+      "pattern_id": "go_empty_interface",
+      "name": "Overuse of interface{}",
+      "severity": "medium",
+      "description": "Using interface{} (any) loses type safety",
+      "example": "func process(data interface{}) {\n    // Lost all type information\n}",
+      "fixes": [
+        "Use specific types or interfaces",
+        "Use generics (Go 1.18+)",
+        "Create type-specific functions",
+        "Use type assertions sparingly"
+      ]
+    },
+    {
+      "pattern_id": "go_panic_library",
+      "name": "Panic in Library Code",
+      "severity": "high",
+      "description": "Libraries should return errors, not panic",
+      "example": "func LibFunction() {\n    if err != nil {\n        panic(err)  // Don't do this in libraries\n    }\n}",
+      "fixes": [
+        "Return errors from functions",
+        "Let caller decide how to handle",
+        "Only panic for truly unrecoverable errors",
+        "Use panic only in main or init"
+      ]
+    },
+    {
+      "pattern_id": "go_init_complexity",
+      "name": "Complex init() Functions",
+      "severity": "medium",
+      "description": "init() functions with complex logic are hard to test",
+      "example": "func init() {\n    // Complex database setup\n    // HTTP client configuration\n    // File system operations\n}",
+      "fixes": [
+        "Keep init() simple",
+        "Use explicit initialization functions",
+        "Make initialization testable",
+        "Avoid init() when possible"
+      ]
+    },
+    {
+      "pattern_id": "go_global_variables",
+      "name": "Excessive Global Variables",
+      "severity": "high",
+      "description": "Global mutable state makes code hard to test and reason about",
+      "example": "var (\n    globalConfig Config\n    globalDB     *sql.DB\n    globalCache  map[string]interface{}\n)",
+      "fixes": [
+        "Use dependency injection",
+        "Pass dependencies explicitly",
+        "Use context for request-scoped values",
+        "Limit globals to constants"
+      ]
+    },
+    {
+      "pattern_id": "go_naked_returns",
+      "name": "Naked Returns in Long Functions",
+      "severity": "low",
+      "description": "Naked returns in long functions are hard to understand",
+      "example": "func long() (result int, err error) {\n    // 50 lines of code\n    return  // What are we returning?",
+      "fixes": [
+        "Use naked returns only in short functions",
+        "Explicitly return values",
+        "Keep functions short",
+        "Name return values for documentation"
+      ]
+    }
+  ],
+
+  "style_guide": {
+    "formatting": {
+      "tool": "gofmt (required)",
+      "line_length": "No hard limit, but be reasonable",
+      "indentation": "tabs",
+      "brace_style": "K&R style"
+    },
+    "naming": {
+      "packages": "lowercase, no underscores",
+      "interfaces": "verb + er (e.g., Reader, Writer)",
+      "methods": "PascalCase for exported, camelCase for unexported",
+      "constants": "PascalCase or CAPS_SNAKE for groups",
+      "files": "lowercase_with_underscores.go"
+    },
+    "comments": {
+      "package": "// Package name does...",
+      "exported": "// FunctionName does...",
+      "implementation": "Use // for inline comments",
+      "todo": "// TODO(username): description"
+    },
+    "project_structure": {
+      "cmd": "Main applications",
+      "internal": "Private application code",
+      "pkg": "Public libraries",
+      "api": "API definitions",
+      "test": "Additional test data"
+    }
+  },
+
+  "testing_patterns": {
+    "framework": "Standard testing package",
+    "naming": "Test<FunctionName> or Test<Type>_<Method>",
+    "table_driven": "Use table-driven tests for multiple cases",
+    "test_files": "*_test.go in same package",
+    "benchmarks": "Bench<FunctionName>",
+    "examples": "Example<FunctionName> for documentation"
+  },
+
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2024-01-10",
+    "contributors": ["Singularity Code Quality Engine"],
+    "tags": ["go", "golang", "best-practices", "idiomatic", "concurrency"]
+  }
+}

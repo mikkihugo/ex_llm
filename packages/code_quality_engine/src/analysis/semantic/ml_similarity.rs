@@ -22,10 +22,10 @@ pub struct MLVectorizer {
     vocabulary: Vec<String>,
     embedding_dim: usize,
     // SPARC-specific metadata vocabulary
-    function_vocab: Vec<String>,
-    class_vocab: Vec<String>,
-    pattern_vocab: Vec<String>,
-    keyword_vocab: Vec<String>,
+    #[allow(dead_code)] function_vocab: Vec<String>,
+    #[allow(dead_code)] class_vocab: Vec<String>,
+    #[allow(dead_code)] pattern_vocab: Vec<String>,
+    #[allow(dead_code)] keyword_vocab: Vec<String>,
 }
 
 impl MLVectorizer {
@@ -344,9 +344,9 @@ pub struct SemanticFeatures {
 /// Multi-modal fusion for combining different feature types
 #[derive(Debug, Clone)]
 pub struct MultiModalFusion {
-    text_weight: f32,
-    structure_weight: f32,
-    complexity_weight: f32,
+    #[allow(dead_code)] text_weight: f32,
+    #[allow(dead_code)] structure_weight: f32,
+    #[allow(dead_code)] complexity_weight: f32,
 }
 
 impl Default for MultiModalFusion {
@@ -369,7 +369,7 @@ impl MultiModalFusion {
         &self,
         advanced_vector: &MLCodeVector,
         _text: &str,
-        _file_path: &std::path::PathBuf,
+        _file_path: &std::path::Path,
     ) -> FusionResult {
         // In this simplified version, we return the advanced vector
         // In production, this would combine multiple embedding types

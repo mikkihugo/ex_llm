@@ -290,14 +290,79 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
   defp execute_approved_proposal(proposal) do
     Logger.info("Executing approved proposal #{proposal.id}")
 
-    case Singularity.Evolution.ExecutionFlow.execute_proposal(proposal) do
-      {:ok, result} ->
-        Logger.info("Proposal execution succeeded: #{proposal.id}")
-        {:ok, result}
+    # Mark proposal as executing in database
+    executing_changeset = Proposal.mark_executing(proposal)
 
-      {:error, reason} ->
-        Logger.error("Proposal execution failed: #{inspect(reason)}")
-        {:error, reason}
+    case Repo.update(executing_changeset) do
+      {:ok, executing_proposal} ->
+        # Execute the code change
+        case Singularity.Evolution.ExecutionFlow.execute_proposal(executing_proposal) do
+          {:ok, result} ->
+            Logger.info("Proposal execution succeeded: #{proposal.id}")
+
+            # Extract metrics from execution result
+            metrics_after = Map.get(result, :metrics_after, %{})
+
+            # Mark proposal as applied with metrics
+            applied_changeset = Proposal.mark_applied(executing_proposal, metrics_after)
+
+            case Repo.update(applied_changeset) do
+              {:ok, applied_proposal} ->
+                Logger.debug("Proposal marked as applied: #{applied_proposal.id}")
+
+                :telemetry.execute(
+                  [:evolution, :pgflow, :execution_success],
+                  %{
+                    execution_time_ms: Map.get(result, :execution_time_ms, 0),
+                    proposal_id: proposal.id
+                  },
+                  %{}
+                )
+
+                {:ok, result}
+
+              {:error, db_error} ->
+                Logger.error("Failed to mark proposal as applied: #{inspect(db_error)}")
+                {:error, {:apply_update_failed, db_error}}
+            end
+
+          {:error, execution_error} ->
+            Logger.error("Proposal execution failed: #{inspect(execution_error)}")
+
+            # Mark proposal as failed in database
+            failed_changeset = Proposal.mark_failed(
+              executing_proposal,
+              inspect(execution_error)
+            )
+
+            case Repo.update(failed_changeset) do
+              {:ok, failed_proposal} ->
+                Logger.warning("Proposal marked as failed: #{failed_proposal.id}")
+
+                :telemetry.execute(
+                  [:evolution, :pgflow, :execution_failed],
+                  %{},
+                  %{proposal_id: proposal.id, reason: inspect(execution_error)}
+                )
+
+                {:error, execution_error}
+
+              {:error, db_error} ->
+                Logger.error("Failed to mark proposal as failed: #{inspect(db_error)}")
+                {:error, {:failure_update_failed, db_error}}
+            end
+        end
+
+      {:error, executing_error} ->
+        Logger.error("Failed to mark proposal as executing: #{inspect(executing_error)}")
+
+        :telemetry.execute(
+          [:evolution, :pgflow, :execution_mark_failed],
+          %{},
+          %{proposal_id: proposal.id, reason: inspect(executing_error)}
+        )
+
+        {:error, {:execution_mark_failed, executing_error}}
     end
   end
 end

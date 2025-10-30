@@ -87,11 +87,7 @@ impl CentralPageRank {
         }
     }
 
-    /// Create with default configuration
-    pub fn default() -> Self {
-        Self::new(PageRankConfig::default())
-    }
-
+    /// Create with default configuration. Prefer `CentralPageRank::default()`.
     /// Add a node to the graph
     pub fn add_node(&mut self, node_id: String) {
         if !self.graph.contains_key(&node_id) {
@@ -366,10 +362,16 @@ impl CentralPageRank {
     }
 }
 
+impl Default for CentralPageRank {
+    fn default() -> Self {
+        Self::new(PageRankConfig::default())
+    }
+}
+
 /// Integration trait for parsers to use central PageRank
 pub trait PageRankIntegration {
     /// Calculate centrality score for a file using central PageRank
-    async fn calculate_centrality_score(
+    fn calculate_centrality_score(
         &self,
         file_path: &Path,
         pagerank: &CentralPageRank,
@@ -378,7 +380,7 @@ pub trait PageRankIntegration {
     }
 
     /// Get file importance ranking
-    async fn get_file_importance_rank(
+    fn get_file_importance_rank(
         &self,
         file_path: &Path,
         pagerank: &CentralPageRank,

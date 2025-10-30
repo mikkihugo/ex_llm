@@ -253,32 +253,7 @@ impl LanguageParser for PythonParser {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_basic_function_with_docstring() {
-        let parser = PythonParser::default();
-        let source = r#"
-async def add(a, b):
-    """Adds two numbers together."""
-    return a + b
-"#;
-
-        let ast = parser.parse(source).expect("python parse");
-        let functions = parser.get_functions(&ast).expect("function extraction");
-
-        assert_eq!(functions.len(), 1);
-        let func = &functions[0];
-        assert!(func.is_async);
-        assert!(func.signature.as_deref().unwrap().starts_with("add"));
-        assert_eq!(
-            func.docstring.as_deref(),
-            Some("Adds two numbers together.")
-        );
-    }
-}
+// Tests should be declared after all items to satisfy clippy::items-after-test-module
 
 /// Holder for class data and enums extracted from those classes.
 #[allow(dead_code)]

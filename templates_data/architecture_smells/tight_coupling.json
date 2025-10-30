@@ -1,0 +1,299 @@
+{
+  "pattern_id": "tight_coupling",
+  "name": "High Coupling Between Modules",
+  "description": "Detect tightly coupled modules that should be loosely coupled for better maintainability",
+  "severity": "high",
+  "type": "architecture_smell",
+
+  "indicators": [
+    {
+      "indicator": "Deep Import Chains",
+      "description": "Implementation details leaking across module boundaries",
+      "bad_example": "import from mymodule.utils.helpers.internal.compute",
+      "good_example": "from mymodule import compute",
+      "detection": "Count depth of import paths",
+      "threshold": "Import depth > 3 levels",
+      "impact": "Changes to internal structure break consumers"
+    },
+    {
+      "indicator": "Cross-Module Data Access",
+      "description": "Direct access to internal data structures",
+      "bad_example": "user.private_data.internal_id",
+      "good_example": "user.get_id()",
+      "patterns": [
+        "Accessing private/protected members",
+        "Direct field access instead of methods",
+        "Manipulating internal collections"
+      ],
+      "severity": "critical"
+    },
+    {
+      "indicator": "Shared Mutable State",
+      "description": "Multiple modules modifying same global state",
+      "severity": "critical",
+      "examples": [
+        "Global variables modified by multiple modules",
+        "Shared singleton objects with mutable state",
+        "Static class variables accessed across modules"
+      ],
+      "consequences": [
+        "Race conditions",
+        "Unpredictable behavior",
+        "Hard to test"
+      ]
+    },
+    {
+      "indicator": "Concrete Type Dependencies",
+      "description": "Depending on concrete classes instead of interfaces",
+      "bad_example": "MySQLDatabase db = new MySQLDatabase()",
+      "good_example": "IDatabase db = DatabaseFactory.create()",
+      "impact": "Cannot swap implementations without code changes"
+    },
+    {
+      "indicator": "Temporal Coupling",
+      "description": "Methods must be called in specific order",
+      "bad_example": "obj.init(); obj.configure(); obj.start();",
+      "good_example": "obj.start(config)",
+      "detection": "Look for init/setup/configure method patterns"
+    },
+    {
+      "indicator": "Feature Envy",
+      "description": "Module uses more features from another module than its own",
+      "detection": "Count method calls to external vs internal methods",
+      "threshold": "External calls > 60% of total"
+    },
+    {
+      "indicator": "Inappropriate Intimacy",
+      "description": "Classes know too much about each other's internals",
+      "patterns": [
+        "Friend classes/functions",
+        "Protected member access",
+        "Circular method calls"
+      ]
+    }
+  ],
+
+  "coupling_metrics": {
+    "efferent_coupling": {
+      "name": "Efferent Coupling (Ce)",
+      "description": "Number of modules this module depends on",
+      "good": "< 5",
+      "concerning": "5-10",
+      "bad": "> 10",
+      "critical": "> 20",
+      "measurement": "Count unique external module dependencies"
+    },
+    "afferent_coupling": {
+      "name": "Afferent Coupling (Ca)",
+      "description": "Number of modules depending on this module",
+      "note": "High afferent coupling is OK for stable interfaces",
+      "stable_abstraction": "High Ca is good for interfaces/abstractions",
+      "unstable_concrete": "High Ca is bad for implementation classes"
+    },
+    "instability_metric": {
+      "name": "Instability (I)",
+      "formula": "Ce / (Ce + Ca)",
+      "range": "0.0 to 1.0",
+      "interpretation": {
+        "0.0": "Maximally stable (many depend on it)",
+        "1.0": "Maximally unstable (depends on many)",
+        "ideal": "0.3 - 0.7 for most modules"
+      }
+    },
+    "coupling_between_objects": {
+      "name": "Coupling Between Objects (CBO)",
+      "description": "Number of classes coupled to this class",
+      "good": "< 5",
+      "concerning": "5-9",
+      "bad": "> 9",
+      "includes": [
+        "Inheritance relationships",
+        "Method calls",
+        "Field accesses",
+        "Method parameters",
+        "Return types"
+      ]
+    },
+    "response_for_class": {
+      "name": "Response For Class (RFC)",
+      "description": "Number of methods that can be invoked in response to a message",
+      "formula": "Local methods + methods called by local methods",
+      "good": "< 50",
+      "concerning": "50-100",
+      "bad": "> 100"
+    },
+    "data_abstraction_coupling": {
+      "name": "Data Abstraction Coupling (DAC)",
+      "description": "Number of abstract data types used",
+      "interpretation": "Lower is better for maintainability"
+    }
+  },
+
+  "coupling_types": {
+    "content_coupling": {
+      "level": 5,
+      "description": "Module modifies internal data of another module",
+      "severity": "critical",
+      "example": "Direct memory access, goto statements across modules"
+    },
+    "common_coupling": {
+      "level": 4,
+      "description": "Modules share global data",
+      "severity": "high",
+      "example": "Global variables, shared memory"
+    },
+    "control_coupling": {
+      "level": 3,
+      "description": "Module controls flow of another by passing flags",
+      "severity": "medium",
+      "example": "Passing boolean flags to control behavior"
+    },
+    "stamp_coupling": {
+      "level": 2,
+      "description": "Modules share composite data structure",
+      "severity": "low",
+      "example": "Passing entire object when only one field needed"
+    },
+    "data_coupling": {
+      "level": 1,
+      "description": "Modules share data through parameters",
+      "severity": "acceptable",
+      "example": "Passing primitive values as parameters"
+    },
+    "message_coupling": {
+      "level": 0,
+      "description": "Modules communicate through messages/events",
+      "severity": "ideal",
+      "example": "Event-driven architecture, message queues"
+    }
+  },
+
+  "refactoring_strategies": {
+    "introduce_interface": {
+      "description": "Define interface to reduce concrete dependencies",
+      "when_to_use": "High concrete class coupling",
+      "steps": [
+        "Extract interface from concrete class",
+        "Update consumers to use interface",
+        "Use dependency injection"
+      ]
+    },
+    "extract_method": {
+      "description": "Move coupled code to appropriate module",
+      "when_to_use": "Feature envy detected",
+      "steps": [
+        "Identify methods using external data",
+        "Move method to data owner class",
+        "Update callers"
+      ]
+    },
+    "introduce_parameter_object": {
+      "description": "Group related parameters",
+      "when_to_use": "Long parameter lists",
+      "benefits": [
+        "Reduces stamp coupling",
+        "Improves readability",
+        "Easier to extend"
+      ]
+    },
+    "replace_inheritance_with_delegation": {
+      "description": "Use composition over inheritance",
+      "when_to_use": "Deep inheritance hierarchies",
+      "benefits": [
+        "Reduces coupling",
+        "More flexible",
+        "Easier to test"
+      ]
+    },
+    "introduce_facade": {
+      "description": "Provide simple interface to complex subsystem",
+      "when_to_use": "Multiple modules accessing subsystem internals",
+      "implementation": [
+        "Create facade class",
+        "Expose simplified methods",
+        "Hide complex interactions"
+      ]
+    }
+  },
+
+  "prevention": {
+    "design_principles": [
+      {
+        "principle": "Law of Demeter",
+        "rule": "Only talk to immediate friends",
+        "implementation": "object.method() not object.getX().getY().method()"
+      },
+      {
+        "principle": "Dependency Inversion",
+        "rule": "Depend on abstractions, not concretions",
+        "implementation": "Use interfaces and abstract classes"
+      },
+      {
+        "principle": "Single Responsibility",
+        "rule": "Class should have one reason to change",
+        "implementation": "Split classes with multiple responsibilities"
+      },
+      {
+        "principle": "Open-Closed Principle",
+        "rule": "Open for extension, closed for modification",
+        "implementation": "Use inheritance and polymorphism"
+      }
+    ],
+    "architectural_patterns": [
+      {
+        "pattern": "Dependency Injection",
+        "benefit": "Removes hard-coded dependencies"
+      },
+      {
+        "pattern": "Observer Pattern",
+        "benefit": "Loose coupling through events"
+      },
+      {
+        "pattern": "Strategy Pattern",
+        "benefit": "Encapsulate algorithms"
+      },
+      {
+        "pattern": "Adapter Pattern",
+        "benefit": "Decouple incompatible interfaces"
+      }
+    ]
+  },
+
+  "detection_tools": {
+    "static_analysis": [
+      "SonarQube (multi-language)",
+      "NDepend (.NET)",
+      "JDepend (Java)",
+      "Structure101 (multi-language)",
+      "Understand (multi-language)"
+    ],
+    "metrics_calculation": [
+      "Eclipse Metrics Plugin",
+      "Visual Studio Code Metrics",
+      "IntelliJ IDEA Dependency Analysis"
+    ]
+  },
+
+  "consequences": {
+    "maintainability": {
+      "impact": "high",
+      "description": "Changes ripple through tightly coupled modules"
+    },
+    "testability": {
+      "impact": "critical",
+      "description": "Cannot test modules in isolation"
+    },
+    "reusability": {
+      "impact": "high",
+      "description": "Modules too specific to reuse"
+    },
+    "understandability": {
+      "impact": "medium",
+      "description": "Must understand multiple modules to understand one"
+    },
+    "deployment": {
+      "impact": "high",
+      "description": "Must deploy multiple modules together"
+    }
+  }
+}

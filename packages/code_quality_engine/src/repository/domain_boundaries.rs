@@ -15,7 +15,7 @@ pub struct DomainBoundaryAnalyzer {
     /// Domain interaction graph (should be acyclic)
     domain_graph: DiGraph<DomainNode, InteractionEdge>,
     /// Mapping from domain name to node index
-    domain_index: HashMap<String, NodeIndex>,
+    #[allow(dead_code)] domain_index: HashMap<String, NodeIndex>,
 }
 
 /// Domain node in graph

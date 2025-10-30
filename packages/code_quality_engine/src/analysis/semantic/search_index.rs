@@ -214,6 +214,7 @@ impl CodeIndex {
         })
     }
 
+    #[allow(clippy::too_many_arguments, clippy::ptr_arg)]
     fn extract_typescript_patterns(
         &self,
         content: &str,
@@ -285,6 +286,15 @@ impl CodeIndex {
 
             // CodePatterns
             self.detect_rust_patterns(trimmed, patterns);
+
+            // TODO(minimal): Minimal pattern hooks to be expanded to
+            // production-grade rust-specific detection (lifetimes, traits, macros).
+            if trimmed.contains("unsafe") {
+                patterns.push("unsafe_usage".to_string());
+            }
+            if trimmed.contains("macro_rules!") {
+                patterns.push("macro_rule".to_string());
+            }
         }
     }
 
@@ -361,6 +371,8 @@ impl CodeIndex {
             for keyword in &common_keywords {
                 if line_lower.contains(&keyword.to_lowercase()) {
                     keywords.push(keyword.to_string());
+                    // TODO(minimal): Record generic keyword matches as patterns.
+                    patterns.push(format!("keyword:{}", keyword.to_lowercase()));
                 }
             }
         }

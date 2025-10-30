@@ -119,7 +119,6 @@ defmodule Singularity.SelfImprovingAgent do
   alias Singularity.Control.QueueCrdt
   alias Singularity.DynamicCompiler
   alias Singularity.HITL.ApprovalService
-  alias Singularity.Agents.Documentation.Analyzer, as: DocAnalyzer
   alias Singularity.Agents.TemplatePerformance
   alias MapSet
 
@@ -271,17 +270,6 @@ defmodule Singularity.SelfImprovingAgent do
   @spec upgrade_documentation(String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def upgrade_documentation(file_path, opts \\ []) do
     DocPipeline.upgrade_module_documentation(file_path, opts)
-  end
-
-  @doc """
-  Analyze file documentation quality.
-
-  This function is called by the DocumentationPipeline to assess
-  the current documentation quality of a file.
-  """
-  @spec analyze_documentation_quality(String.t()) :: {:ok, map()} | {:error, term()}
-  def analyze_documentation_quality(file_path) do
-    DocAnalyzer.analyze_documentation_quality(file_path)
   end
 
   ## GenServer callbacks
@@ -1408,7 +1396,7 @@ defmodule Singularity.SelfImprovingAgent do
     quality_results =
       files
       |> Enum.map(fn file_path ->
-        case Singularity.Agents.QualityEnforcer.validate_file_quality(file_path) do
+        case Singularity.Agents.CodeQualityAgent.validate_file_quality(file_path) do
           {:ok, validation} -> {:ok, file_path, validation}
           {:error, reason} -> {:error, file_path, reason}
         end
@@ -1711,7 +1699,7 @@ defmodule Singularity.SelfImprovingAgent do
       case fix.type do
         :quality ->
           # Trigger quality upgrade using existing system
-          Singularity.Agents.QualityEnforcer.enable_quality_gates()
+          Singularity.Agents.CodeQualityAgent.enable_quality_gates()
 
         :documentation ->
           # Trigger documentation upgrade for changed files only

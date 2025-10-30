@@ -1,0 +1,262 @@
+{
+  "pattern_id": "circular_dependencies",
+  "name": "Circular Dependency Detection",
+  "description": "Detect and visualize circular dependencies between modules, packages, and services",
+  "severity": "high",
+  "type": "architecture_smell",
+
+  "detection_rules": [
+    {
+      "rule_id": "direct_cycle",
+      "name": "Direct Cycle",
+      "pattern": "A -> B -> A",
+      "impact": "Difficult to test A in isolation, hard to maintain",
+      "examples": [
+        "UserService -> AuthService -> UserService",
+        "OrderModule imports PaymentModule imports OrderModule"
+      ],
+      "detection_method": "Build dependency graph and detect cycles of length 2"
+    },
+    {
+      "rule_id": "indirect_cycle",
+      "name": "Indirect Cycle",
+      "pattern": "A -> B -> C -> A",
+      "impact": "Complex dependency graph, hard to reason about",
+      "examples": [
+        "Controller -> Service -> Repository -> Controller",
+        "UI -> Business -> Data -> UI"
+      ],
+      "detection_method": "Depth-first search for cycles in dependency graph"
+    },
+    {
+      "rule_id": "transitive_cycle",
+      "name": "Transitive Dependency Cycle",
+      "pattern": "A -> B -> C -> D -> A",
+      "impact": "Hidden coupling, difficult to detect without tools",
+      "severity": "critical",
+      "detection_method": "Analyze transitive closure of dependency graph"
+    },
+    {
+      "rule_id": "package_cycle",
+      "name": "Package-Level Cycle",
+      "pattern": "Package A depends on Package B which depends on A",
+      "impact": "Cannot release packages independently",
+      "examples": [
+        "com.app.users <-> com.app.auth",
+        "frontend.components <-> frontend.utils"
+      ]
+    },
+    {
+      "rule_id": "layer_violation_cycle",
+      "name": "Architectural Layer Violation",
+      "pattern": "Presentation -> Business -> Data -> Presentation",
+      "impact": "Violates layered architecture principles",
+      "severity": "critical"
+    }
+  ],
+
+  "consequences": [
+    {
+      "consequence": "Testing Difficulty",
+      "description": "Cannot test components in isolation due to circular imports",
+      "impact": "High",
+      "details": [
+        "Mock objects become complex",
+        "Test setup requires entire dependency chain",
+        "Unit tests become integration tests"
+      ]
+    },
+    {
+      "consequence": "Deployment Complexity",
+      "description": "Must deploy all components together",
+      "impact": "High",
+      "details": [
+        "Cannot do incremental deployments",
+        "Risk of breaking changes higher",
+        "Rollback affects multiple components"
+      ]
+    },
+    {
+      "consequence": "Refactoring Barrier",
+      "description": "Hard to refactor or extract services",
+      "impact": "Critical",
+      "details": [
+        "Cannot extract single component",
+        "Changes ripple through cycle",
+        "Risk of breaking circular chain"
+      ]
+    },
+    {
+      "consequence": "Compilation Issues",
+      "description": "Circular dependencies can cause compilation failures",
+      "impact": "Medium",
+      "languages_affected": ["C++", "Java", "Go", "TypeScript"]
+    },
+    {
+      "consequence": "Memory Leaks",
+      "description": "Circular references can prevent garbage collection",
+      "impact": "High",
+      "languages_affected": ["JavaScript", "Python", "C++"]
+    },
+    {
+      "consequence": "Initialization Problems",
+      "description": "Unclear initialization order, potential deadlocks",
+      "impact": "Critical",
+      "examples": [
+        "Spring bean circular dependencies",
+        "Module initialization deadlocks"
+      ]
+    }
+  ],
+
+  "remediation": {
+    "strategy": "Dependency Inversion",
+    "approaches": [
+      {
+        "approach": "Introduce Abstraction Layer",
+        "example": "Create Interface/Protocol that both A and B depend on",
+        "implementation": {
+          "before": "UserService -> AuthService -> UserService",
+          "after": "UserService -> IAuthService <- AuthService",
+          "steps": [
+            "Define interface with required methods",
+            "Make both modules depend on interface",
+            "Use dependency injection for implementation"
+          ]
+        }
+      },
+      {
+        "approach": "Move Shared Code to Common Module",
+        "example": "Extract common logic to utils/ module",
+        "implementation": {
+          "before": "ModuleA <-> ModuleB (sharing UserData)",
+          "after": "ModuleA -> Common <- ModuleB",
+          "steps": [
+            "Identify shared functionality",
+            "Create new common module",
+            "Move shared code to common module",
+            "Update imports in both modules"
+          ]
+        }
+      },
+      {
+        "approach": "Restructure Module Boundaries",
+        "example": "Reorganize modules to eliminate circular dependency",
+        "implementation": {
+          "steps": [
+            "Analyze cohesion within modules",
+            "Identify misplaced responsibilities",
+            "Move code to appropriate modules",
+            "Verify no cycles remain"
+          ]
+        }
+      },
+      {
+        "approach": "Event-Driven Architecture",
+        "example": "Use events/messages instead of direct calls",
+        "implementation": {
+          "before": "ServiceA.callServiceB() -> ServiceB.callServiceA()",
+          "after": "ServiceA.publishEvent() -> EventBus -> ServiceB.handleEvent()",
+          "benefits": [
+            "Loose coupling",
+            "Asynchronous communication",
+            "Better scalability"
+          ]
+        }
+      },
+      {
+        "approach": "Mediator Pattern",
+        "example": "Introduce mediator to coordinate communication",
+        "implementation": {
+          "before": "ComponentA <-> ComponentB <-> ComponentC",
+          "after": "ComponentA -> Mediator <- ComponentB",
+          "use_cases": [
+            "Complex UI components",
+            "Workflow orchestration",
+            "Service coordination"
+          ]
+        }
+      }
+    ]
+  },
+
+  "detection_algorithms": {
+    "tarjan": {
+      "name": "Tarjan's Strongly Connected Components",
+      "complexity": "O(V + E)",
+      "description": "Efficient algorithm for finding all cycles",
+      "implementation": "Use for large dependency graphs"
+    },
+    "dfs": {
+      "name": "Depth-First Search with Color Marking",
+      "complexity": "O(V + E)",
+      "description": "Simple cycle detection with path tracking",
+      "implementation": "Good for finding specific cycle paths"
+    },
+    "johnson": {
+      "name": "Johnson's Algorithm",
+      "complexity": "O((V + E) * C)",
+      "description": "Finds all elementary cycles",
+      "implementation": "Use when need all cycles enumerated"
+    }
+  },
+
+  "metrics": {
+    "cycle_count": {
+      "name": "Total Number of Cycles",
+      "good": "0",
+      "concerning": "1-3",
+      "critical": "> 3"
+    },
+    "cycle_size": {
+      "name": "Average Cycle Size",
+      "description": "Average number of components in cycles",
+      "good": "N/A (no cycles)",
+      "concerning": "2-3",
+      "critical": "> 3"
+    },
+    "affected_components": {
+      "name": "Components in Cycles",
+      "formula": "(components_in_cycles / total_components) * 100",
+      "good": "0%",
+      "concerning": "< 10%",
+      "critical": "> 10%"
+    }
+  },
+
+  "prevention": {
+    "design_principles": [
+      "Acyclic Dependencies Principle (ADP)",
+      "Dependency Inversion Principle (DIP)",
+      "Interface Segregation Principle (ISP)"
+    ],
+    "architectural_patterns": [
+      "Layered Architecture with strict boundaries",
+      "Hexagonal Architecture (Ports & Adapters)",
+      "Clean Architecture with dependency rules"
+    ],
+    "tooling": [
+      "Pre-commit hooks for cycle detection",
+      "CI/CD pipeline dependency checks",
+      "Architecture fitness functions",
+      "IDE plugins for real-time detection"
+    ]
+  },
+
+  "tools": {
+    "detection": [
+      "madge (JavaScript/TypeScript)",
+      "dependency-cruiser (Node.js)",
+      "jdepend (Java)",
+      "deptrac (PHP)",
+      "import-linter (Python)",
+      "go-cyclic (Go)"
+    ],
+    "visualization": [
+      "Graphviz for dependency graphs",
+      "D3.js for interactive visualization",
+      "PlantUML for architecture diagrams",
+      "Structure101 for complexity analysis"
+    ]
+  }
+}

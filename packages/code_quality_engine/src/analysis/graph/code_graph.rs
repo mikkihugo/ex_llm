@@ -7,7 +7,7 @@
 //!
 //! Uses petgraph for robust graph data structures and algorithms
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use anyhow::Result;
 use petgraph::{
@@ -467,7 +467,7 @@ pub struct GraphMetrics {
 
 /// Graph builder for extracting graphs from code
 pub struct CodeGraphBuilder {
-    working_directory: PathBuf,
+    #[allow(dead_code)] working_directory: PathBuf,
 }
 
 impl CodeGraphBuilder {
@@ -574,7 +574,7 @@ impl CodeGraphBuilder {
     }
 
     /// Detect language from file path
-    fn detect_language(path: &PathBuf) -> String {
+    fn detect_language(path: &Path) -> String {
         path.extension()
             .and_then(|ext| ext.to_str())
             .map(|ext| match ext {

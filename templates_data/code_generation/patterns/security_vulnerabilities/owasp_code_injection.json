@@ -1,0 +1,276 @@
+{
+  "pattern_id": "owasp_code_injection",
+  "name": "Code Injection",
+  "cwe": "CWE-94",
+  "owasp_category": "A03:2021 - Injection",
+  "severity": "critical",
+  "applicable_languages": ["python", "javascript", "java", "php", "ruby", "go", "csharp"],
+  "applicable_frameworks": ["django", "flask", "express", "spring", "rails", "laravel", "aspnet"],
+  "description": "Code injection vulnerabilities occur when user input is executed as code, allowing attackers to run arbitrary commands",
+
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "# eval() with user input\nresult = eval(user_input)",
+        "# exec() with user input\nexec(f'print({user_data})')",
+        "# __import__ with user input\nmodule = __import__(user_module_name)",
+        "# compile() with user input\ncode = compile(user_code, 'string', 'exec')\nexec(code)",
+        "# os.system with user input\nimport os\nos.system(f'echo {user_input}')",
+        "# subprocess with shell=True\nimport subprocess\nsubprocess.run(user_command, shell=True)",
+        "# Template injection\nfrom jinja2 import Template\ntemplate = Template(user_template)\nresult = template.render()"
+      ],
+      "risk_description": "Dynamic code execution with user input allows arbitrary code execution",
+      "good_code": [
+        "# Use ast.literal_eval for safe evaluation\nimport ast\ntry:\n    result = ast.literal_eval(user_input)\nexcept (ValueError, SyntaxError):\n    result = None",
+        "# Use safe alternatives\n# Instead of eval for math:\nimport numexpr\nresult = numexpr.evaluate(expression, local_dict={'x': x_value})",
+        "# Use subprocess without shell\nimport subprocess\nimport shlex\nargs = shlex.split(command)\nsubprocess.run(args, shell=False)",
+        "# Use parameterized templates\nfrom jinja2 import Environment, BaseLoader\nenv = Environment(loader=BaseLoader(), autoescape=True)\ntemplate = env.from_string('Hello {{ name }}')\nresult = template.render(name=user_name)",
+        "# Whitelist allowed operations\nALLOWED_FUNCTIONS = {'sum': sum, 'len': len, 'max': max}\nif func_name in ALLOWED_FUNCTIONS:\n    result = ALLOWED_FUNCTIONS[func_name](data)",
+        "# Use safe JSON parsing\nimport json\ntry:\n    data = json.loads(user_input)\nexcept json.JSONDecodeError:\n    data = None"
+      ],
+      "fix_explanation": "Avoid eval/exec, use safe alternatives like ast.literal_eval, parameterized commands"
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "// eval() with user input\nconst result = eval(userInput);",
+        "// Function constructor\nconst func = new Function(userCode);\nfunc();",
+        "// setTimeout/setInterval with strings\nsetTimeout(userInput, 1000);",
+        "// Script injection\ndocument.write('<script>' + userScript + '</script>');",
+        "// Dynamic require\nconst module = require(userModuleName);",
+        "// vm module without context\nconst vm = require('vm');\nvm.runInThisContext(userCode);",
+        "// Child process with user input\nconst { exec } = require('child_process');\nexec(`echo ${userInput}`);"
+      ],
+      "risk_description": "eval() and similar functions execute arbitrary JavaScript code",
+      "good_code": [
+        "// Parse JSON safely\ntry {\n    const data = JSON.parse(userInput);\n} catch (e) {\n    console.error('Invalid JSON');\n}",
+        "// Use Function with limited scope\nconst sandboxedFunction = new Function('data', `\n    'use strict';\n    const allowedOps = { sum: arr => arr.reduce((a,b) => a+b, 0) };\n    return allowedOps[data.operation](data.values);\n`);",
+        "// Use setTimeout with functions\nconst delay = parseInt(userDelay, 10);\nif (!isNaN(delay) && delay > 0) {\n    setTimeout(() => {\n        console.log('Timer expired');\n    }, delay);\n}",
+        "// Safe module loading\nconst ALLOWED_MODULES = ['lodash', 'moment'];\nif (ALLOWED_MODULES.includes(moduleName)) {\n    const module = require(moduleName);\n}",
+        "// Use vm with context isolation\nconst vm = require('vm');\nconst sandbox = { result: null };\nvm.createContext(sandbox);\nvm.runInContext('result = 2 + 2', sandbox);",
+        "// Use spawn instead of exec\nconst { spawn } = require('child_process');\nconst child = spawn('echo', [userInput]);"
+      ],
+      "fix_explanation": "Avoid eval, use JSON.parse, spawn instead of exec, sandbox code execution"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "// ScriptEngine with user input\nScriptEngine engine = new ScriptEngineManager().getEngineByName(\"JavaScript\");\nengine.eval(userScript);",
+        "// Runtime.exec with user input\nRuntime.getRuntime().exec(\"cmd /c \" + userCommand);",
+        "// ProcessBuilder with user input\nProcessBuilder pb = new ProcessBuilder(\"sh\", \"-c\", userCommand);\npb.start();",
+        "// Reflection with user input\nClass<?> clazz = Class.forName(userClassName);\nMethod method = clazz.getMethod(userMethodName);\nmethod.invoke(null);",
+        "// Expression Language injection\nExpressionFactory factory = new ExpressionFactoryImpl();\nValueExpression expr = factory.createValueExpression(context, userExpression, Object.class);",
+        "// OGNL injection\nOgnl.getValue(userExpression, context, root);"
+      ],
+      "risk_description": "Script engines and reflection allow arbitrary code execution",
+      "good_code": [
+        "// Whitelist allowed scripts\nMap<String, String> allowedScripts = new HashMap<>();\nallowedScripts.put(\"calculate\", \"2 + 2\");\nif (allowedScripts.containsKey(scriptName)) {\n    engine.eval(allowedScripts.get(scriptName));\n}",
+        "// Use ProcessBuilder with array\nList<String> command = Arrays.asList(\"echo\", userInput);\nProcessBuilder pb = new ProcessBuilder(command);\npb.start();",
+        "// Validate class names\nSet<String> allowedClasses = Set.of(\"java.lang.String\", \"java.util.Date\");\nif (allowedClasses.contains(className)) {\n    Class<?> clazz = Class.forName(className);\n}",
+        "// Use parameterized expressions\n// Instead of user-controlled EL\nMap<String, Object> variables = new HashMap<>();\nvariables.put(\"value\", userValue);\n// Use fixed expression with variable",
+        "// Safe command execution\npublic void safeExecute(String input) {\n    // Validate and sanitize\n    if (!input.matches(\"[a-zA-Z0-9 ]+\")) {\n        throw new IllegalArgumentException(\"Invalid input\");\n    }\n    ProcessBuilder pb = new ProcessBuilder(\"/usr/bin/echo\", input);\n    pb.start();\n}"
+      ],
+      "fix_explanation": "Whitelist allowed operations, use ProcessBuilder with arrays, validate inputs"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "// eval() with user input\neval($userCode);",
+        "// assert() with user input\nassert($userAssertion);",
+        "// preg_replace with /e modifier\n$result = preg_replace('/' . $pattern . '/e', $replacement, $subject);",
+        "// create_function with user input\n$func = create_function('$a', $userCode);\n$func($value);",
+        "// include/require with user input\ninclude($_GET['page'] . '.php');",
+        "// system/exec with user input\nsystem(\"ls \" . $_GET['dir']);",
+        "// Variable variables\n$$userVariable = $value;"
+      ],
+      "risk_description": "eval() and similar functions execute arbitrary PHP code",
+      "good_code": [
+        "// Never use eval - find alternatives\n// Instead of eval for math:\n$parser = new MathParser();\n$result = $parser->parse($expression)->evaluate();",
+        "// Use preg_replace_callback instead of /e\n$result = preg_replace_callback(\n    '/' . preg_quote($pattern, '/') . '/',\n    function($matches) use ($data) {\n        return $data[$matches[1]] ?? '';\n    },\n    $subject\n);",
+        "// Whitelist allowed files\n$allowed_pages = ['home', 'about', 'contact'];\nif (in_array($_GET['page'], $allowed_pages)) {\n    include $_GET['page'] . '.php';\n}",
+        "// Use escapeshellarg\n$dir = escapeshellarg($_GET['dir']);\nsystem(\"ls $dir\");",
+        "// Better: use built-in functions\n$files = scandir($_GET['dir']);",
+        "// Validate variable names\n$allowed_vars = ['config', 'settings'];\nif (in_array($varName, $allowed_vars)) {\n    ${$varName} = $value;\n}"
+      ],
+      "fix_explanation": "Never use eval, use safe alternatives, whitelist includes, escape shell arguments"
+    },
+    {
+      "language": "ruby",
+      "bad_code": [
+        "# eval with user input\neval(user_input)",
+        "# instance_eval\nobject.instance_eval(user_code)",
+        "# class_eval\nUser.class_eval(user_code)",
+        "# send with user input\nobject.send(user_method_name)",
+        "# system with user input\nsystem(\"echo #{user_input}\")",
+        "# backticks with user input\nresult = `ls #{user_directory}`",
+        "# Kernel.open with user input\nKernel.open(user_file)"
+      ],
+      "risk_description": "eval and metaprogramming methods allow arbitrary code execution",
+      "good_code": [
+        "# Use safe alternatives to eval\n# For math expressions:\nrequire 'dentaku'\ncalculator = Dentaku::Calculator.new\nresult = calculator.evaluate(expression)",
+        "# Whitelist allowed methods\nALLOWED_METHODS = %i[name email created_at]\nif ALLOWED_METHODS.include?(method_name.to_sym)\n    object.public_send(method_name)\nend",
+        "# Use Open3 for commands\nrequire 'open3'\nstdout, stderr, status = Open3.capture3('echo', user_input)",
+        "# Use Shellwords for escaping\nrequire 'shellwords'\nsystem(\"echo #{Shellwords.escape(user_input)}\")",
+        "# Safe file operations\nif File.exist?(file_path) && File.file?(file_path)\n    File.read(file_path)\nend",
+        "# Validate and sanitize\ndef safe_method_call(obj, method_name)\n    return unless obj.respond_to?(method_name, false)\n    return if method_name.start_with?('_')\n    obj.public_send(method_name)\nend"
+      ],
+      "fix_explanation": "Avoid eval, use public_send with whitelisting, Open3 for commands"
+    },
+    {
+      "language": "go",
+      "bad_code": [
+        "// No direct eval in Go, but template injection\nimport \"text/template\"\nt, _ := template.New(\"test\").Parse(userTemplate)\nt.Execute(os.Stdout, data)",
+        "// os/exec with user input\nimport \"os/exec\"\ncmd := exec.Command(\"sh\", \"-c\", userCommand)\ncmd.Run()",
+        "// Unsafe reflection\nimport \"reflect\"\nmethodName := userInput\nreflect.ValueOf(obj).MethodByName(methodName).Call(nil)",
+        "// Plugin loading with user input\nimport \"plugin\"\np, _ := plugin.Open(userPluginPath)\np.Lookup(userSymbol)",
+        "// CGO with user input\n// #include <stdlib.h>\n// void run(char* cmd) { system(cmd); }\nimport \"C\"\nC.run(C.CString(userCommand))"
+      ],
+      "risk_description": "Template injection and command execution vulnerabilities",
+      "good_code": [
+        "// Use html/template for safety\nimport \"html/template\"\nt, _ := template.New(\"test\").Parse(\"Hello {{.Name}}\")\nt.Execute(os.Stdout, struct{Name string}{Name: userName})",
+        "// Use exec.Command with args\nimport \"os/exec\"\ncmd := exec.Command(\"echo\", userInput)\n// Never use shell\ncmd.Run()",
+        "// Validate method names\nallowedMethods := map[string]bool{\n    \"GetName\": true,\n    \"GetAge\": true,\n}\nif allowedMethods[methodName] {\n    reflect.ValueOf(obj).MethodByName(methodName).Call(nil)\n}",
+        "// Whitelist plugins\nallowedPlugins := map[string]string{\n    \"calculator\": \"./plugins/calc.so\",\n}\nif path, ok := allowedPlugins[pluginName]; ok {\n    p, _ := plugin.Open(path)\n}",
+        "// Avoid system calls\n// Use Go's built-in functions instead\nfiles, err := os.ReadDir(userDirectory)\nif err != nil {\n    // Handle error\n}"
+      ],
+      "fix_explanation": "Use html/template, exec.Command without shell, validate reflection calls"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "// CodeDom compilation\nCSharpCodeProvider provider = new CSharpCodeProvider();\nCompilerParameters parameters = new CompilerParameters();\nCompilerResults results = provider.CompileAssemblyFromSource(parameters, userCode);",
+        "// Process.Start with user input\nProcess.Start(\"cmd.exe\", \"/c \" + userCommand);",
+        "// Reflection with user input\nType type = Type.GetType(userTypeName);\nMethodInfo method = type.GetMethod(userMethodName);\nmethod.Invoke(null, null);",
+        "// Dynamic LINQ\nvar result = db.Users.Where(userWhereClause);",
+        "// Script evaluation\nMicrosoft.CodeAnalysis.CSharp.Scripting.CSharpScript.EvaluateAsync(userScript);",
+        "// XPath injection\nXPathNavigator nav = doc.CreateNavigator();\nXPathExpression expr = nav.Compile(\"//user[name='\" + userName + \"']\");"
+      ],
+      "risk_description": "Dynamic compilation and reflection allow code execution",
+      "good_code": [
+        "// Avoid dynamic compilation\n// Use configuration or plugins instead\npublic interface IUserPlugin\n{\n    void Execute();\n}\n// Load only trusted assemblies",
+        "// Use ProcessStartInfo with arguments\nvar startInfo = new ProcessStartInfo\n{\n    FileName = \"echo\",\n    Arguments = userInput,\n    UseShellExecute = false\n};\nProcess.Start(startInfo);",
+        "// Whitelist allowed types\nvar allowedTypes = new HashSet<string> { \"System.String\", \"System.DateTime\" };\nif (allowedTypes.Contains(typeName))\n{\n    Type type = Type.GetType(typeName);\n}",
+        "// Use parameterized LINQ\nvar result = db.Users.Where(u => u.Name == userName);",
+        "// Avoid script evaluation\n// Use Roslyn for safe parsing\nSyntaxTree tree = CSharpSyntaxTree.ParseText(code);\n// Analyze but don't execute",
+        "// Use parameterized XPath\nXPathNavigator nav = doc.CreateNavigator();\nXPathExpression expr = nav.Compile(\"//user[name=$name]\");\nXsltArgumentList args = new XsltArgumentList();\nargs.AddParam(\"name\", \"\", userName);"
+      ],
+      "fix_explanation": "Avoid dynamic compilation, use parameterized queries, whitelist operations"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "eval() function calls with variables",
+      "exec() function calls",
+      "Function constructors with user input",
+      "Runtime.exec() or Process.Start() with concatenation",
+      "Reflection API calls with user-controlled strings",
+      "Template parsing with user input"
+    ],
+    "regex_patterns": [
+      "\\beval\\s*\\([^)]*[a-zA-Z_$]",
+      "\\bexec\\s*\\([^)]*[a-zA-Z_$]",
+      "new\\s+Function\\s*\\([^)]*[a-zA-Z_$]",
+      "Runtime\\.getRuntime\\(\\)\\.exec",
+      "Process\\.Start\\s*\\([^,)]*\\+",
+      "__import__\\s*\\([^)]*[a-zA-Z_$]"
+    ],
+    "code_smell_indicators": [
+      "Dynamic code generation",
+      "String concatenation in command execution",
+      "User input in template engines",
+      "Reflection with user-controlled data",
+      "Script engine usage",
+      "Shell command execution"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Never use eval() or similar functions with user input",
+      "Use safe alternatives like JSON.parse() or ast.literal_eval()",
+      "Whitelist allowed operations instead of executing arbitrary code",
+      "Use parameterized commands instead of string concatenation",
+      "Avoid shell execution - use language APIs directly",
+      "Implement input validation and sanitization",
+      "Use sandboxed environments for code execution if necessary",
+      "Apply principle of least privilege to processes",
+      "Regular security audits for code injection vulnerabilities",
+      "Use static analysis tools to detect dangerous patterns"
+    ],
+    "code_examples": [
+      {
+        "framework": "Node.js VM",
+        "safe_code": "const vm = require('vm');\n\n// Create isolated context\nconst sandbox = {\n    result: null,\n    console: { log: console.log }\n};\n\n// Create the context\nvm.createContext(sandbox);\n\n// Run code in sandbox\ntry {\n    vm.runInContext('result = 2 + 2', sandbox, {\n        timeout: 100,\n        displayErrors: true\n    });\n} catch (e) {\n    console.error('Script error:', e);\n}"
+      },
+      {
+        "framework": "Python RestrictedPython",
+        "safe_code": "from RestrictedPython import compile_restricted, safe_globals\n\ncode = compile_restricted(\n    source_code,\n    filename='<user_code>',\n    mode='exec'\n)\n\nif code.errors:\n    raise ValueError('Code compilation errors')\n\nexec(code.code, safe_globals)"
+      }
+    ],
+    "prevention_guidelines": [
+      "Design APIs that don't require dynamic code execution",
+      "Use configuration files instead of code for customization",
+      "Implement strong input validation",
+      "Use type-safe languages and frameworks",
+      "Regular security training for developers",
+      "Code review focusing on injection points",
+      "Automated scanning in CI/CD pipeline",
+      "Implement runtime application self-protection (RASP)"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 9.8,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "business_impact": "Complete system compromise, data breach, service disruption, malware distribution",
+    "technical_impact": "Arbitrary code execution, system takeover, data manipulation, lateral movement",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high",
+    "compliance_violations": ["PCI-DSS", "GDPR", "HIPAA", "SOC2"]
+  },
+
+  "references": [
+    "https://owasp.org/www-community/attacks/Code_Injection",
+    "https://cwe.mitre.org/data/definitions/94.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Injection_Prevention_Cheat_Sheet.html",
+    "https://portswigger.net/web-security/os-command-injection",
+    "https://www.acunetix.com/blog/articles/code-injection/"
+  ],
+
+  "test_cases": [
+    {
+      "input": "eval('alert(1)')",
+      "description": "Direct eval injection",
+      "expected_detection": true,
+      "attack_type": "direct_eval"
+    },
+    {
+      "input": "__import__('os').system('id')",
+      "description": "Python import injection",
+      "expected_detection": true,
+      "attack_type": "import_injection"
+    },
+    {
+      "input": "; ls -la",
+      "description": "Command injection",
+      "expected_detection": true,
+      "attack_type": "command_injection"
+    },
+    {
+      "input": "${7*7}",
+      "description": "Template injection",
+      "expected_detection": true,
+      "attack_type": "template_injection"
+    }
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["injection", "code-execution", "critical", "rce"],
+    "related_patterns": ["owasp_sql_injection", "cwe_78_os_command_injection", "cwe_95_eval_injection"]
+  }
+}

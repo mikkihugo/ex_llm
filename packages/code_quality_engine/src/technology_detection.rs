@@ -67,20 +67,19 @@ impl TechnologyDetection {
         // Categorize detected technologies
         for tech in &technologies {
             let tech_lower = tech.to_lowercase();
-            if tech_lower.contains("react")
+            let is_framework = tech_lower.contains("react")
                 || tech_lower.contains("vue")
                 || tech_lower.contains("angular")
-            {
-                summary.frameworks.push(tech.clone());
-            } else if tech_lower.contains("express")
+                || tech_lower.contains("express")
                 || tech_lower.contains("django")
-                || tech_lower.contains("rails")
-            {
-                summary.frameworks.push(tech.clone());
-            } else if tech_lower.contains("postgres")
+                || tech_lower.contains("rails");
+            let is_database = tech_lower.contains("postgres")
                 || tech_lower.contains("mysql")
-                || tech_lower.contains("mongodb")
-            {
+                || tech_lower.contains("mongodb");
+
+            if is_framework {
+                summary.frameworks.push(tech.clone());
+            } else if is_database {
                 summary.databases.push(tech.clone());
             } else {
                 summary.languages.push(tech.clone());

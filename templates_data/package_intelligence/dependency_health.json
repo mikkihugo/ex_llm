@@ -1,0 +1,415 @@
+{
+  "pattern_id": "dependency_health",
+  "name": "Dependency Health Indicators",
+  "description": "Assess overall health and quality of dependencies",
+  "version": "1.0",
+  "created_at": "2025-01-30",
+  "artifact_type": "package_intelligence",
+
+  "health_metrics": [
+    {
+      "metric_id": "maintenance_status",
+      "name": "Maintenance Status",
+      "description": "How actively maintained is the package?",
+      "severity": "high",
+      "weight": 0.35,
+
+      "indicators": [
+        {
+          "indicator": "last_commit_date",
+          "name": "Recent Commits",
+          "excellent": "Last commit < 1 month",
+          "good": "Last commit < 3 months",
+          "warning": "Last commit 3-12 months",
+          "bad": "No commits > 1 year",
+          "critical": "No commits > 2 years",
+          "weight": 0.3,
+          "data_source": "git_history"
+        },
+        {
+          "indicator": "issue_resolution_time",
+          "name": "Issue Resolution Time",
+          "excellent": "Avg resolution < 7 days",
+          "good": "Avg resolution < 30 days",
+          "warning": "Avg resolution 30-90 days",
+          "bad": "Avg resolution > 90 days",
+          "critical": "Issues unresolved > 1 year",
+          "weight": 0.2,
+          "data_source": "github_issues"
+        },
+        {
+          "indicator": "release_frequency",
+          "name": "Release Frequency",
+          "excellent": "Monthly releases",
+          "good": "Quarterly releases",
+          "warning": "Biannual releases",
+          "bad": "Annual releases",
+          "critical": "No releases in 2+ years",
+          "weight": 0.25,
+          "data_source": "package_registry"
+        },
+        {
+          "indicator": "maintainer_count",
+          "name": "Active Maintainers",
+          "excellent": "5+ active maintainers",
+          "good": "3-4 active maintainers",
+          "warning": "2 active maintainers",
+          "bad": "1 maintainer",
+          "critical": "No active maintainers",
+          "weight": 0.25,
+          "data_source": "contributor_stats"
+        }
+      ],
+
+      "score_ranges": {
+        "excellent": {
+          "range": "90-100",
+          "interpretation": "Actively maintained, ideal for production",
+          "risk_level": "minimal"
+        },
+        "good": {
+          "range": "70-89",
+          "interpretation": "Well maintained, acceptable for most uses",
+          "risk_level": "low"
+        },
+        "concerning": {
+          "range": "50-69",
+          "interpretation": "Some maintenance issues, monitor closely",
+          "risk_level": "medium"
+        },
+        "poor": {
+          "range": "30-49",
+          "interpretation": "Poorly maintained, consider alternatives",
+          "risk_level": "high"
+        },
+        "critical": {
+          "range": "0-29",
+          "interpretation": "Unmaintained or abandoned, avoid use",
+          "risk_level": "critical"
+        }
+      }
+    },
+    {
+      "metric_id": "code_quality",
+      "name": "Code Quality",
+      "description": "Quality, testing, and documentation of the dependency",
+      "severity": "high",
+      "weight": 0.30,
+
+      "indicators": [
+        {
+          "indicator": "test_coverage",
+          "name": "Test Coverage",
+          "excellent": "> 90% code coverage",
+          "good": "80-90% code coverage",
+          "warning": "60-79% code coverage",
+          "bad": "40-59% code coverage",
+          "critical": "< 40% code coverage",
+          "weight": 0.35,
+          "data_source": "coverage_reports"
+        },
+        {
+          "indicator": "documentation_quality",
+          "name": "Documentation Quality",
+          "excellent": "Complete API docs, tutorials, examples",
+          "good": "Complete API docs with some examples",
+          "warning": "Basic API documentation",
+          "bad": "Minimal or outdated docs",
+          "critical": "No documentation",
+          "weight": 0.25,
+          "data_source": "readme_analysis"
+        },
+        {
+          "indicator": "code_complexity",
+          "name": "Code Complexity",
+          "excellent": "Avg cyclomatic complexity < 5",
+          "good": "Avg cyclomatic complexity 5-10",
+          "warning": "Avg cyclomatic complexity 10-15",
+          "bad": "Avg cyclomatic complexity 15-20",
+          "critical": "Avg cyclomatic complexity > 20",
+          "weight": 0.20,
+          "data_source": "static_analysis"
+        },
+        {
+          "indicator": "linting_score",
+          "name": "Linting and Standards",
+          "excellent": "Zero linting issues",
+          "good": "< 10 minor issues",
+          "warning": "10-50 issues",
+          "bad": "50-100 issues",
+          "critical": "> 100 issues",
+          "weight": 0.20,
+          "data_source": "linter_reports"
+        }
+      ]
+    },
+    {
+      "metric_id": "community_adoption",
+      "name": "Community Adoption",
+      "description": "How widely used and trusted is this package?",
+      "severity": "medium",
+      "weight": 0.20,
+
+      "indicators": [
+        {
+          "indicator": "github_stars",
+          "name": "GitHub Stars",
+          "excellent": "> 10,000 stars",
+          "good": "5,000-10,000 stars",
+          "warning": "1,000-5,000 stars",
+          "bad": "100-1,000 stars",
+          "critical": "< 100 stars",
+          "weight": 0.25,
+          "data_source": "github_api"
+        },
+        {
+          "indicator": "weekly_downloads",
+          "name": "Weekly Downloads",
+          "excellent": "> 1M downloads/week",
+          "good": "100K-1M downloads/week",
+          "warning": "10K-100K downloads/week",
+          "bad": "1K-10K downloads/week",
+          "critical": "< 1K downloads/week",
+          "weight": 0.35,
+          "data_source": "npm_registry"
+        },
+        {
+          "indicator": "dependent_packages",
+          "name": "Packages Depending On This",
+          "excellent": "> 1,000 dependents",
+          "good": "500-1,000 dependents",
+          "warning": "100-500 dependents",
+          "bad": "10-100 dependents",
+          "critical": "< 10 dependents",
+          "weight": 0.25,
+          "data_source": "dependency_graph"
+        },
+        {
+          "indicator": "corporate_backing",
+          "name": "Corporate/Foundation Support",
+          "excellent": "Major tech company or foundation",
+          "good": "Medium company or active foundation",
+          "warning": "Small company backing",
+          "bad": "Individual with sponsorship",
+          "critical": "No backing or sponsorship",
+          "weight": 0.15,
+          "data_source": "package_metadata"
+        }
+      ]
+    },
+    {
+      "metric_id": "dependency_complexity",
+      "name": "Dependency Complexity",
+      "description": "Size and complexity of transitive dependencies",
+      "severity": "medium",
+      "weight": 0.15,
+
+      "indicators": [
+        {
+          "indicator": "direct_dependencies",
+          "name": "Direct Dependencies Count",
+          "excellent": "0-5 dependencies",
+          "good": "6-15 dependencies",
+          "warning": "16-30 dependencies",
+          "bad": "31-50 dependencies",
+          "critical": "> 50 dependencies",
+          "weight": 0.30,
+          "data_source": "package_json"
+        },
+        {
+          "indicator": "transitive_dependencies",
+          "name": "Total Transitive Dependencies",
+          "excellent": "< 20 total",
+          "good": "20-50 total",
+          "warning": "51-100 total",
+          "bad": "101-200 total",
+          "critical": "> 200 total",
+          "weight": 0.40,
+          "data_source": "dependency_tree"
+        },
+        {
+          "indicator": "dependency_depth",
+          "name": "Maximum Dependency Depth",
+          "excellent": "Max depth 3",
+          "good": "Max depth 5",
+          "warning": "Max depth 7",
+          "bad": "Max depth 10",
+          "critical": "Max depth > 10",
+          "weight": 0.30,
+          "data_source": "dependency_tree"
+        }
+      ]
+    }
+  ],
+
+  "red_flags": [
+    {
+      "flag_id": "unmaintained",
+      "name": "Unmaintained Package",
+      "description": "No commits or releases in 2+ years",
+      "severity": "critical",
+      "detection": "last_commit > 730 days AND last_release > 730 days",
+      "recommendation": "Find actively maintained alternative or consider forking"
+    },
+    {
+      "flag_id": "single_maintainer",
+      "name": "Single Maintainer Risk",
+      "description": "Only 1 active maintainer with no backup",
+      "severity": "high",
+      "detection": "maintainer_count == 1 AND contributor_count < 3",
+      "recommendation": "Monitor for maintainer burnout, prepare contingency"
+    },
+    {
+      "flag_id": "low_coverage",
+      "name": "Low Test Coverage",
+      "description": "Test coverage below 50%",
+      "severity": "high",
+      "detection": "test_coverage < 50",
+      "recommendation": "Add extensive testing before production use"
+    },
+    {
+      "flag_id": "large_transitive_deps",
+      "name": "Excessive Dependencies",
+      "description": "More than 100 transitive dependencies",
+      "severity": "medium",
+      "detection": "transitive_dependency_count > 100",
+      "recommendation": "Audit dependencies for bloat and security risks"
+    },
+    {
+      "flag_id": "no_tests",
+      "name": "No Test Suite",
+      "description": "Package has no test files",
+      "severity": "critical",
+      "detection": "test_file_count == 0",
+      "recommendation": "Avoid use or implement comprehensive testing"
+    },
+    {
+      "flag_id": "abandoned_popular",
+      "name": "Abandoned but Popular",
+      "description": "High downloads but no maintenance",
+      "severity": "critical",
+      "detection": "weekly_downloads > 10000 AND last_commit > 730 days",
+      "recommendation": "Community fork likely exists, migrate"
+    },
+    {
+      "flag_id": "pre_1_0",
+      "name": "Pre-release Version",
+      "description": "Version < 1.0.0 indicates instability",
+      "severity": "medium",
+      "detection": "major_version == 0",
+      "recommendation": "Expect breaking changes, pin exact version"
+    },
+    {
+      "flag_id": "no_license",
+      "name": "No License File",
+      "description": "Package has no clear license",
+      "severity": "critical",
+      "detection": "license == null OR license == 'UNLICENSED'",
+      "recommendation": "Cannot use legally without license clarification"
+    },
+    {
+      "flag_id": "deprecated",
+      "name": "Deprecated Package",
+      "description": "Package marked as deprecated",
+      "severity": "critical",
+      "detection": "deprecated == true",
+      "recommendation": "Migrate to suggested alternative immediately"
+    },
+    {
+      "flag_id": "security_holding",
+      "name": "Security Holding Package",
+      "description": "Package was taken over for security",
+      "severity": "high",
+      "detection": "description contains 'security holding'",
+      "recommendation": "Was likely malicious, audit usage"
+    }
+  ],
+
+  "health_score_calculation": {
+    "formula": "weighted_average(metrics)",
+    "weights": {
+      "maintenance_status": 0.35,
+      "code_quality": 0.30,
+      "community_adoption": 0.20,
+      "dependency_complexity": 0.15
+    },
+    "interpretation": {
+      "90-100": "Excellent health - highly recommended",
+      "70-89": "Good health - safe to use",
+      "50-69": "Fair health - use with caution",
+      "30-49": "Poor health - high risk",
+      "0-29": "Critical - do not use"
+    }
+  },
+
+  "automated_assessment_tools": [
+    {
+      "tool": "npm audit",
+      "purpose": "Security vulnerability scanning",
+      "ecosystem": "npm"
+    },
+    {
+      "tool": "bundlesize",
+      "purpose": "Package size analysis",
+      "ecosystem": "npm"
+    },
+    {
+      "tool": "depcheck",
+      "purpose": "Unused dependency detection",
+      "ecosystem": "npm"
+    },
+    {
+      "tool": "madge",
+      "purpose": "Circular dependency detection",
+      "ecosystem": "javascript"
+    },
+    {
+      "tool": "licensed",
+      "purpose": "License compliance checking",
+      "ecosystem": "multi"
+    },
+    {
+      "tool": "cargo-audit",
+      "purpose": "Rust security audit",
+      "ecosystem": "cargo"
+    },
+    {
+      "tool": "mix audit",
+      "purpose": "Elixir dependency audit",
+      "ecosystem": "hex"
+    }
+  ],
+
+  "remediation_strategies": [
+    {
+      "issue": "Unmaintained dependency",
+      "strategies": [
+        "Search for community forks",
+        "Find alternative packages with similar API",
+        "Fork and maintain internally",
+        "Vendor the code and maintain locally",
+        "Gradually refactor to remove dependency"
+      ]
+    },
+    {
+      "issue": "Too many dependencies",
+      "strategies": [
+        "Audit for unused dependencies",
+        "Replace multi-purpose libraries with focused ones",
+        "Implement simple utilities internally",
+        "Use tree-shaking to reduce bundle size",
+        "Consider monorepo to share code"
+      ]
+    },
+    {
+      "issue": "Poor test coverage",
+      "strategies": [
+        "Write integration tests for critical paths",
+        "Add property-based testing",
+        "Implement snapshot testing",
+        "Use mutation testing to verify test quality",
+        "Set up continuous coverage monitoring"
+      ]
+    }
+  ]
+}

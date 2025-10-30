@@ -52,7 +52,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
   use Mix.Task
   require Logger
   alias Singularity.Agents.DocumentationPipeline
-  alias Singularity.Agents.QualityEnforcer
+  alias Singularity.Agents.CodeQualityAgent
 
   @shortdoc "Upgrade documentation to quality 2.6.0 standards from templates_data"
 
@@ -119,7 +119,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     end
 
     # Start QualityEnforcer
-    case QualityEnforcer.start_link() do
+    case CodeQualityAgent.start_link() do
       {:ok, _pid} ->
         :ok
 
@@ -139,7 +139,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     Mix.shell().info("Getting documentation status...")
 
     with {:ok, pipeline_status} <- DocumentationPipeline.get_pipeline_status(),
-         {:ok, quality_report} <- QualityEnforcer.get_quality_report() do
+         {:ok, quality_report} <- CodeQualityAgent.get_quality_report() do
       Mix.shell().info("""
       📊 Documentation Status Report
       ═══════════════════════════════════════════════════════════════════════════════
@@ -245,7 +245,7 @@ defmodule Mix.Tasks.Documentation.Upgrade do
     # Enable quality gates if requested
     if opts[:enforce_quality] do
       Mix.shell().info("Enabling quality gates...")
-      QualityEnforcer.enable_quality_gates()
+      CodeQualityAgent.enable_quality_gates()
     end
 
     files = get_files_to_process(opts)

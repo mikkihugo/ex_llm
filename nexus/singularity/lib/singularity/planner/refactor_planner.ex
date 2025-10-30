@@ -232,7 +232,7 @@ defmodule Singularity.Planner.RefactorPlanner do
       %{
         id: "phase2_quality_enforce",
         type: :task,
-        worker: {Singularity.Agents.QualityEnforcer, :enforce_quality_standards},
+        worker: {Singularity.Agents.CodeQualityAgent, :enforce_quality_standards},
         args: %{codebase_id: codebase_id, files: []},
         depends_on: test_ids,
         description: "Enforce quality standards on refactored code"
@@ -241,7 +241,7 @@ defmodule Singularity.Planner.RefactorPlanner do
       %{
         id: "phase2_quality_report",
         type: :task,
-        worker: {Singularity.Agents.QualityEnforcer, :get_quality_report},
+        worker: {Singularity.Agents.CodeQualityAgent, :get_quality_report},
         args: %{codebase_id: codebase_id},
         depends_on: ["phase2_quality_enforce"],
         description: "Generate quality compliance report"

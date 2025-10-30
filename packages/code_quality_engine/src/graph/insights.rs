@@ -290,7 +290,7 @@ pub enum GateStatus {
 /// Stellar analysis service
 pub struct CodeInsightsEngine {
     /// Vector DAG instance
-    dag: GraphHandle,
+    #[allow(dead_code)] dag: GraphHandle,
     /// Analysis cache
     analysis_cache: HashMap<String, CodeInsightsResult>,
     /// CodePattern database
@@ -499,7 +499,7 @@ impl CodeInsightsEngine {
         // Increase score based on coverage
         score += metrics.code_coverage_estimate * 0.2;
 
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     /// Check quality gates
@@ -628,7 +628,7 @@ impl CodeInsightsEngine {
         let mut score = 100.0;
         score -= complexity * 3.0;
         score += maintainability * 0.5;
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     fn detect_vulnerabilities(&self, content: &str) -> Vec<Vulnerability> {
@@ -683,7 +683,7 @@ impl CodeInsightsEngine {
         // Increase score for security patterns
         score += patterns.len() as f64 * 5.0;
 
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     fn generate_security_recommendations(&self, vulnerabilities: &[Vulnerability]) -> Vec<String> {
@@ -722,6 +722,8 @@ impl InsightEngine {
         }
     }
 
+    // TODO(minimal): Minimal insight generation. Expand with
+    // production-grade, configurable rules and language awareness.
     fn generate_insights(
         &self,
         analysis: &FileAnalysisResult,
@@ -739,6 +741,37 @@ impl InsightEngine {
                     suggested_actions: rule.suggested_actions.clone(),
                 });
             }
+        }
+
+        // Minimal content-based checks
+        if content.contains("unsafe") {
+            insights.push(IntelligentInsight {
+                insight_type: InsightType::Security,
+                message: "Unsafe code detected".to_string(),
+                confidence: 0.8,
+                severity: SeverityLevel::High,
+                suggested_actions: vec!["Review unsafe blocks".to_string()],
+            });
+        }
+
+        if content.contains("TODO") || content.contains("FIXME") {
+            insights.push(IntelligentInsight {
+                insight_type: InsightType::Maintainability,
+                message: "Found TODO/FIXME notes".to_string(),
+                confidence: 0.9,
+                severity: SeverityLevel::Low,
+                suggested_actions: vec!["Convert TODOs into tracked tasks".to_string()],
+            });
+        }
+
+        if content.lines().any(|l| l.len() > 120) {
+            insights.push(IntelligentInsight {
+                insight_type: InsightType::CodeQuality,
+                message: "Very long lines detected (>120 chars)".to_string(),
+                confidence: 0.7,
+                severity: SeverityLevel::Medium,
+                suggested_actions: vec!["Wrap long lines for readability".to_string()],
+            });
         }
 
         insights

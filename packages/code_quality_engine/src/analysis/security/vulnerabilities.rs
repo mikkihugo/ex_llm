@@ -276,7 +276,7 @@ impl VulnerabilityAnalyzer {
             risk_score -= penalty;
         }
 
-        risk_score.max(0.0).min(1.0)
+        risk_score.clamp(0.0, 1.0)
     }
 
     /// Generate recommendations from vulnerabilities

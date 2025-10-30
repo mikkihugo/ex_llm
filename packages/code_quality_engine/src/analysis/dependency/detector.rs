@@ -270,9 +270,9 @@ pub trait DependencyDetectorTrait {
 /// Dependency pattern registry with fact-system integration
 pub struct DependencyPatternRegistry {
     detectors: Vec<Box<dyn DependencyDetectorTrait>>,
-    fact_system_client: FactSystemClient,
-    vulnerability_database: VulnerabilityDatabase,
-    license_database: LicenseDatabase,
+    #[allow(dead_code)] fact_system_client: FactSystemClient,
+    #[allow(dead_code)] vulnerability_database: VulnerabilityDatabase,
+    #[allow(dead_code)] license_database: LicenseDatabase,
 }
 
 /// Fact-system client for dependency knowledge
@@ -428,6 +428,7 @@ impl DependencyPatternRegistry {
     }
 
     /// Analyze dependency health
+    #[allow(dead_code)]
     async fn analyze_dependency_health(
         &self,
         _dependencies: &[Dependency],
@@ -494,6 +495,7 @@ impl DependencyPatternRegistry {
     }
 
     /// Generate recommendations
+    #[allow(dead_code)]
     fn generate_recommendations(
         &self,
         _dependencies: &[Dependency],

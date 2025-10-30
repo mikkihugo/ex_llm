@@ -1,0 +1,290 @@
+{
+  "framework_id": "fastapi",
+  "framework_name": "FastAPI",
+  "version_target": "0.95+",
+  "description": "Security patterns and vulnerability detection for FastAPI web applications",
+
+  "vulnerability_patterns": [
+    {
+      "vulnerability_id": "fastapi_sql_injection",
+      "name": "SQL Injection in Database Queries",
+      "cwe": "CWE-89",
+      "severity": "critical",
+      "description": "Dynamic SQL construction with user input",
+
+      "bad_patterns": [
+        {
+          "code": "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get(\"/users/{user_id}\")\ndef get_user(user_id: str):\n    query = f\"SELECT * FROM users WHERE id={user_id}\"\n    return db.execute(query)",
+          "issue": "String interpolation in SQL query"
+        },
+        {
+          "code": "@app.post(\"/search\")\nasync def search(query: str = Query(...)):\n    sql = \"SELECT * FROM products WHERE name LIKE '%\" + query + \"%'\"\n    return await database.fetch_all(sql)",
+          "issue": "String concatenation with LIKE clause"
+        },
+        {
+          "code": "@app.get(\"/filter\")\ndef filter_items(order_by: str):\n    query = f\"SELECT * FROM items ORDER BY {order_by}\"\n    return db.execute_query(query)",
+          "issue": "User-controlled ORDER BY clause"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from sqlalchemy.orm import Session\nfrom fastapi import Depends\n\n@app.get(\"/users/{user_id}\")\ndef get_user(user_id: int, db: Session = Depends(get_db)):\n    return db.query(User).filter(User.id == user_id).first()",
+          "explanation": "Use SQLAlchemy ORM with type hints"
+        },
+        {
+          "code": "@app.post(\"/search\")\nasync def search(query: str = Query(...)):\n    sql = \"SELECT * FROM products WHERE name LIKE :query\"\n    values = {\"query\": f\"%{query}%\"}\n    return await database.fetch_all(query=sql, values=values)",
+          "explanation": "Use parameterized queries with named placeholders"
+        },
+        {
+          "code": "from sqlalchemy import text\n\n@app.get(\"/users\")\nasync def get_users(name: str):\n    query = text(\"SELECT * FROM users WHERE name = :name\")\n    result = await database.fetch_all(query, values={\"name\": name})\n    return result",
+          "explanation": "Use SQLAlchemy text() with bound parameters"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_jwt_weak",
+      "name": "Weak JWT Implementation",
+      "cwe": "CWE-347",
+      "severity": "high",
+      "description": "Insecure JWT token handling",
+
+      "bad_patterns": [
+        {
+          "code": "import jwt\n\n@app.post(\"/login\")\ndef login(username: str, password: str):\n    # No signature verification\n    token = jwt.encode({\"user\": username}, \"secret\", algorithm=\"none\")\n    return {\"token\": token}",
+          "issue": "JWT with 'none' algorithm (no signature)"
+        },
+        {
+          "code": "SECRET_KEY = \"secret123\"\n\ndef create_token(data: dict):\n    return jwt.encode(data, SECRET_KEY, algorithm=\"HS256\")",
+          "issue": "Weak/hardcoded secret key"
+        },
+        {
+          "code": "@app.get(\"/protected\")\ndef protected(token: str):\n    # No expiration check\n    payload = jwt.decode(token, SECRET_KEY, algorithms=[\"HS256\"], options={\"verify_exp\": False})\n    return payload",
+          "issue": "Disabled expiration verification"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from datetime import datetime, timedelta\nfrom jose import JWTError, jwt\nimport secrets\n\nSECRET_KEY = secrets.token_urlsafe(32)\nALGORITHM = \"HS256\"\nACCESS_TOKEN_EXPIRE_MINUTES = 30\n\ndef create_access_token(data: dict):\n    to_encode = data.copy()\n    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)\n    to_encode.update({\"exp\": expire})\n    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)\n    return encoded_jwt",
+          "explanation": "Secure JWT with expiration and strong secret"
+        },
+        {
+          "code": "from fastapi import HTTPException, Security\nfrom fastapi.security import HTTPBearer, HTTPAuthorizationCredentials\n\nsecurity = HTTPBearer()\n\n@app.get(\"/protected\")\nasync def protected(credentials: HTTPAuthorizationCredentials = Security(security)):\n    token = credentials.credentials\n    try:\n        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])\n        username: str = payload.get(\"sub\")\n        if username is None:\n            raise HTTPException(status_code=401)\n    except JWTError:\n        raise HTTPException(status_code=401)\n    return {\"user\": username}",
+          "explanation": "Proper JWT validation with FastAPI security"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_cors_misconfigured",
+      "name": "Misconfigured CORS",
+      "cwe": "CWE-942",
+      "severity": "medium",
+      "description": "Overly permissive CORS configuration",
+
+      "bad_patterns": [
+        {
+          "code": "from fastapi.middleware.cors import CORSMiddleware\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\"*\"],\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)",
+          "issue": "Wildcard origin with credentials allowed"
+        },
+        {
+          "code": "app.add_middleware(\n    CORSMiddleware,\n    allow_origin_regex=\".*\",\n    allow_credentials=True\n)",
+          "issue": "Regex matching all origins with credentials"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from fastapi.middleware.cors import CORSMiddleware\n\norigins = [\n    \"http://localhost:3000\",\n    \"https://example.com\",\n    \"https://app.example.com\",\n]\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=origins,\n    allow_credentials=True,\n    allow_methods=[\"GET\", \"POST\"],\n    allow_headers=[\"Content-Type\", \"Authorization\"],\n)",
+          "explanation": "Specific allowed origins and methods"
+        },
+        {
+          "code": "import os\n\nALLOWED_ORIGINS = os.getenv(\"ALLOWED_ORIGINS\", \"\").split(\",\")\n\nif ALLOWED_ORIGINS:\n    app.add_middleware(\n        CORSMiddleware,\n        allow_origins=ALLOWED_ORIGINS,\n        allow_credentials=True,\n        allow_methods=[\"GET\", \"POST\", \"PUT\", \"DELETE\"],\n        allow_headers=[\"*\"],\n        max_age=3600,\n    )",
+          "explanation": "Environment-based CORS configuration"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_path_traversal",
+      "name": "Path Traversal in File Operations",
+      "cwe": "CWE-22",
+      "severity": "critical",
+      "description": "Unvalidated file paths from user input",
+
+      "bad_patterns": [
+        {
+          "code": "@app.get(\"/download/{filename}\")\nasync def download(filename: str):\n    file_path = f\"./uploads/{filename}\"\n    return FileResponse(file_path)",
+          "issue": "User can traverse with ../../../etc/passwd"
+        },
+        {
+          "code": "@app.post(\"/upload\")\nasync def upload(file: UploadFile, path: str):\n    file_location = f\"uploads/{path}\"\n    with open(file_location, \"wb+\") as file_object:\n        file_object.write(file.file.read())\n    return {\"filename\": file_location}",
+          "issue": "User controls file destination"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from pathlib import Path\nimport os\n\n@app.get(\"/download/{filename}\")\nasync def download(filename: str):\n    # Remove any path components\n    safe_filename = os.path.basename(filename)\n    \n    # Define base directory\n    base_dir = Path(\"./uploads\").resolve()\n    file_path = (base_dir / safe_filename).resolve()\n    \n    # Ensure the file is within base directory\n    if not str(file_path).startswith(str(base_dir)):\n        raise HTTPException(status_code=400, detail=\"Invalid filename\")\n    \n    if not file_path.exists():\n        raise HTTPException(status_code=404, detail=\"File not found\")\n    \n    return FileResponse(file_path)",
+          "explanation": "Validate file path is within expected directory"
+        },
+        {
+          "code": "import uuid\nimport aiofiles\n\n@app.post(\"/upload\")\nasync def upload(file: UploadFile = File(...)):\n    # Generate safe filename\n    file_extension = Path(file.filename).suffix\n    safe_filename = f\"{uuid.uuid4()}{file_extension}\"\n    \n    # Save to controlled location\n    file_path = Path(\"uploads\") / safe_filename\n    \n    async with aiofiles.open(file_path, 'wb') as f:\n        content = await file.read()\n        await f.write(content)\n    \n    return {\"filename\": safe_filename}",
+          "explanation": "Generate safe filenames instead of using user input"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_request_validation",
+      "name": "Missing Input Validation",
+      "cwe": "CWE-20",
+      "severity": "high",
+      "description": "Insufficient validation of user input",
+
+      "bad_patterns": [
+        {
+          "code": "@app.post(\"/user\")\ndef create_user(data: dict):\n    # No validation on dict content\n    return db.insert(\"users\", data)",
+          "issue": "Accepting arbitrary dict without validation"
+        },
+        {
+          "code": "@app.get(\"/search\")\ndef search(q: str):\n    # No length or content validation\n    return search_database(q)",
+          "issue": "No constraints on string input"
+        },
+        {
+          "code": "@app.post(\"/execute\")\nasync def execute(command: str = Body(...)):\n    # Dangerous: executing user commands\n    result = eval(command)\n    return {\"result\": result}",
+          "issue": "Using eval() on user input"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from pydantic import BaseModel, validator, constr, EmailStr\nfrom typing import Optional\n\nclass UserCreate(BaseModel):\n    username: constr(min_length=3, max_length=50, regex='^[a-zA-Z0-9_-]+$')\n    email: EmailStr\n    age: int\n    \n    @validator('age')\n    def validate_age(cls, v):\n        if v < 13 or v > 120:\n            raise ValueError('Age must be between 13 and 120')\n        return v\n\n@app.post(\"/user\")\ndef create_user(user: UserCreate):\n    return db.insert_user(user.dict())",
+          "explanation": "Use Pydantic models with validators"
+        },
+        {
+          "code": "from fastapi import Query\n\n@app.get(\"/search\")\ndef search(\n    q: str = Query(\n        ...,\n        min_length=1,\n        max_length=100,\n        regex='^[a-zA-Z0-9\\s]+$',\n        description=\"Search query\"\n    )\n):\n    return search_database(q)",
+          "explanation": "Use Query parameters with constraints"
+        },
+        {
+          "code": "from enum import Enum\n\nclass SortOrder(str, Enum):\n    asc = \"asc\"\n    desc = \"desc\"\n\nclass FilterType(str, Enum):\n    name = \"name\"\n    date = \"date\"\n    price = \"price\"\n\n@app.get(\"/items\")\ndef get_items(\n    sort: SortOrder = SortOrder.asc,\n    filter_by: FilterType = FilterType.name\n):\n    return db.get_items(sort=sort.value, filter_by=filter_by.value)",
+          "explanation": "Use Enums for restricted choices"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_rate_limiting",
+      "name": "Missing Rate Limiting",
+      "cwe": "CWE-307",
+      "severity": "medium",
+      "description": "No protection against brute force or DoS attacks",
+
+      "bad_patterns": [
+        {
+          "code": "@app.post(\"/login\")\nasync def login(username: str, password: str):\n    # No rate limiting\n    user = authenticate_user(username, password)\n    if not user:\n        raise HTTPException(status_code=401)\n    return create_token(user)",
+          "issue": "Login endpoint without rate limiting"
+        },
+        {
+          "code": "@app.post(\"/reset-password\")\nasync def reset_password(email: str):\n    # No protection against email bombing\n    send_reset_email(email)\n    return {\"message\": \"Email sent\"}",
+          "issue": "Email endpoint without rate limiting"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from slowapi import Limiter, _rate_limit_exceeded_handler\nfrom slowapi.util import get_remote_address\nfrom slowapi.errors import RateLimitExceeded\n\nlimiter = Limiter(\n    key_func=get_remote_address,\n    default_limits=[\"100/minute\"]\n)\napp.state.limiter = limiter\napp.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)\n\n@app.post(\"/login\")\n@limiter.limit(\"5/minute\")\nasync def login(request: Request, username: str, password: str):\n    user = authenticate_user(username, password)\n    if not user:\n        raise HTTPException(status_code=401)\n    return create_token(user)",
+          "explanation": "Use slowapi for rate limiting"
+        },
+        {
+          "code": "import time\nfrom collections import defaultdict\nfrom datetime import datetime, timedelta\n\nclass RateLimiter:\n    def __init__(self, max_requests: int = 10, window_seconds: int = 60):\n        self.max_requests = max_requests\n        self.window = timedelta(seconds=window_seconds)\n        self.requests = defaultdict(list)\n    \n    def is_allowed(self, identifier: str) -> bool:\n        now = datetime.now()\n        # Clean old requests\n        self.requests[identifier] = [\n            req_time for req_time in self.requests[identifier]\n            if now - req_time < self.window\n        ]\n        \n        if len(self.requests[identifier]) < self.max_requests:\n            self.requests[identifier].append(now)\n            return True\n        return False\n\nrate_limiter = RateLimiter(max_requests=5, window_seconds=60)\n\n@app.post(\"/api/sensitive\")\nasync def sensitive_endpoint(request: Request):\n    client_ip = request.client.host\n    if not rate_limiter.is_allowed(client_ip):\n        raise HTTPException(status_code=429, detail=\"Too many requests\")\n    return {\"data\": \"sensitive\"}",
+          "explanation": "Custom rate limiter implementation"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_ssrf",
+      "name": "Server-Side Request Forgery (SSRF)",
+      "cwe": "CWE-918",
+      "severity": "high",
+      "description": "Making requests to user-controlled URLs",
+
+      "bad_patterns": [
+        {
+          "code": "import httpx\n\n@app.get(\"/fetch\")\nasync def fetch_url(url: str):\n    async with httpx.AsyncClient() as client:\n        response = await client.get(url)\n        return response.text",
+          "issue": "Fetching arbitrary URLs without validation"
+        },
+        {
+          "code": "@app.post(\"/webhook\")\nasync def register_webhook(callback_url: str):\n    # Store and call user-provided URL\n    await call_webhook(callback_url, data)",
+          "issue": "Calling user-provided webhook URL"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from urllib.parse import urlparse\nimport ipaddress\n\nALLOWED_DOMAINS = [\"api.example.com\", \"data.example.com\"]\nBLOCKED_IPS = [\n    ipaddress.ip_network(\"127.0.0.0/8\"),\n    ipaddress.ip_network(\"10.0.0.0/8\"),\n    ipaddress.ip_network(\"172.16.0.0/12\"),\n    ipaddress.ip_network(\"192.168.0.0/16\"),\n]\n\n@app.get(\"/fetch\")\nasync def fetch_url(url: str):\n    parsed = urlparse(url)\n    \n    # Check if domain is allowed\n    if parsed.hostname not in ALLOWED_DOMAINS:\n        raise HTTPException(status_code=400, detail=\"Domain not allowed\")\n    \n    # Check for local IP addresses\n    try:\n        ip = ipaddress.ip_address(parsed.hostname)\n        for network in BLOCKED_IPS:\n            if ip in network:\n                raise HTTPException(status_code=400, detail=\"Local addresses not allowed\")\n    except ValueError:\n        pass  # Not an IP address\n    \n    # Only allow HTTPS\n    if parsed.scheme != \"https\":\n        raise HTTPException(status_code=400, detail=\"Only HTTPS allowed\")\n    \n    async with httpx.AsyncClient(timeout=5.0) as client:\n        response = await client.get(url)\n        return response.text",
+          "explanation": "Validate URLs against whitelist and block local IPs"
+        }
+      ]
+    },
+    {
+      "vulnerability_id": "fastapi_template_injection",
+      "name": "Server-Side Template Injection",
+      "cwe": "CWE-1336",
+      "severity": "critical",
+      "description": "Unsafe template rendering with user input",
+
+      "bad_patterns": [
+        {
+          "code": "from jinja2 import Template\n\n@app.get(\"/greet\")\ndef greet(name: str):\n    template = Template(f\"Hello {{{{ {name} }}}}\")\n    return template.render()",
+          "issue": "User input in template construction"
+        },
+        {
+          "code": "@app.post(\"/render\")\ndef render_template(template_string: str, data: dict):\n    template = Template(template_string)\n    return template.render(**data)",
+          "issue": "User provides entire template"
+        }
+      ],
+
+      "good_patterns": [
+        {
+          "code": "from jinja2 import Environment, FileSystemLoader, select_autoescape\n\nenv = Environment(\n    loader=FileSystemLoader('templates'),\n    autoescape=select_autoescape(['html', 'xml'])\n)\n\n@app.get(\"/greet\")\ndef greet(name: str):\n    template = env.get_template('greeting.html')\n    return template.render(name=name)",
+          "explanation": "Use pre-defined templates with autoescape"
+        },
+        {
+          "code": "from jinja2 import Environment, BaseLoader\n\n# Create sandboxed environment\nfrom jinja2.sandbox import SandboxedEnvironment\n\nenv = SandboxedEnvironment()\n\n@app.post(\"/render\")\ndef render_template(template_id: str, data: dict):\n    # Load template from database by ID, not user input\n    template_string = db.get_template(template_id)\n    if not template_string:\n        raise HTTPException(status_code=404)\n    \n    template = env.from_string(template_string)\n    return template.render(**data)",
+          "explanation": "Use sandboxed environment and pre-stored templates"
+        }
+      ]
+    }
+  ],
+
+  "security_settings": [
+    {
+      "setting": "Use HTTPS",
+      "recommendation": "Deploy with uvicorn --ssl-keyfile --ssl-certfile or behind HTTPS proxy",
+      "purpose": "Encrypt traffic in transit"
+    },
+    {
+      "setting": "Secret Key Management",
+      "recommendation": "Use environment variables or secrets manager, never hardcode",
+      "purpose": "Protect JWT and session secrets"
+    },
+    {
+      "setting": "Dependency Security",
+      "recommendation": "Use pip-audit or safety to check for vulnerabilities",
+      "purpose": "Identify vulnerable dependencies"
+    },
+    {
+      "setting": "Content Security Policy",
+      "recommendation": "Add CSP headers for HTML responses",
+      "purpose": "Prevent XSS attacks"
+    },
+    {
+      "setting": "Request Size Limits",
+      "recommendation": "Set max_request_size in uvicorn or nginx",
+      "purpose": "Prevent large request DoS"
+    },
+    {
+      "setting": "Timeout Configuration",
+      "recommendation": "Set appropriate timeouts for long-running operations",
+      "purpose": "Prevent resource exhaustion"
+    }
+  ]
+}

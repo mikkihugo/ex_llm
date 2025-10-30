@@ -48,7 +48,7 @@ defmodule Singularity.Evolution.SafetyProfiles do
   ## Examples
 
       # Get profile for agent type
-      {:ok, profile} = SafetyProfiles.get_profile(Singularity.Agents.QualityEnforcer)
+      {:ok, profile} = SafetyProfiles.get_profile(Singularity.Agents.CodeQualityAgent)
       # => %{error_threshold: 0.01, needs_consensus: true, max_blast_radius: :medium}
 
       # Get profile with context override
@@ -102,7 +102,7 @@ defmodule Singularity.Evolution.SafetyProfiles do
     D[AgentCoordinator] -->|get_profile| A
     E[CentralCloud Guardian] -->|validate| A
 
-    F[QualityEnforcer] -->|override| A
+    F[CodeQualityAgent] -->|override| A
     G[RefactoringAgent] -->|override| A
     H[OptimizationAgent] -->|override| A
 
@@ -154,7 +154,7 @@ defmodule Singularity.Evolution.SafetyProfiles do
   ## Predefined agent safety profiles
   @safety_profiles %{
     # High-risk agents: Strict thresholds, consensus required
-    Singularity.Agents.QualityEnforcer => %{
+    Singularity.Agents.CodeQualityAgent => %{
       error_threshold: 0.01,
       needs_consensus: true,
       max_blast_radius: :medium,
@@ -222,15 +222,6 @@ defmodule Singularity.Evolution.SafetyProfiles do
       max_error_count: 50,
       observation_window_seconds: 900
     },
-    Singularity.Agents.MetricsFeeder => %{
-      error_threshold: 0.15,
-      needs_consensus: false,
-      max_blast_radius: :low,
-      auto_rollback: false,
-      max_error_count: 100,
-      observation_window_seconds: 1200
-    },
-
     # Infrastructure agents: Conservative thresholds
     Singularity.Agents.AgentSpawner => %{
       error_threshold: 0.01,
@@ -282,7 +273,7 @@ defmodule Singularity.Evolution.SafetyProfiles do
 
   ## Examples
 
-      {:ok, profile} = SafetyProfiles.get_profile(Singularity.Agents.QualityEnforcer)
+      {:ok, profile} = SafetyProfiles.get_profile(Singularity.Agents.CodeQualityAgent)
       # => %{error_threshold: 0.01, needs_consensus: true, ...}
   """
   def get_profile(agent_type) do
@@ -337,7 +328,7 @@ defmodule Singularity.Evolution.SafetyProfiles do
   ## Examples
 
       profiles = SafetyProfiles.all_profiles()
-      # => %{Singularity.Agents.QualityEnforcer => %{...}, ...}
+      # => %{Singularity.Agents.CodeQualityAgent => %{...}, ...}
   """
   def all_profiles do
     @safety_profiles

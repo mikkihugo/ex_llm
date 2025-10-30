@@ -823,7 +823,7 @@ impl LanguageSpecificRulesAnalyzer {
     fn check_rule(
         &self,
         code: &str,
-        tokens: &[DataToken],
+        _tokens: &[DataToken],
         rule: &LanguageSpecificRule,
     ) -> Vec<RuleViolation> {
         let mut violations = vec![];

@@ -21,7 +21,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
 
   require Logger
   alias Singularity.Agents.DocumentationPipeline
-  alias Singularity.Agents.QualityEnforcer
+  alias Singularity.Agents.CodeQualityAgent
 
   @doc """
   Bootstrap the documentation system on startup.
@@ -58,7 +58,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
   def check_documentation_health do
     try do
       with {:ok, _status} <- DocumentationPipeline.get_pipeline_status(),
-           {:ok, _report} <- QualityEnforcer.get_quality_report() do
+           {:ok, _report} <- CodeQualityAgent.get_quality_report() do
         :healthy
       else
         {:error, reason} ->
@@ -89,7 +89,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
 
   defp ensure_agents_started do
     agents = [
-      {QualityEnforcer, "QualityEnforcer"},
+      {CodeQualityAgent, "CodeQualityAgent"},
       {DocumentationPipeline, "DocumentationPipeline"}
     ]
 
@@ -112,7 +112,7 @@ defmodule Singularity.Startup.DocumentationBootstrap do
   end
 
   defp enable_quality_gates do
-    case QualityEnforcer.enable_quality_gates() do
+    case CodeQualityAgent.enable_quality_gates() do
       :ok ->
         Logger.info("Quality gates enabled")
         :ok

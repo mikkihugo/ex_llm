@@ -1,0 +1,234 @@
+{
+  "pattern_id": "monolith_detector",
+  "name": "Monolith Refactoring Opportunity",
+  "description": "Detect when a monolith should be split into microservices/bounded contexts",
+  "severity": "medium",
+  "type": "architecture_smell",
+
+  "detection_indicators": [
+    {
+      "indicator_id": "multiple_domains",
+      "name": "Multiple Bounded Contexts",
+      "description": "Code organization suggests multiple business domains",
+      "threshold": "> 3 distinct business domains",
+      "detection_methods": [
+        {
+          "method": "Directory structure analysis",
+          "pattern": "src/users/, src/orders/, src/payments/, src/inventory/",
+          "description": "Clear separation by business domain"
+        },
+        {
+          "method": "Module organization",
+          "pattern": "Package structure suggests domain boundaries",
+          "example": "com.company.users, com.company.orders, com.company.payments"
+        },
+        {
+          "method": "Database schema analysis",
+          "pattern": "Tables grouped by business function",
+          "example": "user_*, order_*, payment_* table prefixes"
+        }
+      ]
+    },
+    {
+      "indicator_id": "high_coupling",
+      "name": "High Cross-Module Coupling",
+      "description": "Heavy dependencies between logical modules",
+      "threshold": "Coupling coefficient > 0.7",
+      "detection_methods": [
+        {
+          "method": "Import count analysis",
+          "detection": "Count cross-module imports",
+          "threshold": "> 20 imports between modules"
+        },
+        {
+          "method": "Circular dependency detection",
+          "detection": "Module A -> B -> A",
+          "impact": "Hard to test, deploy, and maintain separately"
+        },
+        {
+          "method": "Shared database access",
+          "detection": "Multiple modules accessing same tables",
+          "impact": "Cannot independently scale data access"
+        }
+      ]
+    },
+    {
+      "indicator_id": "team_scalability",
+      "name": "Team Scalability Issues",
+      "description": "Monolith makes it hard for multiple teams to work independently",
+      "indicators": [
+        "Multiple teams modifying same codebase",
+        "Frequent merge conflicts (> 5 per sprint)",
+        "Long deployment cycles (> 1 week)",
+        "Tightly coupled feature releases",
+        "Cross-team dependencies for simple changes"
+      ],
+      "metrics": {
+        "merge_conflict_rate": "> 20% of PRs have conflicts",
+        "deployment_frequency": "< 1 deployment per week",
+        "team_velocity_impact": "Teams blocked waiting for others"
+      }
+    },
+    {
+      "indicator_id": "deployment_frequency",
+      "name": "Low Deployment Frequency",
+      "description": "Infrequent deployments due to monolith complexity",
+      "threshold": "< 1 deployment per week",
+      "indicates": "High change coupling, hard to test in isolation",
+      "symptoms": [
+        "Long regression test cycles",
+        "Fear of breaking unrelated features",
+        "Large deployment packages",
+        "Rollback affects all components"
+      ]
+    },
+    {
+      "indicator_id": "scaling_issues",
+      "name": "Scaling One Component Requires Scaling Entire Monolith",
+      "description": "Can't scale payment service without scaling user service",
+      "indicators": [
+        "Different components have different load patterns",
+        "Resource consumption varies by component",
+        "One slow component slows entire system",
+        "Memory/CPU requirements differ significantly",
+        "Different SLAs for different components"
+      ],
+      "examples": [
+        "Payment processing needs high CPU",
+        "User service is memory intensive",
+        "Reporting needs scheduled batch processing",
+        "Real-time features vs batch operations"
+      ]
+    },
+    {
+      "indicator_id": "technology_constraints",
+      "name": "Technology Lock-in",
+      "description": "Cannot use optimal technology for each component",
+      "indicators": [
+        "All components must use same language/framework",
+        "Cannot use specialized databases per domain",
+        "Shared runtime limitations",
+        "Common deployment constraints"
+      ]
+    }
+  ],
+
+  "refactoring_suggestions": {
+    "strategy": "strangler fig pattern",
+    "description": "Gradually extract services from monolith",
+
+    "phases": [
+      {
+        "phase": 1,
+        "name": "Identify Bounded Contexts",
+        "tasks": [
+          "Map business domains in codebase",
+          "Document module dependencies",
+          "Identify natural seams for extraction",
+          "Create dependency graph visualization",
+          "Prioritize extraction candidates"
+        ],
+        "duration": "1-2 weeks",
+        "deliverables": [
+          "Domain model diagram",
+          "Dependency matrix",
+          "Service extraction roadmap"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Extract First Service (Payments)",
+        "tasks": [
+          "Create new service repository",
+          "Move payment code and tests",
+          "Create API layer between monolith and service",
+          "Route payment calls to new service",
+          "Deploy alongside monolith",
+          "Monitor performance and errors",
+          "Implement circuit breaker pattern"
+        ],
+        "duration": "2-4 weeks",
+        "success_criteria": [
+          "All payment flows work through new service",
+          "No performance degradation",
+          "Rollback plan tested"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Extract Remaining Services",
+        "tasks": [
+          "Repeat for Orders, Inventory, Users",
+          "Gradually remove from monolith",
+          "Update inter-service communication",
+          "Implement service mesh",
+          "Add distributed tracing"
+        ],
+        "duration": "Monthly increments",
+        "order_of_extraction": [
+          "Services with least dependencies first",
+          "High-value business domains",
+          "Performance-critical components"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Complete Decomposition",
+        "tasks": [
+          "Retire monolith codebase",
+          "Optimize service boundaries",
+          "Implement API gateway",
+          "Setup service registry",
+          "Document service contracts"
+        ],
+        "duration": "Final phase"
+      }
+    ]
+  },
+
+  "metrics": {
+    "coupling_metric": {
+      "name": "Cross-Module Coupling",
+      "formula": "(imports_from_other_modules) / (total_imports) * 100",
+      "good": "< 30%",
+      "concerning": "30-60%",
+      "critical": "> 60%",
+      "measurement": "Static analysis of import statements"
+    },
+    "cohesion_metric": {
+      "name": "Module Cohesion",
+      "formula": "Related functions in same module",
+      "good": "> 0.8",
+      "concerning": "0.5-0.8",
+      "critical": "< 0.5",
+      "measurement": "Semantic similarity of functions"
+    },
+    "deployment_independence": {
+      "name": "Independent Deployability",
+      "formula": "Modules that can be deployed independently",
+      "target": "> 80% of modules",
+      "measurement": "Track deployment coupling"
+    },
+    "team_autonomy": {
+      "name": "Team Autonomy Score",
+      "formula": "Features completed without cross-team dependencies",
+      "target": "> 70%",
+      "measurement": "Sprint velocity analysis"
+    }
+  },
+
+  "tools": {
+    "detection": [
+      "Dependency analysis tools (madge, dependency-cruiser)",
+      "Code complexity analyzers",
+      "Architecture fitness functions",
+      "Coupling/cohesion calculators"
+    ],
+    "visualization": [
+      "Dependency graphs",
+      "Module interaction diagrams",
+      "Heat maps of coupling",
+      "Team ownership maps"
+    ]
+  }
+}

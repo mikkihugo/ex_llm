@@ -1,0 +1,266 @@
+{
+  "pattern_id": "owasp_sql_injection",
+  "name": "SQL Injection",
+  "cwe": "CWE-89",
+  "owasp_category": "A03:2021 - Injection",
+  "severity": "critical",
+  "applicable_languages": ["python", "javascript", "java", "go", "php", "ruby", "csharp"],
+  "applicable_frameworks": ["django", "flask", "express", "rails", "spring", "laravel", "aspnet"],
+  "description": "SQL injection occurs when untrusted data is sent to an interpreter as part of a command or query, allowing attackers to execute unintended SQL commands",
+
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "query = f\"SELECT * FROM users WHERE id={user_id}\"",
+        "query = \"SELECT * FROM users WHERE id=\" + user_id",
+        "cursor.execute(f\"DELETE FROM users WHERE email='{email}'\")",
+        "cursor.execute(\"SELECT * FROM products WHERE name = '%s'\" % product_name)",
+        "db.execute(\"UPDATE users SET role='{}' WHERE id={}\".format(role, user_id))"
+      ],
+      "risk_description": "Direct string interpolation or concatenation in SQL queries allows attackers to inject malicious SQL",
+      "good_code": [
+        "cursor.execute(\"SELECT * FROM users WHERE id=?\", (user_id,))",
+        "cursor.execute(\"DELETE FROM users WHERE email=%s\", (email,))",
+        "cursor.execute(\"SELECT * FROM products WHERE name = %s\", (product_name,))",
+        "db.execute(\"UPDATE users SET role=? WHERE id=?\", (role, user_id))",
+        "# Using SQLAlchemy ORM\nuser = session.query(User).filter(User.id == user_id).first()"
+      ],
+      "fix_explanation": "Use parameterized queries with placeholders that separate SQL logic from data"
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "db.query(`SELECT * FROM users WHERE id=${userId}`)",
+        "db.query('SELECT * FROM users WHERE id=' + userId)",
+        "connection.query('SELECT * FROM products WHERE name=\"' + productName + '\"')",
+        "pool.query(`UPDATE users SET email='${email}' WHERE id=${id}`)",
+        "db.raw('SELECT * FROM orders WHERE status=\"' + status + '\"')"
+      ],
+      "risk_description": "Template literals and string concatenation expose the application to SQL injection attacks",
+      "good_code": [
+        "db.query('SELECT * FROM users WHERE id=?', [userId])",
+        "db.query('SELECT * FROM users WHERE id=$1', [userId])",
+        "connection.query('SELECT * FROM products WHERE name=?', [productName])",
+        "pool.query('UPDATE users SET email=$1 WHERE id=$2', [email, id])",
+        "// Using Sequelize ORM\nconst user = await User.findOne({ where: { id: userId } })"
+      ],
+      "fix_explanation": "Use parameterized queries or ORM frameworks that handle escaping automatically"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "String query = \"SELECT * FROM users WHERE id=\" + userId;",
+        "statement.executeQuery(String.format(\"SELECT * FROM users WHERE id=%s\", userId));",
+        "String sql = \"SELECT * FROM users WHERE username='\" + username + \"'\";",
+        "jdbcTemplate.queryForList(\"SELECT * FROM products WHERE category='\" + category + \"'\");",
+        "em.createQuery(\"SELECT u FROM User u WHERE u.name = '\" + name + \"'\")"
+      ],
+      "risk_description": "String concatenation in SQL statements allows injection of malicious SQL code",
+      "good_code": [
+        "PreparedStatement stmt = connection.prepareStatement(\"SELECT * FROM users WHERE id=?\");\nstmt.setInt(1, userId);",
+        "PreparedStatement pstmt = conn.prepareStatement(\"SELECT * FROM users WHERE username=?\");\npstmt.setString(1, username);",
+        "jdbcTemplate.queryForList(\"SELECT * FROM products WHERE category=?\", category);",
+        "Query query = em.createQuery(\"SELECT u FROM User u WHERE u.name = :name\");\nquery.setParameter(\"name\", name);",
+        "// Using Hibernate Criteria\nCriteria criteria = session.createCriteria(User.class);\ncriteria.add(Restrictions.eq(\"id\", userId));"
+      ],
+      "fix_explanation": "Use PreparedStatement with parameter binding or JPA with named parameters"
+    },
+    {
+      "language": "go",
+      "bad_code": [
+        "query := fmt.Sprintf(\"SELECT * FROM users WHERE id=%d\", userID)",
+        "db.Query(\"SELECT * FROM users WHERE name='\" + name + \"'\")",
+        "sqlStatement := \"INSERT INTO users VALUES('\" + username + \"', '\" + email + \"')\"",
+        "rows, _ := db.Query(fmt.Sprintf(\"DELETE FROM products WHERE id=%s\", productId))",
+        "db.Exec(\"UPDATE users SET role='\" + role + \"' WHERE id=\" + strconv.Itoa(id))"
+      ],
+      "risk_description": "Using fmt.Sprintf or string concatenation with SQL creates injection vulnerabilities",
+      "good_code": [
+        "db.Query(\"SELECT * FROM users WHERE id=$1\", userID)",
+        "db.Query(\"SELECT * FROM users WHERE name=?\", name)",
+        "stmt, _ := db.Prepare(\"INSERT INTO users VALUES($1, $2)\")\nstmt.Exec(username, email)",
+        "db.Query(\"DELETE FROM products WHERE id=$1\", productId)",
+        "db.Exec(\"UPDATE users SET role=$1 WHERE id=$2\", role, id)"
+      ],
+      "fix_explanation": "Use parameterized queries with placeholders ($1, $2 for PostgreSQL or ? for MySQL)"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "$query = \"SELECT * FROM users WHERE id=$userId\";",
+        "$sql = \"SELECT * FROM users WHERE email='\" . $email . \"'\";",
+        "mysqli_query($conn, \"DELETE FROM products WHERE name='$productName'\");",
+        "$result = mysql_query(\"SELECT * FROM orders WHERE status='\" . $_GET['status'] . \"'\");",
+        "$pdo->query(\"INSERT INTO comments VALUES('$comment', '$user')\")"
+      ],
+      "risk_description": "Direct variable interpolation in SQL strings allows SQL injection attacks",
+      "good_code": [
+        "$stmt = $pdo->prepare(\"SELECT * FROM users WHERE id=?\");\n$stmt->execute([$userId]);",
+        "$stmt = $mysqli->prepare(\"SELECT * FROM users WHERE email=?\");\n$stmt->bind_param(\"s\", $email);",
+        "$stmt = $pdo->prepare(\"DELETE FROM products WHERE name=:name\");\n$stmt->execute(['name' => $productName]);",
+        "$stmt = $pdo->prepare(\"SELECT * FROM orders WHERE status=?\");\n$stmt->execute([$_GET['status']]);",
+        "// Using Laravel Eloquent\n$user = User::where('id', $userId)->first();"
+      ],
+      "fix_explanation": "Use prepared statements with PDO or mysqli, or use ORM frameworks like Eloquent"
+    },
+    {
+      "language": "ruby",
+      "bad_code": [
+        "User.where(\"id = #{params[:id]}\")",
+        "ActiveRecord::Base.connection.execute(\"SELECT * FROM users WHERE email='#{email}'\")",
+        "User.find_by_sql(\"SELECT * FROM users WHERE name='\" + name + \"'\")",
+        "Order.where(\"status = '#{status}' AND user_id = #{user_id}\")",
+        "Product.delete_all(\"category = '#{params[:category]}'\")"
+      ],
+      "risk_description": "String interpolation in ActiveRecord queries bypasses Rails' SQL sanitization",
+      "good_code": [
+        "User.where(id: params[:id])",
+        "User.where(\"email = ?\", email)",
+        "User.find_by_sql([\"SELECT * FROM users WHERE name = ?\", name])",
+        "Order.where(status: status, user_id: user_id)",
+        "Product.where(category: params[:category]).delete_all"
+      ],
+      "fix_explanation": "Use hash conditions or array conditions with placeholders in ActiveRecord"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "string query = \"SELECT * FROM users WHERE id=\" + userId;",
+        "cmd.CommandText = $\"SELECT * FROM products WHERE name='{productName}'\";",
+        "SqlCommand cmd = new SqlCommand(\"DELETE FROM users WHERE email='\" + email + \"'\", conn);",
+        "var sql = string.Format(\"UPDATE orders SET status='{0}' WHERE id={1}\", status, orderId);",
+        "context.Database.ExecuteSqlRaw($\"SELECT * FROM customers WHERE city='{city}'\")"
+      ],
+      "risk_description": "String concatenation or interpolation in SQL commands creates injection vulnerabilities",
+      "good_code": [
+        "SqlCommand cmd = new SqlCommand(\"SELECT * FROM users WHERE id=@id\", conn);\ncmd.Parameters.AddWithValue(\"@id\", userId);",
+        "cmd.CommandText = \"SELECT * FROM products WHERE name=@name\";\ncmd.Parameters.Add(\"@name\", SqlDbType.VarChar).Value = productName;",
+        "SqlCommand cmd = new SqlCommand(\"DELETE FROM users WHERE email=@email\", conn);\ncmd.Parameters.AddWithValue(\"@email\", email);",
+        "var sql = \"UPDATE orders SET status=@status WHERE id=@id\";\ncmd.Parameters.AddWithValue(\"@status\", status);\ncmd.Parameters.AddWithValue(\"@id\", orderId);",
+        "// Using Entity Framework\nvar customer = context.Customers.Where(c => c.City == city).FirstOrDefault();"
+      ],
+      "fix_explanation": "Use parameterized queries with SqlParameter or Entity Framework LINQ queries"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "String concatenation with SQL keywords (SELECT, INSERT, UPDATE, DELETE)",
+      "f-string or template literal interpolation in SQL contexts",
+      "String.format() calls with SQL statements",
+      "Direct variable interpolation in query strings"
+    ],
+    "regex_patterns": [
+      "(SELECT|INSERT|UPDATE|DELETE).*[f\"].*\\{.*\\}",
+      "query.*\\+\\s*[a-zA-Z_]",
+      "execute.*format\\(",
+      "\\$\\{.*\\}.*FROM",
+      "(SELECT|INSERT|UPDATE|DELETE).*\\\"\\s*\\+",
+      "WHERE.*=\\s*['\"].*\\+.*['\"]"
+    ],
+    "code_smell_indicators": [
+      "Dynamic SQL construction",
+      "User input directly in queries",
+      "Missing parameter binding",
+      "String operations on SQL statements"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Identify all dynamic SQL construction points in the codebase",
+      "Replace string concatenation with parameterized queries",
+      "Use appropriate parameter placeholders for your database (?, @param, :param, $1)",
+      "Implement input validation and type checking",
+      "Consider using ORM frameworks for complex queries",
+      "Enable SQL query logging for security auditing",
+      "Implement least privilege principle for database connections"
+    ],
+    "code_examples": [
+      {
+        "framework": "Django",
+        "safe_code": "from django.db import connection\nwith connection.cursor() as cursor:\n    cursor.execute(\"SELECT * FROM users WHERE id=%s\", [user_id])"
+      },
+      {
+        "framework": "SQLAlchemy",
+        "safe_code": "from sqlalchemy import text\nresult = db.session.execute(text(\"SELECT * FROM users WHERE id=:user_id\"), {\"user_id\": user_id})"
+      },
+      {
+        "framework": "Express.js",
+        "safe_code": "const mysql = require('mysql2');\nconnection.execute('SELECT * FROM users WHERE id = ?', [userId], (err, results) => {...});"
+      },
+      {
+        "framework": "Spring Boot",
+        "safe_code": "@Query(\"SELECT u FROM User u WHERE u.email = :email\")\nUser findByEmail(@Param(\"email\") String email);"
+      }
+    ],
+    "prevention_guidelines": [
+      "Always use parameterized queries or prepared statements",
+      "Validate and sanitize all user inputs",
+      "Use stored procedures with care (they can also be vulnerable)",
+      "Escape special characters when parameterization isn't possible",
+      "Apply principle of least privilege to database accounts",
+      "Keep database software updated and patched"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 9.8,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "business_impact": "Complete database compromise, data breach, data manipulation, service disruption",
+    "technical_impact": "Unauthorized data access, data modification, data deletion, command execution",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high",
+    "compliance_violations": ["GDPR", "PCI-DSS", "HIPAA", "SOC2"]
+  },
+
+  "references": [
+    "https://owasp.org/www-community/attacks/SQL_Injection",
+    "https://cwe.mitre.org/data/definitions/89.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+    "https://portswigger.net/web-security/sql-injection",
+    "https://www.acunetix.com/websitesecurity/sql-injection/"
+  ],
+
+  "test_cases": [
+    {
+      "input": "' OR '1'='1",
+      "description": "Classic authentication bypass",
+      "expected_detection": true,
+      "attack_type": "tautology"
+    },
+    {
+      "input": "\"; DROP TABLE users; --",
+      "description": "Destructive SQL injection with command stacking",
+      "expected_detection": true,
+      "attack_type": "stacked_queries"
+    },
+    {
+      "input": "1' UNION SELECT username, password FROM users--",
+      "description": "Union-based data extraction",
+      "expected_detection": true,
+      "attack_type": "union_based"
+    },
+    {
+      "input": "admin'--",
+      "description": "Comment-based query termination",
+      "expected_detection": true,
+      "attack_type": "comment_injection"
+    },
+    {
+      "input": "1' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='admin')='a",
+      "description": "Blind SQL injection for data extraction",
+      "expected_detection": true,
+      "attack_type": "blind_boolean"
+    }
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["injection", "sql", "database", "critical"],
+    "related_patterns": ["cwe_89_sql_injection", "owasp_code_injection"]
+  }
+}

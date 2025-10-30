@@ -251,8 +251,8 @@ pub struct CollectionMetadata {
 
 /// Coverage data collector
 pub struct CoverageDataCollector {
-    parser_coverage_collectors: std::collections::HashMap<String, Box<dyn ParserCoverageCollector>>,
-    fact_system_interface: FactSystemInterface,
+    #[allow(dead_code)] parser_coverage_collectors: std::collections::HashMap<String, Box<dyn ParserCoverageCollector>>,
+    #[allow(dead_code)] fact_system_interface: FactSystemInterface,
 }
 
 /// Interface to fact-system for coverage collection knowledge
@@ -514,6 +514,7 @@ impl CoverageDataCollector {
     }
 
     /// Determine parser for file
+    #[allow(dead_code)]
     fn determine_parser_for_file(&self, file_path: &str) -> Result<String> {
         // Use centralized LanguageRegistry for detection
         let lang = detect_language(Path::new(file_path))?;
@@ -521,10 +522,11 @@ impl CoverageDataCollector {
     }
 
     /// Generate recommendations
+    #[allow(dead_code)]
     fn generate_recommendations(
         &self,
-        parser_coverage_data: &[ParserCoverageData],
-        aggregated_coverage: &AggregatedCoverage,
+        _parser_coverage_data: &[ParserCoverageData],
+        _aggregated_coverage: &AggregatedCoverage,
     ) -> Vec<CoverageRecommendation> {
         // PSEUDO CODE:
         /*

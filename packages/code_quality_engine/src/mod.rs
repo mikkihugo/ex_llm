@@ -28,6 +28,9 @@
 //! - **evolution/**: Code evolution and history tracking
 //! - **multilang/**: Cross-language analysis
 //! - **architecture/**: Architectural pattern analysis
+//! - **orchestrators/**: Analysis orchestration and coordination
+//! - **infrastructure/**: Infrastructure pattern detection
+//! - **registry/**: Meta registry and package knowledge
 //! - **naming/**: Intelligent naming system with learning capabilities
 
 pub mod types;
@@ -42,6 +45,9 @@ pub mod patterns;
 pub mod evolution;
 pub mod multilang;
 pub mod architecture;
+pub mod orchestrators;
+pub mod infrastructure;
+pub mod registry;
 pub mod naming;
 
 // Re-export main types for easy access
@@ -57,4 +63,7 @@ pub use patterns::*;
 pub use evolution::*;
 pub use multilang::*;
 pub use architecture::*;
+pub use orchestrators::*;
+pub use infrastructure::*;
+pub use registry::*;
 pub use naming::*;

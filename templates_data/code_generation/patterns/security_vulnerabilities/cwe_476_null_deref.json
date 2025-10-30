@@ -1,0 +1,46 @@
+{
+  "pattern_id": "cwe_476_null_deref",
+  "name": "NULL Pointer Dereference",
+  "cwe": "CWE-476",
+  "severity": "medium",
+  "applicable_languages": ["java", "csharp", "javascript", "go", "python"],
+  "description": "Dereferencing null pointers causes crashes and potential security issues",
+  "vulnerability_patterns": [
+    {
+      "language": "java",
+      "bad_code": [
+        "String value = getString();\nint length = value.length();",
+        "User user = getUser();\nString name = user.getName();"
+      ],
+      "good_code": [
+        "String value = getString();\nif (value != null) {\n    int length = value.length();\n}",
+        "Optional<User> user = getUser();\nuser.ifPresent(u -> processName(u.getName()));"
+      ]
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "const data = getData();\nconsole.log(data.property);",
+        "function process(obj) { return obj.value; }"
+      ],
+      "good_code": [
+        "const data = getData();\nconsole.log(data?.property);",
+        "function process(obj) { return obj?.value || defaultValue; }"
+      ]
+    }
+  ],
+  "detection_rules": {
+    "patterns": ["Missing null checks", "Direct property access without validation"]
+  },
+  "remediation": {
+    "steps": ["Add null checks", "Use Optional types", "Defensive programming", "Input validation"]
+  },
+  "impact": {
+    "severity_score": 5.3,
+    "business_impact": "Application crashes, denial of service"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["null-pointer", "crash", "stability"]
+  }
+}

@@ -56,7 +56,6 @@ defmodule Singularity.Application do
 
       Domain --> LLM[LLM.Supervisor]
       Domain --> Knowledge[Knowledge.Supervisor]
-      Domain --> Planning[Planning.Supervisor]
       Domain --> SPARC[SPARC.Supervisor]
 
       style App fill:#90EE90
@@ -234,6 +233,14 @@ defmodule Singularity.Application do
             start_boot_task(
               fn ->
                 Singularity.Bootstrap.GraphArraysBootstrap.ensure_initialized()
+              end,
+              delay_ms
+            )
+
+            # Seed code quality patterns from templates_data/
+            start_boot_task(
+              fn ->
+                Singularity.Bootstrap.PatternRegistryBootstrap.ensure_initialized()
               end,
               delay_ms
             )

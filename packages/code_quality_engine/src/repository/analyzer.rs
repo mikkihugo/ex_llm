@@ -1,6 +1,6 @@
 //! Main repository analyzer orchestrator
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use anyhow::Result;
 use chrono::Utc;
@@ -184,7 +184,7 @@ impl RepoAnalyzer {
     }
 
     /// Detect primary language from manifest
-    fn detect_language(&self, manifest_path: &PathBuf) -> Result<Language> {
+    fn detect_language(&self, manifest_path: &Path) -> Result<Language> {
         let manifest_name = manifest_path
             .file_name()
             .and_then(|n| n.to_str())
@@ -213,7 +213,7 @@ impl RepoAnalyzer {
     }
 
     /// Infer solution type from package structure
-    fn infer_solution_type(&self, path: &PathBuf, language: &Language) -> Result<SolutionType> {
+    fn infer_solution_type(&self, path: &Path, language: &Language) -> Result<SolutionType> {
         // Check for specific indicators based on language
         if language == &Language::Rust {
             if let Ok(cargo_toml) = std::fs::read_to_string(path.join("Cargo.toml")) {

@@ -17,7 +17,9 @@
 //! - **multilang/**: Cross-language analysis
 //! - **central_heuristics**: Universal scoring (PageRank, file importance)
 //! - **refactoring_suggestions**: Universal refactoring engine
+//! - **pattern_detection**: Pattern Registry integration for comprehensive pattern matching
 
+pub mod architecture;
 pub mod central_heuristics;
 pub mod control_flow;
 pub mod dag;
@@ -25,6 +27,7 @@ pub mod dependency;
 pub mod graph;
 pub mod metrics;
 pub mod multilang;
+pub mod pattern_detection;
 pub mod performance;
 pub mod refactoring_suggestions;
 pub mod results;
@@ -72,3 +75,10 @@ pub use security::*;
 
 // Semantic analysis
 pub use semantic::*;
+
+// Pattern detection with PatternRegistry integration
+pub use pattern_detection::{
+    detect_security_patterns_from_registry, detect_vulnerabilities_from_patterns, matches_pattern,
+    query_patterns_for_category, query_patterns_for_language, record_pattern_match, PatternMatch,
+    RegistryPattern,
+};

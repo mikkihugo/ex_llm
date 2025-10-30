@@ -91,7 +91,7 @@ impl MultiModalFusion {
         &self,
         advanced_vector: &AdvancedCodeVector,
         _text: &str,
-        _file_path: &std::path::PathBuf,
+        _file_path: &std::path::Path,
     ) -> Vec<f32> {
         // In this stub version, just return the vector
         // In production, this would incorporate text embeddings and file metadata

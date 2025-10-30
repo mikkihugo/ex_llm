@@ -1,0 +1,408 @@
+{
+  "pattern_id": "scalability_bottleneck",
+  "name": "Scalability Bottleneck Detection",
+  "description": "Identify architectural patterns that limit scalability and performance",
+  "severity": "high",
+  "type": "architecture_smell",
+
+  "bottleneck_types": [
+    {
+      "type": "Central Database",
+      "description": "All reads/writes go through single database",
+      "indicators": [
+        "Single database instance",
+        "No caching layer",
+        "No read replicas",
+        "All services connect to same DB",
+        "No sharding strategy"
+      ],
+      "performance_impact": {
+        "latency": "Increases linearly with load",
+        "throughput": "Limited by single instance capacity",
+        "availability": "Single point of failure"
+      },
+      "detection_methods": [
+        "Count database connections",
+        "Monitor query queue length",
+        "Check for connection pool exhaustion",
+        "Analyze slow query log"
+      ],
+      "mitigation": [
+        {
+          "strategy": "Add caching layer",
+          "implementation": "Redis, Memcached, Hazelcast",
+          "benefit": "Reduce database load by 60-90%"
+        },
+        {
+          "strategy": "Implement CQRS pattern",
+          "implementation": "Separate read/write models",
+          "benefit": "Scale reads independently"
+        },
+        {
+          "strategy": "Use database replicas",
+          "implementation": "Master-slave replication",
+          "benefit": "Distribute read load"
+        },
+        {
+          "strategy": "Database sharding",
+          "implementation": "Horizontal partitioning",
+          "benefit": "Linear scalability"
+        },
+        {
+          "strategy": "Connection pooling",
+          "implementation": "PgBouncer, HikariCP",
+          "benefit": "Efficient connection management"
+        }
+      ]
+    },
+    {
+      "type": "Single Points of Failure",
+      "description": "No redundancy for critical components",
+      "examples": [
+        "Single web server",
+        "Single cache server",
+        "Single message queue",
+        "Single load balancer",
+        "Single API gateway"
+      ],
+      "indicators": [
+        "No failover mechanism",
+        "No health checks",
+        "No redundant instances",
+        "Manual intervention required for recovery"
+      ],
+      "risk_assessment": {
+        "availability_impact": "100% downtime on failure",
+        "data_loss_risk": "High if stateful",
+        "recovery_time": "Minutes to hours"
+      },
+      "mitigation": [
+        {
+          "strategy": "Active-passive redundancy",
+          "implementation": "Standby instances with failover",
+          "complexity": "Medium"
+        },
+        {
+          "strategy": "Active-active redundancy",
+          "implementation": "Load balanced multiple instances",
+          "complexity": "High"
+        },
+        {
+          "strategy": "Auto-scaling groups",
+          "implementation": "AWS ASG, Kubernetes HPA",
+          "complexity": "Medium"
+        },
+        {
+          "strategy": "Circuit breakers",
+          "implementation": "Hystrix, Resilience4j",
+          "benefit": "Graceful degradation"
+        }
+      ]
+    },
+    {
+      "type": "Synchronous Processing",
+      "description": "Blocking calls to external services",
+      "indicators": [
+        "HTTP calls in request path",
+        "Database queries in loops",
+        "Sequential processing of items",
+        "No timeout configurations",
+        "Cascading failures"
+      ],
+      "performance_impact": {
+        "response_time": "Sum of all service latencies",
+        "throughput": "Limited by slowest service",
+        "resource_usage": "Thread blocking"
+      },
+      "code_patterns": [
+        "Nested service calls",
+        "Synchronous REST APIs",
+        "Blocking I/O operations",
+        "Sequential batch processing"
+      ],
+      "mitigation": [
+        {
+          "strategy": "Use async/await",
+          "languages": ["JavaScript", "Python", "C#", "Rust"],
+          "benefit": "Non-blocking I/O"
+        },
+        {
+          "strategy": "Message queues",
+          "technologies": ["RabbitMQ", "Kafka", "SQS"],
+          "benefit": "Decouple processing"
+        },
+        {
+          "strategy": "Background jobs",
+          "technologies": ["Sidekiq", "Celery", "Bull"],
+          "benefit": "Offload heavy processing"
+        },
+        {
+          "strategy": "Reactive programming",
+          "frameworks": ["RxJS", "Project Reactor", "Akka"],
+          "benefit": "Event-driven architecture"
+        },
+        {
+          "strategy": "Batch processing",
+          "implementation": "Process multiple items together",
+          "benefit": "Reduced overhead"
+        }
+      ]
+    },
+    {
+      "type": "Inadequate Caching",
+      "description": "Frequently recomputing same data",
+      "detection": "Database query logging shows duplicate queries",
+      "indicators": [
+        "Repeated expensive calculations",
+        "Same queries executed multiple times",
+        "No cache headers in HTTP responses",
+        "Full page renders for every request",
+        "No CDN usage"
+      ],
+      "cache_levels": [
+        {
+          "level": "Browser cache",
+          "implementation": "Cache-Control headers",
+          "benefit": "Zero latency for repeat visits"
+        },
+        {
+          "level": "CDN cache",
+          "implementation": "CloudFlare, CloudFront",
+          "benefit": "Geographic distribution"
+        },
+        {
+          "level": "Application cache",
+          "implementation": "In-memory caching",
+          "benefit": "Microsecond access"
+        },
+        {
+          "level": "Distributed cache",
+          "implementation": "Redis, Memcached",
+          "benefit": "Shared across instances"
+        },
+        {
+          "level": "Database cache",
+          "implementation": "Query result caching",
+          "benefit": "Reduce database load"
+        }
+      ],
+      "mitigation": [
+        "Implement multi-level caching",
+        "Use cache-aside pattern",
+        "Set appropriate TTLs",
+        "Implement cache warming",
+        "Monitor cache hit rates"
+      ]
+    },
+    {
+      "type": "Monolithic Architecture",
+      "description": "Cannot scale components independently",
+      "indicators": [
+        "Single deployable unit",
+        "All features in one codebase",
+        "Shared resources for all features",
+        "Cannot scale horizontally",
+        "Long deployment cycles"
+      ],
+      "scalability_issues": [
+        "Must scale entire application",
+        "Resource waste on low-traffic features",
+        "Memory leaks affect all features",
+        "Single programming language constraint"
+      ],
+      "mitigation": [
+        {
+          "strategy": "Microservices architecture",
+          "benefit": "Independent scaling",
+          "complexity": "High"
+        },
+        {
+          "strategy": "Service-oriented architecture",
+          "benefit": "Logical separation",
+          "complexity": "Medium"
+        },
+        {
+          "strategy": "Modular monolith",
+          "benefit": "Preparation for microservices",
+          "complexity": "Low"
+        }
+      ]
+    },
+    {
+      "type": "Inefficient Algorithms",
+      "description": "O(n²) or worse complexity in critical paths",
+      "indicators": [
+        "Nested loops over large datasets",
+        "Recursive algorithms without memoization",
+        "Linear search instead of indexed",
+        "Bubble sort on large arrays",
+        "String concatenation in loops"
+      ],
+      "detection": [
+        "Performance profiling",
+        "Big-O analysis",
+        "Load testing",
+        "Code review"
+      ],
+      "mitigation": [
+        "Use appropriate data structures",
+        "Implement indexing",
+        "Add memoization",
+        "Use efficient algorithms",
+        "Leverage database capabilities"
+      ]
+    },
+    {
+      "type": "Resource Leaks",
+      "description": "Memory, connections, or handles not released",
+      "indicators": [
+        "Growing memory usage over time",
+        "Connection pool exhaustion",
+        "File handle limits reached",
+        "Thread pool saturation",
+        "Zombie processes"
+      ],
+      "common_causes": [
+        "Missing close() calls",
+        "Circular references",
+        "Event listener accumulation",
+        "Unclosed database connections",
+        "Thread local storage leaks"
+      ],
+      "mitigation": [
+        "Use try-with-resources (Java)",
+        "Implement using/with statements",
+        "Regular heap dumps analysis",
+        "Connection pool monitoring",
+        "Automated resource cleanup"
+      ]
+    },
+    {
+      "type": "N+1 Query Problem",
+      "description": "Executing N additional queries for N results",
+      "indicators": [
+        "Query count proportional to result size",
+        "Multiple queries for related data",
+        "ORM lazy loading in loops",
+        "Missing eager loading"
+      ],
+      "detection": [
+        "Database query logging",
+        "APM tools monitoring",
+        "ORM query analysis"
+      ],
+      "mitigation": [
+        "Use eager loading",
+        "Implement batch fetching",
+        "Use JOIN queries",
+        "GraphQL DataLoader pattern",
+        "Query result caching"
+      ]
+    },
+    {
+      "type": "Lock Contention",
+      "description": "Threads waiting for shared resources",
+      "indicators": [
+        "High CPU wait time",
+        "Thread dumps show blocking",
+        "Database lock timeouts",
+        "Pessimistic locking overuse"
+      ],
+      "mitigation": [
+        "Use optimistic locking",
+        "Reduce lock scope",
+        "Lock-free data structures",
+        "Partition data to reduce contention",
+        "Read-write locks"
+      ]
+    },
+    {
+      "type": "Chatty Services",
+      "description": "Too many small network calls",
+      "indicators": [
+        "> 10 API calls per user action",
+        "Multiple round trips for related data",
+        "No request batching",
+        "Fine-grained service boundaries"
+      ],
+      "mitigation": [
+        "Implement API aggregation",
+        "Use GraphQL for flexible queries",
+        "Batch API requests",
+        "Backend-for-frontend pattern",
+        "Increase payload sizes appropriately"
+      ]
+    }
+  ],
+
+  "detection_methods": {
+    "static_analysis": [
+      "Code complexity analysis",
+      "Dependency analysis",
+      "Architecture rule checking",
+      "Anti-pattern detection"
+    ],
+    "dynamic_analysis": [
+      "Load testing",
+      "Performance profiling",
+      "Distributed tracing",
+      "Resource monitoring"
+    ],
+    "metrics_monitoring": [
+      "Response time percentiles",
+      "Throughput trends",
+      "Error rates",
+      "Resource utilization"
+    ]
+  },
+
+  "scalability_metrics": {
+    "response_time": {
+      "p50": "< 100ms",
+      "p95": "< 500ms",
+      "p99": "< 1000ms"
+    },
+    "throughput": {
+      "target": "> 1000 req/sec",
+      "scalability": "Linear with resources"
+    },
+    "availability": {
+      "target": "99.9%",
+      "formula": "Uptime / Total time"
+    },
+    "efficiency": {
+      "cpu_per_request": "< 10ms",
+      "memory_per_user": "< 10MB"
+    }
+  },
+
+  "tools": {
+    "profiling": [
+      "JProfiler (Java)",
+      "dotTrace (.NET)",
+      "cProfile (Python)",
+      "Chrome DevTools (JavaScript)",
+      "pprof (Go)"
+    ],
+    "load_testing": [
+      "Apache JMeter",
+      "Gatling",
+      "K6",
+      "Locust",
+      "Apache Bench"
+    ],
+    "monitoring": [
+      "Prometheus + Grafana",
+      "DataDog",
+      "New Relic",
+      "AppDynamics",
+      "Elastic APM"
+    ],
+    "tracing": [
+      "Jaeger",
+      "Zipkin",
+      "AWS X-Ray",
+      "Google Cloud Trace"
+    ]
+  }
+}

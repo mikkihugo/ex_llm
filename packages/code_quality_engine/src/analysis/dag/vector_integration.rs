@@ -1620,11 +1620,11 @@ impl VectorIntegration {
 #[derive(Debug, Clone)]
 struct MicroserviceCodePattern {
     /// CodePattern name
-    name: String,
+    #[allow(dead_code)] name: String,
     /// CodePattern type
     pattern_type: MicroserviceCodePatternType,
     /// Confidence score
-    confidence: f64,
+    #[allow(dead_code)] confidence: f64,
 }
 
 /// Types of microservice patterns

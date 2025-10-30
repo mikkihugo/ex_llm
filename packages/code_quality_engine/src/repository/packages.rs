@@ -119,7 +119,7 @@ impl PackageDiscovery {
         let mut packages = Vec::new();
 
         if let Some(members_section) = contents.split("[workspace]").nth(1) {
-            if let Some(members_line) = members_section.lines().find(|l| l.contains("members")) {
+            if let Some(_members_line) = members_section.lines().find(|l| l.contains("members")) {
                 // Extract glob patterns from members = ["crates/*", "tools/*"]
                 // For now, check common patterns
                 let crates_dir = self.root_path.join("crates");

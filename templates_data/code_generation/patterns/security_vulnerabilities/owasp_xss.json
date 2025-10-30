@@ -1,0 +1,281 @@
+{
+  "pattern_id": "owasp_xss",
+  "name": "Cross-Site Scripting (XSS)",
+  "cwe": "CWE-79",
+  "owasp_category": "A03:2021 - Injection",
+  "severity": "critical",
+  "applicable_languages": ["javascript", "python", "php", "java", "ruby", "csharp", "go"],
+  "applicable_frameworks": ["react", "angular", "vue", "django", "flask", "express", "spring", "rails"],
+  "description": "Cross-Site Scripting occurs when untrusted data is included in web page output without proper validation or escaping, allowing attackers to execute scripts in victims' browsers",
+
+  "vulnerability_patterns": [
+    {
+      "language": "javascript",
+      "bad_code": [
+        "document.getElementById('output').innerHTML = userInput;",
+        "document.write(userContent);",
+        "eval(userCode);",
+        "element.insertAdjacentHTML('beforeend', userData);",
+        "$(\"#content\").html(userInput);",
+        "dangerouslySetInnerHTML={{ __html: userContent }}",
+        "setTimeout(userInput, 1000);",
+        "new Function(userCode)();",
+        "location.href = 'javascript:' + userInput;"
+      ],
+      "risk_description": "Direct insertion of user input into DOM or code execution contexts enables script injection",
+      "good_code": [
+        "document.getElementById('output').textContent = userInput;",
+        "document.getElementById('output').innerText = userInput;",
+        "const textNode = document.createTextNode(userContent);\nelement.appendChild(textNode);",
+        "$(\"#content\").text(userInput);",
+        "// React automatically escapes\n<div>{userContent}</div>",
+        "// Use DOMPurify for HTML sanitization\nconst clean = DOMPurify.sanitize(userInput);\nelement.innerHTML = clean;",
+        "// Content Security Policy header\n// Content-Security-Policy: default-src 'self'; script-src 'self'"
+      ],
+      "fix_explanation": "Use textContent/innerText for text, sanitize HTML with DOMPurify, avoid eval() and similar functions"
+    },
+    {
+      "language": "python",
+      "bad_code": [
+        "# Flask without escaping\nreturn f'<h1>Welcome {username}</h1>'",
+        "# Django with |safe filter\n{{ user_input|safe }}",
+        "# Jinja2 with autoescape disabled\n{% autoescape false %}{{ content }}{% endautoescape %}",
+        "render_template_string('<div>' + user_input + '</div>')",
+        "Markup(user_content)",
+        "# Direct HTML generation\nhtml = '<script>alert(\"' + message + '\")</script>'"
+      ],
+      "risk_description": "Disabling auto-escaping or using unsafe template rendering allows XSS attacks",
+      "good_code": [
+        "# Flask with auto-escaping (default)\nreturn render_template('welcome.html', username=username)",
+        "# Django default escaping\n{{ user_input }}",
+        "# Explicit escaping\n{{ user_input|escape }}",
+        "# Using Markup with escape\nfrom markupsafe import Markup, escape\nMarkup(escape(user_content))",
+        "# Jinja2 with autoescape enabled (default)\n{{ content }}",
+        "# Using bleach for HTML sanitization\nimport bleach\nclean_html = bleach.clean(user_input, tags=['p', 'br', 'strong', 'em'])"
+      ],
+      "fix_explanation": "Rely on template engine auto-escaping, use explicit escaping when needed, sanitize HTML with bleach"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "echo \"<h1>Welcome $username</h1>\";",
+        "print '<div>' . $_GET['content'] . '</div>';",
+        "<?= $userInput ?>",
+        "echo html_entity_decode($userContent);",
+        "eval($_POST['code']);",
+        "header('Location: ' . $_GET['url']);",
+        "echo \"<script>var data = '$userData';</script>\";",
+        "die('<html><body>' . $_REQUEST['message'] . '</body></html>');"
+      ],
+      "risk_description": "Direct output of user input without escaping enables XSS attacks",
+      "good_code": [
+        "echo '<h1>Welcome ' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8') . '</h1>';",
+        "<?= htmlspecialchars($userInput, ENT_QUOTES, 'UTF-8') ?>",
+        "// Using filter_var\necho filter_var($userInput, FILTER_SANITIZE_FULL_SPECIAL_CHARS);",
+        "// For URLs\nheader('Location: ' . filter_var($_GET['url'], FILTER_SANITIZE_URL));",
+        "// JSON encoding for JavaScript context\necho \"<script>var data = \" . json_encode($userData) . \";</script>\";",
+        "// Using HTML Purifier for rich content\n$purifier = new HTMLPurifier();\necho $purifier->purify($userContent);"
+      ],
+      "fix_explanation": "Use htmlspecialchars() with ENT_QUOTES flag, json_encode() for JavaScript contexts, HTML Purifier for rich content"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "// JSP without escaping\n<%= request.getParameter(\"name\") %>",
+        "// Direct HTML construction\nString html = \"<h1>\" + userInput + \"</h1>\";",
+        "// Servlet response\nresponse.getWriter().write(\"<div>\" + userContent + \"</div>\");",
+        "// JavaScript generation\nout.println(\"<script>var user='\" + username + \"';</script>\");",
+        "// Spring without escaping\nmodel.addAttribute(\"content\", \"<script>\" + userScript + \"</script>\");"
+      ],
+      "risk_description": "Unescaped user input in JSP or servlet responses creates XSS vulnerabilities",
+      "good_code": [
+        "// JSTL with escaping\n<c:out value=\"${param.name}\" />",
+        "// Using OWASP Java Encoder\nimport org.owasp.encoder.Encode;\nString safe = Encode.forHtml(userInput);",
+        "// For JavaScript contexts\nout.println(\"<script>var user='\" + Encode.forJavaScript(username) + \"';</script>\");",
+        "// Spring with Thymeleaf (auto-escapes)\n<div th:text=\"${userContent}\"></div>",
+        "// Using Apache Commons\nimport org.apache.commons.text.StringEscapeUtils;\nString escaped = StringEscapeUtils.escapeHtml4(userInput);"
+      ],
+      "fix_explanation": "Use JSTL c:out tag, OWASP Java Encoder, or template engines with auto-escaping"
+    },
+    {
+      "language": "ruby",
+      "bad_code": [
+        "# Rails without escaping\n<%= raw user_input %>",
+        "<%= user_content.html_safe %>",
+        "# ERB template\n<div><%= @comment %></div>",
+        "# String interpolation in views\n\"<h1>#{params[:title]}</h1>\".html_safe",
+        "# Direct rendering\nrender inline: \"<p>#{params[:message]}</p>\""
+      ],
+      "risk_description": "Using raw, html_safe, or unescaped interpolation bypasses Rails' XSS protection",
+      "good_code": [
+        "# Rails default escaping\n<%= user_input %>",
+        "# Explicit escaping\n<%= h user_content %>",
+        "# Using sanitize for rich content\n<%= sanitize(user_content, tags: %w(p br strong em)) %>",
+        "# Content tag helpers\n<%= content_tag :h1, params[:title] %>",
+        "# JSON for JavaScript\n<script>\n  var data = <%= raw user_data.to_json %>;\n</script>"
+      ],
+      "fix_explanation": "Rely on Rails' automatic HTML escaping, use sanitize() for rich content, encode JSON for JavaScript"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "// Razor without encoding\n@Html.Raw(userInput)",
+        "// Direct HTML construction\nvar html = \"<div>\" + userContent + \"</div>\";",
+        "// ASP.NET WebForms\nResponse.Write(\"<h1>\" + Request[\"title\"] + \"</h1>\");",
+        "// JavaScript generation\n<script>var message = '@Model.UserMessage';</script>",
+        "// MVC ViewData\n@{ ViewBag.Content = \"<script>\" + userScript + \"</script>\"; }"
+      ],
+      "risk_description": "Using Html.Raw or direct HTML construction without encoding creates XSS vulnerabilities",
+      "good_code": [
+        "// Razor automatic encoding\n@userInput",
+        "// Explicit encoding\n@Html.Encode(userContent)",
+        "// Using AntiXss library\n@Microsoft.Security.Application.Encoder.HtmlEncode(userInput)",
+        "// JavaScript context encoding\n<script>var message = '@HttpUtility.JavaScriptStringEncode(Model.UserMessage)';</script>",
+        "// Using HtmlSanitizer for rich content\n@{ var sanitizer = new Ganss.XSS.HtmlSanitizer(); }\n@Html.Raw(sanitizer.Sanitize(userContent))"
+      ],
+      "fix_explanation": "Use Razor's automatic encoding, HttpUtility encoding methods, or HtmlSanitizer for rich content"
+    },
+    {
+      "language": "go",
+      "bad_code": [
+        "// Direct template execution\nfmt.Fprintf(w, \"<h1>%s</h1>\", userInput)",
+        "// Unescaped template\ntmpl := `<div>{{.Content}}</div>`\nt := template.Must(template.New(\"page\").Parse(tmpl))",
+        "// String concatenation\nhtml := \"<p>\" + userContent + \"</p>\"",
+        "// Using HTML template incorrectly\ntemplate.HTML(userInput)",
+        "// JavaScript context\nfmt.Fprintf(w, \"<script>var user='%s';</script>\", username)"
+      ],
+      "risk_description": "Using fmt.Fprintf for HTML or template.HTML with user input creates XSS risks",
+      "good_code": [
+        "// Using html/template (auto-escapes)\nimport \"html/template\"\ntmpl := template.Must(template.ParseFiles(\"template.html\"))\ntmpl.Execute(w, userData)",
+        "// Explicit escaping\nimport \"html\"\nescaped := html.EscapeString(userInput)",
+        "// Template with proper typing\ntype PageData struct {\n    Content string // Will be auto-escaped\n}\ntmpl.Execute(w, PageData{Content: userInput})",
+        "// For JavaScript contexts\nimport \"encoding/json\"\ndata, _ := json.Marshal(userData)\nfmt.Fprintf(w, \"<script>var data = %s;</script>\", data)",
+        "// Using bluemonday for sanitization\nimport \"github.com/microcosm-cc/bluemonday\"\np := bluemonday.UGCPolicy()\nhtml := p.Sanitize(userContent)"
+      ],
+      "fix_explanation": "Use html/template package which auto-escapes, json.Marshal for JavaScript contexts, bluemonday for sanitization"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "innerHTML assignment with user input",
+      "document.write with variables",
+      "eval() with user-controlled data",
+      "dangerouslySetInnerHTML usage",
+      "Html.Raw in Razor views",
+      "|safe filter in templates",
+      "html_safe method calls"
+    ],
+    "regex_patterns": [
+      "\\.innerHTML\\s*=\\s*[^'\"]",
+      "document\\.write\\s*\\([^')\"]*[a-zA-Z_$]",
+      "eval\\s*\\([^')\"]*[a-zA-Z_$]",
+      "dangerouslySetInnerHTML\\s*=\\s*\\{",
+      "@Html\\.Raw\\s*\\(",
+      "\\|\\s*safe\\s*(\\}|%)",
+      "\\.html_safe",
+      "<%=\\s*raw\\s+"
+    ],
+    "code_smell_indicators": [
+      "Disabled auto-escaping in templates",
+      "Direct HTML string concatenation",
+      "User input in script tags",
+      "URL parameters in output without encoding",
+      "Rich text editors without sanitization"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Enable auto-escaping in all template engines",
+      "Use textContent/innerText instead of innerHTML for plain text",
+      "Sanitize HTML input using established libraries (DOMPurify, bleach, HTML Purifier)",
+      "Encode output based on context (HTML, JavaScript, URL, CSS)",
+      "Implement Content Security Policy (CSP) headers",
+      "Use HTTPOnly flag on cookies to prevent access via JavaScript",
+      "Validate and sanitize input on both client and server side",
+      "Use framework-specific security features and helpers"
+    ],
+    "code_examples": [
+      {
+        "framework": "React",
+        "safe_code": "// React escapes by default\nfunction Component({ userInput }) {\n  return <div>{userInput}</div>;\n}\n// For HTML content\nimport DOMPurify from 'dompurify';\n<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }} />"
+      },
+      {
+        "framework": "Angular",
+        "safe_code": "// Angular sanitizes by default\n<div>{{ userInput }}</div>\n// For HTML content\nimport { DomSanitizer } from '@angular/platform-browser';\nconstructor(private sanitizer: DomSanitizer) {}\nsafeHtml = this.sanitizer.sanitize(SecurityContext.HTML, userInput);"
+      },
+      {
+        "framework": "Vue.js",
+        "safe_code": "<!-- Vue escapes by default -->\n<div>{{ userInput }}</div>\n<!-- For HTML content, use v-text -->\n<div v-text=\"userInput\"></div>\n<!-- Or sanitize HTML -->\n<div v-html=\"sanitizedHtml\"></div>\n// In script\nimport DOMPurify from 'dompurify';\ncomputed: {\n  sanitizedHtml() {\n    return DOMPurify.sanitize(this.userInput);\n  }\n}"
+      }
+    ],
+    "prevention_guidelines": [
+      "Never trust user input - always validate and sanitize",
+      "Context-aware output encoding is critical",
+      "Use Content Security Policy to mitigate XSS impact",
+      "Regular security testing including automated scanning",
+      "Security training for developers on XSS prevention",
+      "Code reviews focusing on data flow and output points"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 7.5,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "business_impact": "Account takeover, data theft, defacement, malware distribution",
+    "technical_impact": "Session hijacking, cookie theft, keylogging, phishing, browser exploitation",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "low",
+    "compliance_violations": ["GDPR", "PCI-DSS", "HIPAA"]
+  },
+
+  "references": [
+    "https://owasp.org/www-community/attacks/xss/",
+    "https://cwe.mitre.org/data/definitions/79.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+    "https://portswigger.net/web-security/cross-site-scripting",
+    "https://developer.mozilla.org/en-US/docs/Glossary/Cross-site_scripting"
+  ],
+
+  "test_cases": [
+    {
+      "input": "<script>alert('XSS')</script>",
+      "description": "Basic script injection",
+      "expected_detection": true,
+      "attack_type": "reflected"
+    },
+    {
+      "input": "<img src=x onerror=alert('XSS')>",
+      "description": "Image tag with event handler",
+      "expected_detection": true,
+      "attack_type": "stored"
+    },
+    {
+      "input": "javascript:alert('XSS')",
+      "description": "JavaScript protocol handler",
+      "expected_detection": true,
+      "attack_type": "dom_based"
+    },
+    {
+      "input": "<svg onload=alert('XSS')>",
+      "description": "SVG tag with event handler",
+      "expected_detection": true,
+      "attack_type": "stored"
+    },
+    {
+      "input": "'-alert('XSS')-'",
+      "description": "Breaking out of JavaScript string context",
+      "expected_detection": true,
+      "attack_type": "reflected"
+    }
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["xss", "injection", "client-side", "critical"],
+    "related_patterns": ["cwe_79_xss", "owasp_sql_injection"]
+  }
+}

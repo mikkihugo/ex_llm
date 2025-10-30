@@ -132,7 +132,7 @@ defmodule Singularity.Schemas.Execution.Task do
 
   #### ❌ DO NOT create "TaskManager" or "TaskRegistry" modules
   **Why:** Tasks are lightweight structs passed between agents/planners.
-  **Use instead:** Let Planning.Supervisor manage task coordination.
+  **Use instead:** Pass tasks through execution pipeline (ExecutionOrchestrator).
 
   ### Search Keywords
 

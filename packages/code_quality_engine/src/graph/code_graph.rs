@@ -467,7 +467,7 @@ pub struct GraphMetrics {
 
 /// Graph builder for extracting graphs from code
 pub struct CodeGraphBuilder {
-    working_directory: PathBuf,
+    #[allow(dead_code)] working_directory: PathBuf,
 }
 
 impl CodeGraphBuilder {

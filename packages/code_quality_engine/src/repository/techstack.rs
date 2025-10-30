@@ -56,7 +56,7 @@ impl TechStackAnalyzer {
     }
 
     /// Detect language from manifest
-    fn detect_language(&self, manifest_path: &PathBuf) -> Result<Language> {
+    fn detect_language(&self, manifest_path: &Path) -> Result<Language> {
         let manifest_name = manifest_path
             .file_name()
             .and_then(|n| n.to_str())

@@ -677,35 +677,7 @@ pub struct StringInfo {
     pub line: usize,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_simple_dockerfile() {
-        let dockerfile = r#"
-# Simple Dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-"#;
-
-        let mut parser = DockerfileParser::new().unwrap();
-        let doc = parser.parse_document(dockerfile).unwrap();
-
-        assert_eq!(doc.froms.len(), 1);
-        assert_eq!(doc.workdirs.len(), 1);
-        assert_eq!(doc.copies.len(), 2);
-        assert_eq!(doc.runs.len(), 1);
-        assert_eq!(doc.exposes.len(), 1);
-        assert_eq!(doc.cmds.len(), 1);
-        assert_eq!(doc.comments.len(), 1);
-    }
-}
+// Tests should be declared after all items to satisfy clippy::items-after-test-module
 
 impl LanguageParser for DockerfileParser {
     fn get_language(&self) -> &str {

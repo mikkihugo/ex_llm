@@ -41,6 +41,12 @@ members = [
     "packages/package_intelligence",
 ]
 
+exclude = [
+    # Elixir native crates (Rustler NIFs) - excluded from workspace to avoid conflicts
+    # These are compiled by Rustler from Elixir apps, not as part of the main workspace
+    "nexus/singularity/native/pattern_registry_nif",
+]
+
 [workspace.dependencies]
 # From rust/Cargo.toml - consolidated workspace dependencies
 

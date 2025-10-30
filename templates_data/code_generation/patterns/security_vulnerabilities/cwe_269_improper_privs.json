@@ -1,0 +1,46 @@
+{
+  "pattern_id": "cwe_269_improper_privs",
+  "name": "Improper Privilege Management",
+  "cwe": "CWE-269",
+  "severity": "high",
+  "applicable_languages": ["python", "javascript", "java", "go", "php", "ruby", "csharp"],
+  "description": "Incorrect privilege assignment or management leads to privilege escalation",
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "os.setuid(0)",
+        "subprocess.run(cmd, shell=True, user='root')",
+        "# Running as root unnecessarily"
+      ],
+      "good_code": [
+        "# Drop privileges after binding\nos.setuid(pwd.getpwnam('nobody').pw_uid)",
+        "# Run with minimum required privileges"
+      ]
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "process.setuid(0)",
+        "// Running Node.js as root"
+      ],
+      "good_code": [
+        "// Bind to port then drop privileges\nserver.listen(80);\nprocess.setuid('nobody');"
+      ]
+    }
+  ],
+  "detection_rules": {
+    "patterns": ["setuid(0)", "Running as root/admin", "Excessive permissions"]
+  },
+  "remediation": {
+    "steps": ["Principle of least privilege", "Drop privileges", "Use capabilities", "Separate privilege levels"]
+  },
+  "impact": {
+    "severity_score": 8.2,
+    "business_impact": "Privilege escalation, unauthorized access"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["privileges", "escalation", "permissions"]
+  }
+}

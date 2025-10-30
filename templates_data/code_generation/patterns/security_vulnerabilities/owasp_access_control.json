@@ -1,0 +1,255 @@
+{
+  "pattern_id": "owasp_access_control",
+  "name": "Broken Access Control",
+  "cwe": "CWE-639",
+  "owasp_category": "A01:2021 - Broken Access Control",
+  "severity": "critical",
+  "applicable_languages": ["python", "javascript", "java", "go", "php", "ruby", "csharp"],
+  "applicable_frameworks": ["django", "flask", "express", "spring", "rails", "laravel", "aspnet"],
+  "description": "Missing or incorrect authorization checks allowing users to access resources or perform actions beyond their privileges",
+
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "# No authorization check\n@app.route('/admin/users')\ndef admin_users():\n    # Missing role check\n    return render_template('admin_users.html', users=User.query.all())",
+        "# Direct object reference without validation\n@app.route('/user/<user_id>')\ndef get_user(user_id):\n    # No check if current user can access this profile\n    user = User.query.get(user_id)\n    return jsonify(user.to_dict())",
+        "# Missing permission check\ndef delete_post(post_id):\n    post = Post.query.get(post_id)\n    # No check if user owns the post\n    db.session.delete(post)\n    db.session.commit()",
+        "# Privilege escalation\n@app.route('/update_role', methods=['POST'])\ndef update_role():\n    user_id = request.form['user_id']\n    new_role = request.form['role']  # User can set any role\n    user = User.query.get(user_id)\n    user.role = new_role",
+        "# Path traversal in file access\n@app.route('/download/<filename>')\ndef download(filename):\n    # No validation of filename\n    return send_file(f'uploads/{filename}')"
+      ],
+      "risk_description": "Missing authorization checks allow unauthorized access to resources and actions",
+      "good_code": [
+        "# Proper role-based access control\nfrom functools import wraps\n\ndef require_admin(f):\n    @wraps(f)\n    def decorated_function(*args, **kwargs):\n        if not current_user.is_authenticated or current_user.role != 'admin':\n            abort(403)\n        return f(*args, **kwargs)\n    return decorated_function\n\n@app.route('/admin/users')\n@require_admin\ndef admin_users():\n    return render_template('admin_users.html', users=User.query.all())",
+        "# Validate object access\n@app.route('/user/<user_id>')\n@login_required\ndef get_user(user_id):\n    if current_user.id != user_id and not current_user.is_admin:\n        abort(403)\n    user = User.query.get_or_404(user_id)\n    return jsonify(user.to_dict())",
+        "# Check resource ownership\n@app.route('/post/<post_id>/delete', methods=['POST'])\n@login_required\ndef delete_post(post_id):\n    post = Post.query.get_or_404(post_id)\n    if post.author_id != current_user.id and not current_user.is_admin:\n        abort(403)\n    db.session.delete(post)\n    db.session.commit()",
+        "# Restrict privilege changes\n@app.route('/update_role', methods=['POST'])\n@require_admin\ndef update_role():\n    user_id = request.form['user_id']\n    new_role = request.form['role']\n    # Validate role is allowed\n    if new_role not in ['user', 'moderator', 'admin']:\n        abort(400)\n    # Prevent self-demotion\n    if user_id == current_user.id and new_role != 'admin':\n        abort(400)\n    user = User.query.get_or_404(user_id)\n    user.role = new_role\n    db.session.commit()",
+        "# Secure file access\nimport os\n\n@app.route('/download/<filename>')\n@login_required\ndef download(filename):\n    # Sanitize filename\n    filename = os.path.basename(filename)\n    filepath = os.path.join('uploads', filename)\n    # Check if file exists and user has access\n    if not os.path.exists(filepath):\n        abort(404)\n    # Additional check for user permissions\n    file_record = File.query.filter_by(name=filename).first_or_404()\n    if file_record.owner_id != current_user.id:\n        abort(403)\n    return send_file(filepath)"
+      ],
+      "fix_explanation": "Implement proper authorization checks, validate object ownership, use role-based access control"
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "// No authorization middleware\napp.get('/api/admin/users', (req, res) => {\n    // Missing admin check\n    User.find({}, (err, users) => {\n        res.json(users);\n    });\n});",
+        "// Direct object reference\napp.get('/api/user/:id', (req, res) => {\n    // No check if user can access this profile\n    User.findById(req.params.id, (err, user) => {\n        res.json(user);\n    });\n});",
+        "// Missing ownership check\napp.delete('/api/post/:id', (req, res) => {\n    // No check if user owns the post\n    Post.findByIdAndDelete(req.params.id, (err) => {\n        res.json({ success: true });\n    });\n});",
+        "// Client-side authorization only\nif (user.role === 'admin') {\n    // Show admin button\n    showAdminPanel();\n}\n// But no server-side check",
+        "// Privilege escalation\napp.post('/api/user/role', (req, res) => {\n    const { userId, role } = req.body;\n    // User can set any role\n    User.findByIdAndUpdate(userId, { role }, (err) => {\n        res.json({ success: true });\n    });\n});"
+      ],
+      "risk_description": "Missing server-side authorization allows unauthorized access and privilege escalation",
+      "good_code": [
+        "// Authorization middleware\nconst requireAdmin = (req, res, next) => {\n    if (!req.user || req.user.role !== 'admin') {\n        return res.status(403).json({ error: 'Admin access required' });\n    }\n    next();\n};\n\napp.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {\n    const users = await User.find({});\n    res.json(users);\n});",
+        "// Validate object access\napp.get('/api/user/:id', requireAuth, async (req, res) => {\n    const userId = req.params.id;\n    // Check if user can access this profile\n    if (req.user.id !== userId && req.user.role !== 'admin') {\n        return res.status(403).json({ error: 'Access denied' });\n    }\n    const user = await User.findById(userId);\n    if (!user) {\n        return res.status(404).json({ error: 'User not found' });\n    }\n    res.json(user);\n});",
+        "// Check resource ownership\napp.delete('/api/post/:id', requireAuth, async (req, res) => {\n    const post = await Post.findById(req.params.id);\n    if (!post) {\n        return res.status(404).json({ error: 'Post not found' });\n    }\n    // Check if user owns the post\n    if (post.authorId !== req.user.id && req.user.role !== 'admin') {\n        return res.status(403).json({ error: 'Not authorized to delete this post' });\n    }\n    await post.delete();\n    res.json({ success: true });\n});",
+        "// Server-side authorization\nconst canAccessResource = (user, resource) => {\n    if (user.role === 'admin') return true;\n    if (resource.ownerId === user.id) return true;\n    if (resource.public) return true;\n    return false;\n};\n\napp.get('/api/resource/:id', requireAuth, async (req, res) => {\n    const resource = await Resource.findById(req.params.id);\n    if (!canAccessResource(req.user, resource)) {\n        return res.status(403).json({ error: 'Access denied' });\n    }\n    res.json(resource);\n});",
+        "// Restrict privilege changes\napp.post('/api/user/role', requireAuth, requireAdmin, async (req, res) => {\n    const { userId, role } = req.body;\n    // Validate role\n    const validRoles = ['user', 'moderator', 'admin'];\n    if (!validRoles.includes(role)) {\n        return res.status(400).json({ error: 'Invalid role' });\n    }\n    // Prevent self-demotion\n    if (userId === req.user.id && role !== 'admin') {\n        return res.status(400).json({ error: 'Cannot demote yourself' });\n    }\n    await User.findByIdAndUpdate(userId, { role });\n    res.json({ success: true });\n});"
+      ],
+      "fix_explanation": "Implement server-side authorization, check resource ownership, validate user permissions"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "// No authorization annotation\n@GetMapping(\"/admin/users\")\npublic List<User> getUsers() {\n    // Missing role check\n    return userRepository.findAll();\n}",
+        "// Direct object reference\n@GetMapping(\"/user/{id}\")\npublic User getUser(@PathVariable Long id) {\n    // No check if current user can access\n    return userRepository.findById(id).orElse(null);\n}",
+        "// Missing ownership check\n@DeleteMapping(\"/post/{id}\")\npublic void deletePost(@PathVariable Long id) {\n    // No check if user owns the post\n    postRepository.deleteById(id);\n}",
+        "// Privilege escalation\n@PostMapping(\"/user/role\")\npublic void updateRole(@RequestBody RoleUpdate update) {\n    User user = userRepository.findById(update.getUserId()).orElse(null);\n    // User can set any role\n    user.setRole(update.getRole());\n    userRepository.save(user);\n}",
+        "// Path manipulation\n@GetMapping(\"/file/{filename}\")\npublic ResponseEntity<Resource> downloadFile(@PathVariable String filename) {\n    // No validation of filename\n    Path path = Paths.get(\"uploads/\" + filename);\n    Resource resource = new FileSystemResource(path);\n    return ResponseEntity.ok(resource);\n}"
+      ],
+      "risk_description": "Missing Spring Security annotations and manual checks create authorization vulnerabilities",
+      "good_code": [
+        "// Spring Security authorization\n@GetMapping(\"/admin/users\")\n@PreAuthorize(\"hasRole('ADMIN')\")\npublic List<User> getUsers() {\n    return userRepository.findAll();\n}",
+        "// Check object access\n@GetMapping(\"/user/{id}\")\n@PreAuthorize(\"#id == authentication.principal.id or hasRole('ADMIN')\")\npublic User getUser(@PathVariable Long id, Authentication auth) {\n    return userRepository.findById(id)\n        .orElseThrow(() -> new ResourceNotFoundException(\"User not found\"));\n}",
+        "// Verify ownership\n@DeleteMapping(\"/post/{id}\")\n@PreAuthorize(\"hasRole('USER')\")\npublic void deletePost(@PathVariable Long id, Authentication auth) {\n    Post post = postRepository.findById(id)\n        .orElseThrow(() -> new ResourceNotFoundException(\"Post not found\"));\n    \n    User currentUser = (User) auth.getPrincipal();\n    if (!post.getAuthorId().equals(currentUser.getId()) && \n        !currentUser.hasRole(\"ADMIN\")) {\n        throw new AccessDeniedException(\"Not authorized to delete this post\");\n    }\n    \n    postRepository.delete(post);\n}",
+        "// Restrict role updates\n@PostMapping(\"/user/role\")\n@PreAuthorize(\"hasRole('ADMIN')\")\npublic void updateRole(@RequestBody @Valid RoleUpdate update, Authentication auth) {\n    // Validate role\n    if (!Arrays.asList(\"USER\", \"MODERATOR\", \"ADMIN\").contains(update.getRole())) {\n        throw new BadRequestException(\"Invalid role\");\n    }\n    \n    User currentUser = (User) auth.getPrincipal();\n    // Prevent self-demotion\n    if (update.getUserId().equals(currentUser.getId()) && \n        !\"ADMIN\".equals(update.getRole())) {\n        throw new BadRequestException(\"Cannot demote yourself\");\n    }\n    \n    User user = userRepository.findById(update.getUserId())\n        .orElseThrow(() -> new ResourceNotFoundException(\"User not found\"));\n    user.setRole(update.getRole());\n    userRepository.save(user);\n}",
+        "// Secure file access\n@GetMapping(\"/file/{filename}\")\n@PreAuthorize(\"hasRole('USER')\")\npublic ResponseEntity<Resource> downloadFile(@PathVariable String filename, \n                                            Authentication auth) {\n    // Sanitize filename\n    String cleanFilename = Paths.get(filename).getFileName().toString();\n    if (cleanFilename.contains(\"..\")) {\n        throw new BadRequestException(\"Invalid filename\");\n    }\n    \n    // Check file ownership\n    FileRecord fileRecord = fileRepository.findByName(cleanFilename)\n        .orElseThrow(() -> new ResourceNotFoundException(\"File not found\"));\n    \n    User currentUser = (User) auth.getPrincipal();\n    if (!fileRecord.getOwnerId().equals(currentUser.getId()) && \n        !currentUser.hasRole(\"ADMIN\")) {\n        throw new AccessDeniedException(\"Not authorized to access this file\");\n    }\n    \n    Path path = Paths.get(\"uploads\").resolve(cleanFilename).normalize();\n    Resource resource = new FileSystemResource(path);\n    return ResponseEntity.ok(resource);\n}"
+      ],
+      "fix_explanation": "Use Spring Security annotations, validate ownership, implement proper access control"
+    },
+    {
+      "language": "go",
+      "bad_code": [
+        "// No authorization check\nfunc getAdminUsers(w http.ResponseWriter, r *http.Request) {\n    // Missing role verification\n    users := getAllUsers()\n    json.NewEncoder(w).Encode(users)\n}",
+        "// Direct object reference\nfunc getUser(w http.ResponseWriter, r *http.Request) {\n    userID := mux.Vars(r)[\"id\"]\n    // No check if current user can access\n    user := getUserByID(userID)\n    json.NewEncoder(w).Encode(user)\n}",
+        "// Missing ownership check\nfunc deletePost(w http.ResponseWriter, r *http.Request) {\n    postID := mux.Vars(r)[\"id\"]\n    // No check if user owns the post\n    deletePostByID(postID)\n    w.WriteHeader(http.StatusOK)\n}",
+        "// Privilege escalation\nfunc updateUserRole(w http.ResponseWriter, r *http.Request) {\n    var update RoleUpdate\n    json.NewDecoder(r.Body).Decode(&update)\n    // User can set any role\n    updateRole(update.UserID, update.Role)\n}",
+        "// Path traversal\nfunc downloadFile(w http.ResponseWriter, r *http.Request) {\n    filename := mux.Vars(r)[\"filename\"]\n    // No validation\n    http.ServeFile(w, r, \"uploads/\"+filename)\n}"
+      ],
+      "risk_description": "Missing authorization middleware and checks allow unauthorized access",
+      "good_code": [
+        "// Authorization middleware\nfunc requireAdmin(next http.HandlerFunc) http.HandlerFunc {\n    return func(w http.ResponseWriter, r *http.Request) {\n        user := getCurrentUser(r)\n        if user == nil || user.Role != \"admin\" {\n            http.Error(w, \"Admin access required\", http.StatusForbidden)\n            return\n        }\n        next(w, r)\n    }\n}\n\nfunc getAdminUsers(w http.ResponseWriter, r *http.Request) {\n    users := getAllUsers()\n    json.NewEncoder(w).Encode(users)\n}\n\n// Use with: router.HandleFunc(\"/admin/users\", requireAdmin(getAdminUsers))",
+        "// Validate object access\nfunc getUser(w http.ResponseWriter, r *http.Request) {\n    currentUser := getCurrentUser(r)\n    if currentUser == nil {\n        http.Error(w, \"Authentication required\", http.StatusUnauthorized)\n        return\n    }\n    \n    userID := mux.Vars(r)[\"id\"]\n    // Check if user can access this profile\n    if currentUser.ID != userID && currentUser.Role != \"admin\" {\n        http.Error(w, \"Access denied\", http.StatusForbidden)\n        return\n    }\n    \n    user, err := getUserByID(userID)\n    if err != nil {\n        http.Error(w, \"User not found\", http.StatusNotFound)\n        return\n    }\n    \n    json.NewEncoder(w).Encode(user)\n}",
+        "// Check ownership\nfunc deletePost(w http.ResponseWriter, r *http.Request) {\n    currentUser := getCurrentUser(r)\n    if currentUser == nil {\n        http.Error(w, \"Authentication required\", http.StatusUnauthorized)\n        return\n    }\n    \n    postID := mux.Vars(r)[\"id\"]\n    post, err := getPostByID(postID)\n    if err != nil {\n        http.Error(w, \"Post not found\", http.StatusNotFound)\n        return\n    }\n    \n    // Check if user owns the post\n    if post.AuthorID != currentUser.ID && currentUser.Role != \"admin\" {\n        http.Error(w, \"Not authorized to delete this post\", http.StatusForbidden)\n        return\n    }\n    \n    deletePostByID(postID)\n    w.WriteHeader(http.StatusOK)\n}",
+        "// Restrict privilege changes\nfunc updateUserRole(w http.ResponseWriter, r *http.Request) {\n    currentUser := getCurrentUser(r)\n    if currentUser == nil || currentUser.Role != \"admin\" {\n        http.Error(w, \"Admin access required\", http.StatusForbidden)\n        return\n    }\n    \n    var update RoleUpdate\n    if err := json.NewDecoder(r.Body).Decode(&update); err != nil {\n        http.Error(w, \"Invalid request\", http.StatusBadRequest)\n        return\n    }\n    \n    // Validate role\n    validRoles := []string{\"user\", \"moderator\", \"admin\"}\n    if !contains(validRoles, update.Role) {\n        http.Error(w, \"Invalid role\", http.StatusBadRequest)\n        return\n    }\n    \n    // Prevent self-demotion\n    if update.UserID == currentUser.ID && update.Role != \"admin\" {\n        http.Error(w, \"Cannot demote yourself\", http.StatusBadRequest)\n        return\n    }\n    \n    updateRole(update.UserID, update.Role)\n    w.WriteHeader(http.StatusOK)\n}",
+        "// Secure file access\nfunc downloadFile(w http.ResponseWriter, r *http.Request) {\n    currentUser := getCurrentUser(r)\n    if currentUser == nil {\n        http.Error(w, \"Authentication required\", http.StatusUnauthorized)\n        return\n    }\n    \n    filename := mux.Vars(r)[\"filename\"]\n    // Sanitize filename\n    filename = filepath.Base(filename)\n    if strings.Contains(filename, \"..\") {\n        http.Error(w, \"Invalid filename\", http.StatusBadRequest)\n        return\n    }\n    \n    // Check file ownership\n    fileRecord, err := getFileRecord(filename)\n    if err != nil {\n        http.Error(w, \"File not found\", http.StatusNotFound)\n        return\n    }\n    \n    if fileRecord.OwnerID != currentUser.ID && currentUser.Role != \"admin\" {\n        http.Error(w, \"Access denied\", http.StatusForbidden)\n        return\n    }\n    \n    filepath := filepath.Join(\"uploads\", filename)\n    http.ServeFile(w, r, filepath)\n}"
+      ],
+      "fix_explanation": "Implement authorization middleware, validate ownership, check user permissions"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "// No authorization check\nfunction getAdminUsers() {\n    // Missing role check\n    $users = User::all();\n    return json_encode($users);\n}",
+        "// Direct object reference\nfunction getUser($userId) {\n    // No check if current user can access\n    $user = User::find($userId);\n    return $user;\n}",
+        "// Missing ownership check\nfunction deletePost($postId) {\n    // No check if user owns the post\n    Post::destroy($postId);\n}",
+        "// Privilege escalation\nfunction updateRole() {\n    $userId = $_POST['user_id'];\n    $role = $_POST['role'];  // User can set any role\n    $user = User::find($userId);\n    $user->role = $role;\n    $user->save();\n}",
+        "// Path traversal\nfunction downloadFile($filename) {\n    // No validation\n    readfile('uploads/' . $filename);\n}"
+      ],
+      "risk_description": "Missing authorization checks allow unauthorized access and privilege escalation",
+      "good_code": [
+        "// Laravel middleware authorization\nRoute::get('/admin/users', function () {\n    return User::all();\n})->middleware('auth', 'role:admin');\n\n// Or in controller\npublic function getAdminUsers(Request $request) {\n    $this->authorize('viewAny', User::class);\n    return User::all();\n}",
+        "// Validate object access\npublic function getUser($userId) {\n    $currentUser = Auth::user();\n    \n    // Check if user can access this profile\n    if ($currentUser->id != $userId && !$currentUser->hasRole('admin')) {\n        abort(403, 'Access denied');\n    }\n    \n    $user = User::findOrFail($userId);\n    return $user;\n}",
+        "// Check ownership\npublic function deletePost($postId) {\n    $currentUser = Auth::user();\n    $post = Post::findOrFail($postId);\n    \n    // Check if user owns the post\n    if ($post->author_id != $currentUser->id && !$currentUser->hasRole('admin')) {\n        abort(403, 'Not authorized to delete this post');\n    }\n    \n    $post->delete();\n    return response()->json(['success' => true]);\n}",
+        "// Restrict privilege changes\npublic function updateRole(Request $request) {\n    // Check if admin\n    if (!Auth::user()->hasRole('admin')) {\n        abort(403, 'Admin access required');\n    }\n    \n    $request->validate([\n        'user_id' => 'required|exists:users,id',\n        'role' => 'required|in:user,moderator,admin'\n    ]);\n    \n    // Prevent self-demotion\n    if ($request->user_id == Auth::id() && $request->role != 'admin') {\n        return response()->json(['error' => 'Cannot demote yourself'], 400);\n    }\n    \n    $user = User::findOrFail($request->user_id);\n    $user->role = $request->role;\n    $user->save();\n    \n    return response()->json(['success' => true]);\n}",
+        "// Secure file access\npublic function downloadFile($filename) {\n    // Sanitize filename\n    $filename = basename($filename);\n    if (strpos($filename, '..') !== false) {\n        abort(400, 'Invalid filename');\n    }\n    \n    // Check file ownership\n    $fileRecord = File::where('name', $filename)->firstOrFail();\n    \n    if ($fileRecord->owner_id != Auth::id() && !Auth::user()->hasRole('admin')) {\n        abort(403, 'Access denied');\n    }\n    \n    $filepath = storage_path('app/uploads/' . $filename);\n    if (!file_exists($filepath)) {\n        abort(404, 'File not found');\n    }\n    \n    return response()->download($filepath);\n}"
+      ],
+      "fix_explanation": "Use Laravel authorization, validate ownership, implement proper access control"
+    },
+    {
+      "language": "ruby",
+      "bad_code": [
+        "# No authorization check\ndef admin_users\n  # Missing role check\n  users = User.all\n  render json: users\nend",
+        "# Direct object reference\ndef show\n  # No check if current user can access\n  user = User.find(params[:id])\n  render json: user\nend",
+        "# Missing ownership check\ndef destroy\n  # No check if user owns the post\n  post = Post.find(params[:id])\n  post.destroy\n  render json: { success: true }\nend",
+        "# Privilege escalation\ndef update_role\n  user = User.find(params[:user_id])\n  # User can set any role\n  user.update(role: params[:role])\nend",
+        "# Path traversal\ndef download\n  # No validation\n  send_file \"uploads/#{params[:filename]}\"\nend"
+      ],
+      "risk_description": "Missing before_action filters and authorization checks create vulnerabilities",
+      "good_code": [
+        "# Rails authorization with Pundit\nclass UsersController < ApplicationController\n  before_action :authenticate_user!\n  \n  def admin_users\n    authorize User, :index?\n    users = User.all\n    render json: users\n  end\nend\n\n# Or with CanCanCan\ndef admin_users\n  authorize! :manage, User\n  users = User.all\n  render json: users\nend",
+        "# Validate object access\ndef show\n  user = User.find(params[:id])\n  \n  # Check if user can access this profile\n  unless current_user.id == user.id || current_user.admin?\n    render json: { error: 'Access denied' }, status: :forbidden\n    return\n  end\n  \n  render json: user\nend",
+        "# Check ownership\ndef destroy\n  post = Post.find(params[:id])\n  \n  # Check if user owns the post\n  unless post.author_id == current_user.id || current_user.admin?\n    render json: { error: 'Not authorized' }, status: :forbidden\n    return\n  end\n  \n  post.destroy\n  render json: { success: true }\nend",
+        "# Restrict privilege changes\ndef update_role\n  # Check if admin\n  unless current_user.admin?\n    render json: { error: 'Admin access required' }, status: :forbidden\n    return\n  end\n  \n  # Validate role\n  unless %w[user moderator admin].include?(params[:role])\n    render json: { error: 'Invalid role' }, status: :bad_request\n    return\n  end\n  \n  # Prevent self-demotion\n  if params[:user_id] == current_user.id && params[:role] != 'admin'\n    render json: { error: 'Cannot demote yourself' }, status: :bad_request\n    return\n  end\n  \n  user = User.find(params[:user_id])\n  user.update!(role: params[:role])\n  render json: { success: true }\nend",
+        "# Secure file access\ndef download\n  # Sanitize filename\n  filename = File.basename(params[:filename])\n  if filename.include?('..')\n    render json: { error: 'Invalid filename' }, status: :bad_request\n    return\n  end\n  \n  # Check file ownership\n  file_record = FileRecord.find_by!(name: filename)\n  \n  unless file_record.owner_id == current_user.id || current_user.admin?\n    render json: { error: 'Access denied' }, status: :forbidden\n    return\n  end\n  \n  filepath = Rails.root.join('uploads', filename)\n  unless File.exist?(filepath)\n    render json: { error: 'File not found' }, status: :not_found\n    return\n  end\n  \n  send_file filepath\nend"
+      ],
+      "fix_explanation": "Use before_action filters, implement Pundit/CanCanCan, validate ownership"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "// No authorization attribute\n[HttpGet(\"admin/users\")]\npublic IActionResult GetUsers()\n{\n    // Missing role check\n    var users = _context.Users.ToList();\n    return Ok(users);\n}",
+        "// Direct object reference\n[HttpGet(\"user/{id}\")]\npublic IActionResult GetUser(int id)\n{\n    // No check if current user can access\n    var user = _context.Users.Find(id);\n    return Ok(user);\n}",
+        "// Missing ownership check\n[HttpDelete(\"post/{id}\")]\npublic IActionResult DeletePost(int id)\n{\n    // No check if user owns the post\n    var post = _context.Posts.Find(id);\n    _context.Posts.Remove(post);\n    _context.SaveChanges();\n    return Ok();\n}",
+        "// Privilege escalation\n[HttpPost(\"user/role\")]\npublic IActionResult UpdateRole([FromBody] RoleUpdate update)\n{\n    var user = _context.Users.Find(update.UserId);\n    // User can set any role\n    user.Role = update.Role;\n    _context.SaveChanges();\n    return Ok();\n}",
+        "// Path traversal\n[HttpGet(\"file/{filename}\")]\npublic IActionResult DownloadFile(string filename)\n{\n    // No validation\n    var path = Path.Combine(\"uploads\", filename);\n    return PhysicalFile(path, \"application/octet-stream\");\n}"
+      ],
+      "risk_description": "Missing authorization attributes and checks allow unauthorized access",
+      "good_code": [
+        "// ASP.NET Core authorization\n[HttpGet(\"admin/users\")]\n[Authorize(Roles = \"Admin\")]\npublic IActionResult GetUsers()\n{\n    var users = _context.Users.ToList();\n    return Ok(users);\n}",
+        "// Validate object access\n[HttpGet(\"user/{id}\")]\n[Authorize]\npublic IActionResult GetUser(int id)\n{\n    var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);\n    var isAdmin = User.IsInRole(\"Admin\");\n    \n    // Check if user can access this profile\n    if (currentUserId != id && !isAdmin)\n    {\n        return Forbid(\"Access denied\");\n    }\n    \n    var user = _context.Users.Find(id);\n    if (user == null)\n    {\n        return NotFound();\n    }\n    \n    return Ok(user);\n}",
+        "// Check ownership\n[HttpDelete(\"post/{id}\")]\n[Authorize]\npublic IActionResult DeletePost(int id)\n{\n    var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);\n    var post = _context.Posts.Find(id);\n    \n    if (post == null)\n    {\n        return NotFound();\n    }\n    \n    // Check if user owns the post\n    if (post.AuthorId != currentUserId && !User.IsInRole(\"Admin\"))\n    {\n        return Forbid(\"Not authorized to delete this post\");\n    }\n    \n    _context.Posts.Remove(post);\n    _context.SaveChanges();\n    return Ok();\n}",
+        "// Restrict privilege changes\n[HttpPost(\"user/role\")]\n[Authorize(Roles = \"Admin\")]\npublic IActionResult UpdateRole([FromBody] RoleUpdate update)\n{\n    // Validate role\n    var validRoles = new[] { \"User\", \"Moderator\", \"Admin\" };\n    if (!validRoles.Contains(update.Role))\n    {\n        return BadRequest(\"Invalid role\");\n    }\n    \n    var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);\n    \n    // Prevent self-demotion\n    if (update.UserId == currentUserId && update.Role != \"Admin\")\n    {\n        return BadRequest(\"Cannot demote yourself\");\n    }\n    \n    var user = _context.Users.Find(update.UserId);\n    if (user == null)\n    {\n        return NotFound();\n    }\n    \n    user.Role = update.Role;\n    _context.SaveChanges();\n    return Ok();\n}",
+        "// Secure file access\n[HttpGet(\"file/{filename}\")]\n[Authorize]\npublic IActionResult DownloadFile(string filename)\n{\n    // Sanitize filename\n    filename = Path.GetFileName(filename);\n    if (filename.Contains(\"..\"))\n    {\n        return BadRequest(\"Invalid filename\");\n    }\n    \n    // Check file ownership\n    var fileRecord = _context.Files.FirstOrDefault(f => f.Name == filename);\n    if (fileRecord == null)\n    {\n        return NotFound();\n    }\n    \n    var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);\n    if (fileRecord.OwnerId != currentUserId && !User.IsInRole(\"Admin\"))\n    {\n        return Forbid(\"Access denied\");\n    }\n    \n    var path = Path.Combine(_uploadPath, filename);\n    if (!System.IO.File.Exists(path))\n    {\n        return NotFound();\n    }\n    \n    return PhysicalFile(path, \"application/octet-stream\", filename);\n}"
+      ],
+      "fix_explanation": "Use Authorize attributes, validate ownership, implement proper role-based access"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "Missing authentication/authorization decorators or attributes",
+      "Direct database queries without ownership checks",
+      "User-controlled role assignment",
+      "File operations with user-supplied paths",
+      "Missing permission validation before sensitive operations",
+      "Client-side only authorization checks"
+    ],
+    "regex_patterns": [
+      "User\\.find.*params\\[:id\\]",
+      "findById.*req\\.params",
+      "@app\\.route.*(?!@login_required)",
+      "role\\s*=\\s*request\\.",
+      "send_file.*params",
+      "PhysicalFile.*filename"
+    ],
+    "code_smell_indicators": [
+      "Admin endpoints without role checks",
+      "Direct object references",
+      "Missing ownership validation",
+      "User-controlled privilege changes",
+      "Path traversal possibilities",
+      "Relying on client-side authorization"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Implement authentication for all protected resources",
+      "Add authorization checks for role-based access",
+      "Validate object ownership before allowing operations",
+      "Use framework-provided authorization mechanisms",
+      "Implement principle of least privilege",
+      "Deny by default - explicitly allow access",
+      "Validate all user inputs, especially for file operations",
+      "Use indirect object references where possible",
+      "Log all authorization failures for monitoring",
+      "Regular access control reviews and testing"
+    ],
+    "code_examples": [
+      {
+        "framework": "Spring Security",
+        "safe_code": "@Configuration\n@EnableGlobalMethodSecurity(prePostEnabled = true)\npublic class SecurityConfig {\n    // Enable method-level security\n}\n\n@PreAuthorize(\"hasRole('ADMIN') or #userId == authentication.principal.id\")\npublic User getUser(Long userId) {\n    return userRepository.findById(userId).orElseThrow();\n}"
+      },
+      {
+        "framework": "Django",
+        "safe_code": "from django.contrib.auth.decorators import login_required, permission_required\nfrom django.core.exceptions import PermissionDenied\n\n@login_required\n@permission_required('app.view_admin_panel')\ndef admin_view(request):\n    return render(request, 'admin.html')\n\ndef check_object_permissions(user, obj):\n    if obj.owner != user and not user.is_staff:\n        raise PermissionDenied"
+      }
+    ],
+    "prevention_guidelines": [
+      "Design with security in mind from the start",
+      "Use established authorization frameworks",
+      "Implement defense in depth",
+      "Regular security testing and code reviews",
+      "Monitor and log access attempts",
+      "Train developers on secure coding",
+      "Document authorization requirements",
+      "Implement automated security testing"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 9.1,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:L",
+    "business_impact": "Data breach, unauthorized actions, privilege escalation, compliance violations",
+    "technical_impact": "Unauthorized access, data manipulation, system compromise, lateral movement",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "medium",
+    "compliance_violations": ["GDPR", "PCI-DSS", "HIPAA", "SOC2"]
+  },
+
+  "references": [
+    "https://owasp.org/Top10/A01_2021-Broken_Access_Control/",
+    "https://cwe.mitre.org/data/definitions/639.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+    "https://portswigger.net/web-security/access-control",
+    "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/05-Authorization_Testing/README"
+  ],
+
+  "test_cases": [
+    {
+      "input": "/admin/users without admin role",
+      "description": "Accessing admin endpoint without proper role",
+      "expected_detection": true,
+      "attack_type": "vertical_privilege_escalation"
+    },
+    {
+      "input": "/user/123 as user 456",
+      "description": "Accessing another user's profile",
+      "expected_detection": true,
+      "attack_type": "horizontal_privilege_escalation"
+    },
+    {
+      "input": "DELETE /post/123 by non-owner",
+      "description": "Deleting resource without ownership",
+      "expected_detection": true,
+      "attack_type": "unauthorized_operation"
+    }
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["access-control", "authorization", "privilege-escalation", "critical"],
+    "related_patterns": ["cwe_284_improper_access_control", "cwe_862_missing_authorization", "cwe_863_incorrect_authorization"]
+  }
+}

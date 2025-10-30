@@ -180,9 +180,9 @@ pub struct CoverageMetadata {
 
 /// Coverage analyzer
 pub struct CoverageAnalyzer {
-    fact_system_interface: FactSystemInterface,
-    coverage_collectors: Vec<Box<dyn CoverageCollector>>,
-    coverage_thresholds: CoverageThresholds,
+    #[allow(dead_code)] fact_system_interface: FactSystemInterface,
+    #[allow(dead_code)] coverage_collectors: Vec<Box<dyn CoverageCollector>>,
+    #[allow(dead_code)] coverage_thresholds: CoverageThresholds,
 }
 
 /// Interface to fact-system for coverage knowledge

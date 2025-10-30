@@ -1,0 +1,242 @@
+{
+  "pattern_id": "owasp_csrf",
+  "name": "Cross-Site Request Forgery (CSRF)",
+  "cwe": "CWE-352",
+  "owasp_category": "A01:2021 - Broken Access Control",
+  "severity": "high",
+  "applicable_languages": ["python", "javascript", "java", "php", "ruby", "csharp", "go"],
+  "applicable_frameworks": ["django", "flask", "express", "spring", "rails", "laravel", "aspnet"],
+  "description": "CSRF attacks force authenticated users to submit unintended requests, exploiting the trust a web application has in the user's browser",
+
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "# Flask without CSRF protection\n@app.route('/transfer', methods=['POST'])\ndef transfer():\n    amount = request.form['amount']\n    recipient = request.form['recipient']\n    # No CSRF token validation",
+        "# Django with CSRF disabled\n@csrf_exempt\ndef delete_account(request):\n    if request.method == 'POST':\n        request.user.delete()",
+        "# Disabling CSRF middleware\nMIDDLEWARE = [\n    # 'django.middleware.csrf.CsrfViewMiddleware',  # Commented out\n]",
+        "# FastAPI without CSRF\n@app.post('/update-profile')\nasync def update_profile(name: str = Form(), email: str = Form()):\n    # No CSRF token check"
+      ],
+      "risk_description": "Missing or disabled CSRF protection allows attackers to forge requests on behalf of authenticated users",
+      "good_code": [
+        "# Flask with Flask-WTF\nfrom flask_wtf import FlaskForm\nfrom flask_wtf.csrf import CSRFProtect\n\ncsrf = CSRFProtect(app)\n\n@app.route('/transfer', methods=['POST'])\ndef transfer():\n    # CSRF token automatically validated",
+        "# Django with CSRF enabled (default)\n# In template\n<form method=\"post\">\n    {% csrf_token %}\n    <!-- form fields -->\n</form>",
+        "# FastAPI with CSRF protection\nfrom fastapi_csrf_protect import CsrfProtect\n\n@app.post('/update-profile')\nasync def update_profile(csrf_protect: CsrfProtect = Depends()):\n    await csrf_protect.validate_csrf(request)",
+        "# Double-submit cookie pattern\nimport secrets\ncsrf_token = secrets.token_urlsafe(32)\nresponse.set_cookie('csrf_token', csrf_token, httponly=True, samesite='strict')"
+      ],
+      "fix_explanation": "Enable CSRF protection middleware, include tokens in forms, validate tokens on state-changing operations"
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "// Express without CSRF protection\napp.post('/api/transfer', (req, res) => {\n    const { amount, recipient } = req.body;\n    // No CSRF validation\n    performTransfer(amount, recipient);\n});",
+        "// Missing CSRF token in AJAX\n$.ajax({\n    url: '/api/delete',\n    method: 'POST',\n    data: { id: itemId }\n    // No CSRF token included\n});",
+        "// Form without CSRF token\n<form action=\"/submit\" method=\"post\">\n    <input name=\"data\" />\n    <button type=\"submit\">Submit</button>\n</form>",
+        "// Fetch without CSRF\nfetch('/api/update', {\n    method: 'POST',\n    body: JSON.stringify(data)\n    // No CSRF header\n});"
+      ],
+      "risk_description": "State-changing operations without CSRF tokens are vulnerable to forged requests",
+      "good_code": [
+        "// Express with csurf middleware\nconst csrf = require('csurf');\nconst csrfProtection = csrf({ cookie: true });\n\napp.post('/api/transfer', csrfProtection, (req, res) => {\n    // CSRF token validated by middleware\n    performTransfer(req.body.amount, req.body.recipient);\n});",
+        "// AJAX with CSRF token\nconst token = document.querySelector('meta[name=\"csrf-token\"]').content;\n$.ajax({\n    url: '/api/delete',\n    method: 'POST',\n    headers: { 'X-CSRF-Token': token },\n    data: { id: itemId }\n});",
+        "// Form with CSRF token\n<form action=\"/submit\" method=\"post\">\n    <input type=\"hidden\" name=\"_csrf\" value=\"<%= csrfToken %>\" />\n    <input name=\"data\" />\n    <button type=\"submit\">Submit</button>\n</form>",
+        "// Fetch with CSRF header\nfetch('/api/update', {\n    method: 'POST',\n    headers: {\n        'Content-Type': 'application/json',\n        'X-CSRF-Token': getCsrfToken()\n    },\n    credentials: 'same-origin',\n    body: JSON.stringify(data)\n});"
+      ],
+      "fix_explanation": "Use CSRF middleware, include tokens in forms and AJAX requests, validate on server side"
+    },
+    {
+      "language": "java",
+      "bad_code": [
+        "// Spring without CSRF\n@Configuration\npublic class SecurityConfig extends WebSecurityConfigurerAdapter {\n    @Override\n    protected void configure(HttpSecurity http) throws Exception {\n        http.csrf().disable(); // CSRF disabled\n    }\n}",
+        "// Servlet without CSRF check\n@WebServlet(\"/transfer\")\npublic class TransferServlet extends HttpServlet {\n    protected void doPost(HttpServletRequest request, HttpServletResponse response) {\n        String amount = request.getParameter(\"amount\");\n        // No CSRF token validation\n    }\n}",
+        "// JSP form without token\n<form action=\"/submit\" method=\"post\">\n    <input name=\"data\" />\n    <input type=\"submit\" />\n</form>"
+      ],
+      "risk_description": "Disabled CSRF protection in Spring Security or missing token validation exposes endpoints",
+      "good_code": [
+        "// Spring with CSRF enabled (default)\n@Configuration\npublic class SecurityConfig extends WebSecurityConfigurerAdapter {\n    @Override\n    protected void configure(HttpSecurity http) throws Exception {\n        http.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());\n    }\n}",
+        "// Spring MVC form with CSRF\n<form:form method=\"post\" action=\"/transfer\">\n    <!-- CSRF token automatically included -->\n    <form:input path=\"amount\" />\n    <form:button>Submit</form:button>\n</form:form>",
+        "// Thymeleaf with CSRF\n<form th:action=\"@{/transfer}\" method=\"post\">\n    <!-- CSRF token automatically included -->\n    <input type=\"text\" name=\"amount\" />\n    <button type=\"submit\">Transfer</button>\n</form>",
+        "// Manual CSRF validation\n@PostMapping(\"/api/transfer\")\npublic ResponseEntity<?> transfer(@RequestHeader(\"X-CSRF-TOKEN\") String csrfToken,\n                                  @RequestBody TransferRequest request) {\n    // Spring automatically validates the token\n    return ResponseEntity.ok().build();\n}"
+      ],
+      "fix_explanation": "Enable Spring Security CSRF protection, use form tags that include tokens automatically"
+    },
+    {
+      "language": "php",
+      "bad_code": [
+        "// No CSRF protection\nif ($_SERVER['REQUEST_METHOD'] === 'POST') {\n    $amount = $_POST['amount'];\n    $recipient = $_POST['recipient'];\n    transferMoney($amount, $recipient);\n}",
+        "// Laravel with CSRF disabled\n// In VerifyCsrfToken.php\nprotected $except = [\n    '/api/*',  // Excluding all API routes\n    '/transfer'\n];",
+        "// Missing token in form\n<form method=\"post\" action=\"/submit\">\n    <input name=\"email\" />\n    <button>Submit</button>\n</form>",
+        "// Symfony without CSRF\npublic function transfer(Request $request) {\n    $amount = $request->get('amount');\n    // No token validation\n}"
+      ],
+      "risk_description": "Missing CSRF token generation and validation allows request forgery attacks",
+      "good_code": [
+        "// PHP with CSRF token\nsession_start();\nif (empty($_SESSION['csrf_token'])) {\n    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));\n}\n\nif ($_SERVER['REQUEST_METHOD'] === 'POST') {\n    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {\n        die('CSRF token validation failed');\n    }\n    // Process request\n}",
+        "// Laravel with CSRF (default)\n<form method=\"post\" action=\"/transfer\">\n    @csrf\n    <input name=\"amount\" />\n    <button>Transfer</button>\n</form>",
+        "// Symfony with CSRF\nuse Symfony\\Component\\Security\\Csrf\\CsrfTokenManagerInterface;\n\npublic function transfer(Request $request, CsrfTokenManagerInterface $csrfTokenManager) {\n    $token = $request->get('_csrf_token');\n    if (!$csrfTokenManager->isTokenValid(new CsrfToken('transfer', $token))) {\n        throw new InvalidCsrfTokenException();\n    }\n}",
+        "// Double submit cookie\nsetcookie('csrf_token', $token, [\n    'httponly' => true,\n    'samesite' => 'Strict',\n    'secure' => true\n]);"
+      ],
+      "fix_explanation": "Generate unique tokens per session, validate on server side, use framework CSRF protection"
+    },
+    {
+      "language": "ruby",
+      "bad_code": [
+        "# Rails with CSRF disabled\nclass ApplicationController < ActionController::Base\n  skip_before_action :verify_authenticity_token\nend",
+        "# Specific action without CSRF\nclass TransferController < ApplicationController\n  skip_before_action :verify_authenticity_token, only: [:create]\n  \n  def create\n    # No CSRF protection\n  end\nend",
+        "# Form without token\n<%= form_tag('/transfer', method: :post, authenticity_token: false) do %>\n  <%= text_field_tag :amount %>\n  <%= submit_tag 'Transfer' %>\n<% end %>",
+        "# API without CSRF\nclass ApiController < ActionController::API\n  # ActionController::API doesn't include CSRF by default\n  def transfer\n    # Vulnerable endpoint\n  end\nend"
+      ],
+      "risk_description": "Skipping Rails' built-in CSRF protection exposes actions to forgery attacks",
+      "good_code": [
+        "# Rails with CSRF enabled (default)\nclass ApplicationController < ActionController::Base\n  protect_from_forgery with: :exception\nend",
+        "# Form with CSRF token (default)\n<%= form_with url: '/transfer', method: :post do |form| %>\n  <%= form.text_field :amount %>\n  <%= form.submit 'Transfer' %>\n<% end %>",
+        "# AJAX with CSRF token\n$.ajax({\n  url: '/transfer',\n  method: 'POST',\n  headers: {\n    'X-CSRF-Token': $('meta[name=\"csrf-token\"]').attr('content')\n  },\n  data: { amount: 100 }\n});",
+        "# API with custom CSRF\nclass ApiController < ActionController::API\n  include ActionController::RequestForgeryProtection\n  protect_from_forgery with: :null_session\n  \n  before_action :verify_csrf_token\n  \n  private\n  def verify_csrf_token\n    verify_authenticity_token\n  end\nend"
+      ],
+      "fix_explanation": "Use Rails' default CSRF protection, include tokens in forms and AJAX requests"
+    },
+    {
+      "language": "csharp",
+      "bad_code": [
+        "// ASP.NET without antiforgery\n[HttpPost]\npublic IActionResult Transfer(TransferModel model)\n{\n    // No CSRF token validation\n    PerformTransfer(model.Amount, model.Recipient);\n    return Ok();\n}",
+        "// Disabling antiforgery globally\nservices.AddMvc(options =>\n{\n    options.Filters.Remove(new AutoValidateAntiforgeryTokenAttribute());\n});",
+        "// Form without token\n<form method=\"post\" action=\"/transfer\">\n    <input name=\"amount\" />\n    <button type=\"submit\">Transfer</button>\n</form>",
+        "// WebForms without ViewState validation\n<%@ Page EnableViewStateMac=\"false\" %>"
+      ],
+      "risk_description": "Missing antiforgery token validation allows CSRF attacks against authenticated users",
+      "good_code": [
+        "// ASP.NET Core with antiforgery\n[HttpPost]\n[ValidateAntiForgeryToken]\npublic IActionResult Transfer(TransferModel model)\n{\n    // Token automatically validated\n    PerformTransfer(model.Amount, model.Recipient);\n    return Ok();\n}",
+        "// Razor form with token\n<form method=\"post\" action=\"/transfer\">\n    @Html.AntiForgeryToken()\n    <input name=\"amount\" />\n    <button type=\"submit\">Transfer</button>\n</form>",
+        "// Configure antiforgery\nservices.AddAntiforgery(options =>\n{\n    options.HeaderName = \"X-CSRF-TOKEN\";\n    options.Cookie.Name = \"CSRF-TOKEN\";\n    options.Cookie.SameSite = SameSiteMode.Strict;\n});",
+        "// AJAX with antiforgery token\nvar token = $('input[name=\"__RequestVerificationToken\"]').val();\n$.ajax({\n    url: '/api/transfer',\n    method: 'POST',\n    headers: { 'RequestVerificationToken': token },\n    data: { amount: 100 }\n});"
+      ],
+      "fix_explanation": "Use ValidateAntiForgeryToken attribute, include tokens in forms, configure antiforgery services"
+    },
+    {
+      "language": "go",
+      "bad_code": [
+        "// No CSRF protection\nfunc transferHandler(w http.ResponseWriter, r *http.Request) {\n    if r.Method == \"POST\" {\n        amount := r.FormValue(\"amount\")\n        recipient := r.FormValue(\"recipient\")\n        // No CSRF token validation\n        performTransfer(amount, recipient)\n    }\n}",
+        "// Gin without CSRF\nfunc main() {\n    router := gin.Default()\n    router.POST(\"/transfer\", func(c *gin.Context) {\n        // No CSRF protection\n        amount := c.PostForm(\"amount\")\n        performTransfer(amount)\n    })\n}",
+        "// Echo without CSRF\ne.POST(\"/api/delete\", func(c echo.Context) error {\n    // No CSRF token check\n    id := c.FormValue(\"id\")\n    deleteItem(id)\n    return c.JSON(200, \"deleted\")\n})"
+      ],
+      "risk_description": "Go web applications without CSRF middleware are vulnerable to request forgery",
+      "good_code": [
+        "// Using gorilla/csrf\nimport \"github.com/gorilla/csrf\"\n\nfunc main() {\n    CSRF := csrf.Protect(\n        []byte(\"32-byte-long-auth-key\"),\n        csrf.Secure(true),\n        csrf.SameSite(csrf.SameSiteStrictMode),\n    )\n    \n    http.Handle(\"/transfer\", CSRF(http.HandlerFunc(transferHandler)))\n}",
+        "// Gin with CSRF middleware\nimport \"github.com/utrack/gin-csrf\"\n\nfunc main() {\n    router := gin.Default()\n    router.Use(csrf.Middleware(csrf.Options{\n        Secret: \"secret123\",\n        ErrorFunc: func(c *gin.Context) {\n            c.String(400, \"CSRF token mismatch\")\n            c.Abort()\n        },\n    }))\n    \n    router.POST(\"/transfer\", transferHandler)\n}",
+        "// Echo with CSRF\nimport \"github.com/labstack/echo/v4/middleware\"\n\ne.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{\n    TokenLookup:    \"header:X-CSRF-Token\",\n    CookieName:     \"csrf\",\n    CookieSameSite: http.SameSiteStrictMode,\n    CookieSecure:   true,\n    CookieHTTPOnly: true,\n}))",
+        "// Manual double-submit cookie\nfunc csrfMiddleware(next http.HandlerFunc) http.HandlerFunc {\n    return func(w http.ResponseWriter, r *http.Request) {\n        if r.Method == \"POST\" {\n            cookie, _ := r.Cookie(\"csrf_token\")\n            header := r.Header.Get(\"X-CSRF-Token\")\n            if cookie == nil || cookie.Value != header {\n                http.Error(w, \"CSRF validation failed\", 403)\n                return\n            }\n        }\n        next(w, r)\n    }\n}"
+      ],
+      "fix_explanation": "Use CSRF middleware packages, implement double-submit cookie pattern, validate tokens on state changes"
+    }
+  ],
+
+  "detection_rules": {
+    "ast_patterns": [
+      "POST/PUT/DELETE handlers without CSRF validation",
+      "Forms without CSRF token fields",
+      "AJAX calls without CSRF headers",
+      "Disabled CSRF middleware or decorators",
+      "@csrf_exempt decorators",
+      "skip_before_action :verify_authenticity_token"
+    ],
+    "regex_patterns": [
+      "csrf.*disable",
+      "csrf_exempt",
+      "skip.*verify_authenticity_token",
+      "@IgnoreAntiforgeryToken",
+      "EnableViewStateMac.*false",
+      "protect_from_forgery.*false"
+    ],
+    "code_smell_indicators": [
+      "State-changing GET requests",
+      "Missing CSRF configuration in security setup",
+      "API endpoints without token validation",
+      "Forms without hidden token fields",
+      "Cookie SameSite not set to Strict or Lax"
+    ]
+  },
+
+  "remediation": {
+    "steps": [
+      "Enable CSRF protection in your web framework",
+      "Generate unique CSRF tokens per session",
+      "Include tokens in all forms as hidden fields",
+      "Add tokens to AJAX request headers",
+      "Validate tokens on all state-changing operations",
+      "Use SameSite cookie attribute (Strict or Lax)",
+      "Implement proper session management",
+      "Consider using double-submit cookie pattern for stateless applications",
+      "Verify referrer headers as additional protection",
+      "Use custom headers for API requests (requires JavaScript)"
+    ],
+    "code_examples": [
+      {
+        "framework": "Django",
+        "safe_code": "# settings.py\nMIDDLEWARE = [\n    'django.middleware.csrf.CsrfViewMiddleware',\n]\n\n# template.html\n<form method=\"post\">\n    {% csrf_token %}\n    <button>Submit</button>\n</form>"
+      },
+      {
+        "framework": "Express.js",
+        "safe_code": "const csrf = require('csurf');\nconst csrfProtection = csrf({ cookie: true });\n\napp.use(csrfProtection);\n\napp.get('/form', (req, res) => {\n    res.render('form', { csrfToken: req.csrfToken() });\n});"
+      },
+      {
+        "framework": "Spring Boot",
+        "safe_code": "@Configuration\npublic class SecurityConfig {\n    @Bean\n    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {\n        http.csrf()\n            .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());\n        return http.build();\n    }\n}"
+      }
+    ],
+    "prevention_guidelines": [
+      "Never disable CSRF protection for state-changing operations",
+      "Use framework-provided CSRF protection mechanisms",
+      "Implement CSRF tokens for all forms and AJAX requests",
+      "Set SameSite attribute on authentication cookies",
+      "Avoid state-changing GET requests",
+      "Implement proper CORS policies",
+      "Use custom headers for API authentication",
+      "Regular security audits and penetration testing"
+    ]
+  },
+
+  "impact": {
+    "severity_score": 8.8,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+    "business_impact": "Unauthorized transactions, account takeover, data modification, privilege escalation",
+    "technical_impact": "Forced actions on behalf of authenticated users, state manipulation, data corruption",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "medium",
+    "compliance_violations": ["PCI-DSS", "OWASP", "ISO-27001"]
+  },
+
+  "references": [
+    "https://owasp.org/www-community/attacks/csrf",
+    "https://cwe.mitre.org/data/definitions/352.html",
+    "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+    "https://portswigger.net/web-security/csrf",
+    "https://developer.mozilla.org/en-US/docs/Glossary/CSRF"
+  ],
+
+  "test_cases": [
+    {
+      "input": "<form action='http://victim.com/transfer' method='post'><input name='amount' value='1000'></form>",
+      "description": "Cross-origin form submission",
+      "expected_detection": true,
+      "attack_type": "form_based"
+    },
+    {
+      "input": "<img src='http://victim.com/delete?id=123'>",
+      "description": "State-changing GET request via image",
+      "expected_detection": true,
+      "attack_type": "get_based"
+    },
+    {
+      "input": "XMLHttpRequest without CSRF token to state-changing endpoint",
+      "description": "AJAX request forgery",
+      "expected_detection": true,
+      "attack_type": "ajax_based"
+    }
+  ],
+
+  "metadata": {
+    "last_updated": "2025-01-10",
+    "version": "1.0.0",
+    "tags": ["csrf", "session", "authentication", "high"],
+    "related_patterns": ["cwe_352_csrf", "owasp_access_control"]
+  }
+}

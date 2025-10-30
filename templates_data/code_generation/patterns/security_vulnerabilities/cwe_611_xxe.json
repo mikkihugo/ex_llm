@@ -1,0 +1,12 @@
+{
+  "pattern_id": "cwe_611_xxe",
+  "name": "Improper Restriction of XML External Entity Reference",
+  "cwe": "CWE-611",
+  "severity": "high",
+  "related_pattern": "owasp_xxe",
+  "description": "See owasp_xxe.json for complete pattern details",
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["xxe", "xml", "injection"]
+  }
+}

@@ -108,8 +108,8 @@ pub enum ParserType {
 
 /// Parser coverage collector
 pub struct ParserCoverageCollector {
-    parsers: std::collections::HashMap<String, Box<dyn ParserCoverageProvider>>,
-    fact_system_interface: FactSystemInterface,
+    #[allow(dead_code)] parsers: std::collections::HashMap<String, Box<dyn ParserCoverageProvider>>,
+    #[allow(dead_code)] fact_system_interface: FactSystemInterface,
 }
 
 /// Interface to fact-system for parser coverage knowledge
@@ -244,10 +244,14 @@ impl ParserCoverageCollector {
     }
 
     /// Collect coverage data from parsers
+    ///
+    /// TODO(minimal): This is a minimal placeholder that returns
+    /// zeroed coverage metrics. Expand to call real parser providers
+    /// and compute coverage from `test_results`.
     pub async fn collect_coverage(
         &self,
         file_path: &str,
-        test_results: &TestResults,
+        _test_results: &TestResults,
     ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*
@@ -335,6 +339,7 @@ impl ParserCoverageCollector {
     }
 
     /// Get parser name for type
+    #[allow(dead_code)]
     fn get_parser_name_for_type(&self, parser_type: ParserType) -> String {
         match parser_type {
             ParserType::Rust => "rust".to_string(),
@@ -380,7 +385,7 @@ impl ParserCoverageProvider for ParserEngineRustCoverageProvider {
     fn collect_coverage(
         &self,
         file_path: &str,
-        test_results: &TestResults,
+        _test_results: &TestResults,
     ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*
@@ -500,7 +505,7 @@ impl ParserCoverageProvider for JavascriptParserCoverageProvider {
     fn collect_coverage(
         &self,
         file_path: &str,
-        test_results: &TestResults,
+        _test_results: &TestResults,
     ) -> Result<ParserCoverageData> {
         // PSEUDO CODE:
         /*

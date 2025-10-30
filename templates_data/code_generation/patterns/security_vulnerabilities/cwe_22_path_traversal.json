@@ -1,0 +1,46 @@
+{
+  "pattern_id": "cwe_22_path_traversal",
+  "name": "Path Traversal",
+  "cwe": "CWE-22",
+  "severity": "high",
+  "applicable_languages": ["python", "javascript", "java", "go", "php", "ruby", "csharp"],
+  "description": "Path traversal vulnerabilities allow attackers to access files outside intended directories",
+  "vulnerability_patterns": [
+    {
+      "language": "python",
+      "bad_code": [
+        "open('uploads/' + user_filename)",
+        "os.path.join('/var/www', user_path)",
+        "send_file(request.args.get('file'))"
+      ],
+      "good_code": [
+        "filename = os.path.basename(user_filename)\nopen(os.path.join('uploads', filename))",
+        "safe_path = os.path.normpath(user_path)\nif not safe_path.startswith('/var/www'):\n    raise ValueError('Invalid path')"
+      ]
+    },
+    {
+      "language": "javascript",
+      "bad_code": [
+        "fs.readFile('uploads/' + req.params.file)",
+        "path.join(__dirname, userPath)"
+      ],
+      "good_code": [
+        "const safePath = path.normalize(userPath);\nif (!safePath.startsWith(baseDir)) throw new Error('Invalid path');"
+      ]
+    }
+  ],
+  "detection_rules": {
+    "patterns": ["../", "..\\", "User input in file paths", "Missing path validation"]
+  },
+  "remediation": {
+    "steps": ["Validate and sanitize paths", "Use whitelists", "Chroot jails", "Proper access controls"]
+  },
+  "impact": {
+    "severity_score": 7.5,
+    "business_impact": "Information disclosure, file access, configuration exposure"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["path-traversal", "directory-traversal", "lfi"]
+  }
+}

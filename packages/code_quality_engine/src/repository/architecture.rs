@@ -2,7 +2,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use anyhow::Result;
@@ -87,8 +87,7 @@ impl ArchitectureAnalyzer {
             p.name.contains("gateway") || p.name.contains("api-gateway") || p.name.contains("proxy")
         });
 
-        (has_multiple_services && has_service_discovery)
-            || (has_multiple_services && has_message_broker)
+        ((has_message_broker || has_service_discovery) && has_multiple_services)
             || has_api_gateway
     }
 
@@ -125,7 +124,7 @@ impl ArchitectureAnalyzer {
     }
 
     /// Check if serverless
-    fn is_serverless(&self, root_path: &PathBuf) -> bool {
+    fn is_serverless(&self, root_path: &Path) -> bool {
         root_path.join("serverless.yml").exists()
             || root_path.join("sam.yaml").exists()
             || root_path.join("template.yaml").exists()

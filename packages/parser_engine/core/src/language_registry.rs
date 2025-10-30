@@ -379,7 +379,15 @@ impl LanguageRegistry {
                     "private".to_string(), "protected".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["void ".to_string(), "int ".to_string(), "bool ".to_string(), "string ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string(), "try ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["try".to_string(), "catch".to_string(), "throw".to_string()],
+            },
         });
 
         // Web Technologies
@@ -410,7 +418,15 @@ impl LanguageRegistry {
                     "extends".to_string(), "implements".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["function ".to_string(), "=> ".to_string(), "async function ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string(), "try ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "===".to_string(), "!==".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["try".to_string(), "catch".to_string(), "throw".to_string()],
+            },
         });
 
         self.register_language(LanguageInfo {
@@ -439,7 +455,15 @@ impl LanguageRegistry {
                     "public".to_string(), "private".to_string(), "protected".to_string(), "readonly".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["function ".to_string(), "=> ".to_string(), "async function ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string(), "try ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "===".to_string(), "!==".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["try".to_string(), "catch".to_string(), "throw".to_string()],
+            },
         });
 
         // High-Level Languages
@@ -468,7 +492,15 @@ impl LanguageRegistry {
                     "lambda".to_string(), "global".to_string(), "nonlocal".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["def ".to_string(), "async def ".to_string()],
+                control_flow: vec!["if ".to_string(), "elif ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "try ".to_string()],
+                operators: vec!["and".to_string(), "or".to_string(), "not".to_string(), "in".to_string(), "is".to_string()],
+                opening_delimiters: vec![":".to_string()],
+                closing_delimiters: vec!["".to_string()],
+                comments: vec!["#".to_string()],
+                error_handling: vec!["try".to_string(), "except".to_string(), "finally".to_string()],
+            },
         });
 
         self.register_language(LanguageInfo {
@@ -496,7 +528,15 @@ impl LanguageRegistry {
                     "break".to_string(), "continue".to_string(), "default".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["public ".to_string(), "private ".to_string(), "protected ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string(), "try ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["try".to_string(), "catch".to_string(), "throw".to_string()],
+            },
         });
 
         self.register_language(LanguageInfo {
@@ -530,7 +570,15 @@ impl LanguageRegistry {
                     "as".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["void ".to_string(), "public ".to_string(), "private ".to_string(), "async ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "switch ".to_string(), "try ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string(), "??".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["try".to_string(), "catch".to_string(), "throw".to_string()],
+            },
         });
 
         self.register_language(LanguageInfo {
@@ -557,7 +605,15 @@ impl LanguageRegistry {
                     "cap".to_string(), "append".to_string(), "copy".to_string(),
                 ],
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["func ".to_string()],
+                control_flow: vec!["if ".to_string(), "else ".to_string(), "for ".to_string(), "switch ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string()],
+                opening_delimiters: vec!["{".to_string()],
+                closing_delimiters: vec!["}".to_string()],
+                comments: vec!["//".to_string(), "/*".to_string()],
+                error_handling: vec!["if".to_string(), "err".to_string(), "panic".to_string()],
+            },
         });
 
         // Scripting Languages
@@ -576,7 +632,15 @@ impl LanguageRegistry {
             tokenization_profile: TokenizationProfile {
                 keywords: vec![], // Lua keywords not implemented in custom_tokenizers.rs
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["function ".to_string()],
+                control_flow: vec!["if ".to_string(), "elseif ".to_string(), "for ".to_string(), "while ".to_string()],
+                operators: vec!["and".to_string(), "or".to_string(), "not".to_string()],
+                opening_delimiters: vec!["do".to_string()],
+                closing_delimiters: vec!["end".to_string()],
+                comments: vec!["--".to_string()],
+                error_handling: vec!["pcall".to_string(), "xpcall".to_string()],
+            },
         });
 
         self.register_language(LanguageInfo {
@@ -724,7 +788,15 @@ impl LanguageRegistry {
             tokenization_profile: TokenizationProfile {
                 keywords: vec![], // Ruby keywords not implemented in custom_tokenizers.rs
             },
-            syntax_patterns: SyntaxPatterns::default(),
+            syntax_patterns: SyntaxPatterns {
+                function_definitions: vec!["def ".to_string()],
+                control_flow: vec!["if ".to_string(), "elsif ".to_string(), "else ".to_string(), "for ".to_string(), "while ".to_string(), "begin ".to_string()],
+                operators: vec!["&&".to_string(), "||".to_string(), "!".to_string(), "==".to_string(), "!=".to_string()],
+                opening_delimiters: vec!["do".to_string(), "{".to_string()],
+                closing_delimiters: vec!["end".to_string(), "}".to_string()],
+                comments: vec!["#".to_string()],
+                error_handling: vec!["begin".to_string(), "rescue".to_string(), "ensure".to_string()],
+            },
         });
 
         // NEW: PHP (0.23.8)

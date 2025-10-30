@@ -1,0 +1,352 @@
+{
+  "language": "python",
+  "language_name": "Python",
+  "version_target": "3.9+",
+  "description": "Best practices and patterns for writing high-quality, maintainable, and Pythonic code",
+
+  "patterns": [
+    {
+      "pattern_id": "python_type_hints",
+      "name": "Type Hints for Code Clarity",
+      "category": "Code Quality",
+      "severity": "medium",
+      "description": "Use type hints to improve code readability and catch errors early",
+
+      "bad_example": {
+        "code": "def process_data(items, threshold, transform):\n    result = []\n    for item in items:\n        if item > threshold:\n            result.append(transform(item))\n    return result\n\ndef fetch_user(id):\n    # What does this return? None? User? Dict?\n    return database.get(id)",
+        "issues": [
+          "Unclear parameter types",
+          "Unknown return types",
+          "No IDE assistance",
+          "Runtime type errors"
+        ]
+      },
+
+      "good_example": {
+        "code": "from typing import List, Callable, Optional, TypeVar, Protocol\nfrom dataclasses import dataclass\n\nT = TypeVar('T')\n\ndef process_data(\n    items: List[float],\n    threshold: float,\n    transform: Callable[[float], T]\n) -> List[T]:\n    \"\"\"Process items above threshold with transform function.\"\"\"\n    result: List[T] = []\n    for item in items:\n        if item > threshold:\n            result.append(transform(item))\n    return result\n\n@dataclass\nclass User:\n    id: int\n    name: str\n    email: str\n\ndef fetch_user(user_id: int) -> Optional[User]:\n    \"\"\"Fetch user by ID, returns None if not found.\"\"\"\n    return database.get(user_id)\n\n# Using Protocol for duck typing\nclass Drawable(Protocol):\n    def draw(self) -> None: ...\n\ndef render(items: List[Drawable]) -> None:\n    for item in items:\n        item.draw()",
+        "benefits": [
+          "Clear function contracts",
+          "Better IDE support",
+          "Early error detection with mypy",
+          "Self-documenting code"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/library/typing.html",
+        "https://mypy.readthedocs.io/",
+        "https://peps.python.org/pep-0484/"
+      ]
+    },
+    {
+      "pattern_id": "python_context_managers",
+      "name": "Context Managers for Resource Management",
+      "category": "Resource Management",
+      "severity": "high",
+      "description": "Use context managers to ensure proper resource cleanup",
+
+      "bad_example": {
+        "code": "# File handling without context manager\nf = open('data.txt', 'r')\ndata = f.read()\nf.close()  # What if an error occurs before this?\n\n# Database connection\nconn = psycopg2.connect(database=\"mydb\")\ncur = conn.cursor()\ncur.execute(\"SELECT * FROM users\")\nresults = cur.fetchall()\ncur.close()\nconn.close()  # Easy to forget!\n\n# Thread lock\nimport threading\nlock = threading.Lock()\nlock.acquire()\ntry:\n    # critical section\n    shared_resource += 1\nfinally:\n    lock.release()",
+        "issues": [
+          "Resources may not be released",
+          "Verbose error handling",
+          "Easy to forget cleanup",
+          "No automatic rollback"
+        ]
+      },
+
+      "good_example": {
+        "code": "from contextlib import contextmanager\nimport psycopg2\nimport threading\nfrom pathlib import Path\n\n# File handling with context manager\nwith open('data.txt', 'r') as f:\n    data = f.read()\n# File automatically closed\n\n# Database connection with context manager\nwith psycopg2.connect(database=\"mydb\") as conn:\n    with conn.cursor() as cur:\n        cur.execute(\"SELECT * FROM users\")\n        results = cur.fetchall()\n# Connection automatically closed\n\n# Thread lock with context manager\nlock = threading.Lock()\nwith lock:\n    # critical section\n    shared_resource += 1\n# Lock automatically released\n\n# Custom context manager\n@contextmanager\ndef temporary_file(suffix='.tmp'):\n    \"\"\"Create and cleanup a temporary file.\"\"\"\n    temp_path = Path(f'temp_{uuid.uuid4()}{suffix}')\n    try:\n        temp_path.touch()\n        yield temp_path\n    finally:\n        temp_path.unlink(missing_ok=True)\n\n# Usage\nwith temporary_file() as tmp:\n    tmp.write_text('temporary data')\n    process_file(tmp)\n# File automatically deleted\n\n# Class-based context manager\nclass Timer:\n    def __enter__(self):\n        self.start = time.perf_counter()\n        return self\n    \n    def __exit__(self, *args):\n        self.elapsed = time.perf_counter() - self.start\n        print(f'Elapsed: {self.elapsed:.3f}s')\n\nwith Timer() as t:\n    expensive_operation()",
+        "benefits": [
+          "Automatic resource cleanup",
+          "Exception safety",
+          "Cleaner code",
+          "Composable resource management"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/library/contextlib.html",
+        "https://peps.python.org/pep-0343/",
+        "https://realpython.com/python-with-statement/"
+      ]
+    },
+    {
+      "pattern_id": "python_list_comprehension",
+      "name": "List Comprehensions and Generator Expressions",
+      "category": "Performance",
+      "severity": "medium",
+      "description": "Use comprehensions for concise and efficient data transformations",
+
+      "bad_example": {
+        "code": "# Verbose loops\nresult = []\nfor item in items:\n    if item > 5:\n        result.append(item * 2)\n\n# Nested loops\nmatrix_flat = []\nfor row in matrix:\n    for item in row:\n        matrix_flat.append(item)\n\n# Building dict with loop\nword_lengths = {}\nfor word in words:\n    word_lengths[word] = len(word)\n\n# Memory inefficient for large datasets\ndef get_squares(n):\n    squares = []\n    for i in range(n):\n        squares.append(i ** 2)\n    return squares  # Returns entire list",
+        "issues": [
+          "Verbose code",
+          "Less readable",
+          "Slower execution",
+          "High memory usage for large datasets"
+        ]
+      },
+
+      "good_example": {
+        "code": "# List comprehension\nresult = [item * 2 for item in items if item > 5]\n\n# Nested comprehension (flattening)\nmatrix_flat = [item for row in matrix for item in row]\n\n# Dict comprehension\nword_lengths = {word: len(word) for word in words}\n\n# Set comprehension\nunique_lengths = {len(word) for word in words}\n\n# Generator expression (memory efficient)\ndef get_squares(n):\n    return (i ** 2 for i in range(n))  # Returns generator\n\n# Generator for large files\ndef read_large_file(file_path):\n    with open(file_path) as f:\n        # Process line by line, not loading entire file\n        yield from (line.strip() for line in f if line.strip())\n\n# Conditional expression in comprehension\nprocessed = [\n    value.upper() if isinstance(value, str) else value\n    for value in mixed_list\n]\n\n# Multiple conditions\nfiltered = [\n    x for x in data\n    if x > 0 and x < 100 and x % 2 == 0\n]\n\n# Using enumerate in comprehension\nindexed = {i: val for i, val in enumerate(items)}",
+        "benefits": [
+          "More Pythonic",
+          "Better performance",
+          "Concise and readable",
+          "Memory efficient with generators"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+        "https://peps.python.org/pep-0289/",
+        "https://realpython.com/list-comprehension-python/"
+      ]
+    },
+    {
+      "pattern_id": "python_async_await",
+      "name": "Async/Await for Concurrent I/O",
+      "category": "Concurrency",
+      "severity": "high",
+      "description": "Use async/await for efficient concurrent I/O operations",
+
+      "bad_example": {
+        "code": "import requests\nimport time\n\n# Synchronous blocking calls\ndef fetch_data(urls):\n    results = []\n    for url in urls:\n        response = requests.get(url)  # Blocks\n        results.append(response.json())\n    return results\n\n# Threading with shared state issues\nimport threading\nresults = []\nlock = threading.Lock()\n\ndef fetch_url(url):\n    response = requests.get(url)\n    with lock:\n        results.append(response.json())\n\nthreads = []\nfor url in urls:\n    t = threading.Thread(target=fetch_url, args=(url,))\n    threads.append(t)\n    t.start()\n\nfor t in threads:\n    t.join()",
+        "issues": [
+          "Sequential execution",
+          "Poor resource utilization",
+          "Complex threading code",
+          "GIL limitations with threads"
+        ]
+      },
+
+      "good_example": {
+        "code": "import asyncio\nimport aiohttp\nfrom typing import List, Dict, Any\n\nasync def fetch_url(session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:\n    \"\"\"Fetch a single URL asynchronously.\"\"\"\n    async with session.get(url) as response:\n        return await response.json()\n\nasync def fetch_all(urls: List[str]) -> List[Dict[str, Any]]:\n    \"\"\"Fetch all URLs concurrently.\"\"\"\n    async with aiohttp.ClientSession() as session:\n        tasks = [fetch_url(session, url) for url in urls]\n        return await asyncio.gather(*tasks)\n\n# Usage\nasync def main():\n    urls = ['http://api1.com', 'http://api2.com']\n    results = await fetch_all(urls)\n    return results\n\n# Run\nresults = asyncio.run(main())\n\n# With error handling\nasync def fetch_url_safe(\n    session: aiohttp.ClientSession,\n    url: str\n) -> Optional[Dict[str, Any]]:\n    try:\n        async with session.get(url, timeout=10) as response:\n            response.raise_for_status()\n            return await response.json()\n    except (aiohttp.ClientError, asyncio.TimeoutError) as e:\n        print(f\"Error fetching {url}: {e}\")\n        return None\n\n# Async context manager\nclass AsyncDatabase:\n    async def __aenter__(self):\n        self.conn = await asyncpg.connect('postgresql://...')\n        return self\n    \n    async def __aexit__(self, *args):\n        await self.conn.close()\n    \n    async def fetch_users(self):\n        return await self.conn.fetch('SELECT * FROM users')\n\n# Usage\nasync with AsyncDatabase() as db:\n    users = await db.fetch_users()\n\n# Async generator\nasync def paginated_fetch(base_url: str):\n    page = 1\n    async with aiohttp.ClientSession() as session:\n        while True:\n            url = f\"{base_url}?page={page}\"\n            async with session.get(url) as response:\n                data = await response.json()\n                if not data['items']:\n                    break\n                for item in data['items']:\n                    yield item\n                page += 1",
+        "benefits": [
+          "Concurrent I/O operations",
+          "Better resource utilization",
+          "Clean async/await syntax",
+          "Scalable for many connections"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/library/asyncio.html",
+        "https://peps.python.org/pep-0492/",
+        "https://realpython.com/async-io-python/"
+      ]
+    },
+    {
+      "pattern_id": "python_dataclasses",
+      "name": "Dataclasses for Clean Data Structures",
+      "category": "Data Structures",
+      "severity": "medium",
+      "description": "Use dataclasses for clean, maintainable data structures",
+
+      "bad_example": {
+        "code": "# Manual class with boilerplate\nclass User:\n    def __init__(self, id, name, email, age=None):\n        self.id = id\n        self.name = name\n        self.email = email\n        self.age = age\n    \n    def __repr__(self):\n        return f\"User(id={self.id}, name={self.name}, email={self.email}, age={self.age})\"\n    \n    def __eq__(self, other):\n        if not isinstance(other, User):\n            return False\n        return (self.id == other.id and \n                self.name == other.name and\n                self.email == other.email and\n                self.age == other.age)\n    \n    def __hash__(self):\n        return hash((self.id, self.name, self.email, self.age))\n\n# Using dict for structured data\nuser = {'id': 1, 'name': 'John', 'email': 'john@example.com'}\n# No type checking, easy to misspell keys",
+        "issues": [
+          "Lots of boilerplate",
+          "Error-prone implementation",
+          "No type checking",
+          "Manual equality/hash"
+        ]
+      },
+
+      "good_example": {
+        "code": "from dataclasses import dataclass, field, asdict, replace\nfrom typing import Optional, List\nfrom datetime import datetime\n\n@dataclass\nclass User:\n    \"\"\"User data model with automatic methods.\"\"\"\n    id: int\n    name: str\n    email: str\n    age: Optional[int] = None\n    created_at: datetime = field(default_factory=datetime.now)\n    tags: List[str] = field(default_factory=list)\n    \n    def __post_init__(self):\n        \"\"\"Validation after initialization.\"\"\"\n        if self.age is not None and self.age < 0:\n            raise ValueError(\"Age cannot be negative\")\n    \n    @property\n    def display_name(self) -> str:\n        return f\"{self.name} ({self.email})\"\n\n# Frozen (immutable) dataclass\n@dataclass(frozen=True)\nclass Point:\n    x: float\n    y: float\n    \n    def distance_from_origin(self) -> float:\n        return (self.x ** 2 + self.y ** 2) ** 0.5\n\n# With ordering\n@dataclass(order=True)\nclass PrioritizedTask:\n    priority: int\n    name: str = field(compare=False)\n    description: str = field(compare=False, default=\"\")\n\n# Usage\nuser = User(1, \"John\", \"john@example.com\", age=30)\nprint(user)  # Clean repr\nuser_dict = asdict(user)  # Convert to dict\nmodified = replace(user, age=31)  # Create modified copy\n\n# Inheritance\n@dataclass\nclass Employee(User):\n    department: str = \"Engineering\"\n    salary: float = field(repr=False)  # Hide from repr\n\n# With slots for memory efficiency\n@dataclass(slots=True)\nclass LargeData:\n    value: float\n    timestamp: datetime",
+        "benefits": [
+          "Automatic __init__, __repr__, __eq__",
+          "Type hints built-in",
+          "Less boilerplate",
+          "Immutability option",
+          "Memory efficient with slots"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/library/dataclasses.html",
+        "https://peps.python.org/pep-0557/",
+        "https://realpython.com/python-data-classes/"
+      ]
+    },
+    {
+      "pattern_id": "python_exception_handling",
+      "name": "Proper Exception Handling",
+      "category": "Error Handling",
+      "severity": "high",
+      "description": "Handle exceptions specifically and provide context",
+
+      "bad_example": {
+        "code": "# Catching all exceptions\ntry:\n    result = process_data(input)\nexcept:\n    pass  # Silent failure\n\n# Too broad exception catching\ntry:\n    value = int(user_input)\n    result = data[value]\n    processed = calculate(result)\nexcept Exception as e:\n    print(\"Something went wrong\")\n\n# No context in re-raised exceptions\ndef process_file(path):\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except:\n        raise  # No context about which file",
+        "issues": [
+          "Silent failures",
+          "Lost error information",
+          "Hard to debug",
+          "Catches system exits"
+        ]
+      },
+
+      "good_example": {
+        "code": "import logging\nfrom typing import Optional, Union\n\nlogger = logging.getLogger(__name__)\n\n# Specific exception handling\ndef parse_number(value: str) -> Optional[int]:\n    \"\"\"Parse string to int with proper error handling.\"\"\"\n    try:\n        return int(value)\n    except ValueError:\n        logger.warning(f\"Invalid number format: {value!r}\")\n        return None\n    except TypeError:\n        logger.error(f\"Expected string, got {type(value).__name__}\")\n        return None\n\n# Multiple specific exceptions\ndef read_config(path: str) -> dict:\n    try:\n        with open(path) as f:\n            return json.load(f)\n    except FileNotFoundError:\n        logger.error(f\"Config file not found: {path}\")\n        return {}\n    except json.JSONDecodeError as e:\n        logger.error(f\"Invalid JSON in {path}: {e}\")\n        raise ConfigError(f\"Failed to parse config at {path}\") from e\n    except PermissionError:\n        logger.error(f\"No permission to read {path}\")\n        raise\n\n# Custom exceptions with context\nclass DataProcessingError(Exception):\n    \"\"\"Raised when data processing fails.\"\"\"\n    def __init__(self, message: str, data: Any = None):\n        super().__init__(message)\n        self.data = data\n\ndef process_batch(items: List[dict]) -> List[dict]:\n    results = []\n    errors = []\n    \n    for i, item in enumerate(items):\n        try:\n            result = process_item(item)\n            results.append(result)\n        except ValidationError as e:\n            errors.append(f\"Item {i}: {e}\")\n            continue  # Process remaining items\n        except Exception as e:\n            # Add context and re-raise\n            raise DataProcessingError(\n                f\"Failed at item {i}: {e}\",\n                data=item\n            ) from e\n    \n    if errors:\n        logger.warning(f\"Processing completed with {len(errors)} errors\")\n    \n    return results\n\n# Using else and finally\ndef safe_divide(a: float, b: float) -> Union[float, str]:\n    try:\n        result = a / b\n    except ZeroDivisionError:\n        return \"Cannot divide by zero\"\n    else:\n        # Runs only if no exception\n        logger.debug(f\"Calculated {a}/{b} = {result}\")\n        return result\n    finally:\n        # Always runs\n        logger.debug(\"Division operation completed\")\n\n# Context in exception chains\nclass DatabaseError(Exception):\n    pass\n\ndef get_user(user_id: int) -> dict:\n    try:\n        conn = get_connection()\n        return conn.execute(\"SELECT * FROM users WHERE id = ?\", [user_id])\n    except ConnectionError as e:\n        raise DatabaseError(\n            f\"Failed to fetch user {user_id}: Database connection failed\"\n        ) from e",
+        "benefits": [
+          "Specific error handling",
+          "Proper logging",
+          "Exception chaining",
+          "Better debugging"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/tutorial/errors.html",
+        "https://peps.python.org/pep-3134/",
+        "https://realpython.com/python-exceptions/"
+      ]
+    },
+    {
+      "pattern_id": "python_decorators",
+      "name": "Effective Use of Decorators",
+      "category": "Code Organization",
+      "severity": "medium",
+      "description": "Use decorators for cross-cutting concerns and clean code",
+
+      "bad_example": {
+        "code": "import time\n\n# Repetitive timing code\ndef slow_function():\n    start = time.time()\n    time.sleep(1)\n    result = \"done\"\n    end = time.time()\n    print(f\"Took {end - start} seconds\")\n    return result\n\n# Manual caching\ncache = {}\ndef expensive_function(n):\n    if n in cache:\n        return cache[n]\n    result = n ** 2\n    cache[n] = result\n    return result",
+        "issues": [
+          "Code repetition",
+          "Mixed concerns",
+          "Hard to maintain"
+        ]
+      },
+
+      "good_example": {
+        "code": "import time\nimport functools\nfrom typing import Callable, Any\nimport logging\n\n# Timing decorator\ndef timer(func: Callable) -> Callable:\n    \"\"\"Decorator to time function execution.\"\"\"\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        start = time.perf_counter()\n        result = func(*args, **kwargs)\n        end = time.perf_counter()\n        print(f\"{func.__name__} took {end - start:.3f} seconds\")\n        return result\n    return wrapper\n\n@timer\ndef slow_function():\n    time.sleep(1)\n    return \"done\"\n\n# Parameterized decorator\ndef retry(max_attempts: int = 3, delay: float = 1.0):\n    \"\"\"Retry decorator with configurable attempts.\"\"\"\n    def decorator(func: Callable) -> Callable:\n        @functools.wraps(func)\n        def wrapper(*args, **kwargs):\n            for attempt in range(max_attempts):\n                try:\n                    return func(*args, **kwargs)\n                except Exception as e:\n                    if attempt == max_attempts - 1:\n                        raise\n                    logging.warning(\n                        f\"Attempt {attempt + 1} failed: {e}. Retrying...\"\n                    )\n                    time.sleep(delay)\n        return wrapper\n    return decorator\n\n@retry(max_attempts=5, delay=2.0)\ndef unstable_api_call():\n    # May fail randomly\n    return requests.get(\"https://api.example.com\")\n\n# Built-in decorators\n@functools.lru_cache(maxsize=128)\ndef expensive_function(n: int) -> int:\n    \"\"\"Cached computation.\"\"\"\n    return n ** 2\n\n# Property decorator\nclass Temperature:\n    def __init__(self, celsius: float = 0):\n        self._celsius = celsius\n    \n    @property\n    def fahrenheit(self) -> float:\n        return self._celsius * 9/5 + 32\n    \n    @fahrenheit.setter\n    def fahrenheit(self, value: float) -> None:\n        self._celsius = (value - 32) * 5/9\n\n# Class decorator\n@dataclass\nclass Point:\n    x: float\n    y: float\n\n# Validation decorator\ndef validate_positive(func: Callable) -> Callable:\n    \"\"\"Ensure all arguments are positive.\"\"\"\n    @functools.wraps(func)\n    def wrapper(*args, **kwargs):\n        for arg in args:\n            if isinstance(arg, (int, float)) and arg < 0:\n                raise ValueError(f\"Negative value not allowed: {arg}\")\n        return func(*args, **kwargs)\n    return wrapper\n\n@validate_positive\ndef calculate_area(width: float, height: float) -> float:\n    return width * height",
+        "benefits": [
+          "Separation of concerns",
+          "Reusable functionality",
+          "Clean function code",
+          "Easy to test"
+        ]
+      },
+
+      "learning_resources": [
+        "https://docs.python.org/3/glossary.html#term-decorator",
+        "https://peps.python.org/pep-0318/",
+        "https://realpython.com/primer-on-python-decorators/"
+      ]
+    }
+  ],
+
+  "anti_patterns": [
+    {
+      "pattern_id": "python_mutable_defaults",
+      "name": "Mutable Default Arguments",
+      "severity": "high",
+      "description": "Using mutable objects as default arguments causes shared state",
+      "example": "def add_item(item, items=[]):\n    items.append(item)\n    return items  # Same list shared!",
+      "fixes": [
+        "Use None as default: def add_item(item, items=None): items = items or []",
+        "Use factory pattern for mutable defaults",
+        "Document when sharing is intentional"
+      ]
+    },
+    {
+      "pattern_id": "python_bare_except",
+      "name": "Bare Except Clauses",
+      "severity": "high",
+      "description": "Using bare except catches system exits and keyboard interrupts",
+      "example": "try:\n    risky_operation()\nexcept:\n    pass  # Catches EVERYTHING",
+      "fixes": [
+        "Catch specific exceptions: except ValueError:",
+        "Use except Exception: for broad catching",
+        "Never use bare except in production"
+      ]
+    },
+    {
+      "pattern_id": "python_import_star",
+      "name": "Import Star (from X import *)",
+      "severity": "medium",
+      "description": "Wildcard imports pollute namespace and hide dependencies",
+      "example": "from module import *  # What was imported?",
+      "fixes": [
+        "Import specific items: from module import func1, func2",
+        "Import module: import module",
+        "Use __all__ in modules to control star imports"
+      ]
+    },
+    {
+      "pattern_id": "python_comparison_none",
+      "name": "Incorrect None Comparison",
+      "severity": "low",
+      "description": "Using == for None comparison instead of is",
+      "example": "if value == None:  # Wrong\nif value != None:  # Wrong",
+      "fixes": [
+        "Use identity: if value is None:",
+        "Use is not: if value is not None:",
+        "None is a singleton, use identity check"
+      ]
+    },
+    {
+      "pattern_id": "python_late_binding_closure",
+      "name": "Late Binding Closures in Loops",
+      "severity": "medium",
+      "description": "Loop variables in closures bind late, causing unexpected behavior",
+      "example": "funcs = [lambda: i for i in range(3)]\n# All return 2!",
+      "fixes": [
+        "Use default arguments: lambda i=i: i",
+        "Use functools.partial",
+        "Create explicit scope with function"
+      ]
+    }
+  ],
+
+  "style_guide": {
+    "formatting": {
+      "line_length": 88,
+      "indentation": 4,
+      "file_encoding": "UTF-8",
+      "trailing_whitespace": false,
+      "final_newline": true,
+      "quote_style": "double quotes preferred"
+    },
+    "naming": {
+      "modules": "lowercase_with_underscores",
+      "classes": "PascalCase",
+      "functions": "snake_case",
+      "constants": "UPPER_SNAKE_CASE",
+      "private": "_leading_underscore",
+      "dunder": "__double_leading_and_trailing__"
+    },
+    "imports": {
+      "order": [
+        "standard library",
+        "third party",
+        "local application"
+      ],
+      "style": "absolute imports preferred",
+      "one_per_line": true
+    },
+    "docstrings": {
+      "style": "Google style or NumPy style",
+      "required_for": ["public modules", "classes", "functions"],
+      "first_line": "Brief description ending with period."
+    }
+  },
+
+  "testing_patterns": {
+    "framework": "pytest preferred over unittest",
+    "structure": "Mirror source structure in tests/",
+    "naming": "test_<module>.py files",
+    "fixtures": "Use pytest fixtures for setup",
+    "mocking": "Use unittest.mock or pytest-mock",
+    "coverage": "Aim for >80% coverage"
+  },
+
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2024-01-10",
+    "contributors": ["Singularity Code Quality Engine"],
+    "tags": ["python", "best-practices", "pythonic", "pep8", "type-hints"]
+  }
+}

@@ -1,3 +1,4 @@
+#![allow(clippy::module_inception)]
 //! Shared Types for Codebase Analysis
 //!
 //! This module provides shared types used across all codebase analysis systems

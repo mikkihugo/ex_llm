@@ -1,0 +1,486 @@
+{
+  "framework_id": "hipaa",
+  "name": "HIPAA - Health Insurance Portability and Accountability Act",
+  "description": "HIPAA Security Rule and Privacy Rule compliance for protecting Protected Health Information (PHI)",
+  "version": "2.0",
+  "applicable_to": ["healthcare", "all"],
+  "last_updated": "2025-10-30",
+
+  "phi_detection": {
+    "sensitive_data_types": [
+      "patient_name",
+      "medical_record_number",
+      "social_security_number",
+      "date_of_birth",
+      "contact_information",
+      "health_plan_numbers",
+      "account_numbers",
+      "certificate_license_numbers",
+      "vehicle_identifiers",
+      "device_identifiers",
+      "web_urls",
+      "ip_addresses",
+      "biometric_identifiers",
+      "face_photos",
+      "unique_identifiers"
+    ],
+    "detection_patterns": [
+      "Patient names in logs",
+      "Medical record numbers hardcoded",
+      "PHI in error messages",
+      "PHI transmitted unencrypted",
+      "SSN without masking",
+      "Birth dates in clear text",
+      "Diagnosis codes exposed"
+    ]
+  },
+
+  "compliance_controls": [
+    {
+      "control_id": "164.308(a)(1)(i)",
+      "control_name": "Security Management Process",
+      "category": "Administrative Safeguards",
+      "description": "Implement policies and procedures to prevent, detect, contain, and correct security violations.",
+      "code_requirements": [
+        {
+          "requirement": "Risk assessment and management",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_security_assessment",
+            "unchecked_vulnerabilities",
+            "no_incident_response"
+          ],
+          "good_patterns": [
+            "vulnerability_scanning",
+            "security_audit_trails",
+            "incident_response_system"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.308(a)(3)(i)",
+      "control_name": "Workforce Security",
+      "category": "Administrative Safeguards",
+      "description": "Implement policies and procedures to ensure that all members of its workforce have appropriate access to ePHI.",
+      "code_requirements": [
+        {
+          "requirement": "Authorization and access control",
+          "languages": ["all"],
+          "bad_patterns": [
+            "blanket_phi_access",
+            "no_role_based_access",
+            "shared_accounts"
+          ],
+          "good_patterns": [
+            "role_based_phi_access",
+            "minimum_necessary_access",
+            "individual_user_accounts"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.308(a)(4)(i)",
+      "control_name": "Information Access Management",
+      "category": "Administrative Safeguards",
+      "description": "Implement policies and procedures for authorizing access to ePHI.",
+      "code_requirements": [
+        {
+          "requirement": "Access authorization workflow",
+          "languages": ["all"],
+          "bad_patterns": [
+            "automatic_phi_access",
+            "no_access_approval",
+            "no_access_review"
+          ],
+          "good_patterns": [
+            "access_approval_workflow",
+            "periodic_access_review",
+            "documented_access_grants"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "164.308(a)(5)(i)",
+      "control_name": "Security Awareness and Training",
+      "category": "Administrative Safeguards",
+      "description": "Implement a security awareness and training program for all members of workforce.",
+      "code_requirements": [
+        {
+          "requirement": "Security training tracking",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_training_records",
+            "no_security_reminders",
+            "no_phishing_awareness"
+          ],
+          "good_patterns": [
+            "training_completion_tracking",
+            "security_alerts_system",
+            "phishing_simulation"
+          ],
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(a)(1)",
+      "control_name": "Access Control",
+      "category": "Technical Safeguards",
+      "description": "Implement technical policies and procedures for electronic information systems that maintain ePHI to allow access only to authorized persons.",
+      "code_requirements": [
+        {
+          "requirement": "Unique user identification",
+          "languages": ["all"],
+          "bad_patterns": [
+            "shared_credentials",
+            "generic_accounts",
+            "no_user_attribution"
+          ],
+          "good_patterns": [
+            "unique_user_ids",
+            "individual_authentication",
+            "user_activity_tracking"
+          ],
+          "severity": "critical"
+        },
+        {
+          "requirement": "Automatic logoff",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_session_timeout",
+            "permanent_sessions",
+            "no_idle_detection"
+          ],
+          "good_patterns": [
+            "15_minute_timeout",
+            "idle_session_termination",
+            "forced_reauth"
+          ],
+          "severity": "high"
+        },
+        {
+          "requirement": "Encryption and decryption",
+          "languages": ["all"],
+          "bad_patterns": [
+            "plaintext_phi_storage",
+            "weak_encryption",
+            "no_key_management"
+          ],
+          "good_patterns": [
+            "aes_256_encryption",
+            "secure_key_storage",
+            "field_level_encryption"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(a)(2)(i)",
+      "control_name": "Unique User Identification",
+      "category": "Technical Safeguards",
+      "description": "Assign a unique name and/or number for identifying and tracking user identity.",
+      "code_requirements": [
+        {
+          "requirement": "All PHI access must be logged with user identification",
+          "languages": ["all"],
+          "bad_patterns": [
+            "anonymous_phi_access",
+            "shared_credentials",
+            "no_user_tracking"
+          ],
+          "good_patterns": [
+            "individual_user_ids",
+            "audit_trail_with_user_id",
+            "centralized_identity_management"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(b)",
+      "control_name": "Audit Controls",
+      "category": "Technical Safeguards",
+      "description": "Implement hardware, software, and/or procedural mechanisms that record and examine activity in information systems that contain or use ePHI.",
+      "code_requirements": [
+        {
+          "requirement": "Comprehensive audit logging",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_phi_access_logging",
+            "no_modification_tracking",
+            "deletable_audit_logs"
+          ],
+          "good_patterns": [
+            "immutable_audit_logs",
+            "all_phi_access_logged",
+            "detailed_activity_tracking"
+          ],
+          "severity": "critical"
+        },
+        {
+          "requirement": "Log review and monitoring",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_log_monitoring",
+            "no_anomaly_detection",
+            "unreviewed_logs"
+          ],
+          "good_patterns": [
+            "automated_log_analysis",
+            "real_time_alerting",
+            "regular_log_review"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(c)(1)",
+      "control_name": "Integrity Controls",
+      "category": "Technical Safeguards",
+      "description": "Implement policies and procedures to protect ePHI from improper alteration or destruction.",
+      "code_requirements": [
+        {
+          "requirement": "Data integrity verification",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_data_validation",
+            "no_integrity_checks",
+            "undetected_modifications"
+          ],
+          "good_patterns": [
+            "checksum_validation",
+            "digital_signatures",
+            "version_control"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(d)",
+      "control_name": "Person or Entity Authentication",
+      "category": "Technical Safeguards",
+      "description": "Implement procedures to verify that a person or entity seeking access to ePHI is the one claimed.",
+      "code_requirements": [
+        {
+          "requirement": "Strong authentication",
+          "languages": ["all"],
+          "bad_patterns": [
+            "weak_passwords",
+            "no_mfa",
+            "basic_auth_only"
+          ],
+          "good_patterns": [
+            "multi_factor_auth",
+            "biometric_auth",
+            "certificate_based_auth"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.312(e)(1)",
+      "control_name": "Transmission Security",
+      "category": "Technical Safeguards",
+      "description": "Implement technical security measures to guard against unauthorized access to ePHI that is being transmitted over an electronic communications network.",
+      "code_requirements": [
+        {
+          "requirement": "Encryption in transit",
+          "languages": ["all"],
+          "bad_patterns": [
+            "http_phi_transmission",
+            "unencrypted_email",
+            "plaintext_api_calls"
+          ],
+          "good_patterns": [
+            "tls_1_2_minimum",
+            "encrypted_email",
+            "vpn_connections"
+          ],
+          "severity": "critical"
+        }
+      ]
+    },
+    {
+      "control_id": "164.314(a)(1)",
+      "control_name": "Business Associate Contracts",
+      "category": "Organizational Requirements",
+      "description": "The contract between a covered entity and a business associate must provide that the business associate will appropriately safeguard the information.",
+      "code_requirements": [
+        {
+          "requirement": "Third-party data protection",
+          "languages": ["all"],
+          "bad_patterns": [
+            "unrestricted_api_access",
+            "no_partner_authentication",
+            "unencrypted_data_sharing"
+          ],
+          "good_patterns": [
+            "api_key_management",
+            "partner_authentication",
+            "encrypted_data_exchange"
+          ],
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "control_id": "164.316(b)(1)",
+      "control_name": "Documentation",
+      "category": "Documentation Requirements",
+      "description": "Maintain the policies and procedures implemented to comply with this subpart in written (which may be electronic) form.",
+      "code_requirements": [
+        {
+          "requirement": "Security documentation",
+          "languages": ["all"],
+          "bad_patterns": [
+            "no_security_policies",
+            "outdated_documentation",
+            "no_change_tracking"
+          ],
+          "good_patterns": [
+            "documented_security_controls",
+            "version_controlled_policies",
+            "audit_ready_documentation"
+          ],
+          "severity": "medium"
+        }
+      ]
+    }
+  ],
+
+  "code_checks": [
+    {
+      "check_name": "PHI Data Detection",
+      "check_id": "hipaa_phi_detection",
+      "description": "Detect exposed PHI in code and logs",
+      "severity": "critical",
+      "framework_controls": ["164.312(a)(1)", "164.312(c)(1)"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "SSN regex: \\d{3}-\\d{2}-\\d{4}",
+          "MRN patterns in code",
+          "Patient names in logs",
+          "Unmasked dates of birth",
+          "Medical diagnosis codes"
+        ]
+      }
+    },
+    {
+      "check_name": "Encryption Verification",
+      "check_id": "hipaa_encryption",
+      "description": "Verify PHI encryption at rest and in transit",
+      "severity": "critical",
+      "framework_controls": ["164.312(a)(1)", "164.312(e)(1)"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Plaintext PHI storage",
+          "HTTP endpoints for PHI",
+          "Unencrypted database fields",
+          "Weak encryption algorithms"
+        ]
+      }
+    },
+    {
+      "check_name": "Access Control Implementation",
+      "check_id": "hipaa_access_control",
+      "description": "Verify proper access controls for PHI",
+      "severity": "critical",
+      "framework_controls": ["164.308(a)(3)(i)", "164.308(a)(4)(i)", "164.312(a)(1)"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "Missing authorization checks",
+          "Blanket PHI access",
+          "No role-based access control",
+          "Shared account usage"
+        ]
+      }
+    },
+    {
+      "check_name": "Audit Logging Compliance",
+      "check_id": "hipaa_audit_logging",
+      "description": "Verify comprehensive audit logging for PHI access",
+      "severity": "critical",
+      "framework_controls": ["164.312(b)"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "No PHI access logging",
+          "Missing user identification in logs",
+          "Deletable audit logs",
+          "PHI data in log files"
+        ]
+      }
+    },
+    {
+      "check_name": "Session Management",
+      "check_id": "hipaa_session",
+      "description": "Verify automatic logoff implementation",
+      "severity": "high",
+      "framework_controls": ["164.312(a)(1)"],
+      "detection_rules": {
+        "languages": ["all"],
+        "patterns": [
+          "No session timeout",
+          "Session timeout > 15 minutes",
+          "No idle detection",
+          "Persistent sessions"
+        ]
+      }
+    }
+  ],
+
+  "remediation_roadmap": {
+    "phase_1": {
+      "timeline": "30 days",
+      "controls": ["164.312(a)(1)", "164.312(e)(1)", "164.312(b)"],
+      "tasks": [
+        "Implement PHI encryption at rest and in transit",
+        "Deploy comprehensive audit logging",
+        "Configure 15-minute session timeouts",
+        "Implement unique user identification"
+      ]
+    },
+    "phase_2": {
+      "timeline": "60 days",
+      "controls": ["164.308(a)(3)(i)", "164.308(a)(4)(i)", "164.312(d)"],
+      "tasks": [
+        "Deploy role-based access control for PHI",
+        "Implement multi-factor authentication",
+        "Create access approval workflow",
+        "Establish minimum necessary access principle"
+      ]
+    },
+    "phase_3": {
+      "timeline": "90 days",
+      "controls": ["164.308(a)(1)(i)", "164.308(a)(5)(i)", "164.316(b)(1)"],
+      "tasks": [
+        "Conduct comprehensive risk assessment",
+        "Implement security training program",
+        "Document all security controls",
+        "Establish incident response procedures"
+      ]
+    }
+  },
+
+  "references": [
+    "https://www.hhs.gov/hipaa/for-professionals/security/index.html",
+    "HIPAA Security Rule 45 CFR Part 164 Subpart C",
+    "HIPAA Privacy Rule 45 CFR Part 164 Subpart E",
+    "NIST SP 800-66 Rev 2",
+    "HHS Security Risk Assessment Tool"
+  ]
+}

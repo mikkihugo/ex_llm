@@ -1,0 +1,62 @@
+{
+  "pattern_id": "owasp_vulnerable_deps",
+  "name": "Using Components with Known Vulnerabilities",
+  "cwe": "CWE-1035",
+  "owasp_category": "A06:2021 - Vulnerable and Outdated Components",
+  "severity": "high",
+  "applicable_languages": ["python", "javascript", "java", "go", "php", "ruby", "csharp"],
+  "description": "Using outdated or vulnerable third-party components exposes applications to known security vulnerabilities",
+  "vulnerability_patterns": [
+    {
+      "language": "javascript",
+      "bad_code": [
+        "\"lodash\": \"^3.0.0\"",
+        "\"jquery\": \"<3.5.0\"",
+        "\"express\": \"3.x\"",
+        "\"angular\": \"1.x\""
+      ],
+      "good_code": [
+        "\"lodash\": \"^4.17.21\"",
+        "\"jquery\": \"^3.6.0\"",
+        "\"express\": \"^4.18.0\"",
+        "\"@angular/core\": \"^15.0.0\""
+      ]
+    },
+    {
+      "language": "python",
+      "bad_code": [
+        "Django==1.11",
+        "Flask==0.12",
+        "requests==2.5.0",
+        "PyYAML==3.13"
+      ],
+      "good_code": [
+        "Django>=4.1",
+        "Flask>=2.2.0",
+        "requests>=2.28.0",
+        "PyYAML>=6.0"
+      ]
+    }
+  ],
+  "detection_rules": {
+    "tools": ["npm audit", "pip-audit", "safety", "snyk", "OWASP Dependency Check"],
+    "indicators": ["Outdated packages", "Known CVEs", "End-of-life versions"]
+  },
+  "remediation": {
+    "steps": [
+      "Regularly update dependencies",
+      "Use dependency scanning tools",
+      "Subscribe to security advisories",
+      "Implement automated dependency updates",
+      "Maintain Software Bill of Materials (SBOM)"
+    ]
+  },
+  "impact": {
+    "severity_score": 8.0,
+    "business_impact": "Exploitation of known vulnerabilities, data breach, service compromise"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "tags": ["dependencies", "supply-chain", "third-party"]
+  }
+}

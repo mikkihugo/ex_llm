@@ -52,7 +52,7 @@ defmodule Singularity.Evolution.MetricsReporter do
 
       # Record single metric
       MetricsReporter.record_metric(
-        Singularity.Agents.QualityEnforcer,
+        Singularity.Agents.CodeQualityAgent,
         :execution_time,
         125.5
       )
@@ -68,7 +68,7 @@ defmodule Singularity.Evolution.MetricsReporter do
       )
 
       # Get cached metrics
-      {:ok, metrics} = MetricsReporter.get_metrics(Singularity.Agents.QualityEnforcer)
+      {:ok, metrics} = MetricsReporter.get_metrics(Singularity.Agents.CodeQualityAgent)
 
       # Force immediate flush
       MetricsReporter.flush()
@@ -109,7 +109,7 @@ defmodule Singularity.Evolution.MetricsReporter do
     A[MetricsReporter] -->|buffer| B[In-Memory Buffer]
     A -->|cache| C[ETS Cache]
 
-    D[QualityEnforcer] -->|record_metric| A
+    D[CodeQualityAgent] -->|record_metric| A
     E[CostOptimizedAgent] -->|record_metric| A
     F[RefactoringAgent] -->|record_metric| A
 
@@ -200,7 +200,7 @@ defmodule Singularity.Evolution.MetricsReporter do
   ## Examples
 
       MetricsReporter.record_metric(
-        Singularity.Agents.QualityEnforcer,
+        Singularity.Agents.CodeQualityAgent,
         :execution_time,
         125.5
       )
@@ -259,7 +259,7 @@ defmodule Singularity.Evolution.MetricsReporter do
 
   ## Examples
 
-      {:ok, metrics} = MetricsReporter.get_metrics(Singularity.Agents.QualityEnforcer)
+      {:ok, metrics} = MetricsReporter.get_metrics(Singularity.Agents.CodeQualityAgent)
       # => %{execution_time: [125.5, 130.2, ...], success_rate: [0.97, 0.96, ...]}
   """
   def get_metrics(agent_type) do
