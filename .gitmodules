@@ -1,9 +1,9 @@
-[submodule "packages/ex_quantum_flow"]
-	path = packages/ex_quantum_flow
-	url = git@github.com:mikkihugo/ex_quantum_flow.git
-[submodule "packages/ex_llm"]
-	path = packages/ex_llm
-	url = https://github.com/mikkihugo/ex_llm.git
-[submodule "packages/singularity-code-analysis"]
-	path = packages/singularity-code-analysis
-	url = git@github.com:mikkihugo/singularity-code-analysis.git
+[submodule "packages/singularity-workflows"]
+	path = packages/singularity-workflows
+	url = https://github.com/Singularity-ng/singularity-workflows.git
+[submodule "packages/singularity-llm"]
+	path = packages/singularity-llm
+	url = https://github.com/Singularity-ng/singularity-llm.git
+[submodule "packages/singularity-analysis"]
+	path = packages/singularity-analysis
+	url = https://github.com/Singularity-ng/singularity-analysis.git
