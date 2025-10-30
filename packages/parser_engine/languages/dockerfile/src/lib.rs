@@ -1,7 +1,8 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Language, Parser, Query, QueryCursor};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
+use streaming_iterator::StreamingIterator;
 
 /// Dockerfile parser using tree-sitter-dockerfile
 pub struct DockerfileParser {
@@ -13,13 +14,13 @@ pub struct DockerfileParser {
 impl DockerfileParser {
     /// Create a new Dockerfile parser
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let language = tree_sitter_dockerfile::language();
+        let language = tree_sitter_dockerfile_updated::language();
         let mut parser = Parser::new();
-        parser.set_language(language)?;
-        
+        parser.set_language(&language)?;
+
         // Query for common Dockerfile elements
         let query = Query::new(
-            language,
+            &language,
             r#"
             (from_statement) @from
             (run_statement) @run
@@ -54,13 +55,13 @@ impl DockerfileParser {
     pub fn parse(&mut self, content: &str) -> Result<DockerfileDocument, Box<dyn std::error::Error>> {
         let tree = self.parser.parse(content, None)
             .ok_or("Failed to parse Dockerfile")?;
-        
+
         let mut cursor = QueryCursor::new();
-        let captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
-        
+        let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
+
         let mut document = DockerfileDocument::new();
-        
-        for (matched_node, _) in captures {
+
+        while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
                 let text = &content[node.byte_range()];
@@ -709,7 +710,7 @@ impl LanguageParser for DockerfileParser {
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(self.language)
+        parser.set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
         
         let tree = parser.parse(content, None)
@@ -741,9 +742,9 @@ impl LanguageParser for DockerfileParser {
         // Count Dockerfile instructions
         let mut instruction_count = 0;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for _match in matches {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        while let Some(_) = matches.next() {
             instruction_count += 1;
         }
         
@@ -755,6 +756,7 @@ impl LanguageParser for DockerfileParser {
             functions: instruction_count as u64,
             classes: 0, // Dockerfiles don't have classes
             complexity_score: instruction_count as f64,
+            imports: 0, // Dockerfiles don't have imports
         })
     }
 
@@ -762,9 +764,10 @@ impl LanguageParser for DockerfileParser {
         let mut functions = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for (match_index, _match) in matches.enumerate() {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        let mut match_index = 0;
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 let node = capture.node;
                 let instruction_type = node.kind();
@@ -792,8 +795,9 @@ impl LanguageParser for DockerfileParser {
                     body: Some(instruction_content.to_string()),
                 });
             }
+            match_index += 1;
         }
-        
+
         Ok(functions)
     }
 
@@ -807,9 +811,9 @@ impl LanguageParser for DockerfileParser {
         let mut comments = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for _match in matches {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 if capture.node.kind() == "comment" {
                     let node = capture.node;
@@ -821,6 +825,7 @@ impl LanguageParser for DockerfileParser {
                         content: comment_content.to_string(),
                         line,
                         column,
+                        kind: "line".to_string(),
                     });
                 }
             }

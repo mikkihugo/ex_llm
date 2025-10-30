@@ -12,10 +12,6 @@ use anyhow::Error;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-// use async_nats::Client;  // DISABLED - NATS removed
-
-/// Placeholder for NATS client (disabled)
-type Client = ();
 
 /// Pure computation prompt tracking storage
 ///
@@ -29,8 +25,6 @@ pub struct PromptTrackingStorage {
     feedback: HashMap<String, PromptFeedback>,
     /// In-memory cache of context signatures
     context_signatures: HashMap<String, ContextSignature>,
-    /// NATS client for NIF-based storage operations
-    nats_client: Option<Client>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,7 +62,6 @@ impl PromptTrackingStorage {
             executions: HashMap::new(),
             feedback: HashMap::new(),
             context_signatures: HashMap::new(),
-            nats_client: None,
         })
     }
 
@@ -82,15 +75,7 @@ impl PromptTrackingStorage {
             executions: HashMap::new(),
             feedback: HashMap::new(),
             context_signatures: HashMap::new(),
-            nats_client: None, // NATS disabled
         })
-    }
-
-    /// Set NATS client for storage operations
-    /// NOTE: NATS disabled - stub implementation
-    pub fn with_nats_client(self, _client: Client) -> Self {
-        // NATS client disabled
-        self
     }
 
     /// Store execution in memory

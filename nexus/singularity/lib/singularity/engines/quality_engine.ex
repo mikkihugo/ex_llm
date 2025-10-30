@@ -12,10 +12,11 @@ defmodule Singularity.LintingEngine do
   """
 
   # NOTE: Rustler compilation is optional - guard NIF calls if crate not available
-  use Rustler,
-    otp_app: :singularity,
-    crate: "quality_engine",
-    path: "../../packages/code_quality_engine"
+  # TEMPORARILY DISABLED: Rustler 0.37 has workspace config issues
+  # use Rustler,
+  #   otp_app: :singularity,
+  #   crate: "quality_engine",
+  #   path: "../../packages/code_quality_engine"
 
   require Logger
 

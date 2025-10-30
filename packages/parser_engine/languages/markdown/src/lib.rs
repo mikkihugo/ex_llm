@@ -1,7 +1,8 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, Tree};
+use tree_sitter::{Language, Parser, Query, QueryCursor};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
+use streaming_iterator::StreamingIterator;
 
 /// Markdown parser using tree-sitter-markdown
 ///
@@ -49,13 +50,13 @@ impl MarkdownParser {
     pub fn parse(&mut self, content: &str) -> Result<MarkdownDocument, Box<dyn std::error::Error>> {
         let tree = self.parser.parse(content, None)
             .ok_or("Failed to parse Markdown")?;
-        
+
         let mut cursor = QueryCursor::new();
-        let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
-        
+        let mut matches = cursor.matches(&self.query, tree.root_node(), content.as_bytes());
+
         let mut document = MarkdownDocument::new();
-        
-        while let Some((matched_node, _)) = captures.next() {
+
+        while let Some(matched_node) = matches.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
                 let text = &content[node.byte_range()];
@@ -551,9 +552,9 @@ impl LanguageParser for MarkdownParser {
         // Count Markdown elements
         let mut element_count = 0;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for _match in matches {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        while let Some(_) = matches.next() {
             element_count += 1;
         }
         
@@ -565,6 +566,7 @@ impl LanguageParser for MarkdownParser {
             functions: element_count as u64,
             classes: 0, // Markdown doesn't have classes
             complexity_score: element_count as f64,
+            imports: 0, // Markdown doesn't have imports
         })
     }
 
@@ -572,9 +574,10 @@ impl LanguageParser for MarkdownParser {
         let mut functions = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for (match_index, _match) in matches.enumerate() {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        let mut match_index = 0;
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 let node = capture.node;
                 let element_type = node.kind();
@@ -582,11 +585,11 @@ impl LanguageParser for MarkdownParser {
                 let end_byte = node.end_byte();
                 let start_line = node.start_position().row as u32 + 1;
                 let end_line = node.end_position().row as u32 + 1;
-                
+
                 // Extract element content
                 let element_content = &content[start_byte..end_byte];
                 let name = format!("{}_element_{}", element_type, match_index);
-                
+
                 functions.push(FunctionInfo {
                     name,
                     line_start: start_line,
@@ -602,6 +605,7 @@ impl LanguageParser for MarkdownParser {
                     body: Some(element_content.to_string()),
                 });
             }
+            match_index += 1;
         }
         
         Ok(functions)
@@ -616,9 +620,9 @@ impl LanguageParser for MarkdownParser {
         let mut comments = Vec::new();
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
-        let matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
-        for _match in matches {
+        let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
+
+        while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 if capture.node.kind() == "html_comment" {
                     let node = capture.node;
@@ -630,6 +634,7 @@ impl LanguageParser for MarkdownParser {
                         content: comment_content.to_string(),
                         line,
                         column,
+                        kind: "html".to_string(),
                     });
                 }
             }

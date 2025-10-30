@@ -226,8 +226,6 @@ pub enum FactBuildResult {
   Failed,   // FACT build failed
 }
 
-/// Package dependency information
-
 /// FACT version tracking - multiple versions with hit-based cleanup
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FactVersionRegistry {
@@ -576,10 +574,7 @@ impl PackageFileWatcher {
   }
 
   /// Find source files in a directory
-  fn find_source_files(
-    &self,
-    dir: &std::path::Path,
-  ) -> Vec<std::path::PathBuf> {
+  fn find_source_files(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
     let mut source_files = Vec::new();
 
     if let Ok(entries) = std::fs::read_dir(dir) {
@@ -599,7 +594,7 @@ impl PackageFileWatcher {
           }
         } else if path.is_dir() {
           // Recursively search subdirectories (but limit depth to avoid infinite recursion)
-          let sub_files = self.find_source_files(&path);
+          let sub_files = Self::find_source_files(&path);
           source_files.extend(sub_files);
         }
       }

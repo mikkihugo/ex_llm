@@ -12,6 +12,9 @@ use std::sync::{Arc, RwLock};
 use crate::sparc_templates::SparcTemplateGenerator;
 use crate::PromptTemplate;
 
+/// Type alias for template performance data key: (template_id, task_type, language)
+type TemplateKey = (String, String, String);
+
 /// Performance metrics for a template
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateMetrics {
@@ -29,7 +32,7 @@ pub struct TemplateMetrics {
 /// Template performance tracker integrated with HTDAG
 pub struct TemplatePerformanceTracker {
     /// Performance data indexed by (template_id, task_type, language)
-    performance_data: Arc<RwLock<HashMap<(String, String, String), TemplateMetrics>>>,
+    performance_data: Arc<RwLock<HashMap<TemplateKey, TemplateMetrics>>>,
 
     /// Template rankings for quick lookup
     template_rankings: Arc<RwLock<Vec<(String, f64)>>>,
