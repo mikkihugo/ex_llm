@@ -1,0 +1,33 @@
+[package]
+name = "singularity-smart-package-context-http-api"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity AI <support@singularity.ai>"]
+license = "MIT"
+description = "HTTP API server for Singularity Smart Package Context"
+
+[dependencies]
+# Backend library
+singularity-smart-package-context-backend = { path = "../backend" }
+
+# Web framework
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1.35", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Utilities
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# HTTP
+http = "1.0"

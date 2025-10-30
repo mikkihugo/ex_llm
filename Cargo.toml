@@ -44,6 +44,7 @@ members = [
     "products/singularity-smart-package-context/backend",
     "products/singularity-smart-package-context/mcp-server",
     "products/singularity-smart-package-context/cli",
+    "products/singularity-smart-package-context/http-api",
 ]
 
 exclude = [
