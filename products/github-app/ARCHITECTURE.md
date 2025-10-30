@@ -34,13 +34,13 @@ All three share the same core analysis engine and contribute to the intelligence
 
 ### Integration Points
 
-#### 1. GitHub App (ci-integration/github-app/)
+#### 1. GitHub App (products/github-app/)
 - **Webhook Handler**: Receives GitHub events
 - **Analysis Orchestrator**: Uses ex_pgflow workflows
 - **Results Poster**: Comments on PRs, creates check runs
 - **Intelligence Collector**: Anonymized data → main system
 
-#### 2. GitHub Action (ci-integration/github-app/action/)
+#### 2. GitHub Action (products/github-app/action/)
 - **Docker-based**: Runs CLI tool in container
 - **CI/CD Integration**: Workflow-based execution
 - **Flexible Configuration**: Per-workflow settings
