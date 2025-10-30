@@ -133,6 +133,7 @@ defmodule Singularity.MixProject do
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
       # NOTE: Must match broadway_pgflow's dependency - use env: Mix.env() to align
+      # NOTE: override: true is necessary due to broadway_pgflow's different env specification
       {:ex_pgflow, in_umbrella: true, env: Mix.env(), override: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
