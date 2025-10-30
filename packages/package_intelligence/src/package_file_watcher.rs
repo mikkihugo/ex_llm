@@ -941,7 +941,7 @@ impl PackageFileWatcher {
 
   /// Start real-time package file watcher (ONLY package manager files)
   #[cfg(feature = "orchestration")]
-  fn start_package_file_watcher(&self) -> Result<(), Box<dyn std::error::Error>> {
+  fn start_package_file_watcher(&self) -> Result<()> {
     use tokio::sync::mpsc;
 
     info!("?? Starting real-time package file watcher (filtered)");
@@ -1025,7 +1025,7 @@ impl PackageFileWatcher {
 
   #[cfg(not(feature = "orchestration"))]
   #[allow(clippy::unused_self)]
-  fn start_package_file_watcher(&self) -> Result<(), Box<dyn std::error::Error>> {
+  fn start_package_file_watcher(&self) -> Result<()> {
     info!(
       "?? Package file watching not available (orchestration feature disabled)"
     );

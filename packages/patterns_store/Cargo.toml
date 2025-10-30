@@ -9,3 +9,9 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 thiserror = { workspace = true }
+redb = { workspace = true }
+bincode = { workspace = true }
+dirs = { workspace = true }
+chacha20poly1305 = { version = "0.10", features = ["std"] }
+rand = "0.8"
+base64 = "0.22"

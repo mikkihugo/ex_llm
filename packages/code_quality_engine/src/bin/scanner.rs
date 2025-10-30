@@ -58,10 +58,13 @@ impl CodeScanner {
         let server_run_id = self.begin_remote_run(&run_id).await?;
 
         // Create analysis input
+        let mut det_opts = code_quality_engine::analysis::architecture::DetectionOptions::default();
+        det_opts.use_learned_patterns = true; // Enable cache/learned patterns by default in Pro
+
         let input = AnalysisInput {
             path: path.to_path_buf(),
             pattern_types: None, // Run all pattern types
-            detection_options: Default::default(),
+            detection_options: det_opts,
             analysis_options: Default::default(),
             context: {
                 let mut map: HashMap<String, serde_json::Value> = HashMap::new();

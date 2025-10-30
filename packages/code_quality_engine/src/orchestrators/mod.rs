@@ -43,17 +43,31 @@ impl AnalysisOrchestrator {
         let mut results = AnalysisResults::default();
 
         // Hydrate detectors from CentralCloud when requested
+        let mut hydrated_snapshot: Option<(std::collections::HashMap<patterns_store::types::PatternKind, Vec<patterns_store::types::PatternRecord>>, u64)> = None;
         if input.detection_options.use_learned_patterns {
             let mut meta = MetaRegistry::new();
             let _ = self.pattern_orchestrator.hydrate_from_central(&mut meta).await;
+            // Try to export a snapshot from MetaRegistry (if CentralCloud provided data)
+            if let Some(snap) = meta.export_patterns_snapshot().await {
+                hydrated_snapshot = Some(snap);
+            }
         }
 
         // Attach centralized PatternStore to options if requested
         let mut det_opts = input.detection_options.clone();
         if det_opts.use_learned_patterns {
-            let store = PatternStore::new();
-            // TODO(minimal): Populate store from MetaRegistry (real data)
-            det_opts.pattern_store = Some(Arc::new(store));
+            // Try to load cached patterns (encrypted redb). Fallback to empty store.
+            let mut store = match PatternStore::load_default_cache().await {
+                Ok(s) => s,
+                Err(_) => PatternStore::new(),
+            };
+            // If we received a fresh snapshot from Central, replace and persist
+            if let Some((map, version)) = hydrated_snapshot {
+                store.replace_all(map, version).await;
+            }
+            let store = Arc::new(store);
+            let _ = store.save_default_cache().await; // persist current snapshot (cache refresh if replaced)
+            det_opts.pattern_store = Some(store);
         }
 
         // Run pattern detection (always included)

@@ -6,6 +6,8 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap as StdHashMap;
+use patterns_store::types::{PatternKind as StorePatternKind, PatternRecord as StorePatternRecord};
 
 /// Meta registry for storing and retrieving package and pattern metadata
 pub struct MetaRegistry {
@@ -56,6 +58,14 @@ impl MetaRegistry {
         // 4. Update local registry with merged results
 
         Ok(())
+    }
+
+    /// Export a snapshot of patterns learned from CentralCloud.
+    /// TODO(minimal): Wire actual data from CentralCloud response into this format.
+    pub async fn export_patterns_snapshot(
+        &self,
+    ) -> Option<(StdHashMap<StorePatternKind, Vec<StorePatternRecord>>, u64)> {
+        None
     }
 }
 
