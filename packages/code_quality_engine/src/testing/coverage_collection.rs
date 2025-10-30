@@ -333,8 +333,8 @@ impl CoverageDataCollector {
     /// Collect coverage data from all parsers
     pub async fn collect_coverage(
         &self,
-        file_paths: &[String],
-        test_results: &TestResults,
+    _file_paths: &[String],
+    _test_results: &TestResults,
     ) -> Result<CoverageCollectionResult> {
         // PSEUDO CODE:
         /*

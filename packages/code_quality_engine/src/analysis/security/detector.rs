@@ -158,7 +158,7 @@ impl SecurityPatternRegistry {
     }
 
     /// Analyze code for security issues
-    pub fn analyze(&self, content: &str, file_path: &str) -> Result<SecurityAnalysis> {
+    pub fn analyze(&self, _content: &str, _file_path: &str) -> Result<SecurityAnalysis> {
         // PSEUDO CODE:
         /*
         let mut vulnerabilities = Vec::new();

@@ -323,7 +323,7 @@ impl PerformancePatternRegistry {
     }
 
     /// Analyze code for performance issues
-    pub fn analyze(&self, content: &str, file_path: &str) -> Result<PerformanceAnalysis> {
+    pub fn analyze(&self, _content: &str, _file_path: &str) -> Result<PerformanceAnalysis> {
         // PSEUDO CODE:
         /*
         let mut bottlenecks = Vec::new();

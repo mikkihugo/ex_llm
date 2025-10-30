@@ -187,7 +187,7 @@ pub trait LanguageRefactoringProvider: Send + Sync {
     /// Get refactoring suggestions for code
     fn get_refactoring_suggestions(
         &self,
-        content: &str,
+    _content: &str,
         file_path: &str,
         config: &RefactoringConfig,
     ) -> Result<Vec<RefactoringSuggestion>>;

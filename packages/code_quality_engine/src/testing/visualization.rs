@@ -582,7 +582,7 @@ impl CoverageVisualizer {
     /// Generate coverage visualization
     pub async fn generate_visualization(
         &self,
-        coverage_analysis: &CoverageAnalysis,
+    _coverage_analysis: &CoverageAnalysis,
     ) -> Result<CoverageVisualization> {
         // PSEUDO CODE:
         /*

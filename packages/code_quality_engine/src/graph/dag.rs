@@ -481,7 +481,7 @@ impl VectorIntegration {
     /// Create file metadata from Rust parser result
     fn create_file_metadata_from_rust_result(
         &self,
-        result: &RustAnalysisResult,
+    _result: &RustAnalysisResult,
         content: &str,
     ) -> CodeMetadata {
         let complexity = ComplexityMetrics {
@@ -511,7 +511,7 @@ impl VectorIntegration {
     /// Create file metadata from Python parser result
     fn create_file_metadata_from_python_result(
         &self,
-        result: &PythonAnalysisResult,
+    _result: &PythonAnalysisResult,
         content: &str,
     ) -> CodeMetadata {
         let complexity_metrics = ComplexityMetrics {

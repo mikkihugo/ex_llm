@@ -199,7 +199,7 @@ impl CrossLanguageCodePatternsDetector {
         lang2_id: &str,
         code1: &str,
         code2: &str,
-        all_languages: &[&parser_core::language_registry::LanguageInfo],
+    _all_languages: &[&parser_core::language_registry::LanguageInfo],
     ) -> Vec<CrossLanguageCodePattern> {
         let mut patterns = vec![];
 
@@ -364,8 +364,8 @@ impl CrossLanguageCodePatternsDetector {
     #[cfg(feature = "nif")]
     fn has_error_handling_pattern_ast(
         &self,
-        code: &str,
-        language_id: &str,
+    _code: &str,
+    _language_id: &str,
         ast: Option<&AstExtraction>,
     ) -> bool {
         if let Some(ast) = ast {
@@ -391,8 +391,8 @@ impl CrossLanguageCodePatternsDetector {
     #[cfg(feature = "nif")]
     fn has_logging_pattern_ast(
         &self,
-        code: &str,
-        language_id: &str,
+    _code: &str,
+    _language_id: &str,
         ast: Option<&AstExtraction>,
     ) -> bool {
         if let Some(ast) = ast {

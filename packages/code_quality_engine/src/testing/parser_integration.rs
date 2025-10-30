@@ -124,7 +124,7 @@ pub trait ParserCoverageProvider {
     fn collect_coverage(
         &self,
         file_path: &str,
-        test_results: &TestResults,
+    _test_results: &TestResults,
     ) -> Result<ParserCoverageData>;
     fn get_coverage_thresholds(&self) -> ParserCoverageThresholds;
 }

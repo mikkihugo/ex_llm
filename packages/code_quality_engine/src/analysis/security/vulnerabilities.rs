@@ -132,7 +132,7 @@ impl VulnerabilityAnalyzer {
         let start_time = std::time::Instant::now();
 
         // Perform security analysis
-        let vulnerabilities = self.detect_vulnerabilities(content, file_path, &[]).await?;
+    let _vulnerabilities = self.detect_vulnerabilities(content, file_path, &[]).await?;
 
         let duration = start_time.elapsed();
         tracing::info!("Security analysis completed in {:?}", duration);

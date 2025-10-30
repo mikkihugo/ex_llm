@@ -301,7 +301,7 @@ impl CoverageAnalyzer {
     }
 
     /// Analyze test coverage
-    pub async fn analyze(&self, test_results: &TestResults) -> Result<CoverageAnalysis> {
+    pub async fn analyze(&self, _test_results: &TestResults) -> Result<CoverageAnalysis> {
         // PSEUDO CODE:
         /*
         // Collect coverage data from all collectors
@@ -386,7 +386,7 @@ impl CoverageAnalyzer {
     }
 
     /// Generate coverage report
-    pub async fn generate_report(&self, analysis: &CoverageAnalysis) -> Result<CoverageReport> {
+    pub async fn generate_report(&self, _analysis: &CoverageAnalysis) -> Result<CoverageReport> {
         // PSEUDO CODE:
         /*
         let report = CoverageReport {

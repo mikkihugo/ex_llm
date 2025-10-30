@@ -785,7 +785,7 @@ impl LanguageSpecificRulesAnalyzer {
         &self,
         code: &str,
         language_hint: &str,
-        tokens: &[DataToken],
+    _tokens: &[DataToken],
     ) -> Vec<RuleViolation> {
         // Resolve language via registry
         let language_info = self
