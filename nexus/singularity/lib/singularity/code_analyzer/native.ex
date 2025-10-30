@@ -387,7 +387,8 @@ defmodule Singularity.CodeAnalyzer.Native do
   - `{:ok, trends}` - Evolution trend analysis
   - `{:error, reason}` - Calculation failed
   """
-  def calculate_evolution_trends(_before_metrics, _after_metrics), do: :erlang.nif_error(:nif_not_loaded)
+  def calculate_evolution_trends(_before_metrics, _after_metrics),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
   Predict AI-generated code quality.
@@ -401,7 +402,8 @@ defmodule Singularity.CodeAnalyzer.Native do
   - `{:ok, prediction}` - Quality prediction
   - `{:error, reason}` - Prediction failed
   """
-  def predict_ai_code_quality(_code_features, _language_hint, _model_name), do: :erlang.nif_error(:nif_not_loaded)
+  def predict_ai_code_quality(_code_features, _language_hint, _model_name),
+    do: :erlang.nif_error(:nif_not_loaded)
 
   @doc """
   Calculate pattern effectiveness for AI learning.

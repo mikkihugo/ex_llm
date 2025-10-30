@@ -28,7 +28,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   def execute(goal, opts \\ []) when is_map(goal) or is_binary(goal) do
     try do
       strategies = load_strategies_for_attempt(opts)
-      
+
       # Enrich opts with complexity from centralized config if not already set
       opts = enrich_opts_with_complexity(goal, opts)
 
@@ -100,12 +100,14 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
       provider = Keyword.get(opts, :provider, "auto")
       task_type = extract_task_type_from_goal(goal)
       context = %{task_type: task_type}
-      
+
       case Config.get_task_complexity(provider, context) do
         {:ok, complexity} ->
           Keyword.put(opts, :complexity, complexity)
+
         {:error, _} ->
-          opts  # Keep opts as-is if config fails
+          # Keep opts as-is if config fails
+          opts
       end
     end
   end
@@ -113,7 +115,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
   defp extract_task_type_from_goal(goal) when is_map(goal) do
     goal[:task_type] || goal["task_type"] || goal[:type] || goal["type"] || :coder
   end
-  
+
   defp extract_task_type_from_goal(goal) when is_binary(goal) do
     # Try to infer from goal text
     cond do
@@ -123,7 +125,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
       true -> :coder
     end
   end
-  
+
   defp extract_task_type_from_goal(_), do: :coder
 
   defp load_strategies_for_attempt(opts) do
@@ -147,6 +149,7 @@ defmodule Singularity.Execution.Orchestrator.ExecutionStrategyOrchestrator do
       goal: _goal,
       available_opts: Keyword.keys(opts)
     )
+
     {:error, :no_strategy_found}
   end
 

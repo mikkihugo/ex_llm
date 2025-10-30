@@ -355,7 +355,7 @@ defmodule Singularity.Execution.StoryDecomposer do
   @doc "Decompose a user story using SPARC methodology"
   def decompose_story(story, opts \\ []) do
     start_time = System.monotonic_time(:millisecond)
-    
+
     with {:ok, specification} <- generate_specification(story, opts),
          {:ok, pseudocode} <- generate_pseudocode(specification, opts),
          {:ok, architecture} <- design_architecture(pseudocode, opts),
@@ -371,7 +371,7 @@ defmodule Singularity.Execution.StoryDecomposer do
 
       # Integrate with SPARC completion phase for code generation
       decomposition = integrate_with_sparc_completion(decomposition, opts)
-      
+
       # Track metrics for effectiveness evaluation
       track_decomposition_metrics(decomposition, start_time, opts)
 
@@ -387,12 +387,14 @@ defmodule Singularity.Execution.StoryDecomposer do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = Keyword.get(opts, :task_type, :planning)
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> Keyword.get(opts, :complexity, :medium)  # Fallback to opts or default
-    end
-    
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Fallback to opts or default
+        {:error, _} -> Keyword.get(opts, :complexity, :medium)
+      end
+
     language = Keyword.get(opts, :language, "any")
 
     # Use Lua script for SPARC specification phase
@@ -417,11 +419,12 @@ defmodule Singularity.Execution.StoryDecomposer do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = Keyword.get(opts, :task_type, :planning)
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> Keyword.get(opts, :complexity, :medium)
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        {:error, _} -> Keyword.get(opts, :complexity, :medium)
+      end
 
     case Service.call_with_script(
            "sparc/decompose-pseudocode.lua",
@@ -440,11 +443,12 @@ defmodule Singularity.Execution.StoryDecomposer do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = Keyword.get(opts, :task_type, :architect)
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> Keyword.get(opts, :complexity, :medium)
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        {:error, _} -> Keyword.get(opts, :complexity, :medium)
+      end
 
     case Service.call_with_script(
            "sparc/decompose-architecture.lua",
@@ -463,11 +467,12 @@ defmodule Singularity.Execution.StoryDecomposer do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = Keyword.get(opts, :task_type, :architect)
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> Keyword.get(opts, :complexity, :medium)
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        {:error, _} -> Keyword.get(opts, :complexity, :medium)
+      end
 
     case Service.call_with_script(
            "sparc/decompose-refinement.lua",
@@ -486,11 +491,12 @@ defmodule Singularity.Execution.StoryDecomposer do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = Keyword.get(opts, :task_type, :planning)
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> Keyword.get(opts, :complexity, :medium)
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        {:error, _} -> Keyword.get(opts, :complexity, :medium)
+      end
 
     case Service.call_with_script(
            "sparc/decompose-tasks.lua",
@@ -514,7 +520,7 @@ defmodule Singularity.Execution.StoryDecomposer do
   defp integrate_with_sparc_completion(decomposition, opts) do
     # Ensure completion tasks are passed to SPARC orchestrator for code generation
     tasks = Map.get(decomposition, :tasks, [])
-    
+
     if length(tasks) > 0 do
       # Pass completion tasks to SPARC orchestrator for code generation
       case Singularity.SPARC.Orchestrator.execute_completion_phase(tasks, opts) do
@@ -523,12 +529,14 @@ defmodule Singularity.Execution.StoryDecomposer do
             tasks_count: length(tasks),
             code_files_generated: Map.get(code_results, :files_generated, 0)
           )
+
           Map.put(decomposition, :sparc_completion_results, code_results)
 
         {:error, reason} ->
           Logger.warning("SPARC completion phase failed, continuing without code generation",
             reason: reason
           )
+
           decomposition
       end
     else
@@ -542,9 +550,9 @@ defmodule Singularity.Execution.StoryDecomposer do
     duration_ms = System.monotonic_time(:millisecond) - start_time
     tasks = Map.get(decomposition, :tasks, [])
     task_count = if is_list(tasks), do: length(tasks), else: 0
-    
+
     # Calculate task quality metrics
-    actionable_tasks = 
+    actionable_tasks =
       tasks
       |> Enum.filter(fn task ->
         cond do

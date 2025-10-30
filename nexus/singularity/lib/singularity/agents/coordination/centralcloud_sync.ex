@@ -123,6 +123,7 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
         Logger.debug("[CentralCloudSync] Error polling responses",
           error: inspect(e)
         )
+
         {:error, :poll_failed}
     end
   end

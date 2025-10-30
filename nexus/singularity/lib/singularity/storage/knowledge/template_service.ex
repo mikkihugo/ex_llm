@@ -242,7 +242,12 @@ defmodule Singularity.Knowledge.TemplateService do
       Logger.info("Template service running in local-only mode (PGFlow disabled)")
     end
 
-    {:ok, %{messaging_client: messaging_client_name, requests_handled: 0, pgflow_enabled: pgflow_enabled}}
+    {:ok,
+     %{
+       messaging_client: messaging_client_name,
+       requests_handled: 0,
+       pgflow_enabled: pgflow_enabled
+     }}
   end
 
   @impl true
@@ -276,7 +281,8 @@ defmodule Singularity.Knowledge.TemplateService do
 
   # Private Functions
 
-  defp handle_get_request(_messaging_client, artifact_type, artifact_id, reply_to) when is_binary(reply_to) do
+  defp handle_get_request(_messaging_client, artifact_type, artifact_id, reply_to)
+       when is_binary(reply_to) do
     start_time = System.monotonic_time(:microsecond)
 
     case TemplateCache.get(artifact_type, artifact_id) do

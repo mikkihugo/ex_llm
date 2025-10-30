@@ -16,8 +16,16 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
 
     # Setup test artifacts in database
     artifacts = [
-      %{id: 1, artifact_id: "int_test_artifact_1", content: %{"title" => "Integration Test 1", "description" => "Integration Description 1"}},
-      %{id: 2, artifact_id: "int_test_artifact_2", content: %{"title" => "Integration Test 2", "description" => "Integration Description 2"}},
+      %{
+        id: 1,
+        artifact_id: "int_test_artifact_1",
+        content: %{"title" => "Integration Test 1", "description" => "Integration Description 1"}
+      },
+      %{
+        id: 2,
+        artifact_id: "int_test_artifact_2",
+        content: %{"title" => "Integration Test 2", "description" => "Integration Description 2"}
+      },
       %{id: 3, artifact_id: "int_test_artifact_3", content: "Plain integration text"}
     ]
 
@@ -72,7 +80,8 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
 
       # Verify execution completed
       assert execution_result.workflow_id == workflow_id
-      assert execution_result.dry_run == true  # Default is dry run
+      # Default is dry run
+      assert execution_result.dry_run == true
       assert execution_result.node_count == 1
 
       # Verify workflow status updated
@@ -155,9 +164,11 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       assert length(execution_result.results) == 3
 
       # Check that embedding step completed
-      embedding_result = Enum.find(execution_result.results, fn r ->
-        r.node_id == "run_embeddings"
-      end)
+      embedding_result =
+        Enum.find(execution_result.results, fn r ->
+          r.node_id == "run_embeddings"
+        end)
+
       assert embedding_result.status == :ok
     end
 
@@ -172,7 +183,8 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
             worker: {BroadwayEmbeddingPipeline, :run},
             args: %{
               artifacts: List.duplicate(%{id: 1, artifact_id: "cancel_test"}, 10),
-              timeout: 1  # Very short timeout
+              # Very short timeout
+              timeout: 1
             }
           }
         ]
@@ -198,12 +210,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
 
       start_time = System.monotonic_time(:millisecond)
 
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 2,
-        batch_size: 2,
-        verbose: true
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          workers: 2,
+          batch_size: 2,
+          verbose: true
+        )
 
       end_time = System.monotonic_time(:millisecond)
       actual_duration = (end_time - start_time) / 1000
@@ -211,7 +224,8 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       assert {:ok, metrics} = result
       assert metrics.total == 3
       assert metrics.elapsed_seconds >= 0
-      assert metrics.elapsed_seconds <= actual_duration + 1  # Allow some tolerance
+      # Allow some tolerance
+      assert metrics.elapsed_seconds <= actual_duration + 1
       assert metrics.speed >= 0
       assert metrics.success_rate >= 0.0
       assert metrics.success_rate <= 100.0
@@ -239,19 +253,21 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
 
       start_time = System.monotonic_time(:millisecond)
 
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 4,
-        batch_size: 5,
-        timeout: 15000
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          workers: 4,
+          batch_size: 5,
+          timeout: 15000
+        )
 
       end_time = System.monotonic_time(:millisecond)
       duration = end_time - start_time
 
       assert {:ok, metrics} = result
       assert metrics.total == 20
-      assert duration < 10000  # Should complete reasonably fast with concurrency
+      # Should complete reasonably fast with concurrency
+      assert duration < 10000
     end
 
     test "batch processing optimization" do
@@ -261,12 +277,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       batch_sizes = [1, 3, 6, 12]
 
       for batch_size <- batch_sizes do
-        result = BroadwayEmbeddingPipeline.run(
-          artifacts: artifacts,
-          workers: 2,
-          batch_size: batch_size,
-          timeout: 10000
-        )
+        result =
+          BroadwayEmbeddingPipeline.run(
+            artifacts: artifacts,
+            workers: 2,
+            batch_size: batch_size,
+            timeout: 10000
+          )
 
         assert {:ok, metrics} = result
         assert metrics.total == 12
@@ -279,7 +296,8 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       # Mix of good and problematic artifacts
       artifacts = [
         %{id: 1, artifact_id: "good_artifact"},
-        %{id: 999999, artifact_id: "bad_artifact"},  # Will cause DB error
+        # Will cause DB error
+        %{id: 999_999, artifact_id: "bad_artifact"},
         %{id: 2, artifact_id: "another_good"}
       ]
 
@@ -294,12 +312,14 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipelineIntegrationTest do
       # Test with many artifacts to potentially exhaust resources
       artifacts = List.duplicate(%{id: 1, artifact_id: "resource_test"}, 100)
 
-      result = BroadwayEmbeddingPipeline.run(
-        artifacts: artifacts,
-        workers: 1,  # Limit workers to avoid overwhelming
-        batch_size: 10,
-        timeout: 30000
-      )
+      result =
+        BroadwayEmbeddingPipeline.run(
+          artifacts: artifacts,
+          # Limit workers to avoid overwhelming
+          workers: 1,
+          batch_size: 10,
+          timeout: 30000
+        )
 
       # Should either complete or timeout gracefully
       assert match?({:ok, _}, result) or match?({:error, :timeout}, result)

@@ -14,7 +14,11 @@ defmodule Mix.Tasks.Registry.Sync do
 
     Mix.shell().info("Running registry sync for #{codebase_id} via PGFlow")
 
-    case Executor.execute(CodebaseRegistrySyncWorkflow, %{codebase_id: codebase_id}, Singularity.Repo) do
+    case Executor.execute(
+           CodebaseRegistrySyncWorkflow,
+           %{codebase_id: codebase_id},
+           Singularity.Repo
+         ) do
       {:ok, output} ->
         info = step_payload(output, :persist_snapshot)
         snapshot_codebase = info[:codebase_id] || info["codebase_id"] || codebase_id

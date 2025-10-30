@@ -195,12 +195,14 @@ defmodule Singularity.Evolution.RuleEvolutionProgressDashboard do
         Logger.warning("RuleEvolutionSystem.get_evolution_health returned error",
           error: inspect(reason)
         )
+
         %{error: inspect(reason), health_status: "ERROR"}
 
       other ->
         Logger.warning("RuleEvolutionSystem.get_evolution_health returned unexpected value",
           value: inspect(other)
         )
+
         %{error: "Unexpected return value", health_status: "ERROR"}
     end
   end

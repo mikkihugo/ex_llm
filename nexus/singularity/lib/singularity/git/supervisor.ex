@@ -69,11 +69,11 @@ defmodule Singularity.Git.Supervisor do
 
   defp default_repo_path do
     # Use XDG_DATA_HOME if available, fall back to HOME, then current directory
-    base_dir = 
+    base_dir =
       System.get_env("GIT_COORDINATOR_REPO_PATH") ||
-      System.get_env("XDG_DATA_HOME") ||
-      System.get_env("HOME", File.cwd!())
-    
+        System.get_env("XDG_DATA_HOME") ||
+        System.get_env("HOME", File.cwd!())
+
     Path.join([base_dir, ".singularity", "git-coordinator"])
   end
 end

@@ -583,9 +583,12 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
 
   defp extract_pattern(pattern) do
     task_type = pattern["task_type"] || pattern["story_type"]
-    raw_complexity = pattern["plan_characteristics"] && pattern["plan_characteristics"]["complexity"]
+
+    raw_complexity =
+      pattern["plan_characteristics"] && pattern["plan_characteristics"]["complexity"]
+
     failure_mode = pattern["failure_mode"]
-    
+
     # Use LLM.Config to validate/learn complexity
     validated_complexity =
       case {task_type, raw_complexity} do
@@ -620,7 +623,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
             _ -> :medium
           end
       end
-    
+
     %{
       task_type: task_type,
       complexity: validated_complexity,

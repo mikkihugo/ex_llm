@@ -96,9 +96,9 @@ defmodule Singularity.Execution.TodoExtractor do
   @priority_map TodoPatterns.priority_map()
   @comment_tags Map.keys(@priority_map)
   @comment_prefix_regex Regex.compile!(
-                           "^\\s*(#|//)\\s*(?:#{Enum.join(@comment_tags, "|")}):\\s*",
-                           "i"
-                         )
+                          "^\\s*(#|//)\\s*(?:#{Enum.join(@comment_tags, "|")}):\\s*",
+                          "i"
+                        )
 
   @doc """
   Extract TODO comments from a single file and create todos.

@@ -41,10 +41,24 @@ config :genesis, Oban,
     ]}
   ]
 
-# Configure Shared Queue (pgmq - central message hub, owned by CentralCloud)
-# Genesis reads job_requests and publishes job_results
-config :genesis, :shared_queue,
+# ===== NEW: PgFlow Workflow Consumer (Primary - October 2025) =====
+# Autonomous agent that consumes from three PgFlow queues:
+# - genesis_rule_updates: Rule evolution from Singularity instances
+# - genesis_llm_config_updates: LLM configuration changes
+# - code_execution_requests: Code analysis job requests
+config :genesis, :pgflow_consumer,
   enabled: true,
+  poll_interval_ms: 1000,
+  batch_size: 10,
+  timeout_ms: 30000,
+  enable_parallel_processing: true,
+  max_parallel_workers: 4,
+  repo: Genesis.Repo
+
+# ===== DEPRECATED: Legacy Shared Queue Consumer =====
+# Use PgFlow consumer above instead. Can be disabled when migration is complete.
+config :genesis, :shared_queue,
+  enabled: false,
   database_url: "postgresql://postgres:@localhost:5432/shared_queue",
   poll_interval_ms: 1000,
   batch_size: 100

@@ -91,25 +91,41 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
 
     # Tokenize prompt
     tokens = tokenize(prompt, model_state)
-    
+
     # Create input tensors (token IDs, attention masks, position IDs)
     input_tensor = create_input_tensor(tokens, model_state)
-    
+
     # Initialize generation loop
-    case run_generation_loop(input_tensor, model_state, model, max_tokens, temperature, top_p, top_k) do
+    case run_generation_loop(
+           input_tensor,
+           model_state,
+           model,
+           max_tokens,
+           temperature,
+           top_p,
+           top_k
+         ) do
       {:ok, output_tokens} ->
         # Detokenize token sequence to text
         code = detokenize(output_tokens, model_state)
         Logger.debug("Code generation completed", output_length: String.length(code))
         {:ok, code}
-      
+
       {:error, reason} ->
         Logger.error("Code generation failed", reason: reason)
         {:error, reason}
     end
   end
 
-  defp run_generation_loop(input_tensor, model_state, model, max_tokens, temperature, top_p, top_k) do
+  defp run_generation_loop(
+         input_tensor,
+         model_state,
+         model,
+         max_tokens,
+         temperature,
+         top_p,
+         top_k
+       ) do
     top_p_log = top_p
     top_k_log = top_k
     sampling_opts = build_sampling_opts(top_p_log, top_k_log)
@@ -126,9 +142,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
         )
       end
 
-      case run_forward_pass(current_input, model_state, model, 1, temperature,
-             sampling_opts
-           ) do
+      case run_forward_pass(current_input, model_state, model, 1, temperature, sampling_opts) do
         {:ok, [token]} ->
           # Check for EOS token
           if is_eos_token?(token) do
@@ -188,12 +202,13 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     # Tokenize prompt
     tokens = tokenize(prompt, model_state)
     input_tensor = create_input_tensor(tokens, model_state)
-    
+
     # Create streaming process
-    stream_pid = spawn_link(fn ->
-      stream_tokens(input_tensor, model_state, model, opts)
-    end)
-    
+    stream_pid =
+      spawn_link(fn ->
+        stream_tokens(input_tensor, model_state, model, opts)
+      end)
+
     # Return stream of tokens
     {:ok, stream_pid}
   end
@@ -202,7 +217,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     max_tokens = Keyword.get(opts, :max_tokens, 512)
     temperature = Keyword.get(opts, :temperature, 0.7)
     sampling_opts = build_sampling_opts(Keyword.get(opts, :top_p), Keyword.get(opts, :top_k))
-    
+
     # Generate tokens one at a time
     Enum.reduce(1..max_tokens, input_tensor, fn step, current_input ->
       if rem(step, 50) == 0 do
@@ -226,7 +241,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
           current_input
       end
     end)
-    
+
     send(self(), :done)
   end
 
@@ -239,7 +254,7 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     # Parse constraints (allowed tokens, forbidden patterns)
     allowed_tokens = parse_allowed_tokens(constraints)
     forbidden_patterns = parse_forbidden_patterns(constraints)
-    
+
     # Generate with constraints
     with {:ok, code} <- generate(prompt, model_state, model, opts) do
       # Apply constraint checking
@@ -259,16 +274,18 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
     # 1. Generate logits
     tokens = tokenize(prompt, model_state)
     input_tensor = create_input_tensor(tokens, model_state)
-    
+
     # 2. Mask forbidden tokens
     masked_tensor = mask_logits(input_tensor, constraints)
-    
+
     # 3. Sample only from allowed tokens
     case run_forward_pass_masked(masked_tensor, model_state, model, opts) do
       {:ok, output_tokens} ->
         code = detokenize(output_tokens, model_state)
         {:ok, code}
-      error -> error
+
+      error ->
+        error
     end
   end
 
@@ -277,22 +294,23 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
   defp code_matches_constraints?(code, allowed_tokens, forbidden_patterns) do
     # Implement constraint checking
     Logger.debug("Checking if code matches constraints")
-    
+
     # Check allowed tokens
     tokens = String.split(code, [" ", "\n", "\t", "(", ")", "{", "}", "[", "]"])
-    all_tokens_allowed = 
+
+    all_tokens_allowed =
       if length(allowed_tokens) > 0 do
         Enum.all?(tokens, fn token -> token in allowed_tokens || String.length(token) == 0 end)
       else
         true
       end
-    
+
     # Check forbidden patterns
     no_forbidden_patterns =
       Enum.all?(forbidden_patterns, fn pattern ->
         !String.contains?(code, pattern)
       end)
-    
+
     all_tokens_allowed && no_forbidden_patterns
   end
 
@@ -327,7 +345,9 @@ defmodule Singularity.CodeGeneration.Inference.InferenceEngine do
               _ -> base
             end
           end)
+
         {:ok, tokens}
+
       _ ->
         {:error, "Model not loaded"}
     end

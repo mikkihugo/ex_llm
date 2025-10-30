@@ -237,6 +237,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
 
     # Create PgFlow workflow for SPARC execution
     workflow_id = "sparc_execution_#{:erlang.unique_integer([:positive])}"
+
     workflow_attrs = %{
       workflow_id: workflow_id,
       type: "sparc_execution",
@@ -251,6 +252,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
     case Singularity.PgFlow.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created SPARC execution workflow", workflow_id: workflow_id)
+
       {:error, reason} ->
         Logger.warning("Failed to create SPARC execution workflow", reason: reason)
     end
@@ -258,16 +260,18 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
     # 1. Get best template from Template Performance DAG
     task_type = extract_task_type(goal)
     language = Keyword.get(opts, :language, "elixir")
-    
+
     # Get complexity from centralized config for MethodologyExecutor
     provider = Keyword.get(opts, :provider, "auto")
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> :medium  # Default for SPARC execution
-    end
-    
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Default for SPARC execution
+        {:error, _} -> :medium
+      end
+
     # Add complexity to opts for MethodologyExecutor
     opts = Keyword.put(opts, :complexity, complexity)
 
@@ -332,6 +336,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
       metrics: metrics,
       completed_at: :erlang.system_time(:millisecond)
     }
+
     Singularity.PgFlow.send_with_notify("sparc_execution_notifications", notification)
 
     {:reply, {:ok, result, metrics}, new_state}

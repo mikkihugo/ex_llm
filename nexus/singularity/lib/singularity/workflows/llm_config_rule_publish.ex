@@ -52,12 +52,14 @@ defmodule Singularity.Workflows.LlmConfigRulePublish do
         Logger.debug("LlmConfigRulePublish workflow: Settings synced",
           providers: Map.keys(config)
         )
+
         {:ok, Map.put(state, :settings_config, config)}
 
       {:error, reason} ->
         Logger.warning("LlmConfigRulePublish workflow: Settings sync failed, continuing",
           error: inspect(reason)
         )
+
         {:ok, Map.put(state, :settings_config, %{})}
     end
   end
@@ -74,12 +76,14 @@ defmodule Singularity.Workflows.LlmConfigRulePublish do
         Logger.debug("LlmConfigRulePublish workflow: Synthesized rules",
           total_rules: length(rules)
         )
+
         {:ok, Map.put(state, :rules, rules)}
 
       {:error, reason} ->
         Logger.error("LlmConfigRulePublish workflow: Failed to synthesize rules",
           error: inspect(reason)
         )
+
         {:error, reason}
     end
   end

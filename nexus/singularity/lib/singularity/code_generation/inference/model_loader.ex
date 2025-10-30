@@ -99,6 +99,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
         Logger.info("✅ Model files downloaded successfully",
           files: length(downloaded_files)
         )
+
         {:ok, target_dir}
 
       {:error, reason} ->
@@ -110,8 +111,8 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
   defp download_model_files(info, target_dir, files_to_download) do
     # Download each file from HuggingFace Hub
     base_url = "https://huggingface.co/#{info.repo}/resolve/main"
-    
-    results = 
+
+    results =
       files_to_download
       |> Enum.map(fn filename ->
         url = "#{base_url}/#{filename}"
@@ -121,7 +122,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
 
     # Check if all downloads succeeded
     failed = Enum.filter(results, fn result -> match?({:error, _}, result) end)
-    
+
     if length(failed) == 0 do
       {:ok, files_to_download}
     else
@@ -149,7 +150,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
 
     # Load model.safetensors file
     safetensors_path = Path.join(model_path, "model.safetensors")
-    
+
     case File.exists?(safetensors_path) do
       true ->
         # Parse safetensors file and load weights
@@ -165,12 +166,12 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
               weights: weights,
               loaded_at: DateTime.utc_now()
             }
-            
+
             Logger.info("✅ Model weights loaded successfully",
               parameters: info.parameters,
               device: device
             )
-            
+
             {:ok, state}
 
           {:error, reason} ->
@@ -183,6 +184,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
         Logger.warning("Safetensors file not found, using mock state",
           path: safetensors_path
         )
+
         {:ok, create_mock_state(model, model_path, info, device)}
     end
   end
@@ -205,6 +207,7 @@ defmodule Singularity.CodeGeneration.Inference.ModelLoader do
     if exists? do
       Logger.debug("Safetensors file detected", path: safetensors_path)
     end
+
     {:error, "Safetensors loading not yet implemented - requires Nx integration"}
   end
 

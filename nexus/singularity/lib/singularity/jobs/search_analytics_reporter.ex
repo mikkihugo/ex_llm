@@ -37,11 +37,12 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
 
   @impl Oban.Worker
   def perform(%Oban.Job{
-        args: args = %{
-          "query" => query,
-          "elapsed_ms" => elapsed_ms,
-          "results_count" => results_count
-        }
+        args:
+          args = %{
+            "query" => query,
+            "elapsed_ms" => elapsed_ms,
+            "results_count" => results_count
+          }
       }) do
     Logger.debug("Search analytics recorded",
       query: query,

@@ -342,9 +342,11 @@ defmodule Singularity.LLM.Prompt.TemplateAware do
     provider = select_provider_for_template(template) |> Atom.to_string()
     task_type = task.type || :coder
     context = %{task_type: task_type}
-    
+
     case Config.get_task_complexity(provider, context) do
-      {:ok, complexity} -> complexity
+      {:ok, complexity} ->
+        complexity
+
       {:error, _} ->
         # Fallback: Determine from template complexity and task type
         determine_complexity_fallback(task, template)

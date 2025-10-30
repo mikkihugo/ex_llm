@@ -394,10 +394,11 @@ defmodule Singularity.Tools.Database do
                timeout: timeout,
                results: results,
                row_count: length(results),
-               columns: case results do
-                 [head | _] -> Map.keys(head)
-                 [] -> []
-               end
+               columns:
+                 case results do
+                   [head | _] -> Map.keys(head)
+                   [] -> []
+                 end
              }}
 
           {:error, reason} ->

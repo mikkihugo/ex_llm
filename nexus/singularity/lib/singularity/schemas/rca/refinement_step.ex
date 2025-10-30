@@ -70,8 +70,7 @@ defmodule Singularity.Schemas.RCA.RefinementStep do
       foreign_key: :previous_step_id,
       type: :binary_id
 
-    has_many :next_steps, __MODULE__,
-      foreign_key: :previous_step_id
+    has_many :next_steps, __MODULE__, foreign_key: :previous_step_id
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -128,12 +127,14 @@ defmodule Singularity.Schemas.RCA.RefinementStep do
   """
   def summarize_journey(repo, generation_session_id) do
     import Ecto.Query
-    steps = repo.all(
-      from(rs in __MODULE__,
-        where: rs.generation_session_id == ^generation_session_id,
-        order_by: [asc: rs.step_number]
+
+    steps =
+      repo.all(
+        from(rs in __MODULE__,
+          where: rs.generation_session_id == ^generation_session_id,
+          order_by: [asc: rs.step_number]
+        )
       )
-    )
 
     %{
       total_steps: length(steps),

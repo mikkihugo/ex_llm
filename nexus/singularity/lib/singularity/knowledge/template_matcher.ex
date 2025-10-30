@@ -66,7 +66,8 @@ defmodule Singularity.Knowledge.TemplateMatcher do
     end
   end
 
-  defp extract_template_embedding(%KnowledgeArtifact{embedding: embedding}) when not is_nil(embedding) do
+  defp extract_template_embedding(%KnowledgeArtifact{embedding: embedding})
+       when not is_nil(embedding) do
     embedding
   end
 
@@ -85,9 +86,13 @@ defmodule Singularity.Knowledge.TemplateMatcher do
     # Calculate cosine similarity using pgvector's cosine distance operator
     # Similarity = 1 - distance (pgvector <=> operator returns cosine distance)
     # Use a simple SELECT query to leverage pgvector's optimized calculation
-    case Repo.query("SELECT 1 - ($1::vector <=> $2::vector) AS similarity", [embedding1, embedding2]) do
+    case Repo.query("SELECT 1 - ($1::vector <=> $2::vector) AS similarity", [
+           embedding1,
+           embedding2
+         ]) do
       {:ok, %{rows: [[similarity]]}} when is_number(similarity) and similarity >= 0.0 ->
         similarity
+
       _ ->
         0.0
     end

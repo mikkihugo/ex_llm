@@ -181,11 +181,12 @@ impl CodeMetadata {
     /// Create CodeMetadata with minimal required fields
     /// All other fields are initialized to sensible defaults
     pub fn minimal(size: u64, lines: usize, language: String) -> Self {
-        let mut metadata = Self::default();
-        metadata.size = size;
-        metadata.lines = lines;
-        metadata.language = language;
-        metadata
+        Self {
+            size,
+            lines,
+            language,
+            ..Default::default()
+        }
     }
 }
 

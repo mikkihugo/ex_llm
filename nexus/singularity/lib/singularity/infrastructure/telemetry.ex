@@ -323,19 +323,20 @@ defmodule Singularity.Infrastructure.Telemetry do
   defp get_counter_value(event_name, tags \\ %{}) do
     # Get backend configuration
     backend = Application.get_env(:singularity, :telemetry_backend, :internal)
-    
+
     case backend do
       :statsd ->
         # StatsD integration - send counter metric
         host = Application.get_env(:singularity, :statsd_host, "localhost")
         port = Application.get_env(:singularity, :statsd_port, 8125)
         prefix = Application.get_env(:singularity, :statsd_prefix, "singularity")
-        
+
         metric_name = build_metric_name(event_name, prefix)
         # StatsD counters are sent via UDP
         # In production, use a proper StatsD client library
         :ok = send_statsd_counter(host, port, metric_name, tags)
-        0 # Return 0 as StatsD aggregates server-side
+        # Return 0 as StatsD aggregates server-side
+        0
 
       :prometheus ->
         # Prometheus integration - query Prometheus registry
@@ -355,20 +356,23 @@ defmodule Singularity.Infrastructure.Telemetry do
 
   defp send_statsd_counter(host, port, metric_name, tags) do
     # Build StatsD metric string: metric_name:value|type|@sample_rate|#tag1:value1,tag2:value2
-    tag_string = 
+    tag_string =
       tags
       |> Enum.map(fn {k, v} -> "#{k}:#{v}" end)
       |> Enum.join(",")
-    
-    message = if tag_string != "", do: "#{metric_name}:1|c|##{tag_string}", else: "#{metric_name}:1|c"
-    
+
+    message =
+      if tag_string != "", do: "#{metric_name}:1|c|##{tag_string}", else: "#{metric_name}:1|c"
+
     # Send via UDP (simplified - production should use proper client)
     case :gen_udp.open(0) do
       {:ok, socket} ->
         :gen_udp.send(socket, String.to_charlist(host), port, String.to_charlist(message))
         :gen_udp.close(socket)
         :ok
-      _ -> :ok
+
+      _ ->
+        :ok
     end
   end
 
@@ -381,7 +385,7 @@ defmodule Singularity.Infrastructure.Telemetry do
   defp query_internal_metrics(event_name, tags) do
     # Query internal ETS table for metrics
     table = :singularity_telemetry_metrics
-    
+
     case :ets.lookup(table, {event_name, tags}) do
       [{_key, value}] -> value
       _ -> 0

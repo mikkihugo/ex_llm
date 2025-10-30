@@ -30,41 +30,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Environment:** Nix-based (dev/test/prod) with PostgreSQL.
 
-## Complete Documentation
+## Key Documentation References
 
-**Current System Status:** See **SYSTEM_STATE_OCTOBER_2025.md** - Comprehensive overview:
-- Current implementation status of all components
-- Recent changes (Instructor integration, 206 job tests)
-- System architecture and feature matrix
-- Deployment readiness checklist
-
-**Agent System:** See **AGENTS.md** - Complete agent documentation:
-- 6 agent types with specialized capabilities
-- Agent lifecycle and supervision
-- Flow tracking and cost optimization
-- 95K+ lines of code (18 modules)
-
-**Deep Architecture Analysis:** See **AGENT_EXECUTION_ARCHITECTURE.md** (886 lines):
-- Complete agent and execution system breakdown
-- 50+ execution modules across 5 subsystems
-- Integration patterns and examples
-- Test coverage analysis and recommendations
-
-**Testing & Quality:** See **JOB_IMPLEMENTATION_TESTS_SUMMARY.md**:
-- 206 job implementation test cases (2,299 LOC)
-- Complete coverage of all critical background jobs
-- Production-ready error handling patterns
-
-**Instructor Integration:** See **INSTRUCTOR_INTEGRATION_GUIDE.md** and **AGENT_TOOL_VALIDATION_INTEGRATION.md**:
-- Complete structured output validation framework
-- 3-tier validation (parameters → execution → output)
-- Integrated across Elixir, TypeScript, and Rust
-- Zero breaking changes (opt-in per tool)
-
-**CentralCloud & Genesis (Multi-Instance & Autonomous Learning):** See **CENTRALCLOUD_INTEGRATION_GUIDE.md** and **AGENT_SYSTEM_EXPERT.md**:
-- **CentralCloud** - REQUIRED: Aggregates patterns, frameworks, and learnings across instances
-- **Genesis** - REQUIRED: Autonomous improvement hub for rule evolution and long-horizon learning
-- Both are integral parts of the unified system (not optional)
+- **SYSTEM_STATE_OCTOBER_2025.md** - System status and feature matrix
+- **AGENTS.md** - Agent types, lifecycle, and cost optimization
+- **AGENT_EXECUTION_ARCHITECTURE.md** - Execution system breakdown
+- **JOB_IMPLEMENTATION_TESTS_SUMMARY.md** - 206 test cases with patterns
+- **CENTRALCLOUD_INTEGRATION_GUIDE.md** & **AGENT_SYSTEM_EXPERT.md** - CentralCloud/Genesis setup
 
 ## Technology Stack
 
@@ -73,21 +45,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **PostgreSQL 17** with pgvector, timescaledb, postgis
 - **Nix** for reproducible development environment
 
-## Architecture Consolidation (October 2025)
+## Architecture (October 2025)
 
-**Status: ✅ COMPLETE - Pure Elixir, No External Services**
+**Status: ✅ Pure Elixir** - TypeScript ai-server removed. LLM requests route directly to ExLLM.
 
-Previously, LLM requests routed through a TypeScript ai-server service. This has been **completely removed**:
-
-- ❌ TypeScript ai-server (was: intermediary service between Elixir and ExLLM)
-- ❌ Bun runtime (was: TypeScript execution)
-- ✅ Now: Direct Elixir routing to ExLLM provider abstraction layer
-
-**Benefits of consolidation:**
+**Benefits:**
 - Single tech stack (Elixir only)
 - Faster request handling (no inter-process communication)
-- Simpler deployment (fewer services to manage)
-- Better observability (all code in one repo)
+- Simpler deployment, better observability
 
 ## AI Provider Policy
 
@@ -298,185 +263,47 @@ Singularity uses a **single, reusable orchestration pattern** applied to 7 major
 - Each agent leverages the unified orchestrators for analysis, scanning, generation, and execution
 - See [AGENTS.md](AGENTS.md) for complete agent documentation
 
-### LLM Usage Guidelines (IMPORTANT!)
+### LLM Usage (IMPORTANT!)
 
-**ALL LLM calls in Elixir are routed through ExLLM (direct, no intermediaries):**
-
-Starting October 2025, LLM requests route **directly to ExLLM providers** - no TypeScript intermediary.
+**Route through ExLLM (direct, no intermediaries):**
 
 ```elixir
-alias Singularity.LLM.Service
+# Recommended: Use LLM.Service with complexity level
+{:ok, response} = Singularity.LLM.Service.call(:complex, messages, task_type: :architect)
+{:ok, response} = Singularity.LLM.Service.call(:medium, messages, task_type: :planning)
 
-# ✅ CORRECT - Route through LLM.Service with complexity level
-{:ok, response} = Singularity.LLM.Service.call(:complex, [
-  %{role: "user", content: "Design a microservice architecture"}
-], task_type: :architect)
-
-{:ok, response} = Singularity.LLM.Service.call(:medium, [
-  %{role: "user", content: "Plan the next sprint"}
-], task_type: :planning, max_tokens: 2000)
-
-# Or use ExLLM directly for low-level access:
+# Or use ExLLM directly
 {:ok, response} = ExLLM.chat(:claude, messages, model: "claude-3-5-sonnet-20241022")
-{:ok, response} = ExLLM.chat(:codex, messages, model: "gpt-5-codex")
-{:ok, response} = ExLLM.chat(:copilot, messages, model: "gpt-4.1")
-
-# ❌ WRONG - Don't use old Nexus routing (ai-server removed)
-Nexus.LLMRouter.route(%{...})  # This no longer exists!
-HTTPoison.post("https://api.anthropic.com/...")  # Never do direct HTTP!
 ```
 
-**Complexity Levels & Model Selection:**
+**Complexity Levels:** `:simple` (Gemini Flash) → `:medium` (Claude Sonnet) → `:complex` (Codex/Claude)
 
-Singularity.LLM.Service provides **intelligent model selection** based on complexity and task type:
+**Task Types:** `:architect`, `:coder`, `:planning`, `:code_generation`, `:refactoring` (refines model selection)
 
-1. **Complexity Levels** - Determine model tier:
-   - `:simple` → Fast, cheap models (Gemini Flash)
-   - `:medium` → Balanced models (Claude Sonnet, GPT-4o)
-   - `:complex` → Powerful models (Claude, Codex)
+### Using Orchestrators
 
-2. **Task Type** - Refines model selection within complexity tier:
-   - `:architect` → Code architecture/design tasks
-   - `:coder` → Code generation (tries Codex, falls back to selected model)
-   - `:planning` → Strategic planning tasks
-   - `:code_generation` → Code generation (tries Codex)
-   - `:refactoring` → Refactoring tasks (tries Codex)
-
-**Model Examples by Complexity:**
-
-- `:simple` → `gemini-2.0-flash-exp` (fast, free)
-- `:medium` → `claude-3-5-sonnet-20241022` (balanced)
-- `:complex` → `gpt-5-codex` (Codex) or `claude-3-5-sonnet-20241022` (Claude)
-
-**LLM Communication Flow (NEW - October 2025):**
-
-```
-Elixir Code (Singularity)
-    ↓
-Singularity.LLM.Service or ExLLM.chat()
-    ↓
-ExLLM Provider Abstraction
-    ↓ HTTP
-LLM Provider APIs (Claude, Gemini, OpenAI, Codex, Copilot, etc.)
-    ↓
-ExLLM (response parsing)
-    ↓
-Elixir Code (response with usage/cost)
-```
-
-**Previously (Before October 2025):**
-
-Was: Elixir → pgmq queue → TypeScript ai-server → ExLLM → Provider APIs
-
-Now: Elixir → ExLLM → Provider APIs (direct, no intermediary)
-
-### Using the Unified Orchestrators
-
-The unified orchestration system provides consistent APIs for code analysis, scanning, generation, and execution. All orchestrators are configured via `config.exs` and support parallel execution.
-
-**Pattern Detection (Framework, Technology, ServiceArchitecture):**
-```elixir
-alias Singularity.Analysis.PatternDetector
-
-# Detect all registered patterns
-{:ok, patterns} = PatternDetector.detect(code_path)
-
-# Detect specific patterns
-{:ok, frameworks} = PatternDetector.detect(code_path, types: [:framework])
-```
-
-**Code Analysis (Quality, Feedback, Refactoring, Microservice):**
-```elixir
-alias Singularity.Analysis.AnalysisOrchestrator
-
-# Run all registered analyzers
-{:ok, results} = AnalysisOrchestrator.analyze(code_path)
-
-# Run specific analyzers with options
-{:ok, results} = AnalysisOrchestrator.analyze(code_path,
-  analyzers: [:quality],
-  severity: :high,
-  limit: 50
-)
-```
-
-**Code Scanning (Quality, Security):**
-```elixir
-alias Singularity.CodeAnalysis.ScanOrchestrator
-
-# Scan with all registered scanners
-{:ok, issues} = ScanOrchestrator.scan("lib/my_module.ex")
-
-# Scan with specific scanners and severity filter
-{:ok, issues} = ScanOrchestrator.scan("lib/",
-  scanners: [:security],
-  min_severity: :warning
-)
-```
-
-**Code Generation (Quality, RAG, Pseudocode, etc.):**
-```elixir
-alias Singularity.CodeGeneration.GenerationOrchestrator
-
-# Generate with all registered generators
-{:ok, code} = GenerationOrchestrator.generate(%{spec: "user authentication"})
-
-# Generate with specific generator
-{:ok, code} = GenerationOrchestrator.generate(%{spec: "..."},
-  generators: [:quality]
-)
-```
-
-**Unified Execution (TaskDAG, SPARC, Methodology):**
-```elixir
-alias Singularity.Execution.ExecutionOrchestrator
-
-# Execute with auto-detected strategy
-{:ok, results} = ExecutionOrchestrator.execute(goal)
-
-# Execute with specific strategy
-{:ok, results} = ExecutionOrchestrator.execute(goal,
-  strategy: :task_dag,
-  timeout: 30000,
-  parallel: true
-)
-```
-
-### Configuring Orchestrators
-
-All orchestrators are configured in `config/config.exs` with enable/disable flags:
+All orchestrators support consistent APIs and are configured via `config.exs`:
 
 ```elixir
-# Pattern detection configuration
-config :singularity, :pattern_types,
-  framework: %{module: Singularity.Architecture.Detectors.FrameworkDetector, enabled: true},
-  technology: %{module: Singularity.Architecture.Detectors.TechnologyDetector, enabled: true},
-  service_architecture: %{module: Singularity.Architecture.Detectors.ServiceArchitectureDetector, enabled: true}
+# Pattern Detection
+{:ok, patterns} = PatternDetector.detect(code_path, types: [:framework])
 
-# Code analysis configuration
-config :singularity, :analyzer_types,
-  feedback: %{module: Singularity.Architecture.Analyzers.FeedbackAnalyzer, enabled: true},
-  quality: %{module: Singularity.Architecture.Analyzers.QualityAnalyzer, enabled: true},
-  refactoring: %{module: Singularity.Architecture.Analyzers.RefactoringAnalyzer, enabled: true},
-  microservice: %{module: Singularity.Architecture.Analyzers.MicroserviceAnalyzer, enabled: true}
+# Code Analysis
+{:ok, results} = AnalysisOrchestrator.analyze(code_path, analyzers: [:quality])
 
-# Code scanning configuration
-config :singularity, :scanner_types,
-  quality: %{module: Singularity.CodeAnalysis.Scanners.QualityScanner, enabled: true},
-  security: %{module: Singularity.CodeAnalysis.Scanners.SecurityScanner, enabled: true}
+# Code Scanning
+{:ok, issues} = ScanOrchestrator.scan("lib/", scanners: [:security])
 
-# Code generation configuration
-config :singularity, :generator_types,
-  quality: %{module: Singularity.CodeGeneration.Generators.QualityGenerator, enabled: true}
+# Code Generation
+{:ok, code} = GenerationOrchestrator.generate(%{spec: "..."}, generators: [:quality])
 
-# Validation configuration
-config :singularity, :validator_types,
-  template: %{module: Singularity.Validation.Validators.TemplateValidator, enabled: false}
-
-# Extraction configuration
-config :singularity, :extractor_types,
-  pattern: %{module: Singularity.Analysis.Extractors.PatternExtractor, enabled: false}
+# Execution
+{:ok, results} = ExecutionOrchestrator.execute(goal, strategy: :task_dag)
 ```
+
+### Orchestrator Configuration
+
+Configure in `config/config.exs` with enable/disable flags. Each orchestrator maps to module implementations registered in config (`:pattern_types`, `:analyzer_types`, `:scanner_types`, etc.)
 
 **Semantic Code Search**
 - `semantic_code_search.ex`: Main search interface
@@ -616,237 +443,26 @@ At billion-line scale, AI assistants (Claude, Copilot, Cursor) and databases (Ne
 
 See quick reference for copy-paste templates!
 
-## Code Naming Conventions & Architecture Patterns
-
-### Self-Documenting Names
-
-All module names must be self-documenting, following Elixir production patterns. Names should clearly indicate **WHAT** the module operates on and **HOW** it works.
+## Code Naming Conventions
 
 **Pattern: `<What><WhatItDoes>` or `<What><How>`**
 
-#### Examples from Production:
-```elixir
-# Good: Clear purpose and scope
-CodeSearch           # What: Code, How: Semantic search
-FrameworkPatternStore        # What: Framework patterns, What it does: Store
-TechnologyTemplateStore      # What: Technology templates, What it does: Store
-PackageRegistryKnowledge     # What: Package registry, Type: Knowledge
-PackageAndCodebaseSearch     # What: Packages AND Codebase, How: Search
-PackageRegistryCollector     # What: Package registry, What it does: Collect
+Examples:
+- ✅ `CodeSearch` - Code, semantic search
+- ✅ `FrameworkPatternStore` - Framework patterns, store
+- ✅ `PackageRegistryKnowledge` - Package registry, knowledge
+- ❌ `ToolKnowledge` - Tool is vague
+- ❌ `Utils`, `Helper` - Too generic
 
-# Bad: Vague or abbreviated
-ToolKnowledge               # Tool is vague - what kind of tools?
-IntegratedSearch           # Integrated with what?
-Utils                      # What utilities?
-Helper                     # Helps with what?
-```
+**Module Types:**
+- `Store` - Data access: `FrameworkPatternStore`, `TechnologyTemplateStore`
+- `Search` - Search operations: `CodeSearch`, `PackageAndCodebaseSearch`
+- `Collector` - Data ingestion: `PackageRegistryCollector`
+- `Analyzer` - Analysis: `ArchitectureAnalyzer`
 
-### Architecture Distinctions
+**Documentation:** Every module must have `@moduledoc` explaining what it does and how it differs from similar modules. Include `@doc` with examples for public functions.
 
-#### Package Registry Knowledge vs RAG (Semantic Code Search)
-
-**IMPORTANT**: These are DIFFERENT systems with DIFFERENT purposes:
-
-**Package Registry Knowledge** (Structured, NOT RAG):
-```elixir
-# What: Curated package metadata from npm/cargo/hex/pypi registries
-# How: Structured queries with versions, dependencies, quality signals
-# Storage: PostgreSQL with structured fields + embeddings
-# Purpose: "What packages exist? What should I use?"
-
-PackageRegistryKnowledge.search("async runtime", ecosystem: :cargo)
-# => [%{package_name: "tokio", version: "1.35.0", github_stars: 25000}]
-```
-
-**Semantic Code Search** (RAG - Your Code):
-```elixir
-# What: YOUR actual codebase
-# How: Unstructured semantic search via embeddings
-# Storage: PostgreSQL with code text + vector embeddings
-# Purpose: "What did I do before? How did I solve this?"
-
-CodeSearch.search("async implementation", codebase_id: "my-project")
-# => [%{path: "lib/async_worker.ex", similarity: 0.94}]
-```
-
-**Combined Search**:
-```elixir
-# Use BOTH for best results
-PackageAndCodebaseSearch.unified_search("web scraping")
-# => %{
-#   packages: [Floki, HTTPoison],        # From registries
-#   your_code: [lib/scraper.ex],         # From YOUR code
-#   combined_insights: "Use Floki 0.36 - you've used it before"
-# }
-```
-
-### Module Organization Patterns
-
-#### 1. **Store Modules** (Data Access Layer)
-```elixir
-# Pattern: <What>Store
-FrameworkPatternStore        # Stores framework patterns
-TechnologyTemplateStore      # Stores technology templates
-PackageRegistryKnowledge     # Stores package knowledge (query interface)
-
-# What they do:
-# - Query/persist data
-# - Provide semantic search
-# - Handle storage logic
-```
-
-#### 2. **Search Modules** (Search Operations)
-```elixir
-# Pattern: <What>Search or <What>And<What>Search
-CodeSearch          # Searches code semantically
-PackageAndCodebaseSearch    # Searches packages AND codebase
-
-# What they do:
-# - Perform queries
-# - Combine multiple sources
-# - Return search results
-```
-
-#### 3. **Collector Modules** (Data Ingestion)
-```elixir
-# Pattern: <What>Collector
-PackageRegistryCollector    # Collects from package registries
-
-# What they do:
-# - Fetch external data
-# - Transform to internal format
-# - Store in database
-```
-
-#### 4. **Analyzer Modules** (Analysis Operations)
-```elixir
-# Pattern: <What>Analyzer
-ArchitectureAnalyzer        # Analyzes architecture
-RustToolingAnalyzer         # Analyzes using Rust tools
-
-# What they do:
-# - Perform analysis
-# - Extract insights
-# - Generate reports
-```
-
-### Field Naming Conventions
-
-**Use full, descriptive names:**
-```elixir
-# Good
-package_name              # Clear: it's a package name
-package_version          # Clear: package version
-ecosystem                # Clear: npm/cargo/hex/pypi
-
-# Bad (too abbreviated)
-pkg_nm                   # What's nm?
-ver                      # Version? Vertical? Verb?
-eco                      # Ecosystem or ecology?
-```
-
-**Database vs Schema Mapping:**
-```elixir
-# Schema uses descriptive names
-schema "tools" do
-  field :package_name, :string        # Descriptive in code
-  field :version, :string
-end
-
-# Database column can be abbreviated (for legacy/compatibility)
-# Ecto handles mapping automatically
-```
-
-### Documentation Requirements
-
-Every module MUST have:
-
-1. **@moduledoc** explaining:
-   - What it operates on
-   - How it works  
-   - Why it exists (if not obvious)
-   - Key differences from similar modules
-
-```elixir
-defmodule Singularity.PackageRegistryKnowledge do
-  @moduledoc """
-  Package Registry Knowledge - Structured package metadata queries (NOT RAG)
-
-  Provides semantic search for external packages (npm, cargo, hex, pypi)
-  using structured metadata collected by Rust tool_doc_index collectors.
-
-  ## Key Differences from RAG (CodeSearch):
-
-  - **Structured Data**: Queryable with versions, dependencies, quality scores
-  - **Curated Knowledge**: Official package information from registries  
-  - **Cross-Ecosystem**: Find equivalents across npm/cargo/hex/pypi
-  - **Quality Signals**: Downloads, stars, recency, etc.
-
-  ## Purpose:
-  
-  Answers "What packages exist? What should I use?"
-  NOT "What did I do before?" (that's CodeSearch)
-  """
-```
-
-2. **@doc** for all public functions with examples:
-
-```elixir
-@doc """
-Search for packages using semantic similarity.
-
-Returns packages ranked by similarity to query, filtered by quality signals.
-
-## Examples
-
-    iex> PackageRegistryKnowledge.search("async runtime", ecosystem: :cargo)
-    [%{package_name: "tokio", version: "1.35.0", similarity: 0.94}]
-"""
-def search(query, opts \\ [])
-```
-
-### Anti-Patterns to Avoid
-
-❌ **Vague names**:
-```elixir
-ToolKnowledge      # What tools?
-DataStore          # What data?
-Helper             # Helps with what?
-Utils              # What utilities?
-```
-
-❌ **Abbreviations**:
-```elixir
-PkgReg             # Hard to understand
-TmplMgr            # Template Manager?
-```
-
-❌ **Generic terms**:
-```elixir
-Manager            # Manages what?
-Handler            # Handles what?
-Service            # What service?
-```
-
-✅ **Self-documenting**:
-```elixir
-PackageRegistryCollector      # Collects from package registries
-TechnologyTemplateStore       # Stores technology templates
-FrameworkPatternStore         # Stores framework patterns
-```
-
-### Summary
-
-**Every name should answer:**
-1. **What** does it operate on?
-2. **How** does it work / **What** does it do?
-3. **Why** is it different from similar modules?
-
-**Follow existing patterns:**
-- Look at `CodeSearch`, `FrameworkPatternStore`, `TechnologyTemplateStore`
-- Use compound names: `<What><How>` or `<What><WhatItDoes>`
-- Prefer clarity over brevity
-- Make AI-assisted development easier with self-documenting code!
+**Key Distinction:** Package Registry Knowledge (structured metadata) ≠ CodeSearch (RAG over your code)
 
 ## Living Knowledge Base (Internal Tooling Feature)
 
@@ -988,80 +604,22 @@ See **CENTRALCLOUD_INTEGRATION_GUIDE.md** and **AGENT_SYSTEM_EXPERT.md** for set
 
 **Example:** Store everything (raw + parsed + embeddings + usage + search history) for maximum learning and debugging - storage is cheap, insights are valuable!
 
-## OTP Supervision Patterns (Internal Tooling)
+## OTP Supervision Patterns
 
-### Layered Supervision Architecture
-
-Singularity uses a **layered supervision tree** with nested supervisors for better organization, fault isolation, and self-documenting architecture.
-
-### Supervision Layers
-
-The application supervision tree is organized into 6 layers:
-
-```elixir
-# singularity/lib/singularity/application.ex
-
-children = [
-  # Layer 1: Foundation - Database and metrics MUST start first
-  Singularity.Repo,
-  Singularity.Telemetry,
-
-  # Layer 2: Infrastructure - Core services required by application layer
-  Singularity.Infrastructure.Supervisor,  # CircuitBreaker, ErrorRateTracker, StartupWarmup, EmbeddingModelLoader
-
-  # Layer 3: Domain Services - Business logic and domain-specific functionality
-  Singularity.LLM.Supervisor,            # LLM.RateLimiter
-  Singularity.Knowledge.Supervisor,       # TemplateService, TemplatePerformanceTracker, CodeStore
-  Singularity.Planning.Supervisor,        # HTDAGAutoBootstrap, SafeWorkPlanner, WorkPlanAPI
-  Singularity.SPARC.Supervisor,          # SPARC.Orchestrator, TemplateSparcOrchestrator
-  Singularity.Todos.Supervisor,          # TodoSwarmCoordinator
-
-  # Layer 4: Agents & Execution - Dynamic agent management and task execution
-  Singularity.Agents.Supervisor,          # RuntimeBootstrapper, AgentSupervisor (DynamicSupervisor)
-  Singularity.ApplicationSupervisor,     # Control, Runner
-
-  # Layer 5: Singletons - Standalone services that don't fit in other categories
-  Singularity.Autonomy.RuleEngine,
-
-  # Layer 6: Existing Domain Supervisors - Domain-specific supervision trees
-  Singularity.ArchitectureEngine.MetaRegistry.Supervisor,
-  Singularity.Git.Supervisor
-]
-```
+**Layered Supervision:** Use nested supervisors organized by layer (Foundation → Infrastructure → Domain Services → Agents). Each layer depends on previous layers.
 
 **Key Principles:**
-- Each layer depends on previous layers being started successfully
-- Nested supervisors group related processes for better fault isolation
-- Clear naming convention: `Domain.Supervisor` manages all `Domain.*` processes
+- Use `Domain.Supervisor` to manage all `Domain.*` processes
+- Use `:one_for_one` restart strategy (most common for internal tooling)
+- Use `:rest_for_one` for ordered dependencies
+- Only supervise actual processes (GenServer, Supervisor, Agent)
 
-### Creating New Supervisors
+**Template:** See `templates_data/base/elixir-supervisor-nested.json`
 
-Use the template: [base/elixir-supervisor-nested.json](templates_data/base/elixir-supervisor-nested.json)
-
-**Example:** Creating a new domain supervisor
-
+**Example:**
 ```elixir
 defmodule Singularity.MyDomain.Supervisor do
-  @moduledoc """
-  MyDomain Supervisor - Manages my domain infrastructure.
-
-  ## Managed Processes
-
-  - `Singularity.MyDomain.Service1` - GenServer managing X
-  - `Singularity.MyDomain.Service2` - GenServer managing Y
-
-  ## Restart Strategy
-
-  Uses `:one_for_one` because each child is independent.
-
-  ## Dependencies
-
-  Depends on:
-  - Repo - For database access
-  """
-
   use Supervisor
-  require Logger
 
   def start_link(opts \\ []) do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
@@ -1069,89 +627,8 @@ defmodule Singularity.MyDomain.Supervisor do
 
   @impl true
   def init(_opts) do
-    Logger.info("Starting MyDomain Supervisor...")
-
-    children = [
-      Singularity.MyDomain.Service1,
-      Singularity.MyDomain.Service2
-    ]
-
+    children = [Service1, Service2]
     Supervisor.init(children, strategy: :one_for_one)
   end
 end
 ```
-
-### Restart Strategies
-
-**`:one_for_one`** - Most common for internal tooling
-- Each child restarts independently
-- Use when children don't depend on each other
-
-**`:rest_for_one`** - For ordered dependencies
-- If a child crashes, restart it and all children started after it
-- Use for layered services with ordered startup
-
-**`:one_for_all`** - Rare, for tightly coupled systems
-- If any child crashes, restart all children
-- Use sparingly - usually indicates poor architecture
-
-### Benefits of Nested Supervision
-
-1. **Self-Documenting** - Supervisor names/docs explain what they manage
-2. **Fault Isolation** - Failures contained within domain boundaries
-3. **Easy Debugging** - Crash logs show which domain failed
-4. **Fast Iteration** - Add/remove/reorganize domains easily
-5. **Learning** - Captures OTP patterns for reuse across projects
-
-### Guidelines
-
-**DO:**
-- Create nested supervisors for logical domains (LLM, Knowledge, etc.)
-- Document managed processes in `@moduledoc`
-- Explain restart strategy and why it was chosen
-- List dependencies (what must start before this supervisor)
-
-**DON'T:**
-- Add plain modules (non-processes) to supervision tree
-- Create supervisors with only 1 child (unless wrapping DynamicSupervisor)
-- Mix unrelated processes in same supervisor
-- Use `:one_for_all` unless absolutely necessary
-
-### Verifying Process Types
-
-Before adding to supervision tree, check if module is a process:
-
-```bash
-# Check if module uses GenServer/Supervisor/Agent
-grep "use GenServer\|use Supervisor\|use Agent" lib/path/to/module.ex
-
-# ✅ Has "use GenServer" → Add to supervision tree
-# ❌ No "use" declaration → Plain module, don't supervise
-```
-
-**Example:**
-- `LLM.Service` - Plain module (no supervision needed)
-- `LLM.RateLimiter` - GenServer (needs supervision)
-
-### Follow CentralCloud Pattern
-
-The `central_cloud` application demonstrates clean supervision for internal tooling:
-
-```elixir
-# central_cloud/lib/central_cloud/application.ex
-children = [
-  CentralCloud.Repo,                    # Database
-  CentralCloud.KnowledgeCache,          # Cache
-  CentralCloud.TemplateService,         # Domain services
-  CentralCloud.FrameworkLearningAgent,
-  CentralCloud.IntelligenceHub,
-  CentralCloud.IntelligenceHubSubscriber,
-]
-```
-
-**Why this works:**
-- Only 6 children (manageable)
-- Clear dependency order (Repo → Cache → Services)
-- No duplicates
-- All children are actual processes
-- Self-documenting

@@ -155,15 +155,15 @@ impl WorkspaceDetector {
 
     /// Scan directory structure
     pub fn scan_directory_structure(&self) -> Result<DirectoryStructure> {
-        let mut structure = DirectoryStructure::default();
-
-        structure.has_apps_dir = self.root_path.join("apps").exists();
-        structure.has_packages_dir = self.root_path.join("packages").exists();
-        structure.has_services_dir = self.root_path.join("services").exists();
-        structure.has_libs_dir = self.root_path.join("libs").exists();
-        structure.has_tools_dir = self.root_path.join("tools").exists();
-        structure.has_src_dir = self.root_path.join("src").exists();
-        structure.has_crates_dir = self.root_path.join("crates").exists();
+        let structure = DirectoryStructure {
+            has_apps_dir: self.root_path.join("apps").exists(),
+            has_packages_dir: self.root_path.join("packages").exists(),
+            has_services_dir: self.root_path.join("services").exists(),
+            has_libs_dir: self.root_path.join("libs").exists(),
+            has_tools_dir: self.root_path.join("tools").exists(),
+            has_src_dir: self.root_path.join("src").exists(),
+            has_crates_dir: self.root_path.join("crates").exists(),
+        };
 
         Ok(structure)
     }

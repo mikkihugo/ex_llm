@@ -12,12 +12,16 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
   @type task_id :: String.t() | atom()
   @type task_status :: :pending | :in_progress | :completed | :failed
   @type task :: %{
-    id: task_id(),
-    dependencies: [task_id()],
-    status: task_status(),
-    data: map()
-  }
-  @type task_graph :: %{tasks: %{task_id() => task()}, edges: %{task_id() => [task_id()]}, name: String.t()}
+          id: task_id(),
+          dependencies: [task_id()],
+          status: task_status(),
+          data: map()
+        }
+  @type task_graph :: %{
+          tasks: %{task_id() => task()},
+          edges: %{task_id() => [task_id()]},
+          name: String.t()
+        }
 
   @doc """
   Create a new empty task graph.
@@ -54,7 +58,8 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
     |> Enum.filter(fn {_id, task} ->
       task.status == :pending and dependencies_completed?(graph, task)
     end)
-    |> Enum.sort_by(fn {_id, task} -> length(task.dependencies) end) # Prefer tasks with fewer deps
+    # Prefer tasks with fewer deps
+    |> Enum.sort_by(fn {_id, task} -> length(task.dependencies) end)
     |> case do
       [] -> :none
       [{_id, task} | _] -> {:ok, task}
@@ -110,7 +115,6 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
     |> Enum.count(fn {_id, task} -> task.status == :completed end)
   end
 
-
   @doc """
   Get currently executing tasks.
   """
@@ -125,7 +129,9 @@ defmodule Singularity.Execution.Planning.TaskGraphCore do
 
   defp update_task_status(graph, task_id, status) do
     case Map.get(graph.tasks, task_id) do
-      nil -> graph
+      nil ->
+        graph
+
       task ->
         updated_task = %{task | status: status}
         updated_tasks = Map.put(graph.tasks, task_id, updated_task)

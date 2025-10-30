@@ -18,14 +18,12 @@ defmodule Singularity.Workflows.SystemEventBroadcastWorkflow do
       name: "system_event_broadcast",
       version: Singularity.BuildInfo.version(),
       description: "Workflow for broadcasting system-wide events",
-
       config: %{
         timeout_ms: 10_000,
         retries: 1,
         retry_delay_ms: 1000,
         concurrency: 10
       },
-
       steps: [
         %{
           id: :validate_event,
@@ -71,6 +69,7 @@ defmodule Singularity.Workflows.SystemEventBroadcastWorkflow do
         event_type: event_type,
         source: context["source"]
       )
+
       {:ok, Map.put(context, "validated", true)}
     end
   end
@@ -93,6 +92,7 @@ defmodule Singularity.Workflows.SystemEventBroadcastWorkflow do
     case Process.whereis(Singularity.Execution.Runners.Control) do
       pid when is_pid(pid) ->
         GenServer.cast(pid, {:system_event_broadcast, context})
+
         Logger.debug("System event broadcasted to Control GenServer",
           event_type: event_type
         )

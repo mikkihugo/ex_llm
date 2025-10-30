@@ -320,12 +320,14 @@ defmodule Singularity.Agents.CostOptimizedAgent do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = task.type || :code_generation
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> :complex  # Fallback for code generation tasks
-    end
-    
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Fallback for code generation tasks
+        {:error, _} -> :complex
+      end
+
     opts_with_complexity = Keyword.put(opts, :complexity, complexity)
 
     case Singularity.LLM.Service.call(complexity, messages, opts_with_complexity) do

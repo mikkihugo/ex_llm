@@ -287,10 +287,10 @@ impl SparcTemplateGenerator {
         // Use package_registry_indexer's registry which loads generated AI templates
         #[cfg(feature = "with-package-indexer")]
         {
-            let registry = package_registry_indexer::RegistryTemplate::new();
+            let registry = crate::RegistryTemplate::new();
             registry
                 .get(template_id)
-                .and_then(|t| t.template_content.clone())
+                .map(|t| t.template.clone())
         }
         #[cfg(not(feature = "with-package-indexer"))]
         {

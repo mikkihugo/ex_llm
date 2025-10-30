@@ -14,12 +14,16 @@ defmodule Mix.Compilers.RustEngines do
   """
 
   @behaviour Mix.Task.Compiler
-  
+
   require Logger
 
   @engines [
     %{name: "parser_engine", crate: "parser_code", path: "packages/parser_engine"},
-    %{name: "code_quality_engine", crate: "code_quality_engine", path: "packages/code_quality_engine"},
+    %{
+      name: "code_quality_engine",
+      crate: "code_quality_engine",
+      path: "packages/code_quality_engine"
+    },
     %{name: "linting_engine", crate: "linting_engine", path: "packages/linting_engine"},
     %{name: "prompt_engine", crate: "prompt_engine", path: "packages/prompt_engine"}
   ]
@@ -45,20 +49,23 @@ defmodule Mix.Compilers.RustEngines do
 
     # Check if cargo is available
     cargo_path = System.find_executable("cargo")
+
     unless cargo_path do
       Logger.error("cargo not found in PATH", path: System.get_env("PATH"))
+
       Mix.shell().error("""
       ERROR: cargo not found in PATH
 
       Rust engines require cargo to build. Please ensure:
       1. You're in a Nix dev-shell (nix develop)
       2. Rust toolchain is installed
-      
+
       To skip Rust builds during development, set SKIP_RUST_BUILD=1
       """)
+
       System.halt(1)
     end
-    
+
     Logger.debug("cargo found", path: cargo_path)
 
     results =
@@ -75,10 +82,13 @@ defmodule Mix.Compilers.RustEngines do
     else
       failed = Enum.count(results, &(&1 == :error))
       skipped = Enum.count(results, &(&1 == :skip))
-      Logger.error("Rust engine compiler completed with failures", 
+
+      Logger.error("Rust engine compiler completed with failures",
         failed_count: failed,
         skipped_count: skipped,
-        total_engines: length(@engines))
+        total_engines: length(@engines)
+      )
+
       Mix.shell().error("??  #{failed} engine(s) failed to build")
       {:error, []}
     end
@@ -104,10 +114,11 @@ defmodule Mix.Compilers.RustEngines do
 
         # Check if .so file already exists (respect cache)
         existing_so = find_so_file(full_path, crate)
+
         if existing_so && File.exists?(existing_so) do
           # Check if source is newer than the .so file (only rebuild if changed)
           source_changed = source_newer_than_target?(full_path, existing_so)
-          
+
           if source_changed do
             Logger.debug("Source changed, rebuilding", engine: name, existing_so: existing_so)
             # Source changed, rebuild
@@ -115,7 +126,14 @@ defmodule Mix.Compilers.RustEngines do
           else
             # Already built and up-to-date, use cache
             so_stat = File.stat!(existing_so)
-            Logger.debug("Using cached build", engine: name, so_file: existing_so, file_size_bytes: so_stat.size, mtime: so_stat.mtime)
+
+            Logger.debug("Using cached build",
+              engine: name,
+              so_file: existing_so,
+              file_size_bytes: so_stat.size,
+              mtime: so_stat.mtime
+            )
+
             Mix.shell().info("? #{name} already built (using cache)")
             :ok
           end
@@ -132,7 +150,7 @@ defmodule Mix.Compilers.RustEngines do
     # cargo fetch is quiet if dependencies are already cached
     Logger.debug("Fetching dependencies", engine: name, manifest: cargo_toml)
     fetch_start = System.monotonic_time()
-    
+
     case System.cmd("cargo", ["fetch", "--manifest-path", cargo_toml],
            cd: full_path,
            stderr_to_stdout: false,
@@ -142,17 +160,26 @@ defmodule Mix.Compilers.RustEngines do
         fetch_duration = System.monotonic_time() - fetch_start
         # Only show output if there was actual fetching (not just cache hit)
         if String.contains?(output, "Downloading") or String.contains?(output, "Updating") do
-          Logger.info("Dependencies updated", engine: name, duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond))
+          Logger.info("Dependencies updated",
+            engine: name,
+            duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond)
+          )
+
           Mix.shell().info("?? Dependencies updated for #{name}")
         else
-          Logger.debug("Dependencies already cached", engine: name, duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond))
+          Logger.debug("Dependencies already cached",
+            engine: name,
+            duration_ms: System.convert_time_unit(fetch_duration, :native, :millisecond)
+          )
         end
 
       {error_output, fetch_exit_code} ->
-        Logger.warning("cargo fetch failed, continuing with build", 
-          engine: name, 
+        Logger.warning("cargo fetch failed, continuing with build",
+          engine: name,
           exit_code: fetch_exit_code,
-          error: String.slice(to_string(error_output), 0..500))
+          error: String.slice(to_string(error_output), 0..500)
+        )
+
         # Silently continue - cargo build will fetch if needed
         :ok
     end
@@ -161,7 +188,7 @@ defmodule Mix.Compilers.RustEngines do
     Logger.info("Building engine", engine: name, crate: crate, mode: "release")
     build_start = System.monotonic_time()
     Mix.shell().info("?? Building #{name} (#{crate})...")
-    
+
     case System.cmd("cargo", ["build", "--release", "--manifest-path", cargo_toml],
            cd: full_path,
            stderr_to_stdout: true,
@@ -174,26 +201,37 @@ defmodule Mix.Compilers.RustEngines do
 
         if so_file do
           so_stat = File.stat!(so_file)
-          Logger.info("Engine built successfully", 
-            engine: name, 
+
+          Logger.info("Engine built successfully",
+            engine: name,
             so_file: so_file,
             file_size_bytes: so_stat.size,
-            duration_ms: System.convert_time_unit(build_duration, :native, :millisecond))
+            duration_ms: System.convert_time_unit(build_duration, :native, :millisecond)
+          )
+
           Mix.shell().info("? Built #{name}: #{so_file}")
           :ok
         else
-          Logger.error("Build succeeded but .so file not found", engine: name, crate: crate, search_path: full_path)
+          Logger.error("Build succeeded but .so file not found",
+            engine: name,
+            crate: crate,
+            search_path: full_path
+          )
+
           Mix.shell().error("? Build succeeded but .so file not found for #{name}")
           :error
         end
 
       {build_output, exit_code} ->
         build_duration = System.monotonic_time() - build_start
-        Logger.error("Build failed", 
-          engine: name, 
+
+        Logger.error("Build failed",
+          engine: name,
           exit_code: exit_code,
           duration_ms: System.convert_time_unit(build_duration, :native, :millisecond),
-          error_preview: String.slice(to_string(build_output), 0..500))
+          error_preview: String.slice(to_string(build_output), 0..500)
+        )
+
         Mix.shell().error("? Failed to build #{name} (exit code: #{exit_code})")
         :error
     end
@@ -217,14 +255,14 @@ defmodule Mix.Compilers.RustEngines do
 
   defp source_newer_than_target?(engine_path, target_file) do
     target_mtime = File.stat!(target_file).mtime
-    
+
     # Check if any Rust source file is newer than the target
     src_patterns = [
       Path.join([engine_path, "src", "**", "*.rs"]),
       Path.join([engine_path, "Cargo.toml"]),
       Path.join([engine_path, "Cargo.lock"])
     ]
-    
+
     src_patterns
     |> Enum.flat_map(&Path.wildcard/1)
     |> Enum.any?(fn src_file ->

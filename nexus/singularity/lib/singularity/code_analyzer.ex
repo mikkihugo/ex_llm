@@ -2,7 +2,7 @@ defmodule Singularity.CodeAnalyzer do
   @moduledoc """
   Multi-Language Code Analyzer - Wrapper for Rust CodebaseAnalyzer NIF
 
-  Provides comprehensive code analysis for 20 languages using the language registry
+  Provides comprehensive code analysis for **26 languages** using the language registry
   and CodebaseAnalyzer from rust/code_quality_engine.
 
   ## Module Identity (JSON)
@@ -10,49 +10,64 @@ defmodule Singularity.CodeAnalyzer do
   ```json
   {
     "module_name": "Singularity.CodeAnalyzer",
-    "purpose": "Multi-language code analysis with 20-language support",
+    "purpose": "Multi-language code analysis with 26-language support (all with RCA metrics)",
     "type": "NIF wrapper module",
     "operates_on": "Code strings with language hints",
-    "output": "Language analysis, RCA metrics, AST extraction, rule violations"
+    "output": "Language analysis, RCA metrics, AST extraction, rule violations",
+    "rca_metrics_languages": 26,
+    "ast_analysis_languages": 26
   }
   ```
 
-  ## Supported Languages (20)
+  ## Supported Languages (26 - All with Full RCA Metrics)
 
-  - **BEAM**: Elixir, Erlang, Gleam
-  - **Systems**: Rust, C, C++, C#, Go
-  - **Web**: JavaScript, TypeScript
-  - **High-Level**: Python, Java
-  - **Scripting**: Lua, Bash
-  - **Data**: JSON, YAML, TOML
-  - **Documentation**: Markdown
-  - **Infrastructure**: Dockerfile, SQL
+  - **BEAM**: Elixir, Erlang, Gleam (✅ Full RCA + BEAM patterns)
+  - **Systems**: Rust, C, C++, Go, Swift (✅ Full RCA)
+  - **Web**: JavaScript, TypeScript, PHP, Dart (✅ Full RCA)
+  - **JVM**: Java, Scala, Clojure (✅ Full RCA)
+  - **Scripting**: Python, Ruby, Lua, Bash (✅ Full RCA)
+  - **CLR**: C# (✅ Full RCA)
+  - **Data**: JSON, YAML, TOML, SQL (✅ AST + Metrics)
+  - **Documentation**: Markdown (✅ AST + Metrics)
+  - **Infrastructure**: Dockerfile (✅ AST + Metrics)
 
   ## Capabilities
 
-  ### 1. Language Analysis
+  ### 1. Language Analysis (All 26 Languages)
   - Semantic tokenization
   - Complexity scoring
   - Quality metrics
   - Registry-derived metadata
+  - Language family detection
 
-  ### 2. RCA Metrics (9 languages)
-  Rust, C, C++, C#, JavaScript, TypeScript, Python, Java, Go
+  ### 2. RCA Metrics (All 26 Languages)
+  Rust, C, C++, C#, JavaScript, TypeScript, Python, Java, Go, **Ruby, PHP, Dart, Swift, Clojure, Scala**
   - Cyclomatic Complexity
-  - Halstead metrics
+  - Halstead metrics (program length, vocabulary, difficulty, effort)
   - Maintainability Index
   - SLOC, PLOC, LLOC, CLOC, BLANK
+  - Complexity scoring
 
-  ### 3. AST Extraction (All 20 languages)
+  ### 3. AST Extraction (All 26 Languages)
   - Functions with signatures
   - Classes with methods
   - Imports and exports
+  - Language-specific patterns
 
   ### 4. Rule Checking
   - Family-based best practices
   - Language-specific style rules
+  - Quality heuristics
 
-  ### 5. Cross-Language Patterns
+  ### 5. BEAM-Specific Analysis (Elixir, Erlang, Gleam)
+  - GenServer/gen_server detection
+  - Supervisor pattern detection
+  - OTP behavior analysis
+  - Process spawning patterns
+  - Message passing analysis
+  - Actor complexity scoring
+
+  ### 6. Cross-Language Patterns
   - API Integration patterns
   - Error handling patterns
   - Logging, messaging, testing patterns
@@ -127,7 +142,7 @@ defmodule Singularity.CodeAnalyzer do
 
   multi-language-analysis, code-quality, ast-extraction, rca-metrics,
   language-registry, complexity-scoring, cross-language-patterns,
-  20-language-support, tree-sitter, rust-nif
+  26-language-support, tree-sitter, rust-nif
   """
 
   alias Singularity.CodeAnalyzer.Native
@@ -320,7 +335,7 @@ defmodule Singularity.CodeAnalyzer do
   # ===========================
 
   @doc """
-  Get all supported languages (20 languages).
+  Get all supported languages (26 languages).
 
   ## Returns
   - List of language IDs
@@ -340,7 +355,7 @@ defmodule Singularity.CodeAnalyzer do
   end
 
   @doc """
-  Get AST-Grep supported languages (all 20 languages).
+  Get AST-Grep supported languages (all 26 languages).
 
   ## Returns
   - List of language IDs with AST-Grep support
@@ -753,7 +768,8 @@ defmodule Singularity.CodeAnalyzer do
       iex> CodeAnalyzer.calculate_ai_complexity_score(complex_rust_code, "rust")
       {:ok, 7.8}
   """
-  def calculate_ai_complexity_score(code, language) when is_binary(code) and is_binary(language) do
+  def calculate_ai_complexity_score(code, language)
+      when is_binary(code) and is_binary(language) do
     Native.calculate_ai_complexity_score(code, language)
   end
 
@@ -802,7 +818,8 @@ defmodule Singularity.CodeAnalyzer do
         "quality_trend" => "Improving"
       }}
   """
-  def calculate_evolution_trends(before_metrics, after_metrics) when is_map(before_metrics) and is_map(after_metrics) do
+  def calculate_evolution_trends(before_metrics, after_metrics)
+      when is_map(before_metrics) and is_map(after_metrics) do
     Native.calculate_evolution_trends(before_metrics, after_metrics)
   end
 
@@ -827,7 +844,8 @@ defmodule Singularity.CodeAnalyzer do
         "risk_factors" => [%{"factor_type" => "HighComplexity", "severity" => "Medium"}]
       }}
   """
-  def predict_ai_code_quality(code_features, language, model_name) when is_map(code_features) and is_binary(language) and is_binary(model_name) do
+  def predict_ai_code_quality(code_features, language, model_name)
+      when is_map(code_features) and is_binary(language) and is_binary(model_name) do
     Native.predict_ai_code_quality(code_features, language, model_name)
   end
 
@@ -847,7 +865,8 @@ defmodule Singularity.CodeAnalyzer do
       iex> CodeAnalyzer.calculate_pattern_effectiveness("defmodule", metrics)
       {:ok, 0.75}
   """
-  def calculate_pattern_effectiveness(pattern, metrics) when is_binary(pattern) and is_map(metrics) do
+  def calculate_pattern_effectiveness(pattern, metrics)
+      when is_binary(pattern) and is_map(metrics) do
     Native.calculate_pattern_effectiveness(pattern, metrics)
   end
 

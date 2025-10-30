@@ -66,7 +66,9 @@ defmodule Singularity.Knowledge.RequestListener do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, reason}, %{listener: pid} = state) do
-    Logger.warning("KnowledgeRequestListener lost NOTIFY subscription, reason: #{inspect(reason)}")
+    Logger.warning(
+      "KnowledgeRequestListener lost NOTIFY subscription, reason: #{inspect(reason)}"
+    )
 
     case PgFlow.listen(@channel, Repo) do
       {:ok, listener_pid} ->

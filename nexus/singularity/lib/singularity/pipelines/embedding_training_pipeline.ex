@@ -42,23 +42,28 @@ defmodule Singularity.Pipelines.EmbeddingTrainingPipeline do
   Build producer configuration based on PGFlow mode setting
   """
   def build_producer_config do
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.embedding_training.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.embedding_training.enabled", false)
 
     if pgflow_enabled do
       Logger.info("EmbeddingTrainingPipeline: Starting in PGFlow mode")
+
       [
-        module: {Broadway.PgflowProducer, [
-          workflow_name: "embedding_training_producer",
-          queue_name: "embedding_training_jobs",
-          concurrency: 4,
-          batch_size: 32,
-          pgflow_config: [timeout_ms: 300_000, retries: 3],
-          resource_hints: [gpu: true]
-        ]},
+        module:
+          {Broadway.PgflowProducer,
+           [
+             workflow_name: "embedding_training_producer",
+             queue_name: "embedding_training_jobs",
+             concurrency: 4,
+             batch_size: 32,
+             pgflow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [gpu: true]
+           ]},
         concurrency: 4
       ]
     else
       Logger.info("EmbeddingTrainingPipeline: Starting in Broadway mode")
+
       [
         module: {Broadway.DummyProducer, []},
         concurrency: 1
@@ -68,7 +73,9 @@ defmodule Singularity.Pipelines.EmbeddingTrainingPipeline do
 
   @impl Broadway
   def handle_message(:default, %Message{data: data} = message, _context) do
-    Logger.debug("EmbeddingTrainingPipeline: Processing message", message_id: message.metadata.message_id)
+    Logger.debug("EmbeddingTrainingPipeline: Processing message",
+      message_id: message.metadata.message_id
+    )
 
     case generate_embeddings(data) do
       {:ok, embeddings} ->
@@ -84,28 +91,34 @@ defmodule Singularity.Pipelines.EmbeddingTrainingPipeline do
 
   @impl Broadway
   def handle_batch(:embedding_generation, messages, _batch_info, _context) do
-    Logger.info("EmbeddingTrainingPipeline: Processing embedding generation batch", batch_size: length(messages))
+    Logger.info("EmbeddingTrainingPipeline: Processing embedding generation batch",
+      batch_size: length(messages)
+    )
 
-    processed_messages = Enum.map(messages, fn message ->
-      %{embeddings: embeddings} = message.data
+    processed_messages =
+      Enum.map(messages, fn message ->
+        %{embeddings: embeddings} = message.data
 
-      should_train = should_trigger_training?(embeddings)
+        should_train = should_trigger_training?(embeddings)
 
-      if should_train do
-        Message.put_batcher(message, :training_data)
-      else
-        message
-      end
-    end)
+        if should_train do
+          Message.put_batcher(message, :training_data)
+        else
+          message
+        end
+      end)
 
     processed_messages
   end
 
   @impl Broadway
   def handle_batch(:training_data, messages, _batch_info, _context) do
-    Logger.info("EmbeddingTrainingPipeline: Processing training data batch", batch_size: length(messages))
+    Logger.info("EmbeddingTrainingPipeline: Processing training data batch",
+      batch_size: length(messages)
+    )
 
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.embedding_training.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.embedding_training.enabled", false)
 
     if pgflow_enabled do
       training_data = Enum.map(messages, & &1.data)
@@ -141,7 +154,8 @@ defmodule Singularity.Pipelines.EmbeddingTrainingPipeline do
   defp should_trigger_training?(embeddings) do
     # Check if embeddings need retraining based on quality metrics
     quality_score = calculate_embedding_quality(embeddings)
-    quality_score < 0.85  # Retrain if quality drops below threshold
+    # Retrain if quality drops below threshold
+    quality_score < 0.85
   end
 
   defp calculate_embedding_quality(embeddings) do

@@ -41,10 +41,10 @@ config :singularity, :enable_debugger, false
 
 # Enable IEx breakpoints and debugging helpers
 # Insert breakpoints with: require Debug; Debug.pry()
-config :iex, :colors, [enabled: true]
+config :iex, :colors, enabled: true
 
 # Enable verbose error messages and stack traces
-config :logger, 
+config :logger,
   level: :debug,
   compile_time_purge_matching: [],
   backends: [:console]

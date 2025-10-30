@@ -58,7 +58,13 @@ defmodule Singularity.Code.Analyzers.RustToolingAnalyzer do
       {:error, reason} ->
         Logger.warning("Binary size analysis skipped: #{reason}. Is cargo-bloat installed?")
 
-        {:ok, %{total_size: nil, largest_contributors: [], count: 0, warning: "cargo-bloat not available"}}
+        {:ok,
+         %{
+           total_size: nil,
+           largest_contributors: [],
+           count: 0,
+           warning: "cargo-bloat not available"
+         }}
     end
   end
 

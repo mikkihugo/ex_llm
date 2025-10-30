@@ -11,8 +11,12 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
     setup do
       # Set up PGFlow mode in application config
       original_config = Application.get_env(:singularity, :embedding_training_pipeline, %{})
-      Application.put_env(:singularity, :embedding_training_pipeline,
-        Map.put(original_config, :pgflow_enabled, true))
+
+      Application.put_env(
+        :singularity,
+        :embedding_training_pipeline,
+        Map.put(original_config, :pgflow_enabled, true)
+      )
 
       on_exit(fn ->
         Application.put_env(:singularity, :embedding_training_pipeline, original_config)
@@ -33,7 +37,11 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
 
     test "workflow executes complete pipeline successfully" do
       # Mock all the dependencies
-      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [language: "elixir", min_length: 50, limit: 1000] ->
+      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [
+                                                                     language: "elixir",
+                                                                     min_length: 50,
+                                                                     limit: 1000
+                                                                   ] ->
         [%{code: "def test_function do\n  # test code\nend", context: "test context"}]
       end)
 
@@ -41,14 +49,21 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
         {:ok, %{model: "qodo_trainer"}}
       end)
 
-      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"}, _prepared_data, [epochs: 3, learning_rate: 1.0e-5, batch_size: 16] ->
+      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"},
+                                                            _prepared_data,
+                                                            [
+                                                              epochs: 3,
+                                                              learning_rate: 1.0e-5,
+                                                              batch_size: 16
+                                                            ] ->
         {:ok, %{accuracy: 0.85}}
       end)
 
       # Execute workflow
       workflow_input = %{model_type: :qodo, language: "elixir", min_length: 50}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} =
+               PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
 
       # Wait for completion (in real test, would poll for status)
       Process.sleep(100)
@@ -71,7 +86,11 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
 
     test "workflow handles step failures gracefully" do
       # Mock data collection success but training failure
-      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [language: "elixir", min_length: 50, limit: 1000] ->
+      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [
+                                                                     language: "elixir",
+                                                                     min_length: 50,
+                                                                     limit: 1000
+                                                                   ] ->
         [%{code: "def test_function do\n  # test code\nend", context: "test context"}]
       end)
 
@@ -81,7 +100,8 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
 
       workflow_input = %{model_type: :qodo, language: "elixir", min_length: 50}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} =
+               PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
@@ -98,7 +118,11 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
 
     test "workflow respects concurrency limits" do
       # Mock dependencies for multiple executions
-      expect(Singularity.CodeStore.Mock, :get_training_samples, 2, fn [language: "elixir", min_length: 50, limit: 1000] ->
+      expect(Singularity.CodeStore.Mock, :get_training_samples, 2, fn [
+                                                                        language: "elixir",
+                                                                        min_length: 50,
+                                                                        limit: 1000
+                                                                      ] ->
         [%{code: "def test_function do\n  # test code\nend", context: "test context"}]
       end)
 
@@ -106,15 +130,24 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
         {:ok, %{model: "qodo_trainer"}}
       end)
 
-      expect(Singularity.Embedding.Trainer.Mock, :train, 2, fn %{model: "qodo_trainer"}, _prepared_data, [epochs: 3, learning_rate: 1.0e-5, batch_size: 16] ->
+      expect(Singularity.Embedding.Trainer.Mock, :train, 2, fn %{model: "qodo_trainer"},
+                                                               _prepared_data,
+                                                               [
+                                                                 epochs: 3,
+                                                                 learning_rate: 1.0e-5,
+                                                                 batch_size: 16
+                                                               ] ->
         {:ok, %{accuracy: 0.85}}
       end)
 
       # Start multiple workflows
       workflow_input = %{model_type: :qodo, language: "elixir", min_length: 50}
 
-      assert {:ok, execution_id1} = PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
-      assert {:ok, execution_id2} = PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id1} =
+               PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
+
+      assert {:ok, execution_id2} =
+               PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(200)
@@ -129,7 +162,11 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
 
     test "workflow collects metrics correctly" do
       # Mock dependencies
-      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [language: "elixir", min_length: 50, limit: 1000] ->
+      expect(Singularity.CodeStore.Mock, :get_training_samples, fn [
+                                                                     language: "elixir",
+                                                                     min_length: 50,
+                                                                     limit: 1000
+                                                                   ] ->
         [%{code: "def test_function do\n  # test code\nend", context: "test context"}]
       end)
 
@@ -137,13 +174,20 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
         {:ok, %{model: "qodo_trainer"}}
       end)
 
-      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"}, _prepared_data, [epochs: 3, learning_rate: 1.0e-5, batch_size: 16] ->
+      expect(Singularity.Embedding.Trainer.Mock, :train, fn %{model: "qodo_trainer"},
+                                                            _prepared_data,
+                                                            [
+                                                              epochs: 3,
+                                                              learning_rate: 1.0e-5,
+                                                              batch_size: 16
+                                                            ] ->
         {:ok, %{accuracy: 0.85}}
       end)
 
       workflow_input = %{model_type: :qodo, language: "elixir", min_length: 50}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} =
+               PGFlow.Workflow.execute(EmbeddingTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
@@ -165,8 +209,12 @@ defmodule Singularity.ML.Pipelines.EmbeddingTrainingPipelinePGFlowIntegrationTes
     setup do
       # Ensure Broadway mode is enabled
       original_config = Application.get_env(:singularity, :embedding_training_pipeline, %{})
-      Application.put_env(:singularity, :embedding_training_pipeline,
-        Map.put(original_config, :pgflow_enabled, false))
+
+      Application.put_env(
+        :singularity,
+        :embedding_training_pipeline,
+        Map.put(original_config, :pgflow_enabled, false)
+      )
 
       on_exit(fn ->
         Application.put_env(:singularity, :embedding_training_pipeline, original_config)

@@ -510,25 +510,25 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     # Gather actual metrics from Telemetry and agent state
     now = DateTime.utc_now()
     today_start = %{now | hour: 0, minute: 0, second: 0}
-    
+
     # Query completed tasks from today
     completed_tasks = query_completed_tasks_since(today_start)
-    
+
     # Query failed tasks from today
     failed_tasks = query_failed_tasks_since(today_start)
-    
+
     # Query deployments from today
     deployments = query_deployments_since(today_start)
-    
+
     # Calculate average confidence from agent metrics
     avg_confidence = calculate_avg_confidence()
-    
+
     # Get pending questions
     pending_questions = query_pending_questions()
-    
+
     # Get top recommendation
     top_recommendation = get_top_recommendation()
-    
+
     # Emit Telemetry metrics
     Singularity.Infrastructure.Telemetry.execute(
       [:singularity, :chat_conversation, :daily_summary],
@@ -542,7 +542,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
         pending_questions_count: length(pending_questions)
       }
     )
-    
+
     %{
       completed_tasks: length(completed_tasks),
       failed_tasks: length(failed_tasks),
@@ -1222,7 +1222,6 @@ defmodule Singularity.Conversation.ChatConversationAgent do
     end
   end
 
-
   # Helper: Store goal locally for tracking
   defp store_goal_locally(goal_id, goal, message_id) do
     # In production, this would store in a goals table
@@ -1315,19 +1314,33 @@ defmodule Singularity.Conversation.ChatConversationAgent do
   defp send_to_channel(:google_chat, :daily_summary, data), do: WebChat.daily_summary(data)
   defp send_to_channel(:google_chat, :deployment, data), do: WebChat.deployment_notification(data)
   defp send_to_channel(:google_chat, :policy_change, data), do: WebChat.policy_change(data)
+
   defp send_to_channel(:web_chat, message_type, payload) do
     case message_type do
-      :notify -> WebChat.notify(payload)
-      :ask_approval -> WebChat.ask_approval(payload)
-      :ask_question -> WebChat.ask_question(payload)
-      :daily_summary -> WebChat.daily_summary(payload)
-      :deployment -> WebChat.deployment_notification(payload)
-      :policy_change -> WebChat.policy_change(payload)
+      :notify ->
+        WebChat.notify(payload)
+
+      :ask_approval ->
+        WebChat.ask_approval(payload)
+
+      :ask_question ->
+        WebChat.ask_question(payload)
+
+      :daily_summary ->
+        WebChat.daily_summary(payload)
+
+      :deployment ->
+        WebChat.deployment_notification(payload)
+
+      :policy_change ->
+        WebChat.policy_change(payload)
+
       _ ->
         Logger.warning("Unknown message type for web_chat: #{inspect(message_type)}")
         {:error, :unknown_message_type}
     end
   end
+
   defp send_to_channel(unknown_channel, action, _data) do
     Logger.warning("Unknown channel: #{unknown_channel} for action: #{action}")
     {:error, :unknown_channel}
@@ -1357,7 +1370,6 @@ defmodule Singularity.Conversation.ChatConversationAgent do
       _ -> :google_chat
     end
   end
-
 
   # Helper: Send to channel and capture response queue for approvals
   defp send_to_channel_with_response(channel, message_type, payload) do

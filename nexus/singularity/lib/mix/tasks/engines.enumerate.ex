@@ -50,6 +50,7 @@ defmodule Mix.Tasks.Engines.Enumerate do
       Enum.each(engines, fn engine ->
         # Use show_health from opts, or rely on default value in print_engine_summary function
         show_health = opts[:health]
+
         if show_health != nil do
           print_engine_summary(engine, show_health)
         else

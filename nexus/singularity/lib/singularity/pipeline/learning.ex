@@ -371,11 +371,11 @@ defmodule Singularity.Pipeline.Learning do
         "artifacts" => [format_execution_learning(result)],
         "timestamp" => DateTime.utc_now()
       }
-      
+
       case PgFlow.send_with_notify("patterns_learned_published", message) do
         {:ok, _} ->
           Logger.debug("Execution learning published to CentralCloud")
-        
+
         {:error, reason} ->
           Logger.warning("Failed to publish execution learning to CentralCloud", reason: reason)
       end
@@ -397,7 +397,8 @@ defmodule Singularity.Pipeline.Learning do
     }
   end
 
-  defp format_execution_learning(_), do: %{"type" => "execution_learning", "timestamp" => DateTime.utc_now()}
+  defp format_execution_learning(_),
+    do: %{"type" => "execution_learning", "timestamp" => DateTime.utc_now()}
 
   # Extraction Helpers
 

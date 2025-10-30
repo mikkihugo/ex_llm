@@ -451,21 +451,22 @@ defmodule Singularity.Tools.CodeNaming do
   defp suggest_module_name(current, context, "elixir", framework) do
     # Use TechnologyAgent to get framework-specific naming patterns
     framework_patterns = TechnologyAgent.get_naming_patterns(framework)
-    
+
     suggestions = [
       %{name: to_pascal_case(current), reasoning: "Elixir PascalCase module", confidence: 0.9}
     ]
-    
+
     # Add framework-specific suggestions if available
     if framework_patterns do
-      framework_suggestions = Enum.map(framework_patterns, fn pattern ->
-        %{
-          name: apply_pattern(current, pattern),
-          reasoning: "Framework-specific pattern: #{pattern.type}",
-          confidence: pattern.confidence
-        }
-      end)
-      
+      framework_suggestions =
+        Enum.map(framework_patterns, fn pattern ->
+          %{
+            name: apply_pattern(current, pattern),
+            reasoning: "Framework-specific pattern: #{pattern.type}",
+            confidence: pattern.confidence
+          }
+        end)
+
       suggestions ++ framework_suggestions
     else
       suggestions

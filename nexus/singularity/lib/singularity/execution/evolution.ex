@@ -345,7 +345,10 @@ defmodule Singularity.Execution.Evolution do
   end
 
   @spec aggregate_baseline_metric(map(), atom()) :: float()
-  defp aggregate_baseline_metric(%{summary: %{average_value: avg_value}, samples: samples}, suggestion_type) do
+  defp aggregate_baseline_metric(
+         %{summary: %{average_value: avg_value}, samples: samples},
+         suggestion_type
+       ) do
     # Extract the specific metric type from samples based on suggestion type
     metric_name =
       case suggestion_type do
@@ -359,6 +362,7 @@ defmodule Singularity.Execution.Evolution do
     value =
       if metric_name do
         values = extract_metric_values(samples, metric_name)
+
         if length(values) > 0 do
           Enum.sum(values) / length(values)
         else

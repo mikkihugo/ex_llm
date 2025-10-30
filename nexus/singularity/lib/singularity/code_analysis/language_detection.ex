@@ -10,7 +10,7 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
     "purpose": "Unified language detection for files and projects",
     "type": "Detection service (Rust NIF backed)",
     "data_sources": ["Rust code_quality_engine NIFs", "File extensions", "Manifest files"],
-    "supports": "25+ programming languages"
+    "supports": "26 programming languages"
   }
   ```
 
@@ -62,6 +62,7 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
   """
 
   require Logger
+  alias Singularity.CodeAnalyzer.Native
 
   @doc """
   Detect primary language of a directory by scanning for manifest files.
@@ -101,8 +102,12 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
       {"requirements.txt", "python"},
       {"pom.xml", "java"},
       {"build.gradle", "java"},
+      {"build.sbt", "scala"},
       {"Gemfile", "ruby"},
-      {"composer.json", "php"}
+      {"composer.json", "php"},
+      {"pubspec.yaml", "dart"},
+      {"Package.swift", "swift"},
+      {"project.clj", "clojure"}
     ]
 
     Enum.find_value(manifests, {:error, :no_manifest}, fn {manifest, _lang} ->
@@ -125,7 +130,7 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
   @doc """
   Detect language from a file path using file extension.
 
-  Uses the Rust language registry for accuracy across 25+ languages.
+  Uses the Rust language registry for accuracy across 26 languages.
   This is the primary method for identifying individual file languages.
 
   ## Examples
@@ -140,9 +145,15 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
       {:ok, %{language: "unknown", confidence: 0.0, detection_method: "extension"}}
   """
   def by_extension(file_path) when is_binary(file_path) do
-    case detect_language_by_extension_nif(file_path) do
+    case Native.detect_language_by_extension_nif(file_path) do
       {:ok, result} ->
-        {:ok, result_to_map(result)}
+        # Get dynamic confidence from learned database
+        extension = Path.extname(file_path) |> String.trim_leading(".")
+        dynamic_confidence = get_dynamic_confidence("extension", "*.#{extension}")
+
+        # Update result with learned confidence
+        updated_result = %{result | confidence: dynamic_confidence}
+        {:ok, result_to_map(updated_result)}
 
       {:error, reason} ->
         Logger.warning("Language detection failed for #{file_path}: #{inspect(reason)}")
@@ -173,13 +184,101 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
       {:ok, %{language: "javascript", confidence: 0.90, detection_method: "manifest"}}
   """
   def by_manifest(manifest_path) when is_binary(manifest_path) do
-    case detect_language_by_manifest_nif(manifest_path) do
+    case Native.detect_language_by_manifest_nif(manifest_path) do
       {:ok, result} ->
-        {:ok, result_to_map(result)}
+        # Get dynamic confidence from learned database
+        filename = Path.basename(manifest_path)
+        dynamic_confidence = get_dynamic_confidence("manifest", filename)
+
+        # Update result with learned confidence
+        updated_result = %{result | confidence: dynamic_confidence}
+        {:ok, result_to_map(updated_result)}
 
       {:error, reason} ->
         Logger.warning("Manifest detection failed for #{manifest_path}: #{inspect(reason)}")
         {:error, reason}
+    end
+  end
+
+  @doc """
+  Record a successful language detection for learning.
+
+  This updates the confidence database to improve future detections.
+  Call this when language detection produces a correct result.
+
+  ## Examples
+
+      iex> LanguageDetection.record_success("extension", "*.ex")
+      :ok
+
+      iex> LanguageDetection.record_success("manifest", "Cargo.toml")
+      :ok
+  """
+  def record_success(detection_method, pattern)
+      when is_binary(detection_method) and is_binary(pattern) do
+    try do
+      Singularity.Detection.LanguageDetectionConfidence.record_success(detection_method, pattern)
+    rescue
+      e ->
+        Logger.warning("Failed to record language detection success: #{inspect(e)}")
+        # Don't fail the calling code
+        :ok
+    end
+  end
+
+  @doc """
+  Record a failed language detection for learning.
+
+  This updates the confidence database to improve future detections.
+  Call this when language detection produces an incorrect result.
+
+  ## Examples
+
+      iex> LanguageDetection.record_failure("extension", "*.xyz")
+      :ok
+
+      iex> LanguageDetection.record_failure("manifest", "unknown.toml")
+      :ok
+  """
+  def record_failure(detection_method, pattern)
+      when is_binary(detection_method) and is_binary(pattern) do
+    try do
+      Singularity.Detection.LanguageDetectionConfidence.record_failure(detection_method, pattern)
+    rescue
+      e ->
+        Logger.warning("Failed to record language detection failure: #{inspect(e)}")
+        # Don't fail the calling code
+        :ok
+    end
+  end
+
+  @doc """
+  Get statistics about language detection confidence learning.
+
+  Returns information about how well the system is learning language detection.
+
+  ## Examples
+
+      iex> LanguageDetection.get_statistics()
+      %{
+        total_patterns: 25,
+        average_confidence: 0.92,
+        most_reliable: ["*.ex", "*.rs", "mix.exs"],
+        least_reliable: ["*.xyz", "unknown.toml"]
+      }
+  """
+  def get_statistics() do
+    try do
+      Singularity.Detection.LanguageDetectionConfidence.get_statistics()
+    rescue
+      _ ->
+        %{
+          total_patterns: 0,
+          average_confidence: 0.0,
+          most_reliable: [],
+          least_reliable: [],
+          error: "Database unavailable"
+        }
     end
   end
 
@@ -297,13 +396,45 @@ defmodule Singularity.CodeAnalysis.LanguageDetection do
     }
   end
 
-  # NIF stubs - implemented in Rust
-
-  defp detect_language_by_extension_nif(_file_path) do
-    :erlang.nif_error(:nif_not_loaded)
+  # Get dynamic confidence from learned database
+  defp get_dynamic_confidence(detection_method, pattern) do
+    try do
+      Singularity.Detection.LanguageDetectionConfidence.get_confidence(detection_method, pattern)
+    rescue
+      _ -> get_fallback_confidence(detection_method, pattern)
+    end
   end
 
-  defp detect_language_by_manifest_nif(_manifest_path) do
-    :erlang.nif_error(:nif_not_loaded)
-  end
+  # Fallback confidence when database is unavailable
+  defp get_fallback_confidence("extension", "*.rs"), do: 0.99
+  defp get_fallback_confidence("extension", "*.ex"), do: 0.99
+  defp get_fallback_confidence("extension", "*.exs"), do: 0.99
+  defp get_fallback_confidence("extension", "*.js"), do: 0.99
+  defp get_fallback_confidence("extension", "*.ts"), do: 0.99
+  defp get_fallback_confidence("extension", "*.py"), do: 0.99
+  defp get_fallback_confidence("extension", "*.go"), do: 0.99
+  defp get_fallback_confidence("extension", "*.java"), do: 0.99
+  defp get_fallback_confidence("extension", "*.cs"), do: 0.99
+  defp get_fallback_confidence("extension", "*.cpp"), do: 0.99
+  defp get_fallback_confidence("extension", "*.erl"), do: 0.99
+  defp get_fallback_confidence("extension", "*.gleam"), do: 0.99
+  # Extensions are generally reliable
+  defp get_fallback_confidence("extension", _), do: 0.99
+
+  defp get_fallback_confidence("manifest", "mix.exs"), do: 0.99
+  defp get_fallback_confidence("manifest", "Cargo.toml"), do: 0.95
+  defp get_fallback_confidence("manifest", "go.mod"), do: 0.95
+  # Can be JS or TS
+  defp get_fallback_confidence("manifest", "package.json"), do: 0.90
+  defp get_fallback_confidence("manifest", "pyproject.toml"), do: 0.95
+  defp get_fallback_confidence("manifest", "setup.py"), do: 0.95
+  defp get_fallback_confidence("manifest", "pom.xml"), do: 0.95
+  defp get_fallback_confidence("manifest", "build.gradle"), do: 0.95
+  defp get_fallback_confidence("manifest", "Gemfile"), do: 0.95
+  defp get_fallback_confidence("manifest", "composer.json"), do: 0.95
+  defp get_fallback_confidence("manifest", _), do: 0.5
+
+  defp get_fallback_confidence("filename", "Dockerfile"), do: 0.95
+  defp get_fallback_confidence("filename", _), do: 0.95
+  defp get_fallback_confidence(_, _), do: 0.5
 end

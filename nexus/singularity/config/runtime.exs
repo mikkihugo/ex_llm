@@ -205,16 +205,17 @@ config :singularity,
     # Lower = fewer errors, more deterministic
     temperature: 0.2
   ]
-  
-  # Git coordinator for auto-upgrade branch isolation and PR management
-  config :singularity, :git_coordinator,
-    enabled: true,
-    # Auto-detect repo path from git or use XDG_DATA_HOME
-  repo_path: System.get_env("GIT_COORDINATOR_REPO_PATH") ||
-    Path.join([
-      System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
-      ".singularity",
-      "git-coordinator"
-    ]),
-    base_branch: System.get_env("GIT_COORDINATOR_BASE_BRANCH", "main"),
-    remote: System.get_env("GIT_COORDINATOR_REMOTE", "origin")
+
+# Git coordinator for auto-upgrade branch isolation and PR management
+config :singularity, :git_coordinator,
+  enabled: true,
+  # Auto-detect repo path from git or use XDG_DATA_HOME
+  repo_path:
+    System.get_env("GIT_COORDINATOR_REPO_PATH") ||
+      Path.join([
+        System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
+        ".singularity",
+        "git-coordinator"
+      ]),
+  base_branch: System.get_env("GIT_COORDINATOR_BASE_BRANCH", "main"),
+  remote: System.get_env("GIT_COORDINATOR_REMOTE", "origin")

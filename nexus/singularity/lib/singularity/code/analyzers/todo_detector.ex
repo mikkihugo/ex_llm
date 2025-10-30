@@ -164,11 +164,13 @@ defmodule Singularity.Code.Analyzers.TodoDetector do
   end
 
   defp filter_by_type(todos, :all), do: todos
+
   defp filter_by_type(todos, type) do
     Enum.filter(todos, &(&1.type == type))
   end
 
   defp filter_by_priority(todos, :all), do: todos
+
   defp filter_by_priority(todos, priority) do
     Enum.filter(todos, &(&1.priority == priority))
   end

@@ -189,13 +189,14 @@ defmodule Singularity.Execution.Feedback.Analyzer do
     }
   end
 
-  defp aggregate_metrics(_), do: %{
-    avg_success_rate: 0.0,
-    avg_cost_cents: 0.0,
-    avg_latency_ms: 0.0,
-    metric_count: 0,
-    latest_metric: nil
-  }
+  defp aggregate_metrics(_),
+    do: %{
+      avg_success_rate: 0.0,
+      avg_cost_cents: 0.0,
+      avg_latency_ms: 0.0,
+      metric_count: 0,
+      latest_metric: nil
+    }
 
   defp extract_metric_values(samples, metric_name) do
     samples
@@ -217,6 +218,7 @@ defmodule Singularity.Execution.Feedback.Analyzer do
   end
 
   defp average_or_default([], default), do: default
+
   defp average_or_default(values, _default) when is_list(values) do
     Enum.sum(values) / length(values)
   end

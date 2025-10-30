@@ -69,11 +69,13 @@ defmodule Singularity.Agents.Toolkit do
         # CodeStore doesn't have fetch_codebase, use list_codebases instead
         case Singularity.CodeStore.list_codebases() do
           codebases when is_list(codebases) ->
-            case Enum.find(codebases, & &1.id == codebase_id) do
+            case Enum.find(codebases, &(&1.id == codebase_id)) do
               nil -> {:error, :not_found}
               codebase -> {:ok, codebase}
             end
-          _ -> {:error, :no_codestore}
+
+          _ ->
+            {:error, :no_codestore}
         end
       else
         {:error, :no_codestore}

@@ -22,7 +22,7 @@ defmodule Singularity.Schemas.EctoSchemaToJsonSchemaGeneratorTest do
       schema = Generator.generate([TestSchema])
 
       assert schema["$schema"] == "http://json-schema.org/draft-07/schema#"
-      
+
       # Module name is converted to underscore format
       module_name = "Singularity_Schemas_EctoSchemaToJsonSchemaGeneratorTest_TestSchema"
       assert Map.has_key?(schema["definitions"], module_name)
@@ -55,7 +55,9 @@ defmodule Singularity.Schemas.EctoSchemaToJsonSchemaGeneratorTest do
 
       assert array_schema["type"] == "array"
       # Module name is converted to underscore format
-      expected_ref = "#/definitions/Singularity_Schemas_EctoSchemaToJsonSchemaGeneratorTest_TestSchema"
+      expected_ref =
+        "#/definitions/Singularity_Schemas_EctoSchemaToJsonSchemaGeneratorTest_TestSchema"
+
       assert array_schema["items"]["$ref"] == expected_ref
     end
   end

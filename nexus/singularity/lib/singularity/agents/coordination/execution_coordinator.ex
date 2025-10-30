@@ -51,6 +51,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
     case Singularity.PgFlow.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created agent coordination workflow", execution_id: execution_id)
+
       {:error, reason} ->
         Logger.warning("Failed to create agent coordination workflow", reason: reason)
     end
@@ -83,6 +84,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             task_count: length(final_results),
             completed_at: :erlang.system_time(:millisecond)
           }
+
           Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
 
           {:ok, final_results}
@@ -100,6 +102,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             reason: inspect(reason),
             failed_at: :erlang.system_time(:millisecond)
           }
+
           Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
 
           {:error, reason}

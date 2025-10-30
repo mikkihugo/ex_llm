@@ -147,12 +147,15 @@ defmodule Singularity.Storage.FailurePatternStore do
       "success_rate" => calculate_success_rate(patterns),
       "timestamp" => DateTime.utc_now()
     }
-    
+
     case PgFlow.send_with_notify("patterns_learned_published", message) do
       {:ok, _} ->
-        Logger.debug("Failure patterns published to CentralCloud", pattern_count: length(patterns))
+        Logger.debug("Failure patterns published to CentralCloud",
+          pattern_count: length(patterns)
+        )
+
         {:ok, patterns}
-      
+
       {:error, reason} ->
         Logger.warning("Failed to publish failure patterns to CentralCloud", reason: reason)
         {:error, reason}
@@ -175,8 +178,10 @@ defmodule Singularity.Storage.FailurePatternStore do
   defp calculate_success_rate(patterns) when is_list(patterns) do
     if length(patterns) > 0 do
       total = Enum.reduce(patterns, 0, fn p, acc -> acc + (p.frequency || 0) end)
-      successful = Enum.reduce(patterns, 0, fn p, acc -> acc + length(p.successful_fixes || []) end)
-      
+
+      successful =
+        Enum.reduce(patterns, 0, fn p, acc -> acc + length(p.successful_fixes || []) end)
+
       if total > 0, do: successful / total, else: 0.0
     else
       0.0

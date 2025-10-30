@@ -27,6 +27,7 @@ defmodule Solid.Helpers do
     case :ets.info(@helpers) do
       :undefined ->
         :ets.new(@helpers, [:named_table, :public, :set])
+
       _ ->
         :ok
     end
@@ -59,7 +60,9 @@ defmodule Solid.Helpers do
   @spec list() :: [atom()]
   def list do
     case :ets.info(@helpers) do
-      :undefined -> []
+      :undefined ->
+        []
+
       _ ->
         :ets.tab2list(@helpers)
         |> Enum.map(fn {name, _} -> name end)

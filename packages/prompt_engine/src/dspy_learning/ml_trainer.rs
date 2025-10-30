@@ -285,7 +285,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ml_trainer_creation() {
-        let fact_store = PromptTrackingStorage::new("test_path").unwrap();
+        let fact_store = PromptTrackingStorage::new().unwrap();
         let model_path = PathBuf::from("test_model");
         let trainer = MLTrainer::new(fact_store, model_path);
 

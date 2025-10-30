@@ -73,15 +73,9 @@ defmodule Singularity.MixProject do
       # NIFs are compiled on-demand when modules are loaded, not via Mix dependency compilation
       # Engines are now in packages/ as standalone Moon projects (publishable)
       {:parser_engine,
-       path: "../../packages/parser_engine",
-       runtime: false,
-       app: false,
-       compile: false},
+       path: "../../packages/parser_engine", runtime: false, app: false, compile: false},
       {:prompt_engine,
-       path: "../../packages/prompt_engine",
-       runtime: false,
-       app: false,
-       compile: false},
+       path: "../../packages/prompt_engine", runtime: false, app: false, compile: false},
       {:linting_engine,
        path: "../../packages/linting_engine", runtime: false, app: false, compile: false},
       {:code_quality_engine,
@@ -105,7 +99,9 @@ defmodule Singularity.MixProject do
       # Neural network framework for fine-tuning (required for Axon)
       {:axon, "~> 0.6", optional: true},
       # GPU acceleration (CUDA/Metal) - RTX 4080 support (optional, required for GPU)
-      {:exla, "~> 0.10", optional: true, app: false},
+      # NOTE: compile: false prevents XLA_TARGET configuration error during dev builds
+      # Use only when GPU inference is needed (sets EXLA_TARGET=cuda or EXLA_TARGET=cpu before compiling)
+      {:exla, "~> 0.10", optional: true, app: false, compile: false},
       # {:kino, "~> 0.12"},
 
       # Distributed Systems

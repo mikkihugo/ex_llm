@@ -111,15 +111,17 @@ defmodule Singularity.Agents.RealWorkloadFeeder do
 
   defp execute_llm_task(agent_id) do
     task_type = select_task_type(agent_id)
-    
+
     # Get complexity from centralized config (database ? TaskTypeRegistry fallback)
     provider = "auto"
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> :simple  # Fallback for simple tasks
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Fallback for simple tasks
+        {:error, _} -> :simple
+      end
 
     prompt = generate_task_prompt(task_type)
 

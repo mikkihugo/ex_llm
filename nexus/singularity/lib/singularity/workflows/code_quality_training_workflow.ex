@@ -65,7 +65,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
           name: "Model Training",
           description: "Train code quality assessment models",
           function: &__MODULE__.train_quality_model/1,
-          timeout_ms: 180000,
+          timeout_ms: 180_000,
           retry_count: 1,
           depends_on: [:data_preparation]
         },
@@ -100,7 +100,11 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     # Collect diverse code samples with quality annotations
     training_samples = [
       %{code: "def good_function(x), do: x * 2", quality_score: 9.5, issues: []},
-      %{code: "def badFunction(x) { return x*2; }", quality_score: 3.2, issues: ["naming", "formatting"]},
+      %{
+        code: "def badFunction(x) { return x*2; }",
+        quality_score: 3.2,
+        issues: ["naming", "formatting"]
+      }
       # Add more training samples...
     ]
 
@@ -116,13 +120,14 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     Logger.info("Preparing training data", sample_count: length(samples))
 
     # Transform samples into ML-ready format
-    prepared_data = Enum.map(samples, fn sample ->
-      %{
-        features: extract_code_features(sample.code),
-        label: sample.quality_score,
-        metadata: %{issues: sample.issues}
-      }
-    end)
+    prepared_data =
+      Enum.map(samples, fn sample ->
+        %{
+          features: extract_code_features(sample.code),
+          label: sample.quality_score,
+          metadata: %{issues: sample.issues}
+        }
+      end)
 
     Logger.debug("Training data prepared", prepared_count: length(prepared_data))
 
@@ -139,24 +144,26 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     case attempt_axon_training(training_data) do
       {:ok, model_metrics} ->
         Logger.info("Model training completed", metrics: model_metrics)
-        
-        {:ok, Map.merge(context, %{
-          "trained_model" => "quality_model_v1",
-          "model_metrics" => model_metrics
-        })}
-      
+
+        {:ok,
+         Map.merge(context, %{
+           "trained_model" => "quality_model_v1",
+           "model_metrics" => model_metrics
+         })}
+
       {:error, :axon_not_available} ->
         # Fallback: simulate training
         Logger.warning("Axon not available, using simulated training")
         model_metrics = simulate_training_metrics(training_data)
-        
+
         Logger.info("Simulated model training completed", metrics: model_metrics)
-        
-        {:ok, Map.merge(context, %{
-          "trained_model" => "quality_model_v1_simulated",
-          "model_metrics" => model_metrics
-        })}
-      
+
+        {:ok,
+         Map.merge(context, %{
+           "trained_model" => "quality_model_v1_simulated",
+           "model_metrics" => model_metrics
+         })}
+
       {:error, reason} ->
         Logger.error("Model training failed", reason: reason)
         {:error, reason}
@@ -173,7 +180,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   defp simulate_training_metrics(training_data) do
     # Simulate training metrics based on data size
     data_size = length(training_data)
-    
+
     %{
       accuracy: 0.85 + :rand.uniform(10) / 100,
       loss: 0.25 - :rand.uniform(10) / 100,
@@ -187,7 +194,9 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   @doc """
   Validate the trained model
   """
-  def validate_model(%{"trained_model" => model_name, "prepared_data" => validation_data} = context) do
+  def validate_model(
+        %{"trained_model" => model_name, "prepared_data" => validation_data} = context
+      ) do
     Logger.info("Validating model", model: model_name)
 
     # Implement model validation with test dataset
@@ -200,7 +209,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
           Logger.warning("Model validation failed", accuracy: validation_results.accuracy)
           {:error, "Model validation failed: accuracy #{validation_results.accuracy} < 0.8"}
         end
-      
+
       {:error, reason} ->
         Logger.error("Model validation error", reason: reason)
         {:error, reason}
@@ -211,7 +220,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     # Validate model on test dataset
     # In production, would run inference on validation set and calculate metrics
     test_size = length(validation_data)
-    
+
     validation_results = %{
       accuracy: 0.85,
       precision: 0.82,
@@ -219,7 +228,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
       f1_score: 0.85,
       test_samples: test_size
     }
-    
+
     {:ok, validation_results}
   end
 
@@ -234,11 +243,11 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
       {:ok, deployment_info} ->
         # Update model registry
         update_model_registry(deployment_info)
-        
+
         Logger.info("Model deployed successfully", deployment: deployment_info)
-        
+
         {:ok, Map.put(context, "deployment_info", deployment_info)}
-      
+
       {:error, reason} ->
         Logger.error("Model deployment failed", reason: reason)
         {:error, reason}
@@ -249,7 +258,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
     # Save model to persistent storage
     model_dir = Path.join(Application.app_dir(:singularity, "priv/models"), model_name)
     File.mkdir_p!(model_dir)
-    
+
     # Save model metadata
     metadata = %{
       model_name: model_name,
@@ -258,10 +267,10 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
       deployed_at: DateTime.utc_now(),
       metrics: results
     }
-    
+
     metadata_path = Path.join(model_dir, "metadata.json")
     File.write!(metadata_path, Jason.encode!(metadata, pretty: true))
-    
+
     deployment_info = %{
       model_name: model_name,
       version: "1.0.0",
@@ -269,17 +278,18 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
       accuracy: results.accuracy,
       model_path: model_dir
     }
-    
+
     {:ok, deployment_info}
   end
 
   defp update_model_registry(deployment_info) do
     # Update model registry with new deployment
     # In production, would update database or configuration
-    Logger.debug("Model registry updated", 
+    Logger.debug("Model registry updated",
       model: deployment_info.model_name,
       version: deployment_info.version
     )
+
     :ok
   end
 

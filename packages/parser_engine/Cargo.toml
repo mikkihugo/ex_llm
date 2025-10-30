@@ -50,6 +50,12 @@ csharp_parser = { path = "./languages/csharp" }
 c_parser = { path = "./languages/c" }
 cpp_parser = { path = "./languages/cpp" }
 parser_engine_lua = { path = "./languages/lua" }
+ruby_parser = { path = "./languages/ruby" }
+php_parser = { path = "./languages/php" }
+dart_parser = { path = "./languages/dart" }
+swift_parser = { path = "./languages/swift" }
+clojure_parser = { path = "./languages/clojure" }
+scala_parser = { path = "./languages/scala" }
 
 # Core utilities - explicit versions (not workspace)
 serde = { version = "1.0", features = ["derive"] }

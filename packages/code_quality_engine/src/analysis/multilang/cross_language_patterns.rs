@@ -87,10 +87,12 @@ pub struct CrossLanguageCodePatternsDetector {
 }
 
 // AST extraction cache: (code_hash, language) -> AST data
+#[cfg(feature = "nif")]
 static AST_CACHE: once_cell::sync::Lazy<Mutex<HashMap<(u64, String), AstExtraction>>> =
     once_cell::sync::Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// AST extraction result for a file/language
+#[cfg(feature = "nif")]
 #[derive(Clone, Debug)]
 pub struct AstExtraction {
     pub functions: Option<Vec<crate::nif_bindings::FunctionMetadataResult>>,
@@ -167,13 +169,16 @@ impl CrossLanguageCodePatternsDetector {
                 let code_j = &files[j].1;
 
                 // Detect patterns for this language pair
-                patterns.extend(self.detect_for_language_pair(
-                    lang_i.id.as_str(),
-                    lang_j.id.as_str(),
-                    code_i,
-                    code_j,
-                    &language_infos,
-                ));
+                #[cfg(feature = "nif")]
+                {
+                    patterns.extend(self.detect_for_language_pair(
+                        lang_i.id.as_str(),
+                        lang_j.id.as_str(),
+                        code_i,
+                        code_j,
+                        &language_infos,
+                    ));
+                }
             }
         }
 
@@ -188,6 +193,7 @@ impl CrossLanguageCodePatternsDetector {
     /// - Error handling constructs (try/catch, Result/Option types)
     /// - Logging calls with consistent signatures
     /// - Message passing patterns (NATS, queue subscriptions)
+    #[cfg(feature = "nif")]
     fn detect_for_language_pair(
         &self,
         lang1_id: &str,
@@ -294,6 +300,7 @@ impl CrossLanguageCodePatternsDetector {
     }
 
     /// Get or extract AST for a code snippet, with caching
+    #[cfg(feature = "nif")]
     pub fn get_or_extract_ast(&self, code: &str, language_id: &str) -> Option<AstExtraction> {
         use std::hash::{Hash, Hasher};
         use seahash::SeaHasher;
@@ -330,6 +337,7 @@ impl CrossLanguageCodePatternsDetector {
     }
 
     /// AST-aware API integration pattern detection
+    #[cfg(feature = "nif")]
     fn has_api_pattern_ast(&self, _code: &str, _language_id: &str, ast: Option<&AstExtraction>) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
@@ -346,6 +354,7 @@ impl CrossLanguageCodePatternsDetector {
     // Removed: string-based API pattern detection
 
     /// AST-aware error handling pattern detection
+    #[cfg(feature = "nif")]
     fn has_error_handling_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
@@ -363,6 +372,7 @@ impl CrossLanguageCodePatternsDetector {
     // Removed: string-based error handling pattern detection
 
     /// AST-aware logging pattern detection
+    #[cfg(feature = "nif")]
     fn has_logging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
@@ -379,6 +389,7 @@ impl CrossLanguageCodePatternsDetector {
     // Removed: string-based logging pattern detection
 
     /// AST-aware messaging pattern detection
+    #[cfg(feature = "nif")]
     fn has_messaging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
@@ -520,6 +531,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "nif")]
     fn test_ast_api_integration_detection_and_caching() {
         let detector = CrossLanguageCodePatternsDetector::default();
         let files = vec![

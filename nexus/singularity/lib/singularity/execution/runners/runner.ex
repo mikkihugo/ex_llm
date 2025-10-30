@@ -1019,13 +1019,16 @@ defmodule Singularity.Execution.Runners.Runner do
     provider = Keyword.get(options, :provider, "auto")
     task_type = Keyword.get(options, :task_type, "code_analysis")
     include_recommendations = Keyword.get(options, :include_recommendations, true)
-    
+
     # Get complexity from centralized config (database ? TaskTypeRegistry fallback)
     context = %{task_type: task_type}
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> :complex  # Fallback to complex for analysis
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Fallback to complex for analysis
+        {:error, _} -> :complex
+      end
 
     # Delegate to existing LLM service for AI insights
     case Singularity.LLM.Service.call(

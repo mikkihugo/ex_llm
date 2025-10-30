@@ -64,10 +64,10 @@ impl SqlParser {
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
-                let text = &content[node.byte_range()];
-                let start = node.start_position();
-                let end = node.end_position();
-                
+                let _text = &content[node.byte_range()];
+                let _start = node.start_position();
+                let _end = node.end_position();
+
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "select",

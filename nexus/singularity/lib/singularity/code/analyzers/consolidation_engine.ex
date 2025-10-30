@@ -43,15 +43,16 @@ defmodule Singularity.Code.Analyzers.ConsolidationEngine do
           min_lines
         )
 
-      {:ok, %{
-        codebase_path: codebase_path,
-        consolidation_type: consolidation_type,
-        similarity_threshold: similarity_threshold,
-        opportunities: opportunities,
-        count: length(opportunities),
-        total_lines_saveable: sum_saveable_lines(opportunities),
-        analyzed_at: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         codebase_path: codebase_path,
+         consolidation_type: consolidation_type,
+         similarity_threshold: similarity_threshold,
+         opportunities: opportunities,
+         count: length(opportunities),
+         total_lines_saveable: sum_saveable_lines(opportunities),
+         analyzed_at: DateTime.utc_now()
+       }}
     rescue
       error ->
         Logger.error("ConsolidationEngine error: #{inspect(error)}")
@@ -143,8 +144,8 @@ defmodule Singularity.Code.Analyzers.ConsolidationEngine do
       find_similar_code(files_data, similarity_threshold, min_lines)
     ]
     |> List.flatten()
-    |> Enum.uniq_by(&(&1.id))
-    |> Enum.sort_by(&(&1.potential_savings), :desc)
+    |> Enum.uniq_by(& &1.id)
+    |> Enum.sort_by(& &1.potential_savings, :desc)
   end
 
   defp find_duplicate_blocks(files_data, min_lines) do

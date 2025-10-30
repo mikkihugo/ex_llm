@@ -8,6 +8,8 @@ defmodule Singularity.Jobs.PatternSyncJob do
   - pgmq (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
+  Fires real-time notifications via Pgflow on completion.
+
   ## Scheduling
 
   Configured via Oban cron in config.exs:
@@ -30,6 +32,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
 
   require Logger
   alias Singularity.ArchitectureEngine.FrameworkPatternSync
+  alias Singularity.PgFlow
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
@@ -39,16 +42,19 @@ defmodule Singularity.Jobs.PatternSyncJob do
       case FrameworkPatternSync.refresh_cache() do
         :ok ->
           Logger.info("✅ Framework patterns synced to ETS/pgmq/JSON")
+          notify_sync_complete(:patterns)
           :ok
 
         {:error, reason} ->
           Logger.error("❌ Pattern sync failed", reason: inspect(reason))
+          notify_sync_failed(:patterns, reason)
           # Don't fail - patterns will sync on next cycle
           :ok
       end
     rescue
       e in Exception ->
         Logger.error("❌ Pattern sync exception", error: inspect(e))
+        notify_sync_failed(:patterns, e)
         # Log but don't crash the job
         {:error, e}
     end
@@ -61,5 +67,48 @@ defmodule Singularity.Jobs.PatternSyncJob do
     __MODULE__
     |> Oban.Job.new(%{})
     |> Oban.insert()
+  end
+
+  defp notify_sync_complete(sync_type) do
+    case PgFlow.send_with_notify(
+           "sync_notifications",
+           %{
+             type: "sync_completed",
+             sync_type: sync_type,
+             timestamp: DateTime.utc_now(),
+             status: "success"
+           }
+         ) do
+      {:ok, :sent} ->
+        Logger.debug("📢 Sync notification sent", sync_type: sync_type)
+
+      {:error, reason} ->
+        Logger.warning("Failed to send sync notification",
+          sync_type: sync_type,
+          error: inspect(reason)
+        )
+    end
+  end
+
+  defp notify_sync_failed(sync_type, error) do
+    case PgFlow.send_with_notify(
+           "sync_notifications",
+           %{
+             type: "sync_failed",
+             sync_type: sync_type,
+             timestamp: DateTime.utc_now(),
+             status: "failed",
+             error: inspect(error)
+           }
+         ) do
+      {:ok, :sent} ->
+        Logger.debug("📢 Sync failure notification sent", sync_type: sync_type)
+
+      {:error, reason} ->
+        Logger.warning("Failed to send sync failure notification",
+          sync_type: sync_type,
+          error: inspect(reason)
+        )
+    end
   end
 end

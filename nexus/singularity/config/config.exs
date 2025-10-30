@@ -285,12 +285,12 @@ config :singularity, :git_coordinator,
 # Install with: ./scripts/install_claude_native.sh
 emergency_claude_path =
   (System.get_env("SINGULARITY_EMERGENCY_BIN") ||
-   Path.join([
-     System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
-     ".singularity",
-     "emergency",
-     "bin"
-   ]))
+     Path.join([
+       System.get_env("XDG_DATA_HOME") || System.get_env("HOME", "/tmp"),
+       ".singularity",
+       "emergency",
+       "bin"
+     ]))
   |> Path.join("claude-recovery")
 
 config :singularity, :claude,

@@ -350,16 +350,17 @@ defmodule Singularity.SelfImprovingAgent do
   defp subscribe_to_genesis_results(agent_id) do
     # Subscribe to PGFlow workflow completion events for Genesis experiment results
     workflow_name = "genesis_experiment_#{agent_id}"
-    
+
     case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
-      handle_genesis_workflow_completion(agent_id, workflow_result)
-    end) do
+           handle_genesis_workflow_completion(agent_id, workflow_result)
+         end) do
       {:ok, subscription_id} ->
         Logger.debug("Subscribed to Genesis results via PGFlow workflow",
           agent_id: agent_id,
           workflow: workflow_name,
           subscription_id: subscription_id
         )
+
         {:ok, subscription_id}
 
       {:error, reason} ->
@@ -367,10 +368,12 @@ defmodule Singularity.SelfImprovingAgent do
           agent_id: agent_id,
           reason: reason
         )
+
         # Fallback: log migration status
         Logger.debug("Genesis results subscription migrated to Pgflow workflow notifications",
           agent_id: agent_id
         )
+
         {:ok, "pgflow_migrated"}
     end
   end
@@ -381,7 +384,7 @@ defmodule Singularity.SelfImprovingAgent do
       agent_id: agent_id,
       result: result
     )
-    
+
     # Send message to agent to handle completion
     send(self(), {:genesis_experiment_completed, result.experiment_id, result})
     :ok
@@ -392,6 +395,7 @@ defmodule Singularity.SelfImprovingAgent do
       agent_id: agent_id,
       error: error
     )
+
     :ok
   end
 

@@ -43,9 +43,11 @@ fn replace_respects_transform_options() {
     let source = "    console.log(value); // keep\n";
     let find = Pattern::new("console.log($VAL)");
     let replace = Pattern::new("logger.debug($VAL)");
-    let mut options = TransformOptions::default();
-    options.preserve_whitespace = true;
-    options.preserve_comments = true;
+    let options = TransformOptions {
+        preserve_whitespace: true,
+        preserve_comments: true,
+        ..Default::default()
+    };
 
     let replaced = grep
         .replace_with_options(source, &find, &replace, &options)
@@ -63,8 +65,10 @@ fn replace_with_backup_appends_original_block() {
     let source = "console.log('backup test');";
     let find = Pattern::new("console.log($MSG)");
     let replace = Pattern::new("logger.debug($MSG)");
-    let mut options = TransformOptions::default();
-    options.backup_original = true;
+    let options = TransformOptions {
+        backup_original: true,
+        ..Default::default()
+    };
 
     let replaced = grep
         .replace_with_options(source, &find, &replace, &options)
@@ -86,7 +90,7 @@ fn lint_reports_violations() {
         Pattern::new("console.log($$$ARGS)"),
     )
     .with_severity(Severity::Warning)
-    .with_fix(Pattern::new("logger.debug($$$ARGS)"));
+    .with_fix(Pattern::new("logger.debug($$$ARGS)").as_str());
 
     let violations = grep.lint(source, &[rule]).unwrap();
     assert_eq!(violations.len(), 1);

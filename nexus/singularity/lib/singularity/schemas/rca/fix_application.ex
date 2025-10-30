@@ -155,7 +155,8 @@ defmodule Singularity.Schemas.RCA.FixApplication do
   Check if fix was successfully applied.
   """
   def was_successful?(fix_application) do
-    fix_application.fix_applied_successfully && fix_application.fix_validation_status == "validated"
+    fix_application.fix_applied_successfully &&
+      fix_application.fix_validation_status == "validated"
   end
 
   @doc """
@@ -163,10 +164,11 @@ defmodule Singularity.Schemas.RCA.FixApplication do
   """
   def summary(fix_application) do
     %{
-      fixer: case fix_application.fixer_type do
-        "agent" -> fix_application.applied_by_agent_id || "unknown_agent"
-        "human" -> fix_application.applied_by_human || "unknown_human"
-      end,
+      fixer:
+        case fix_application.fixer_type do
+          "agent" -> fix_application.applied_by_agent_id || "unknown_agent"
+          "human" -> fix_application.applied_by_human || "unknown_human"
+        end,
       status: fix_application.fix_validation_status,
       successful: was_successful?(fix_application),
       cost_tokens: fix_application.fix_generation_cost_tokens,

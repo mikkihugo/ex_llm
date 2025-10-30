@@ -21,10 +21,10 @@ defmodule Singularity.Agents.Arbiter do
     token = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
     now = :erlang.system_time(:millisecond)
     entry = %{token: token, payload: payload, issued_at: now, expires_at: now + @token_ttl_ms}
-    
+
     # store in local ETS for fast lookup
     :ets.insert(@table, {token, entry})
-    
+
     # persist into PgFlow for reliable approval tracking
     workflow_attrs = %{
       workflow_id: token,
@@ -43,15 +43,21 @@ defmodule Singularity.Agents.Arbiter do
           issued_at: now,
           expires_at: now + @token_ttl_ms
         }
-        
+
         case Singularity.PgFlow.send_with_notify("approval_notifications", notification) do
-          {:ok, _} -> 
+          {:ok, _} ->
             Logger.info("Approval issued and notification sent", token: token)
             token
+
           {:error, reason} ->
-            Logger.warning("Approval issued but notification failed", token: token, reason: reason)
+            Logger.warning("Approval issued but notification failed",
+              token: token,
+              reason: reason
+            )
+
             token
         end
+
       {:error, reason} ->
         Logger.error("Failed to create approval workflow", token: token, reason: reason)
         token
@@ -71,7 +77,7 @@ defmodule Singularity.Agents.Arbiter do
     }
 
     :ets.insert(@table, {token, entry})
-    
+
     # persist into PgFlow for reliable workflow approval tracking
     workflow_attrs = %{
       workflow_id: token,
@@ -90,15 +96,21 @@ defmodule Singularity.Agents.Arbiter do
           issued_at: now,
           expires_at: now + @token_ttl_ms
         }
-        
+
         case Singularity.PgFlow.send_with_notify("workflow_approval_notifications", notification) do
-          {:ok, _} -> 
+          {:ok, _} ->
             Logger.info("Workflow approval issued and notification sent", token: token)
             token
+
           {:error, reason} ->
-            Logger.warning("Workflow approval issued but notification failed", token: token, reason: reason)
+            Logger.warning("Workflow approval issued but notification failed",
+              token: token,
+              reason: reason
+            )
+
             token
         end
+
       {:error, reason} ->
         Logger.error("Failed to create workflow approval", token: token, reason: reason)
         token
@@ -124,9 +136,14 @@ defmodule Singularity.Agents.Arbiter do
                 token: token,
                 consumed_at: now
               }
+
               Singularity.PgFlow.send_with_notify("approval_notifications", notification)
+
             {:error, reason} ->
-              Logger.warning("Failed to update workflow status after consumption", token: token, reason: reason)
+              Logger.warning("Failed to update workflow status after consumption",
+                token: token,
+                reason: reason
+              )
           end
 
           :ok
@@ -166,7 +183,7 @@ defmodule Singularity.Agents.Arbiter do
         if entry && entry.expires_at > now do
           # Use the token for cleanup and logging
           Logger.info("Authorizing workflow", token: token, workflow_id: workflow.id)
-          
+
           :ets.delete(@table, token)
 
           try do

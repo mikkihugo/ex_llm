@@ -1,7 +1,7 @@
 defmodule Singularity.Tools.Runner do
   @moduledoc """
   Executes registered tools and normalizes responses into ToolResult structs.
-  
+
   Provider selection uses models and complexity from:
   1. Database (via sync from CentralCloud/Nexus)
   2. Pgflow (if not in database)
@@ -13,7 +13,7 @@ defmodule Singularity.Tools.Runner do
 
   @doc """
   Get provider alias based on provider name string.
-  
+
   Maps provider name strings to normalized atoms, handling compatibility variants.
   """
   def get_provider_alias(provider) when is_binary(provider) do
@@ -27,7 +27,7 @@ defmodule Singularity.Tools.Runner do
 
   @doc """
   Get task complexity for provider selection.
-  
+
   Delegates to system-wide LLM.Config.
   """
   def get_task_complexity(provider, context \\ %{}) do
@@ -36,7 +36,7 @@ defmodule Singularity.Tools.Runner do
 
   @doc """
   Get models for provider selection.
-  
+
   Delegates to system-wide LLM.Config.
   """
   def get_models(provider, context \\ %{}) do

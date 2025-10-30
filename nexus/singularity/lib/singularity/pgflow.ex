@@ -142,5 +142,4 @@ defmodule Singularity.PgFlow do
   end
 
   # -- Private Helpers ------------------------------------------------------------
-
 end

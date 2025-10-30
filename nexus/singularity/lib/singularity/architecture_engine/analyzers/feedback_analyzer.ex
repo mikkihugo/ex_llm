@@ -105,13 +105,14 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
       # Use opts to configure analysis parameters
       limit = Keyword.get(opts, :limit, 100)
       time_range = Keyword.get(opts, :time_range, "7 days")
-      
+
       # Use Repo to get historical performance data for better analysis
-      historical_data = Repo.query(
-        "SELECT success_rate, avg_latency, error_count FROM agent_metrics WHERE agent_id = $1 AND created_at > NOW() - INTERVAL '#{time_range}' ORDER BY created_at DESC LIMIT $2",
-        [agent_id, limit]
-      )
-      
+      historical_data =
+        Repo.query(
+          "SELECT success_rate, avg_latency, error_count FROM agent_metrics WHERE agent_id = $1 AND created_at > NOW() - INTERVAL '#{time_range}' ORDER BY created_at DESC LIMIT $2",
+          [agent_id, limit]
+        )
+
       case Analyzer.analyze_agent(agent_id) do
         {:ok, analysis} ->
           # Enhance analysis with historical data and opts
@@ -137,7 +138,7 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
       {:ok, %{rows: rows}} when rows != [] ->
         trends = calculate_performance_trends(rows)
         Map.put(analysis, :historical_trends, trends)
-      
+
       _ ->
         analysis
     end
@@ -146,24 +147,32 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   defp calculate_performance_trends(rows) do
     # Calculate performance trends from historical data
     %{
-      success_rate_trend: calculate_trend(rows, 0), # success_rate column
-      latency_trend: calculate_trend(rows, 1),      # avg_latency column
-      error_trend: calculate_trend(rows, 2)         # error_count column
+      # success_rate column
+      success_rate_trend: calculate_trend(rows, 0),
+      # avg_latency column
+      latency_trend: calculate_trend(rows, 1),
+      # error_count column
+      error_trend: calculate_trend(rows, 2)
     }
   end
 
   defp calculate_trend(rows, column_index) do
     values = Enum.map(rows, &Enum.at(&1, column_index))
+
     case length(values) do
-      0 -> :stable
-      1 -> :stable
+      0 ->
+        :stable
+
+      1 ->
+        :stable
+
       _ ->
         first_half = Enum.take(values, div(length(values), 2))
         second_half = Enum.drop(values, div(length(values), 2))
-        
+
         avg_first = Enum.sum(first_half) / length(first_half)
         avg_second = Enum.sum(second_half) / length(second_half)
-        
+
         cond do
           avg_second > avg_first * 1.1 -> :improving
           avg_second < avg_first * 0.9 -> :declining
@@ -181,6 +190,7 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   end
 
   defp maybe_filter_by_confidence(analysis, nil), do: analysis
+
   defp maybe_filter_by_confidence(analysis, min_confidence) do
     Map.update(analysis, :suggestions, [], fn suggestions ->
       Enum.filter(suggestions, &(&1.confidence >= min_confidence))
@@ -191,6 +201,7 @@ defmodule Singularity.Architecture.Analyzers.FeedbackAnalyzer do
   defp maybe_include_trends(analysis, true), do: analysis
 
   defp maybe_apply_filters(analysis, []), do: analysis
+
   defp maybe_apply_filters(analysis, filters) do
     # Apply custom filters to analysis results
     Enum.reduce(filters, analysis, fn filter, acc ->

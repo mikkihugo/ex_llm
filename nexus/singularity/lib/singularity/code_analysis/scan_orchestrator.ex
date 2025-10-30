@@ -234,7 +234,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
         # Return only requested scanners if enabled
         Enum.filter(all_scanners, fn {name, _module} ->
           name in list and
-            (Map.get(config, name, %{}) |> Map.get(:enabled, false))
+            Map.get(config, name, %{}) |> Map.get(:enabled, false)
         end)
     end
   end
@@ -298,7 +298,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
   defp run_scanners_sequential(scanners, path, scan_opts) do
     results =
       Enum.reduce(scanners, %{quality: nil, security: nil, linting: nil}, fn {name, module},
-                                                                               acc ->
+                                                                             acc ->
         case module.scan(path, scan_opts) do
           {:ok, result} ->
             Map.put(acc, name, result)

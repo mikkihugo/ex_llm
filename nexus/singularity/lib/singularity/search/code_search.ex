@@ -39,7 +39,7 @@ defmodule Singularity.CodeSearch do
   """
   @doc """
   Create unified schema for code search.
-  
+
   @since v2.6.0
   @example
   mix ecto.migrate  # Run migrations for schema

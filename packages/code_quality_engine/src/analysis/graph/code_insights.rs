@@ -499,7 +499,7 @@ impl CodeInsightsEngine {
         // Increase score based on coverage
         score += metrics.code_coverage_estimate * 0.2;
 
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     /// Check quality gates
@@ -628,7 +628,7 @@ impl CodeInsightsEngine {
         let mut score = 100.0;
         score -= complexity * 3.0;
         score += maintainability * 0.5;
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     fn detect_vulnerabilities(&self, content: &str) -> Vec<Vulnerability> {
@@ -683,7 +683,7 @@ impl CodeInsightsEngine {
         // Increase score for security patterns
         score += patterns.len() as f64 * 5.0;
 
-        score.max(0.0).min(100.0)
+        score.clamp(0.0, 100.0)
     }
 
     fn generate_security_recommendations(&self, vulnerabilities: &[Vulnerability]) -> Vec<String> {

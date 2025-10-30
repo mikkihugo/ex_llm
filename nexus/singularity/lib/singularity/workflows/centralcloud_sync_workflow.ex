@@ -100,12 +100,13 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
     )
 
     # Add metadata to the data
-    enriched_data = Map.merge(data, %{
-      "sync_type" => sync_type,
-      "instance_id" => System.get_env("SINGULARITY_INSTANCE_ID", "unknown"),
-      "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "workflow_id" => Map.get(context, "workflow_id")
-    })
+    enriched_data =
+      Map.merge(data, %{
+        "sync_type" => sync_type,
+        "instance_id" => System.get_env("SINGULARITY_INSTANCE_ID", "unknown"),
+        "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "workflow_id" => Map.get(context, "workflow_id")
+      })
 
     {:ok, Map.put(context, "collected_data", enriched_data)}
   end
@@ -117,28 +118,30 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
     sync_type = data["sync_type"]
 
     # Basic validation based on sync type
-    validation_result = case sync_type do
-      "capabilities" ->
-        # Validate capabilities data structure
-        capabilities = Map.get(data, "capabilities", [])
-        if is_list(capabilities) and length(capabilities) > 0 do
-          :ok
-        else
-          {:error, "Invalid capabilities data"}
-        end
+    validation_result =
+      case sync_type do
+        "capabilities" ->
+          # Validate capabilities data structure
+          capabilities = Map.get(data, "capabilities", [])
 
-      "learning_data" ->
-        # Validate learning data
-        if Map.has_key?(data, "learning_metrics") do
-          :ok
-        else
-          {:error, "Missing learning metrics"}
-        end
+          if is_list(capabilities) and length(capabilities) > 0 do
+            :ok
+          else
+            {:error, "Invalid capabilities data"}
+          end
 
-      _ ->
-        # Generic validation
-        :ok
-    end
+        "learning_data" ->
+          # Validate learning data
+          if Map.has_key?(data, "learning_metrics") do
+            :ok
+          else
+            {:error, "Missing learning metrics"}
+          end
+
+        _ ->
+          # Generic validation
+          :ok
+      end
 
     case validation_result do
       :ok ->
@@ -161,6 +164,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
           sync_type: data["sync_type"],
           encoded_size: byte_size(encoded_data)
         )
+
         {:ok, Map.put(context, "encoded_data", encoded_data)}
 
       {:error, reason} ->

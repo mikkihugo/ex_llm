@@ -265,7 +265,7 @@ defmodule Singularity.Agents.RemediationEngine do
     # Use opts to configure fix generation
     max_fixes = Keyword.get(opts, :max_fixes, 10)
     severity_filter = Keyword.get(opts, :severity, :all)
-    
+
     with :ok <- File.exists?(file_path) |> if(do: :ok, else: {:error, :file_not_found}),
          {:ok, content} <- File.read(file_path),
          language <- detect_language(file_path),
@@ -277,8 +277,8 @@ defmodule Singularity.Agents.RemediationEngine do
         |> Enum.map(&generate_fix_for_issue(&1, language))
         |> Enum.filter(&(&1 != nil))
 
-      Logger.info("Generated fixes", 
-        file: file_path, 
+      Logger.info("Generated fixes",
+        file: file_path,
         fix_count: length(fixes),
         max_fixes: max_fixes,
         severity: severity_filter
@@ -293,6 +293,7 @@ defmodule Singularity.Agents.RemediationEngine do
   end
 
   defp filter_by_severity(issues, :all), do: issues
+
   defp filter_by_severity(issues, severity) do
     Enum.filter(issues, &(&1.severity == severity))
   end
@@ -434,7 +435,7 @@ defmodule Singularity.Agents.RemediationEngine do
     stop_on_error = Keyword.get(opts, :stop_on_error, false)
     max_fixes = Keyword.get(opts, :max_fixes)
     fix_order = Keyword.get(opts, :order, :sequential)
-    
+
     new_content =
       fixes
       |> maybe_limit_fixes(max_fixes)
@@ -449,9 +450,11 @@ defmodule Singularity.Agents.RemediationEngine do
   end
 
   defp maybe_limit_fixes(fixes, nil), do: fixes
+
   defp maybe_limit_fixes(fixes, max) when is_integer(max) and max > 0 do
     Enum.take(fixes, max)
   end
+
   defp maybe_limit_fixes(fixes, _), do: fixes
 
   defp apply_fixes_in_order(fixes, content, stop_on_error, :sequential) do

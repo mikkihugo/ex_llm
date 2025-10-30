@@ -73,17 +73,21 @@ defmodule Singularity.Metrics.Orchestrator do
     with {:ok, code} <- read_code(file_path, opts),
          {:ok, language} <- detect_language(file_path, opts),
          {:ok, metrics} <- calculate_metrics(language, code),
-         enrichment <- (Keyword.get(opts, :enrich, true) && enrich_metrics(file_path, language, code)) || %{},
-         {:ok, stored} <- (Keyword.get(opts, :store, true) && store_metrics(file_path, language, metrics, enrichment)) || {:ok, metrics},
+         enrichment <-
+           (Keyword.get(opts, :enrich, true) && enrich_metrics(file_path, language, code)) || %{},
+         {:ok, stored} <-
+           (Keyword.get(opts, :store, true) &&
+              store_metrics(file_path, language, metrics, enrichment)) || {:ok, metrics},
          insights <- generate_insights(stored, enrichment) do
-      {:ok, %{
-        file_path: file_path,
-        language: language,
-        metrics: format_metrics(stored),
-        enrichment: enrichment,
-        insights: insights,
-        timestamp: DateTime.utc_now()
-      }}
+      {:ok,
+       %{
+         file_path: file_path,
+         language: language,
+         metrics: format_metrics(stored),
+         enrichment: enrichment,
+         insights: insights,
+         timestamp: DateTime.utc_now()
+       }}
     else
       {:error, reason} ->
         Logger.error("Failed to analyze #{file_path}: #{inspect(reason)}")
@@ -104,11 +108,13 @@ defmodule Singularity.Metrics.Orchestrator do
     - {successful_count, failed_count, results}
   """
   def analyze_batch(file_paths, opts \\ []) do
-    results = file_paths
+    results =
+      file_paths
       |> Enum.map(&analyze_file(&1, opts))
       |> Enum.reduce({0, 0, []}, fn
         {:ok, result}, {ok_count, err_count, acc} ->
           {ok_count + 1, err_count, [result | acc]}
+
         {:error, _reason}, {ok_count, err_count, acc} ->
           {ok_count, err_count + 1, acc}
       end)
@@ -127,27 +133,33 @@ defmodule Singularity.Metrics.Orchestrator do
 
     try do
       # Get all metrics for language
-      all_metrics = Singularity.Metrics.CodeMetrics
+      all_metrics =
+        Singularity.Metrics.CodeMetrics
         |> where(language: ^language_str)
         |> order_by(desc: :overall_quality_score)
         |> limit(^limit)
         |> Singularity.Repo.all()
 
       # Calculate statistics
-      scores = all_metrics |> Enum.map(& &1.overall_quality_score) |> Enum.filter(& !is_nil(&1))
+      scores = all_metrics |> Enum.map(& &1.overall_quality_score) |> Enum.filter(&(!is_nil(&1)))
       avg_quality = if Enum.empty?(scores), do: 0.0, else: Enum.sum(scores) / Enum.count(scores)
 
-      {:ok, %{
-        language: language,
-        file_count: Enum.count(all_metrics),
-        avg_quality_score: avg_quality,
-        best_files: Enum.take(all_metrics, 10) |> Enum.map(&%{path: &1.file_path, score: &1.overall_quality_score}),
-        worst_files: Enum.take(Enum.reverse(all_metrics), 10) |> Enum.map(&%{path: &1.file_path, score: &1.overall_quality_score}),
-        type_safety_avg: Enum.map(all_metrics, & &1.type_safety_score) |> avg_safe(),
-        coupling_avg: Enum.map(all_metrics, & &1.coupling_score) |> avg_safe(),
-        error_handling_avg: Enum.map(all_metrics, & &1.error_handling_score) |> avg_safe(),
-        complexity_avg: Enum.map(all_metrics, & &1.cyclomatic_complexity) |> avg_safe()
-      }}
+      {:ok,
+       %{
+         language: language,
+         file_count: Enum.count(all_metrics),
+         avg_quality_score: avg_quality,
+         best_files:
+           Enum.take(all_metrics, 10)
+           |> Enum.map(&%{path: &1.file_path, score: &1.overall_quality_score}),
+         worst_files:
+           Enum.take(Enum.reverse(all_metrics), 10)
+           |> Enum.map(&%{path: &1.file_path, score: &1.overall_quality_score}),
+         type_safety_avg: Enum.map(all_metrics, & &1.type_safety_score) |> avg_safe(),
+         coupling_avg: Enum.map(all_metrics, & &1.coupling_score) |> avg_safe(),
+         error_handling_avg: Enum.map(all_metrics, & &1.error_handling_score) |> avg_safe(),
+         complexity_avg: Enum.map(all_metrics, & &1.cyclomatic_complexity) |> avg_safe()
+       }}
     rescue
       e ->
         Logger.error("Error generating language report: #{inspect(e)}")
@@ -161,38 +173,46 @@ defmodule Singularity.Metrics.Orchestrator do
   Returns files with quality issues that would benefit from refactoring.
   """
   def find_refactoring_opportunities(language \\ nil, threshold \\ 60) do
-    query = Singularity.Metrics.CodeMetrics
+    query =
+      Singularity.Metrics.CodeMetrics
       |> where([m], m.overall_quality_score < ^threshold)
       |> order_by(asc: :overall_quality_score)
       |> limit(50)
 
-    query = case language do
-      nil -> query
-      lang -> where(query, language: ^Atom.to_string(lang))
-    end
+    query =
+      case language do
+        nil -> query
+        lang -> where(query, language: ^Atom.to_string(lang))
+      end
 
     files = Singularity.Repo.all(query)
 
     Enum.map(files, fn metrics ->
       opportunities = []
 
-      opportunities = if metrics.type_safety_score && metrics.type_safety_score < 50 do
-        opportunities ++ [%{type: :type_safety, severity: :high, score: metrics.type_safety_score}]
-      else
-        opportunities
-      end
+      opportunities =
+        if metrics.type_safety_score && metrics.type_safety_score < 50 do
+          opportunities ++
+            [%{type: :type_safety, severity: :high, score: metrics.type_safety_score}]
+        else
+          opportunities
+        end
 
-      opportunities = if metrics.coupling_score && metrics.coupling_score > 75 do
-        opportunities ++ [%{type: :high_coupling, severity: :high, score: metrics.coupling_score}]
-      else
-        opportunities
-      end
+      opportunities =
+        if metrics.coupling_score && metrics.coupling_score > 75 do
+          opportunities ++
+            [%{type: :high_coupling, severity: :high, score: metrics.coupling_score}]
+        else
+          opportunities
+        end
 
-      opportunities = if metrics.error_handling_score && metrics.error_handling_score < 50 do
-        opportunities ++ [%{type: :error_handling, severity: :high, score: metrics.error_handling_score}]
-      else
-        opportunities
-      end
+      opportunities =
+        if metrics.error_handling_score && metrics.error_handling_score < 50 do
+          opportunities ++
+            [%{type: :error_handling, severity: :high, score: metrics.error_handling_score}]
+        else
+          opportunities
+        end
 
       %{
         file_path: metrics.file_path,
@@ -212,7 +232,9 @@ defmodule Singularity.Metrics.Orchestrator do
           {:ok, code} -> {:ok, code}
           {:error, _} -> {:error, "Could not read file: #{file_path}"}
         end
-      code -> {:ok, code}
+
+      code ->
+        {:ok, code}
     end
   end
 
@@ -220,11 +242,14 @@ defmodule Singularity.Metrics.Orchestrator do
     case Keyword.get(opts, :language) do
       nil ->
         ext = Path.extname(file_path) |> String.trim_leading(".")
+
         case Singularity.Metrics.NIF.language_from_extension(ext) do
           nil -> {:error, "Could not detect language for: #{file_path}"}
           lang -> {:ok, lang}
         end
-      lang -> {:ok, lang}
+
+      lang ->
+        {:ok, lang}
     end
   end
 
@@ -232,6 +257,7 @@ defmodule Singularity.Metrics.Orchestrator do
     case Singularity.Metrics.NIF.analyze_all(language, code) do
       {:ok, metrics} ->
         {:ok, metrics}
+
       {:error, reason} ->
         Logger.error("Metric calculation failed: #{inspect(reason)}")
         {:error, reason}
@@ -253,9 +279,7 @@ defmodule Singularity.Metrics.Orchestrator do
       error_handling_score: metrics.error_handling[:score],
       error_handling_details: metrics.error_handling,
       coupling_score: metrics[:coupling_score],
-      overall_quality_score: (
-        (metrics.type_safety[:score] + metrics.error_handling[:score]) / 2
-      ),
+      overall_quality_score: (metrics.type_safety[:score] + metrics.error_handling[:score]) / 2,
       analysis_timestamp: DateTime.utc_now(),
       code_hash: code_hash,
       similar_patterns_found: Enum.count(enrichment[:similar_patterns] || []),
@@ -280,7 +304,7 @@ defmodule Singularity.Metrics.Orchestrator do
   end
 
   defp avg_safe(list) do
-    filtered = list |> Enum.filter(& !is_nil(&1))
+    filtered = list |> Enum.filter(&(!is_nil(&1)))
     if Enum.empty?(filtered), do: 0.0, else: Enum.sum(filtered) / Enum.count(filtered)
   end
 end

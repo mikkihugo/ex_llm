@@ -49,9 +49,7 @@ defmodule Singularity.Knowledge.Requests do
     |> KnowledgeRequest.create_changeset(base_attrs)
     |> Repo.insert(
       conflict_target: :external_key,
-      on_conflict:
-        {:replace_all_except,
-         [:id, :inserted_at]}
+      on_conflict: {:replace_all_except, [:id, :inserted_at]}
     )
     |> case do
       {:ok, request} ->
@@ -310,7 +308,7 @@ defmodule Singularity.Knowledge.Requests do
             Map.merge(metadata, %{repo_path: repo_path, error: inspect(reason)})
           )
       end
-      end
+    end
 
     :ok
   end

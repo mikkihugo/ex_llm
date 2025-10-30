@@ -462,14 +462,16 @@ defmodule Singularity.Knowledge.ArtifactStore do
       query =
         from(a in KnowledgeArtifact,
           # Safe JSONB extraction with fallback for missing fields
-          where: fragment(
-            "COALESCE((content->>'usage_count')::int, 0) >= ?",
-            ^min_usage_count
-          ),
-          where: fragment(
-            "COALESCE((content->>'success_rate')::float, 0.0) >= ?",
-            ^min_success_rate
-          ),
+          where:
+            fragment(
+              "COALESCE((content->>'usage_count')::int, 0) >= ?",
+              ^min_usage_count
+            ),
+          where:
+            fragment(
+              "COALESCE((content->>'success_rate')::float, 0.0) >= ?",
+              ^min_success_rate
+            ),
           select: count(a.id)
         )
 
@@ -492,6 +494,7 @@ defmodule Singularity.Knowledge.ArtifactStore do
           min_usage_count: min_usage_count,
           min_success_rate: min_success_rate
         )
+
         {:error, :query_failed}
     end
   end

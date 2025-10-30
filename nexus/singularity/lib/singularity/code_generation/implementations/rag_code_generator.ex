@@ -824,8 +824,11 @@ defmodule Singularity.CodeGeneration.Implementations.RAGCodeGenerator do
   defp maybe_dispatch_improvement(code, opts, _metadata, false) do
     # When dispatch is disabled, still log opts for debugging
     if Keyword.get(opts, :log_disabled_dispatch, false) do
-      Logger.debug("Improvement dispatch disabled", opts: Keyword.drop(opts, [:dispatch_agent_id, :dispatch_metadata]))
+      Logger.debug("Improvement dispatch disabled",
+        opts: Keyword.drop(opts, [:dispatch_agent_id, :dispatch_metadata])
+      )
     end
+
     {:ok, code}
   end
 

@@ -16,7 +16,14 @@ defmodule Singularity.Settings.Manager do
   """
   def enable_pipeline(pipeline_name) do
     key = "pipelines.#{pipeline_name}.enabled"
-    Settings.set(key, true, "Enable PGFlow mode for #{pipeline_name} pipeline", "pipelines", "manager")
+
+    Settings.set(
+      key,
+      true,
+      "Enable PGFlow mode for #{pipeline_name} pipeline",
+      "pipelines",
+      "manager"
+    )
   end
 
   @doc """
@@ -26,7 +33,14 @@ defmodule Singularity.Settings.Manager do
   """
   def disable_pipeline(pipeline_name) do
     key = "pipelines.#{pipeline_name}.enabled"
-    Settings.set(key, false, "Disable PGFlow mode for #{pipeline_name} pipeline", "pipelines", "manager")
+
+    Settings.set(
+      key,
+      false,
+      "Disable PGFlow mode for #{pipeline_name} pipeline",
+      "pipelines",
+      "manager"
+    )
   end
 
   @doc """
@@ -94,7 +108,12 @@ defmodule Singularity.Settings.Manager do
   """
   def initialize_defaults do
     # Pipeline enablement settings
-    pipelines = ["code_quality", "complexity_training", "architecture_learning", "embedding_training"]
+    pipelines = [
+      "code_quality",
+      "complexity_training",
+      "architecture_learning",
+      "embedding_training"
+    ]
 
     Enum.each(pipelines, fn pipeline ->
       key = "pipelines.#{pipeline}.enabled"
@@ -103,7 +122,12 @@ defmodule Singularity.Settings.Manager do
     end)
 
     # Workflow timeout settings
-    workflows = ["code_quality", "complexity_training", "architecture_learning", "embedding_training"]
+    workflows = [
+      "code_quality",
+      "complexity_training",
+      "architecture_learning",
+      "embedding_training"
+    ]
 
     timeout_defaults = %{
       "code_quality" => 300_000,
@@ -128,13 +152,14 @@ defmodule Singularity.Settings.Manager do
   def export_settings do
     Repo.all(Settings)
     |> Enum.map(fn setting ->
-      {setting.key, %{
-        value: Settings.denormalize_value(setting.value),
-        description: setting.description,
-        category: setting.category,
-        updated_at: setting.updated_at,
-        updated_by: setting.updated_by
-      }}
+      {setting.key,
+       %{
+         value: Settings.denormalize_value(setting.value),
+         description: setting.description,
+         category: setting.category,
+         updated_at: setting.updated_at,
+         updated_by: setting.updated_by
+       }}
     end)
     |> Map.new()
   end

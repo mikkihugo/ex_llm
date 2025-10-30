@@ -12,7 +12,7 @@ categories = ["development-tools", "ai"]
 [lib]
 name = "prompt_engine"
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 rustler = { workspace = true, optional = true }

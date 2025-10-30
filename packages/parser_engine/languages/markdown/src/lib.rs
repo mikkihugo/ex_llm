@@ -59,10 +59,10 @@ impl MarkdownParser {
         while let Some(matched_node) = matches.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
-                let text = &content[node.byte_range()];
-                let start = node.start_position();
-                let end = node.end_position();
-                
+                let _text = &content[node.byte_range()];
+                let _start = node.start_position();
+                let _end = node.end_position();
+
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "heading",
@@ -296,6 +296,12 @@ pub struct MarkdownDocument {
     pub block_quotes: Vec<BlockQuote>,
     pub tables: Vec<Table>,
     pub paragraphs: Vec<Paragraph>,
+}
+
+impl Default for MarkdownDocument {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MarkdownDocument {
@@ -554,7 +560,7 @@ impl LanguageParser for MarkdownParser {
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
 
-        while let Some(_) = matches.next() {
+        while matches.next().is_some() {
             element_count += 1;
         }
         

@@ -22,7 +22,8 @@ defmodule Singularity.Settings do
 
   schema "settings" do
     field :key, :string, primary_key: true
-    field :value, :map  # jsonb field for flexible value types
+    # jsonb field for flexible value types
+    field :value, :map
     field :description, :string
     field :category, :string
     field :updated_by, :string
@@ -49,6 +50,7 @@ defmodule Singularity.Settings do
   """
   def get_boolean(key, default \\ false) do
     value = get(key, default)
+
     case value do
       "true" -> true
       "1" -> true
@@ -194,20 +196,28 @@ defmodule Singularity.Settings do
     case key do
       "pipelines.code_quality.enabled" ->
         "Enable PGFlow mode for code quality training pipeline"
+
       "pipelines.complexity_training.enabled" ->
         "Enable PGFlow mode for complexity analysis training pipeline"
+
       "pipelines.architecture_learning.enabled" ->
         "Enable PGFlow mode for architecture learning pipeline"
+
       "pipelines.embedding_training.enabled" ->
         "Enable PGFlow mode for embedding training pipeline"
+
       "workflows.code_quality.timeout_ms" ->
         "Timeout in milliseconds for code quality training workflow"
+
       "workflows.complexity_training.timeout_ms" ->
         "Timeout in milliseconds for complexity training workflow"
+
       "workflows.architecture_learning.timeout_ms" ->
         "Timeout in milliseconds for architecture learning workflow"
+
       "workflows.embedding_training.timeout_ms" ->
         "Timeout in milliseconds for embedding training workflow"
+
       _ ->
         "Configuration setting for #{key}"
     end

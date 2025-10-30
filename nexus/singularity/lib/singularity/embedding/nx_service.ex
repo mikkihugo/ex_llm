@@ -141,6 +141,7 @@ defmodule Singularity.Embedding.NxService do
   """
   def similarity(text1, text2, opts \\ []) do
     model = opts |> Keyword.get(:model, :combined) |> normalize_model()
+
     with {:ok, emb1} <- embed(text1, Keyword.put(opts, :model, model)),
          {:ok, emb2} <- embed(text2, Keyword.put(opts, :model, model)) do
       similarity = cosine_similarity(emb1, emb2)
@@ -304,7 +305,8 @@ defmodule Singularity.Embedding.NxService do
     else
       # Fallback: Generate deterministic embedding from token_ids when Ortex unavailable
       Logger.debug("Ortex not available, using deterministic embedding fallback")
-      embedding_dim = 1024  # Default for ONNX models
+      # Default for ONNX models
+      embedding_dim = 1024
       seed = :erlang.phash2({:onnx, token_ids})
       {:ok, generate_embedding(seed, embedding_dim, :onnx_fallback)}
     end
@@ -389,13 +391,21 @@ defmodule Singularity.Embedding.NxService do
   def preload_models(models) when is_list(models) do
     Enum.each(models, fn model ->
       case normalize_model(model) do
-        :qodo -> ModelLoader.preload(:qodo)
-        :jina_v3 -> ModelLoader.preload(:jina_v3)
-        :minilm -> ModelLoader.preload(:minilm)
+        :qodo ->
+          ModelLoader.preload(:qodo)
+
+        :jina_v3 ->
+          ModelLoader.preload(:jina_v3)
+
+        :minilm ->
+          ModelLoader.preload(:minilm)
+
         :combined ->
           ModelLoader.preload(:qodo)
           ModelLoader.preload(:jina_v3)
-        other -> Logger.warning("Unknown model: #{inspect(other)}")
+
+        other ->
+          Logger.warning("Unknown model: #{inspect(other)}")
       end
     end)
 

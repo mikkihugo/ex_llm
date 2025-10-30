@@ -36,15 +36,16 @@ defmodule Singularity.Dashboard.GenesisPage do
 
     %{
       title: "Genesis - Rule Evolution & LLM Configuration",
-      content: build_dashboard_content(
-        validation_rules,
-        llm_config,
-        llm_config_rules,
-        cross_instance_metrics,
-        publication_history,
-        settings_sync,
-        evolution_health
-      )
+      content:
+        build_dashboard_content(
+          validation_rules,
+          llm_config,
+          llm_config_rules,
+          cross_instance_metrics,
+          publication_history,
+          settings_sync,
+          evolution_health
+        )
     }
   end
 
@@ -57,6 +58,7 @@ defmodule Singularity.Dashboard.GenesisPage do
           candidates: Enum.count(rules, &(&1.confidence < 0.85)),
           top_rules: rules |> Enum.take(5)
         }
+
       {:error, _} ->
         %{total: 0, confident: 0, candidates: 0, top_rules: []}
     end
@@ -65,17 +67,18 @@ defmodule Singularity.Dashboard.GenesisPage do
   defp fetch_llm_config do
     # Get current LLM configuration from Settings KV
     providers = ["claude", "gemini", "copilot", "codex"]
-    
+
     config_by_provider =
       providers
       |> Enum.map(fn provider ->
         complexity_config = fetch_provider_complexity(provider)
         models_config = fetch_provider_models(provider)
-        
-        {provider, %{
-          complexity: complexity_config,
-          models: models_config
-        }}
+
+        {provider,
+         %{
+           complexity: complexity_config,
+           models: models_config
+         }}
       end)
       |> Enum.reject(fn {_p, config} -> config.complexity == %{} && config.models == [] end)
       |> Enum.into(%{})
@@ -85,12 +88,15 @@ defmodule Singularity.Dashboard.GenesisPage do
 
   defp fetch_provider_complexity(provider) do
     task_types = [:architect, :coder, :refactoring, :code_generation, :planning]
-    
+
     task_types
     |> Enum.map(fn task_type ->
       key = "llm.providers.#{provider}.complexity.#{task_type}"
+
       case Settings.get(key) do
-        nil -> nil
+        nil ->
+          nil
+
         complexity when is_binary(complexity) ->
           normalized =
             case String.downcase(complexity) do
@@ -105,7 +111,8 @@ defmodule Singularity.Dashboard.GenesisPage do
         complexity when complexity in [:simple, :medium, :complex] ->
           {task_type, complexity}
 
-        _ -> nil
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -114,15 +121,22 @@ defmodule Singularity.Dashboard.GenesisPage do
 
   defp fetch_provider_models(provider) do
     key = "llm.providers.#{provider}.models"
+
     case Settings.get(key) do
-      nil -> []
-      models when is_list(models) -> models
+      nil ->
+        []
+
+      models when is_list(models) ->
+        models
+
       models when is_binary(models) ->
         case Jason.decode(models) do
           {:ok, models_list} when is_list(models_list) -> models_list
           _ -> []
         end
-      _ -> []
+
+      _ ->
+        []
     end
   rescue
     _ -> []
@@ -136,6 +150,7 @@ defmodule Singularity.Dashboard.GenesisPage do
           confident: Enum.count(rules, &(&1.confidence >= 0.85)),
           top_rules: rules |> Enum.take(5)
         }
+
       {:error, _} ->
         %{total: 0, confident: 0, top_rules: []}
     end
@@ -149,6 +164,7 @@ defmodule Singularity.Dashboard.GenesisPage do
           providers: Map.keys(config),
           last_sync: DateTime.utc_now()
         }
+
       {:error, reason} ->
         %{
           synced: false,
@@ -271,24 +287,24 @@ defmodule Singularity.Dashboard.GenesisPage do
             <span class="value">#{if settings_sync.synced, do: "✅ Yes", else: "❌ No"}</span>
           </div>
           #{if settings_sync.synced do
-            """
-            <div class="stat">
-              <span class="label">Providers:</span>
-              <span class="value">#{Enum.join(settings_sync.providers, ", ")}</span>
-            </div>
-            <div class="stat">
-              <span class="label">Last Sync:</span>
-              <span class="value">#{format_datetime(settings_sync.last_sync)}</span>
-            </div>
-            """
-          else
-            """
-            <div class="stat">
-              <span class="label">Error:</span>
-              <span class="value">#{settings_sync.error}</span>
-            </div>
-            """
-          end}
+      """
+      <div class="stat">
+        <span class="label">Providers:</span>
+        <span class="value">#{Enum.join(settings_sync.providers, ", ")}</span>
+      </div>
+      <div class="stat">
+        <span class="label">Last Sync:</span>
+        <span class="value">#{format_datetime(settings_sync.last_sync)}</span>
+      </div>
+      """
+    else
+      """
+      <div class="stat">
+        <span class="label">Error:</span>
+        <span class="value">#{settings_sync.error}</span>
+      </div>
+      """
+    end}
         </div>
       </section>
 

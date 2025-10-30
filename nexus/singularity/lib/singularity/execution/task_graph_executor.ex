@@ -638,9 +638,11 @@ defmodule Singularity.Execution.Planning.TaskGraphExecutor do
     provider = task.provider || "auto"
     task_type = task.task_type || :coder
     context = %{task_type: task_type, estimated_complexity: task.estimated_complexity}
-    
+
     case Config.get_task_complexity(provider, context) do
-      {:ok, complexity} -> complexity
+      {:ok, complexity} ->
+        complexity
+
       {:error, _} ->
         # Fallback: Determine from estimated_complexity numeric value
         determine_complexity_fallback(task)

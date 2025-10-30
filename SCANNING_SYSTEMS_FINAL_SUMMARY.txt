@@ -1,0 +1,292 @@
+================================================================================
+SCANNING SYSTEMS SEARCH - FINAL SUMMARY
+================================================================================
+
+SEARCH REQUEST:
+  - TODO/FIXME scanning system
+  - Parsing and tracking todo comments  
+  - TODO tracking in database schema
+  - All scanner modules in lib/code_analysis/scanners/
+  - Types of scanners and purposes
+  - ScanOrchestrator configuration
+  - Technical debt tracking
+  - Integration opportunities for linting engine
+
+================================================================================
+RESULTS SUMMARY
+================================================================================
+
+DOCUMENTS GENERATED:
+  1. SCANNING_SYSTEMS_INTEGRATION.md (459 lines) - COMPREHENSIVE
+     - 10 detailed sections with architecture overview
+     - Integration options A/B/C with effort estimates
+     - Full database schema documentation
+     - Code examples and patterns
+     
+  2. SCANNING_SYSTEMS_FINDINGS.txt (283 lines) - EXECUTIVE SUMMARY
+     - 10 key findings with visuals
+     - Critical issue identified (SecurityScanner missing)
+     - Quick reference for each system
+     - Integration data flow diagram
+     
+  3. SCANNING_SYSTEMS_ABSOLUTE_PATHS.txt - NAVIGATION GUIDE
+     - All file paths with absolute paths
+     - Module references for each system
+     - Integration steps with locations
+     - Search patterns for navigation
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+FINDING 1: FOUR DISTINCT SCANNING SYSTEMS
+  ✅ TODO/FIXME Scanner - Complete (TodoExtractor, TodoDetector, TodoPatterns)
+  ✅ Quality Scanner - Complete (QualityScanner wrapper)
+  ❌ Security Scanner - INCOMPLETE (declared, not implemented)
+  ✅ Full Repo Scanner - Complete (FullRepoScanner)
+
+FINDING 2: SECURITY SCANNER IS MISCONFIGURED
+  - Config declares: Singularity.CodeAnalysis.Scanners.SecurityScanner
+  - Reality: File does NOT exist
+  - Underlying scanner EXISTS: Singularity.CodeQuality.AstSecurityScanner
+  - Fix: Create wrapper following QualityScanner pattern (30 min)
+  - Impact: Blocks all security scanning via orchestrator
+
+FINDING 3: UNIFIED ORCHESTRATION PATTERN
+  - All scanners follow config-driven pattern
+  - Config key: :singularity, :scanner_types
+  - Interface: name/0, info/0, enabled?/0, scan/2
+  - Returns: {:ok, %{issues: [...], summary: %{...}}}
+  - Extensible: Add new scanners just by adding config
+
+FINDING 4: TODO EXTRACTION IS SOPHISTICATED
+  - 15 actionable markers (TODO, FIXME, STUB, HACK, DEBUG, etc.)
+  - 6 non-actionable markers (filtered out: INFO, DOC, COMMENT, etc.)
+  - UUID tracking: tracks original comment, prevents duplicates
+  - Priority levels: FIXME=1 (urgent) to PLACEHOLDER=15 (optional)
+  - Storage: todos table with full execution tracking
+  - Features: parent/child relationships, dependencies, embeddings
+
+FINDING 5: DATABASE SCHEMA IS COMPREHENSIVE
+  - quality_runs: Tool executions (sobelow, mix_audit, dialyzer, custom)
+  - quality_findings: Individual findings with severity/category
+  - todos: Task management with status/priority/complexity
+  - All tables: Proper indexes, JSONB fields for flexibility, timestamps
+
+FINDING 6: LINTING ENGINE INTEGRATION OPTIONS
+  A) Quick Fix (30 min) - Create SecurityScanner wrapper
+  B) Comprehensive (1-2 hours) - Create LintingScanner + config
+  C) Architectural (2+ hours) - Consolidate all analysis under quality
+  
+  RECOMMENDED: Option B (create LintingScanner)
+  - Unifies linting with quality/security scanning
+  - Provides single API for all analyses
+  - Minimal code duplication
+  - Clean separation of concerns
+
+================================================================================
+CRITICAL ISSUE ALERT
+================================================================================
+
+SECURITY SCANNER IS BROKEN IN CURRENT CONFIG
+
+Location: /nexus/singularity/config/config.exs
+  security: %{
+    module: Singularity.CodeAnalysis.Scanners.SecurityScanner,
+    enabled: true,
+    description: "Detect code security vulnerabilities"
+  }
+
+Problem:
+  - Module Singularity.CodeAnalysis.Scanners.SecurityScanner does NOT exist
+  - File: /code_analysis/scanners/security_scanner.ex is MISSING
+  - Underlying implementation EXISTS: AstSecurityScanner
+  - Config will fail when trying to use security scanner
+
+Solution: URGENT (30-minute fix)
+  1. Copy QualityScanner pattern
+  2. Create SecurityScanner wrapper
+  3. Delegate to AstSecurityScanner
+  4. Test via: iex> SecurityScanner.scan("lib/")
+
+Impact if not fixed:
+  - Security scanning blocked
+  - Config inconsistency
+  - Agent workflows fail
+  - User trust issues
+
+================================================================================
+SCANNER SYSTEM OVERVIEW
+================================================================================
+
+TODO/FIXME SCANNING:
+  How it works:
+    Code file → TodoExtractor.extract_from_file()
+    → AstQualityAnalyzer.find_todo_and_fixme_comments()
+    → Filter actionable vs non-actionable
+    → TodoStore.create() → Database
+  
+  Result stored as:
+    - todos table (UUID-tracked, with embeddings)
+    - Source: "code_comment"
+    - Context: file_path, line_number, comment_type
+  
+  Unique features:
+    - UUID tracking (prevents duplicates)
+    - 15 actionable marker types
+    - Priority levels (1-15)
+    - Task dependencies and hierarchy
+
+QUALITY SCANNING:
+  How it works:
+    QualityScanner.scan("lib/")
+    → AstQualityAnalyzer.analyze_codebase_quality()
+    → Returns: {ok, %{issues, summary, refactoring_suggestions}}
+  
+  What it detects:
+    - Code smells
+    - Unused code
+    - Long functions
+    - Complexity violations
+    - Refactoring opportunities
+  
+  Result stored as:
+    - quality_runs table (tool execution)
+    - quality_findings table (individual findings)
+
+SECURITY SCANNING:
+  How it works (should work):
+    SecurityScanner.scan("lib/") [CURRENTLY BROKEN]
+    → AstSecurityScanner.scan_codebase_for_vulnerabilities()
+    → AST-based pattern matching (95%+ accuracy)
+  
+  What it detects:
+    - SQL injection
+    - XSS vulnerabilities
+    - Command injection
+    - Insecure cryptography
+    - Auth/authz flaws
+  
+  Result stored as:
+    - quality_runs table (tool execution)
+    - quality_findings table (with severity levels)
+
+FULL REPO SCANNING:
+  How it works:
+    FullRepoScanner.learn_codebase()
+    → Scans all modules and relationships
+    → Identifies missing integrations, broken dependencies
+    → Returns knowledge graph with issues
+  
+  What it detects:
+    - Module documentation gaps
+    - Isolated modules
+    - Broken dependencies
+    - Missing integrations
+    - Duplicate functionality
+
+================================================================================
+RECOMMENDED NEXT STEPS
+================================================================================
+
+IMMEDIATE (Do Now):
+  1. Create SecurityScanner wrapper (30 min)
+     File: /code_analysis/scanners/security_scanner.ex
+     Copy from: QualityScanner pattern
+     Wrap: AstSecurityScanner
+     Test: iex> SecurityScanner.scan("lib/")
+
+SHORT TERM (This Week):
+  2. Create LintingScanner (1-2 hours)
+     Integrate with packages/linting_engine
+     Follow ScanOrchestrator pattern
+     Add to config
+
+  3. Add linting results to dashboard
+     Create: Observer panel for linting issues
+     Query: quality_findings with tool='linting_engine'
+     Display: File → Line → Message → Severity
+
+MEDIUM TERM (This Sprint):
+  4. Add agent integration
+     Update: CodeQualityImprovementWorkflow
+     Add: LintingScanner.scan() calls
+     Create: Auto-fixes for linting issues (if possible)
+
+  5. Technical debt scoring
+     Combine: all scanners into debt metric
+     Track: trends over time
+     Report: dashboard + Explorer
+
+================================================================================
+FILES GENERATED
+================================================================================
+
+Location: /home/mhugo/code/singularity/
+
+Files:
+  1. SCANNING_SYSTEMS_INTEGRATION.md
+     - Comprehensive 459-line reference guide
+     - Architecture diagrams and code examples
+     - Integration options with effort estimates
+     - Complete database schema documentation
+
+  2. SCANNING_SYSTEMS_FINDINGS.txt  
+     - Executive summary with 10 key findings
+     - Visual integration flow diagrams
+     - Critical issue alert (SecurityScanner)
+     - Search keywords for future reference
+
+  3. SCANNING_SYSTEMS_ABSOLUTE_PATHS.txt
+     - All file locations with absolute paths
+     - Module references and status
+     - Recommended integration steps
+     - Search patterns for codebase navigation
+
+================================================================================
+SEARCH KEYWORDS FOR FUTURE REFERENCE
+================================================================================
+
+SCANNING SYSTEMS:
+  ScanOrchestrator, ScannerType, scanner_types config
+  QualityScanner, SecurityScanner, LintingScanner, FullRepoScanner
+  AstQualityAnalyzer, AstSecurityScanner, AstGrepCodeSearch
+  config-driven orchestration, pattern matching, AST analysis
+
+TODO/FIXME TRACKING:
+  TodoExtractor, TodoDetector, TodoPatterns, TodoStore
+  find_todo_and_fixme_comments, actionable_patterns, excluded_patterns
+  UUID tracking, comment extraction, code_comment source
+  FIXME, TODO, HACK, STUB, DEAD, UNUSED, DEPRECATED, REMOVE
+
+DATABASE:
+  quality_runs, quality_findings tables
+  todos table, file_uuid (comment tracking)
+  Indexes: tool, status, category, severity, file
+  JSONB metadata, pgvector embeddings, semantic search
+
+INTEGRATION:
+  CodeFileWatcher (triggers extraction on file changes)
+  Observer dashboard (displays findings and status)
+  Agents (use findings for automated improvements)
+  SelfImprovingAgent (auto-fixes issues)
+  Config-driven discovery (clean pattern, zero hardcoding)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Singularity has a MATURE scanning infrastructure with:
+  - 4 specialized scanning systems (3 complete, 1 incomplete)
+  - Unified orchestration pattern (clean, extensible)
+  - Comprehensive database schema (todos + quality_findings)
+  - Sophisticated TODO tracking (UUID, priorities, dependencies)
+  - Ready-to-integrate security scanner (just needs wrapper)
+
+CRITICAL ISSUE: SecurityScanner missing (URGENT 30-min fix)
+
+INTEGRATION OPPORTUNITY: LintingScanner (1-2 hours, high impact)
+
+All documentation is available in three reference files for navigation.
+
+================================================================================

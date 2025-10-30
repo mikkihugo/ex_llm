@@ -100,8 +100,14 @@ defmodule Singularity.Schemas.RCA.TestExecution do
     ])
     |> validate_required([:status])
     |> validate_inclusion(:status, ["completed", "timeout", "error"])
-    |> validate_number(:test_pass_rate, greater_than_or_equal_to: Decimal.new(0), less_than_or_equal_to: Decimal.new(100))
-    |> validate_number(:test_coverage_line, greater_than_or_equal_to: Decimal.new(0), less_than_or_equal_to: Decimal.new(100))
+    |> validate_number(:test_pass_rate,
+      greater_than_or_equal_to: Decimal.new(0),
+      less_than_or_equal_to: Decimal.new(100)
+    )
+    |> validate_number(:test_coverage_line,
+      greater_than_or_equal_to: Decimal.new(0),
+      less_than_or_equal_to: Decimal.new(100)
+    )
   end
 
   @doc """

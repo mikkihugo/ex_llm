@@ -52,9 +52,9 @@ defmodule Singularity.Engine.NifLoader do
 
   # Health check functions per NIF (optional, module must export these)
   @health_check_functions %{
-        parser_engine: :supported_languages,
-        code_quality_engine: :supported_languages,
-        embedding_engine: :health_check
+    parser_engine: :supported_languages,
+    code_quality_engine: :supported_languages,
+    embedding_engine: :health_check
   }
 
   @doc """

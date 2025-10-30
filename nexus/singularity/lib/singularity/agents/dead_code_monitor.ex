@@ -493,6 +493,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
           subject: subject,
           workflow_id: workflow_id
         )
+
         :ok
 
       {:error, reason} ->
@@ -500,6 +501,7 @@ defmodule Singularity.Agents.DeadCodeMonitor do
           subject: subject,
           reason: reason
         )
+
         :ok
     end
   end

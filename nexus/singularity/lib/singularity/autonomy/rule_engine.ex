@@ -153,7 +153,7 @@ defmodule Singularity.Autonomy.RuleEngine do
 
   defp rule_mismatch?(rule, context) do
     required_complexity = Map.get(rule.pattern, :complexity)
-    
+
     # Get complexity from centralized config instead of reading directly from context
     provided_complexity = get_complexity_from_context(context)
 
@@ -171,7 +171,7 @@ defmodule Singularity.Autonomy.RuleEngine do
         # Use centralized LLM.Config to get complexity
         provider = value_from_context(context, :provider) || "auto"
         task_type = value_from_context(context, :type) || value_from_context(context, :task_type)
-        
+
         if task_type do
           case Config.get_task_complexity(provider, %{task_type: task_type}) do
             {:ok, complexity} -> complexity
@@ -180,7 +180,7 @@ defmodule Singularity.Autonomy.RuleEngine do
         else
           nil
         end
-      
+
       complexity ->
         complexity
     end

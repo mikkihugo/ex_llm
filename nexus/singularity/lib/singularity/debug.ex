@@ -31,9 +31,9 @@ defmodule Singularity.Debug do
 
   @doc """
   Insert a breakpoint. Call this inside your code to pause execution.
-  
+
   ## Example
-  
+
       defmodule MyModule do
         def my_function do
           require Singularity.Debug
@@ -48,9 +48,9 @@ defmodule Singularity.Debug do
 
   @doc """
   Get detailed information about a process by PID or registered name.
-  
+
   ## Examples
-  
+
       Debug.process(pid(0, 123, 0))
       Debug.process(:my_gen_server)
       Debug.process(Singularity.Repo)
@@ -111,7 +111,9 @@ defmodule Singularity.Debug do
   """
   def supervision_tree do
     case Process.whereis(Singularity.Application) do
-      nil -> {:error, :application_not_running}
+      nil ->
+        {:error, :application_not_running}
+
       root_pid ->
         IO.puts("\nSupervision Tree:")
         IO.puts(String.duplicate("=", 80))
@@ -127,11 +129,14 @@ defmodule Singularity.Debug do
     status = if info[:status] == :running, do: "✓", else: "✗"
     memory = info[:memory] || 0
     queue_len = info[:message_queue_len] || 0
-    
+
     indent_str = String.duplicate("  ", indent)
     IO.puts("#{indent_str}#{status} #{inspect(name)}")
-    IO.puts("#{indent_str}   PID: #{inspect(pid)} | Memory: #{format_bytes(memory)} | Queue: #{queue_len}")
-    
+
+    IO.puts(
+      "#{indent_str}   PID: #{inspect(pid)} | Memory: #{format_bytes(memory)} | Queue: #{queue_len}"
+    )
+
     # Get children if it's a supervisor
     case :supervisor.which_children(pid) do
       children when is_list(children) ->
@@ -140,6 +145,7 @@ defmodule Singularity.Debug do
             tree(child_pid, indent + 1)
           end
         end)
+
       _ ->
         :ok
     end
@@ -148,9 +154,9 @@ defmodule Singularity.Debug do
   @doc """
   Monitor a process and show messages it receives.
   Returns a monitor reference.
-  
+
   ## Example
-  
+
       ref = Debug.monitor(pid(:my_process))
       # ... do work ...
       Process.demonitor(ref)
@@ -163,9 +169,9 @@ defmodule Singularity.Debug do
 
   @doc """
   Trace function calls for a module or specific function.
-  
+
   ## Examples
-  
+
       # Trace all functions in a module
       Debug.trace(Singularity.LLM.Service)
       
@@ -179,7 +185,7 @@ defmodule Singularity.Debug do
     :dbg.stop()
     :dbg.tracer()
     :dbg.p(:all, [:call, :return])
-    
+
     if function do
       :dbg.tpl(module, function, [])
       IO.puts("Tracing #{inspect(module)}.#{function}/?")
@@ -187,7 +193,7 @@ defmodule Singularity.Debug do
       :dbg.tpl(module, [])
       IO.puts("Tracing all functions in #{inspect(module)}")
     end
-    
+
     :ok
   end
 
@@ -208,8 +214,11 @@ defmodule Singularity.Debug do
     Process.list()
     |> Enum.map(fn pid ->
       info = Process.info(pid, [:memory, :registered_name, :current_function, :message_queue_len])
+
       case info do
-        nil -> nil
+        nil ->
+          nil
+
         info ->
           %{
             pid: pid,
@@ -264,12 +273,14 @@ defmodule Singularity.Debug do
     IO.puts(String.duplicate("=", 80))
     IO.puts("Memory      | Size    | Type      | Protection | Name")
     IO.puts(String.duplicate("-", 80))
-    
+
     ets()
     |> Enum.each(fn {name, size, memory, type, protection} ->
-      IO.puts("#{format_bytes(memory)} | #{String.pad_leading(Integer.to_string(size), 8)} | #{type} | #{protection} | #{inspect(name)}")
+      IO.puts(
+        "#{format_bytes(memory)} | #{String.pad_leading(Integer.to_string(size), 8)} | #{type} | #{protection} | #{inspect(name)}"
+      )
     end)
-    
+
     IO.puts(String.duplicate("=", 80))
   end
 
@@ -278,7 +289,7 @@ defmodule Singularity.Debug do
   """
   def genserver_state(name_or_pid) do
     pid = if is_pid(name_or_pid), do: name_or_pid, else: Process.whereis(name_or_pid)
-    
+
     if pid && Process.alive?(pid) do
       case :sys.get_state(pid) do
         {:error, reason} -> {:error, reason}
@@ -296,18 +307,21 @@ defmodule Singularity.Debug do
     Process.list()
     |> Enum.map(fn pid ->
       case Process.info(pid, [:registered_name, :current_function, :message_queue_len]) do
-        nil -> nil
+        nil ->
+          nil
+
         info ->
           name = info[:registered_name] || :unknown
           function = info[:current_function]
           queue_len = info[:message_queue_len] || 0
-          
+
           # Try to get state if it's a GenServer
-          state = case :sys.get_state(pid) do
-            state when is_map(state) or is_tuple(state) -> state
-            _ -> :unknown
-          end
-          
+          state =
+            case :sys.get_state(pid) do
+              state when is_map(state) or is_tuple(state) -> state
+              _ -> :unknown
+            end
+
           %{name: name, pid: pid, function: function, queue_len: queue_len, state: state}
       end
     end)
@@ -341,7 +355,9 @@ defmodule Singularity.Debug do
   def flush_messages(pid) when is_pid(pid) do
     Process.info(pid, [:messages])
     |> case do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       info ->
         count = length(info[:messages] || [])
         :erlang.process_info(pid, :messages)
@@ -405,17 +421,19 @@ defmodule Singularity.Debug do
     IO.puts("ETS Tables: #{info.ets_tables}")
     IO.puts("Schedulers: #{info.scheduler_online}/#{info.schedulers}")
     IO.puts("\nMemory:")
+
     Enum.each(info.memory, fn {key, value} ->
       IO.puts("  #{key}: #{format_bytes(value)}")
     end)
+
     IO.puts(String.duplicate("=", 80))
   end
 
   @doc """
   Profile a function call and show execution time.
-  
+
   ## Example
-  
+
       Debug.profile(fn ->
         Singularity.LLM.Service.call(:simple, [...])
       end)
@@ -486,6 +504,7 @@ defmodule Singularity.Debug do
   Kill a process (use with extreme caution!).
   """
   def kill(pid_or_name, reason \\ :kill)
+
   def kill(pid, reason) when is_pid(pid) do
     Process.exit(pid, reason)
   end
@@ -539,10 +558,17 @@ defmodule Singularity.Debug do
   """
   def format_bytes(bytes) when is_integer(bytes) do
     cond do
-      bytes >= 1_000_000_000 -> "#{:erlang.float_to_binary(bytes / 1_000_000_000, decimals: 2)} GB"
-      bytes >= 1_000_000 -> "#{:erlang.float_to_binary(bytes / 1_000_000, decimals: 2)} MB"
-      bytes >= 1_000 -> "#{:erlang.float_to_binary(bytes / 1_000, decimals: 2)} KB"
-      true -> "#{bytes} B"
+      bytes >= 1_000_000_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000_000_000, decimals: 2)} GB"
+
+      bytes >= 1_000_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000_000, decimals: 2)} MB"
+
+      bytes >= 1_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000, decimals: 2)} KB"
+
+      true ->
+        "#{bytes} B"
     end
   end
 

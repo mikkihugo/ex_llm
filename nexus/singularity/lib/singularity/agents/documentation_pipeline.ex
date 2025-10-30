@@ -468,7 +468,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
     end
   end
 
-
   defp upgrade_module_documentation_internal(module_path, opts) do
     case File.read(module_path) do
       {:ok, content} ->
@@ -511,7 +510,6 @@ defmodule Singularity.Agents.DocumentationPipeline do
         content
     end
   end
-
 
   defp analyze_file_documentation_internal(file_path) do
     case File.read(file_path) do

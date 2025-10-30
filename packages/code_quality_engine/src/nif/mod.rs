@@ -3,15 +3,23 @@
 //! This module provides NIF-based integration between the Rust analysis-suite and Elixir.
 //! It contains pure computation functions that can be called directly from Elixir.
 
+#[cfg(feature = "nif")]
 use crate::analysis::multilang::{LanguageRuleType, RuleViolation};
+#[cfg(feature = "nif")]
 use crate::analyzer::CodebaseAnalyzer;
+#[cfg(feature = "nif")]
 use rustler::{Error, NifResult};
+#[cfg(feature = "nif")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "nif")]
 use std::collections::{HashMap, HashSet};
+#[cfg(feature = "nif")]
 use std::fs;
+#[cfg(feature = "nif")]
 use std::path::Path;
 
 /// Code analysis result structure
+#[cfg(feature = "nif")]
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
 #[module = "Singularity.CodeAnalyzer.CodeAnalysisResult"]
 pub struct CodeAnalysisResult {
@@ -23,6 +31,7 @@ pub struct CodeAnalysisResult {
 }
 
 /// Quality metrics structure
+#[cfg(feature = "nif")]
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
 #[module = "Singularity.CodeAnalyzer.QualityMetrics"]
 pub struct QualityMetrics {
@@ -33,6 +42,7 @@ pub struct QualityMetrics {
 }
 
 /// Asset structure for knowledge base
+#[cfg(feature = "nif")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Asset {
     pub id: String,
@@ -42,39 +52,19 @@ pub struct Asset {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[cfg(feature = "nif")]
 fn map_extension_to_language(ext: &str) -> Option<&'static str> {
-    match ext {
-        "ex" | "exs" => Some("elixir"),
-        "erl" => Some("erlang"),
-        "gleam" => Some("gleam"),
-        "rs" => Some("rust"),
-        "ts" | "tsx" => Some("typescript"),
-        "js" | "jsx" => Some("javascript"),
-        "py" => Some("python"),
-        "go" => Some("go"),
-        "java" => Some("java"),
-        "cpp" | "cc" | "cxx" => Some("cpp"),
-        "c" => Some("c"),
-        "cs" => Some("csharp"),
-        "rb" => Some("ruby"),
-        "php" => Some("php"),
-        "swift" => Some("swift"),
-        "kt" => Some("kotlin"),
-        "scala" => Some("scala"),
-        "json" => Some("json"),
-        "yaml" | "yml" => Some("yaml"),
-        "toml" => Some("toml"),
-        "xml" => Some("xml"),
-        "html" | "htm" => Some("html"),
-        "css" => Some("css"),
-        "sh" | "bash" => Some("bash"),
-        "sql" => Some("sql"),
-        "md" | "markdown" => Some("markdown"),
-        "dockerfile" => Some("dockerfile"),
-        _ => None,
-    }
+    // Use the centralized language registry instead of hardcoded mapping
+    // Create a dummy path with the extension to use detect_language
+    use std::path::Path;
+    let dummy_filename = format!("dummy.{}", ext);
+    let dummy_path = Path::new(&dummy_filename);
+    parser_core::language_registry::detect_language(dummy_path)
+        .ok()
+        .map(|lang| lang.id.as_str())
 }
 
+#[cfg(feature = "nif")]
 fn load_code_input(code_or_path: &str) -> std::io::Result<String> {
     let candidate = Path::new(code_or_path);
     if candidate.exists() && candidate.is_file() {
@@ -84,6 +74,7 @@ fn load_code_input(code_or_path: &str) -> std::io::Result<String> {
     }
 }
 
+#[cfg(feature = "nif")]
 fn dedup_preserve_order(messages: Vec<String>) -> Vec<String> {
     let mut seen = HashSet::new();
     let mut deduped = Vec::with_capacity(messages.len());
@@ -95,6 +86,7 @@ fn dedup_preserve_order(messages: Vec<String>) -> Vec<String> {
     deduped
 }
 
+#[cfg(feature = "nif")]
 fn format_violation_message(violation: &RuleViolation) -> String {
     let severity = format!("{:?}", violation.rule.severity);
     match &violation.rule.suggested_fix {
@@ -109,6 +101,7 @@ fn format_violation_message(violation: &RuleViolation) -> String {
     }
 }
 
+#[cfg(feature = "nif")]
 fn classify_rule_violations(
     violations: &[RuleViolation],
 ) -> (Vec<String>, Vec<String>, Vec<String>) {
@@ -140,6 +133,7 @@ fn classify_rule_violations(
 /// Elixir reads files and passes the structured data to Rust for analysis.
 ///
 /// Returns structured analysis results that Elixir can use.
+#[cfg(feature = "nif")]
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn analyze_code_nif(
     code_or_path: String,
@@ -273,6 +267,7 @@ pub fn analyze_code_nif(
 ///
 /// Calculates quality metrics using the CodebaseAnalyzer pure computation functions.
 /// Takes structured code data from Elixir and returns computed metrics.
+#[cfg(feature = "nif")]
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn calculate_quality_metrics_nif(
     code: Option<String>,
@@ -376,6 +371,7 @@ pub fn calculate_quality_metrics_nif(
 /// 1. Check local LRU cache
 /// 2. Return cached data if available
 /// 3. Otherwise return None (caller should use query_asset_nif)
+#[cfg(feature = "nif")]
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn load_asset_nif(_id: String) -> NifResult<Option<String>> {
     // TODO: Implement actual caching with once_cell or similar
@@ -402,6 +398,7 @@ pub fn load_asset_nif(_id: String) -> NifResult<Option<String>> {
 /// 2. Parse response
 /// 3. Cache result locally
 /// 4. Return data
+#[cfg(feature = "nif")]
 #[rustler::nif(schedule = "DirtyCpu")]
 pub fn query_asset_nif(id: String) -> NifResult<Option<String>> {
     // For now, return a structured response that indicates this is a query operation
@@ -582,7 +579,7 @@ pub fn detect_language_by_extension_nif(file_path: String) -> NifResult<Language
 /// Detects the primary language of a project by examining manifest files.
 /// More accurate than extension-based detection for determining project type.
 ///
-/// This uses the techstack analyzer approach:
+/// This uses the techstack analyzer approach with language registry validation:
 /// - Cargo.toml → Rust
 /// - package.json ± tsconfig.json → TypeScript/JavaScript
 /// - mix.exs → Elixir
@@ -604,7 +601,8 @@ pub fn detect_language_by_manifest_nif(
     let path = Path::new(&manifest_path);
     let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-    let (language, confidence, method) = match file_name {
+    // Detect language using manifest file patterns
+    let (detected_language, confidence, method) = match file_name {
         "Cargo.toml" => ("rust", 0.95, "manifest"),
         "package.json" => {
             // Check for tsconfig.json to distinguish TypeScript from JavaScript
@@ -633,9 +631,25 @@ pub fn detect_language_by_manifest_nif(
         _ => ("unknown", 0.0, "manifest"),
     };
 
+    // Validate detected language against the centralized language registry
+    let language = if detected_language != "unknown" {
+        // Check if the detected language is supported by the registry
+        if let Some(registry_lang) = parser_core::language_registry::get_language(detected_language) {
+            registry_lang.id.clone()
+        } else {
+            // Language not in registry, return unknown
+            "unknown".to_string()
+        }
+    } else {
+        detected_language.to_string()
+    };
+
+    // Adjust confidence if language is not supported
+    let final_confidence = if language == "unknown" { 0.0 } else { confidence };
+
     Ok(LanguageDetectionResult {
-        language: language.to_string(),
-        confidence,
+        language,
+        confidence: final_confidence,
         detection_method: method.to_string(),
     })
 }

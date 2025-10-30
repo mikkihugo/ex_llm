@@ -34,11 +34,12 @@ defmodule Singularity.Knowledge.TemplateMigration do
       message: "Template migrated successfully"
     }
 
-    {:ok, %{
-      success: 1,
-      total: 1,
-      results: [result]
-    }}
+    {:ok,
+     %{
+       success: 1,
+       total: 1,
+       results: [result]
+     }}
   end
 
   @doc """
@@ -59,11 +60,12 @@ defmodule Singularity.Knowledge.TemplateMigration do
 
     # TODO: Implement actual file migration logic
     # For now, return success
-    {:ok, %{
-      file_path: file_path,
-      to_version: to_version,
-      status: :success,
-      message: "File migrated successfully"
-    }}
+    {:ok,
+     %{
+       file_path: file_path,
+       to_version: to_version,
+       status: :success,
+       message: "File migrated successfully"
+     }}
   end
 end

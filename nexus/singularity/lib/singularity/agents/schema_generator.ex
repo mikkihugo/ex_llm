@@ -276,5 +276,4 @@ defmodule Singularity.Agents.AgentConfigurationSchemaGenerator do
     Code.ensure_loaded?(ExJsonSchema.Validator) and
       function_exported?(ExJsonSchema.Validator, :validate, 2)
   end
-
 end

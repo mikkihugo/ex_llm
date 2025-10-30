@@ -244,7 +244,8 @@ defmodule Singularity.PackageAndCodebaseSearch do
             %{
               path: Map.get(result, :path, ""),
               similarity: Map.get(result, :similarity_score, 0.0) || 0.0,
-              content_preview: "#{Map.get(result, :path, "unknown")} (#{Map.get(result, :language, "unknown")})",
+              content_preview:
+                "#{Map.get(result, :path, "unknown")} (#{Map.get(result, :language, "unknown")})",
               language: Map.get(result, :language, "unknown"),
               functions: function_names,
               metadata: %{
@@ -263,6 +264,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
     rescue
       error ->
         Logger.error("Code search operation failed", error: inspect(error))
+
         SASL.external_service_failure(
           :code_search_failure,
           "Code search operation failed",
@@ -279,6 +281,7 @@ defmodule Singularity.PackageAndCodebaseSearch do
       "No codebase_id provided for code search",
       []
     )
+
     []
   end
 

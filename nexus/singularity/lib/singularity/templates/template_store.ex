@@ -52,12 +52,12 @@ defmodule Singularity.TemplateStore do
 
   defp templates_dir do
     # Auto-detect templates directory from git root or current working directory
-    repo_root = 
+    repo_root =
       case System.cmd("git", ["rev-parse", "--show-toplevel"], stderr_to_stdout: true) do
         {root, 0} -> String.trim(root)
         _ -> File.cwd!()
       end
-    
+
     Path.join([repo_root, "templates_data"])
   end
 

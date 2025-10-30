@@ -240,26 +240,26 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
   # Consolidate code duplicates using AST similarity and semantic analysis
   defp consolidate_code_duplicates(duplicates) do
     Logger.debug("Consolidating #{length(duplicates)} code duplicates")
-    
+
     # Group duplicates by similarity
     duplicate_groups = group_duplicates_by_similarity(duplicates)
-    
-    consolidated_count = 
+
+    consolidated_count =
       duplicate_groups
       |> Enum.map(fn group ->
         consolidate_group(group)
       end)
       |> Enum.sum()
-    
+
     Logger.info("Consolidated #{consolidated_count} duplicate groups")
-    
+
     # Emit Telemetry metrics
     Singularity.Infrastructure.Telemetry.execute(
       [:singularity, :deduplication, :consolidated],
       %{groups_consolidated: length(duplicate_groups)},
       %{duplicates_found: length(duplicates), consolidated: consolidated_count}
     )
-    
+
     consolidated_count
   end
 
@@ -281,16 +281,16 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
       # Select the best candidate (most complete, best quality)
       best = select_best_candidate(group)
       others = List.delete(group, best)
-      
+
       # Merge similar code into best candidate
       consolidated = merge_code_duplicates(best, others)
-      
+
       # Store consolidated version
       store_consolidated_code(consolidated)
-      
+
       # Remove duplicates
       remove_duplicate_code(others)
-      
+
       1
     else
       0
@@ -309,7 +309,7 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
   defp merge_code_duplicates(best, others) do
     # Merge improvements from duplicates into best candidate
     improvements = extract_improvements(others)
-    
+
     Map.merge(best, improvements)
   end
 

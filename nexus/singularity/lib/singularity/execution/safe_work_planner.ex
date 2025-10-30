@@ -459,6 +459,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
 
     # Create PgFlow workflow for work item processing
     workflow_id = "work_item_#{:erlang.unique_integer([:positive])}"
+
     workflow_attrs = %{
       workflow_id: workflow_id,
       type: "work_item_processing",
@@ -475,6 +476,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     case Singularity.PgFlow.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created work item workflow", workflow_id: workflow_id)
+
       {:error, reason} ->
         Logger.warning("Failed to create work item workflow", reason: reason)
     end
@@ -514,7 +516,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         new_state = apply_chunk_changes(state, analysis, approved_by, updates_id)
-        
+
         # Send success notification via PgFlow
         notification = %{
           type: "work_item_processed",
@@ -524,8 +526,9 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           status: "completed",
           confidence: validation_result |> elem(1) |> Map.get(:confidence)
         }
+
         Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
-        
+
         {:reply, {:ok, analysis}, new_state}
 
       {:collaborative, result} ->
@@ -537,7 +540,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         notify_approval_needed(analysis, result)
-        
+
         # Send approval needed notification via PgFlow
         notification = %{
           type: "work_item_approval_needed",
@@ -548,8 +551,9 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           confidence: result.confidence,
           reasoning: result.reasoning
         }
+
         Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
-        
+
         {:reply, {:needs_approval, result}, state}
 
       {:escalated, result} ->
@@ -561,7 +565,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
         )
 
         notify_escalation(analysis, result)
-        
+
         # Send escalation notification via PgFlow
         notification = %{
           type: "work_item_escalated",
@@ -572,8 +576,9 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           confidence: result.confidence,
           reasoning: result.reasoning
         }
+
         Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
-        
+
         {:reply, {:escalated, result}, state}
     end
   end
@@ -616,7 +621,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
   def handle_call({:complete_item, item_id, level}, _from, state) do
     new_state = mark_complete(state, item_id, level)
     CodeStore.save_vision(serialize_state(new_state))
-    
+
     # Send completion notification via PgFlow
     notification = %{
       type: "work_item_completed",
@@ -624,8 +629,9 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       level: level,
       completed_at: :erlang.system_time(:millisecond)
     }
+
     Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
-    
+
     {:reply, :ok, new_state}
   end
 
@@ -665,11 +671,13 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     provider = Keyword.get(opts, :provider, "auto")
     task_type = "classifier"
     context = %{task_type: task_type}
-    
-    complexity = case Config.get_task_complexity(provider, context) do
-      {:ok, comp} -> comp
-      {:error, _} -> :simple  # Fallback for classifier tasks
-    end
+
+    complexity =
+      case Config.get_task_complexity(provider, context) do
+        {:ok, comp} -> comp
+        # Fallback for classifier tasks
+        {:error, _} -> :simple
+      end
 
     case Singularity.LLM.Service.call(complexity, [%{role: "user", content: prompt}],
            task_type: "classifier",
@@ -821,6 +829,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
     end)
     |> Enum.into(%{})
   end
+
   defp filter_by_level_and_status(items, _level, _status) when is_list(items) do
     # Handle list input by converting to map first
     items

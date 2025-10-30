@@ -246,7 +246,11 @@ defmodule Singularity.Workflows do
         :telemetry.execute(
           [:singularity, :pattern_rescan, :failed],
           %{duration_ms: duration},
-          Map.merge(metadata || %{}, %{repo_path: repo_path, status: :error, error: inspect(reason)})
+          Map.merge(metadata || %{}, %{
+            repo_path: repo_path,
+            status: :error,
+            error: inspect(reason)
+          })
         )
 
         {:error, reason}
@@ -256,7 +260,11 @@ defmodule Singularity.Workflows do
       :telemetry.execute(
         [:singularity, :pattern_rescan, :failed],
         %{},
-        Map.merge(metadata || %{}, %{repo_path: repo_path, status: :exception, error: inspect(error)})
+        Map.merge(metadata || %{}, %{
+          repo_path: repo_path,
+          status: :exception,
+          error: inspect(error)
+        })
       )
 
       {:error, {:exception, error}}

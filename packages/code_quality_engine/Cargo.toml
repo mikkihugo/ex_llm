@@ -109,9 +109,19 @@ dependency_parser = { path = "../parser_engine/formats/dependency" }
 # validator = { path = "../linting_engine", optional = true }  # Use indirectly via quality module
 # sparc_methodology = { path = "../methodology" }  # Does not exist
 
+[features]
+# NIF support for Elixir integration (enabled by default for cdylib)
+default = ["nif"]
+nif = ["rustler"]
+
 [dev-dependencies]
 tokio-test = { workspace = true }
+criterion = { version = "0.5", features = ["html_reports"] }
 
-[features]
-default = ["nif"]
-nif = ["rustler"]  # Enable NIF support for Elixir integration
+[[bench]]
+name = "analysis_benchmark"
+harness = false
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"

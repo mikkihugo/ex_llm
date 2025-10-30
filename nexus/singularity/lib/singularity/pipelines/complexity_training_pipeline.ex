@@ -42,23 +42,28 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
   Build producer configuration based on PGFlow mode setting
   """
   def build_producer_config do
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
 
     if pgflow_enabled do
       Logger.info("ComplexityTrainingPipeline: Starting in PGFlow mode")
+
       [
-        module: {Broadway.PgflowProducer, [
-          workflow_name: "complexity_training_producer",
-          queue_name: "complexity_training_jobs",
-          concurrency: 3,
-          batch_size: 15,
-          pgflow_config: [timeout_ms: 600_000, retries: 5],
-          resource_hints: [gpu: true, cpu_cores: 8]
-        ]},
+        module:
+          {Broadway.PgflowProducer,
+           [
+             workflow_name: "complexity_training_producer",
+             queue_name: "complexity_training_jobs",
+             concurrency: 3,
+             batch_size: 15,
+             pgflow_config: [timeout_ms: 600_000, retries: 5],
+             resource_hints: [gpu: true, cpu_cores: 8]
+           ]},
         concurrency: 3
       ]
     else
       Logger.info("ComplexityTrainingPipeline: Starting in Broadway mode")
+
       [
         module: {Broadway.DummyProducer, []},
         concurrency: 1
@@ -68,7 +73,9 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
 
   @impl Broadway
   def handle_message(:default, %Message{data: data} = message, _context) do
-    Logger.debug("ComplexityTrainingPipeline: Processing message", message_id: message.metadata.message_id)
+    Logger.debug("ComplexityTrainingPipeline: Processing message",
+      message_id: message.metadata.message_id
+    )
 
     case analyze_complexity(data) do
       {:ok, complexity_metrics} ->
@@ -84,28 +91,34 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
 
   @impl Broadway
   def handle_batch(:complexity_analysis, messages, _batch_info, _context) do
-    Logger.info("ComplexityTrainingPipeline: Processing complexity analysis batch", batch_size: length(messages))
+    Logger.info("ComplexityTrainingPipeline: Processing complexity analysis batch",
+      batch_size: length(messages)
+    )
 
-    processed_messages = Enum.map(messages, fn message ->
-      %{complexity_metrics: metrics} = message.data
+    processed_messages =
+      Enum.map(messages, fn message ->
+        %{complexity_metrics: metrics} = message.data
 
-      should_train = should_trigger_training?(metrics)
+        should_train = should_trigger_training?(metrics)
 
-      if should_train do
-        Message.put_batcher(message, :training_data)
-      else
-        message
-      end
-    end)
+        if should_train do
+          Message.put_batcher(message, :training_data)
+        else
+          message
+        end
+      end)
 
     processed_messages
   end
 
   @impl Broadway
   def handle_batch(:training_data, messages, _batch_info, _context) do
-    Logger.info("ComplexityTrainingPipeline: Processing training data batch", batch_size: length(messages))
+    Logger.info("ComplexityTrainingPipeline: Processing training data batch",
+      batch_size: length(messages)
+    )
 
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
 
     if pgflow_enabled do
       training_data = Enum.map(messages, & &1.data)
@@ -140,7 +153,8 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
 
   defp should_trigger_training?(metrics) do
     complexity_score = Map.get(metrics, :complexity_score, 0.0)
-    complexity_score > 0.7  # High complexity indicates need for better models
+    # High complexity indicates need for better models
+    complexity_score > 0.7
   end
 
   defp perform_simple_training(_training_data) do

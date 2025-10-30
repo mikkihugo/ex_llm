@@ -81,17 +81,18 @@ defmodule Singularity.Workflows.LlmRequest do
 
   def select_model(prev) do
     # Get complexity from centralized config (database ? Pgflow fallback)
-    complexity = 
-      prev.requested_complexity || 
-      get_complexity_for_task(prev.requested_provider || "auto", prev.task_type)
-    
+    complexity =
+      prev.requested_complexity ||
+        get_complexity_for_task(prev.requested_provider || "auto", prev.task_type)
+
     # Get models from centralized config (database ? Pgflow fallback)
-    {model, provider} = decide_model(
-      prev.requested_model, 
-      prev.requested_provider, 
-      complexity,
-      prev.task_type
-    )
+    {model, provider} =
+      decide_model(
+        prev.requested_model,
+        prev.requested_provider,
+        complexity,
+        prev.task_type
+      )
 
     Logger.debug("LLM Workflow: Selected model",
       task_type: prev.task_type,
@@ -210,10 +211,12 @@ defmodule Singularity.Workflows.LlmRequest do
   defp get_complexity_for_task(provider, task_type) do
     # Use centralized LLM.Config (database ? Pgflow fallback)
     context = %{task_type: task_type}
-    
+
     case Config.get_task_complexity(provider, context) do
-      {:ok, complexity} -> Atom.to_string(complexity)
-      {:error, _} -> 
+      {:ok, complexity} ->
+        Atom.to_string(complexity)
+
+      {:error, _} ->
         # Fallback to string matching if config fails
         get_complexity_fallback(task_type)
     end
@@ -228,10 +231,10 @@ defmodule Singularity.Workflows.LlmRequest do
     end
   end
 
-  defp decide_model("auto", provider, complexity, task_type), 
+  defp decide_model("auto", provider, complexity, task_type),
     do: select_best_model(complexity, provider, task_type)
-  
-  defp decide_model(nil, provider, complexity, task_type), 
+
+  defp decide_model(nil, provider, complexity, task_type),
     do: select_best_model(complexity, provider, task_type)
 
   defp decide_model(model, provider, complexity, task_type) when is_binary(model) do
@@ -253,13 +256,13 @@ defmodule Singularity.Workflows.LlmRequest do
     # Use centralized LLM.Config to get models (database ? Pgflow fallback)
     context = %{task_type: task_type}
     normalized_provider = provider || "auto"
-    
+
     case Config.get_models(normalized_provider, context) do
       {:ok, [model | _]} ->
         # Use first model from config
         provider_name = provider_for_model(model) || provider_for_complexity(complexity)
         {model, provider_name}
-      
+
       {:error, _} ->
         # Fallback to hardcoded selection
         select_best_model_fallback(complexity, provider)

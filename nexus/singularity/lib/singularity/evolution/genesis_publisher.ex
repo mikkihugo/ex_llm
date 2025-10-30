@@ -81,7 +81,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   @default_namespace "validation_rules"
   @default_min_confidence 0.85
   @default_limit 20
-  
+
   # LLM configuration namespace
   @llm_config_namespace "llm_configuration_rules"
 
@@ -538,22 +538,23 @@ defmodule Singularity.Evolution.GenesisPublisher do
   @spec sync_llm_config_from_settings(keyword()) :: {:ok, map()} | {:error, term()}
   def sync_llm_config_from_settings(opts \\ []) do
     provider = Keyword.get(opts, :provider)
-    
+
     Logger.info("GenesisPublisher: Syncing LLM configuration from Settings KV",
       provider: provider
     )
 
     try do
-      config = if provider do
-        # Sync specific provider
-        sync_provider_config(provider)
-      else
-        # Sync all providers
-        ["claude", "gemini", "copilot", "codex"]
-        |> Enum.map(fn p -> {p, sync_provider_config(p)} end)
-        |> Enum.reject(fn {_p, config} -> is_nil(config) end)
-        |> Enum.into(%{})
-      end
+      config =
+        if provider do
+          # Sync specific provider
+          sync_provider_config(provider)
+        else
+          # Sync all providers
+          ["claude", "gemini", "copilot", "codex"]
+          |> Enum.map(fn p -> {p, sync_provider_config(p)} end)
+          |> Enum.reject(fn {_p, config} -> is_nil(config) end)
+          |> Enum.into(%{})
+        end
 
       {:ok, config}
     rescue
@@ -561,6 +562,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.error("GenesisPublisher: Error syncing LLM configuration",
           error: inspect(error)
         )
+
         {:error, error}
     end
   end
@@ -606,7 +608,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
     try do
       # Get patterns with successful LLM usage
       patterns = fetch_llm_success_patterns()
-      
+
       # Synthesize rules from patterns
       rules =
         patterns
@@ -625,6 +627,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.error("GenesisPublisher: Error synthesizing LLM config rules",
           error: inspect(error)
         )
+
         {:error, error}
     end
   end
@@ -670,12 +673,14 @@ defmodule Singularity.Evolution.GenesisPublisher do
             published: summary[:published_count] || summary["published_count"],
             namespace: summary[:namespace] || summary["namespace"]
           )
+
           {:ok, summary}
 
         {:error, reason} ->
           Logger.error("GenesisPublisher: LLM config rule publication workflow failed",
             error: inspect(reason)
           )
+
           {:error, reason}
       end
     rescue
@@ -683,6 +688,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.error("GenesisPublisher: Error publishing LLM config rules",
           error: inspect(error)
         )
+
         {:error, error}
     end
   end
@@ -714,11 +720,15 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
     try do
       # Import rules via Genesis workflow (similar to validation rules)
-      case import_rules_from_genesis(namespace: @llm_config_namespace, min_confidence: min_confidence, limit: limit) do
+      case import_rules_from_genesis(
+             namespace: @llm_config_namespace,
+             min_confidence: min_confidence,
+             limit: limit
+           ) do
         {:ok, rules} ->
           # Apply imported rules to Settings KV
           applied = Enum.map(rules, &apply_llm_config_rule/1)
-          
+
           Logger.info("GenesisPublisher: Imported and applied LLM configuration rules",
             imported: length(rules),
             applied: Enum.count(applied, &match?(:ok, &1))
@@ -734,6 +744,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.error("GenesisPublisher: Error importing LLM config rules",
           error: inspect(error)
         )
+
         {:error, error}
     end
   end
@@ -743,34 +754,45 @@ defmodule Singularity.Evolution.GenesisPublisher do
   defp sync_provider_config(provider) do
     # Get complexity settings
     complexity_by_task_type = fetch_complexity_settings(provider)
-    
+
     # Get model settings
     models = fetch_model_settings(provider)
-    
+
     config = %{}
-    config = if complexity_by_task_type != %{}, do: Map.put(config, :complexity, complexity_by_task_type), else: config
+
+    config =
+      if complexity_by_task_type != %{},
+        do: Map.put(config, :complexity, complexity_by_task_type),
+        else: config
+
     config = if models != [], do: Map.put(config, :models, models), else: config
-    
+
     if config != %{}, do: config, else: nil
   end
 
   defp fetch_complexity_settings(provider) do
     # Fetch complexity settings for all task types
     task_types = [:architect, :coder, :refactoring, :code_generation, :planning]
-    
+
     task_types
     |> Enum.map(fn task_type ->
       key = "llm.providers.#{provider}.complexity.#{task_type}"
+
       case Settings.get(key) do
-        nil -> nil
+        nil ->
+          nil
+
         complexity when is_binary(complexity) ->
           case normalize_complexity(complexity) do
             {:ok, normalized} -> {task_type, normalized}
             _ -> nil
           end
+
         complexity when complexity in [:simple, :medium, :complex] ->
           {task_type, complexity}
-        _ -> nil
+
+        _ ->
+          nil
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -779,16 +801,23 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
   defp fetch_model_settings(provider) do
     key = "llm.providers.#{provider}.models"
+
     case Settings.get(key) do
-      nil -> []
-      models when is_list(models) -> models
+      nil ->
+        []
+
+      models when is_list(models) ->
+        models
+
       models when is_binary(models) ->
         # Try to parse as JSON
         case Jason.decode(models) do
           {:ok, models_list} when is_list(models_list) -> models_list
           _ -> []
         end
-      _ -> []
+
+      _ ->
+        []
     end
   rescue
     _ -> []
@@ -798,7 +827,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
     # Query execution metrics for successful LLM calls
     # Group by provider, task_type, complexity, and model
     # This queries the MetricsAggregation database table
-    
+
     try do
       # Query metrics from database grouped by provider/task_type/complexity/model
       query = """
@@ -817,7 +846,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         ORDER BY frequency DESC
         LIMIT 50
       """
-      
+
       case Repo.query(query) do
         {:ok, %{rows: rows}} ->
           rows
@@ -832,7 +861,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
             }
           end)
           |> Enum.filter(&(&1.frequency > 0))
-        
+
         {:error, _reason} ->
           # Fallback: return empty list if query fails
           Logger.debug("GenesisPublisher: Metrics query not available, returning empty patterns")
@@ -843,28 +872,32 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.warning("GenesisPublisher: Error fetching LLM success patterns",
           error: inspect(error)
         )
+
         []
     end
   end
-  
+
   defp normalize_string(nil), do: nil
   defp normalize_string(""), do: nil
   defp normalize_string(str) when is_binary(str), do: String.trim(str)
   defp normalize_string(str), do: str |> to_string() |> String.trim()
-  
+
   defp calculate_success_rate(data) do
     total = get_in(data, [:count]) || 0
     errors = get_in(data, [:error_count]) || 0
-    
+
     if total > 0 do
       (total - errors) / total
     else
       0.5
     end
   end
-  
+
   defp normalize_complexity(nil), do: "medium"
-  defp normalize_complexity(complexity) when complexity in ["simple", "medium", "complex"], do: complexity
+
+  defp normalize_complexity(complexity) when complexity in ["simple", "medium", "complex"],
+    do: complexity
+
   defp normalize_complexity("s"), do: "simple"
   defp normalize_complexity("m"), do: "medium"
   defp normalize_complexity("c"), do: "complex"
@@ -905,9 +938,11 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
   # Normalize complexity to string format
   defp normalize_complexity(value) when value in [:simple, :medium, :complex], do: {:ok, value}
+
   defp normalize_complexity(value) when is_binary(value) do
     try do
       atom = String.to_existing_atom(value)
+
       if atom in [:simple, :medium, :complex] do
         {:ok, atom}
       else
@@ -917,6 +952,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       ArgumentError -> {:error, :invalid_value}
     end
   end
+
   defp normalize_complexity(complexity) when is_binary(complexity) do
     case String.downcase(complexity) do
       "simple" -> {:ok, :simple}
@@ -925,6 +961,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       _ -> {:error, :invalid_value}
     end
   end
+
   defp normalize_complexity(complexity) when is_atom(complexity) do
     case complexity do
       :simple -> {:ok, :simple}
@@ -933,6 +970,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       _ -> {:error, :invalid_value}
     end
   end
+
   defp normalize_complexity(_), do: {:error, :invalid_value}
 
   # Expose as public function for workflow use
@@ -940,7 +978,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   def publish_llm_config_rule(rule, namespace) do
     publish_llm_config_rule_impl(rule, namespace)
   end
-  
+
   defp publish_llm_config_rule_impl(rule, namespace) do
     Logger.debug("GenesisPublisher: Publishing LLM configuration rule",
       pattern: inspect(rule.pattern),
@@ -965,6 +1003,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
         Logger.debug("GenesisPublisher: LLM config rule published to Genesis via pgflow",
           pattern: inspect(rule.pattern)
         )
+
         {:ok, :sent}
 
       {:ok, msg_id} when is_integer(msg_id) ->
@@ -972,6 +1011,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
           pattern: inspect(rule.pattern),
           message_id: msg_id
         )
+
         {:ok, msg_id}
 
       {:error, reason} ->
@@ -979,17 +1019,18 @@ defmodule Singularity.Evolution.GenesisPublisher do
           pattern: inspect(rule.pattern),
           reason: inspect(reason)
         )
+
         {:error, reason}
     end
   end
-  
+
   defp apply_llm_config_rule(rule) do
     pattern = rule["pattern"] || rule[:pattern]
     action = rule["action"] || rule[:action]
-    
+
     provider = pattern["provider"] || pattern[:provider]
     task_type = pattern["task_type"] || pattern[:task_type]
-    
+
     complexity = action["complexity"] || action[:complexity]
     models = action["models"] || action[:models] || []
 
@@ -1013,6 +1054,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
           error: inspect(error),
           rule: inspect(rule)
         )
+
         {:error, error}
     end
   end

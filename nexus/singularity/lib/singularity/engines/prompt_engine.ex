@@ -396,7 +396,10 @@ defmodule Singularity.PromptEngine do
 
   defmodule Native do
     @moduledoc false
-    use Rustler, otp_app: :singularity, crate: "prompt_engine", path: "../../packages/prompt_engine"
+    use Rustler,
+      otp_app: :singularity,
+      crate: "prompt_engine",
+      path: "../../packages/prompt_engine"
 
     # NIF functions - names must match Rust #[rustler::nif] function names
     def nif_generate_prompt(_request), do: :erlang.nif_error(:nif_not_loaded)
@@ -419,7 +422,7 @@ defmodule Singularity.PromptEngine do
 
   @doc """
   Loads and optimizes a prompt template using the Rust prompt_engine.
-  
+
   Falls back to TemplateService if NIF not available.
   """
   def load_and_optimize_template(template_name) do
@@ -428,6 +431,7 @@ defmodule Singularity.PromptEngine do
     else
       # Fallback: Use TemplateService or local templates
       Logger.debug("prompt_engine NIF not available, using TemplateService fallback")
+
       case Singularity.Knowledge.TemplateService.get(template_name) do
         {:ok, template} -> {:ok, template}
         {:error, _} -> get_template(template_name, [])
@@ -437,7 +441,7 @@ defmodule Singularity.PromptEngine do
 
   @doc """
   Generates a prompt from a template and input using the Rust prompt_engine.
-  
+
   Falls back to local template generation if NIF not available.
   """
   def generate_prompt_from_template(template_name, input) when is_binary(input) do
@@ -446,18 +450,20 @@ defmodule Singularity.PromptEngine do
     else
       # Fallback: Use local template generation
       Logger.debug("prompt_engine NIF not available, using local template fallback")
+
       case get_template(template_name, []) do
         {:ok, template} ->
           context = Map.get(input, :context, input) || input
           language = Map.get(input, :language, "elixir")
-          
-          prompt = local_generate_prompt(%{
-            context: to_string(context),
-            language: language,
-            template_id: template_name,
-            category: "general"
-          })
-          
+
+          prompt =
+            local_generate_prompt(%{
+              context: to_string(context),
+              language: language,
+              template_id: template_name,
+              category: "general"
+            })
+
           {:ok, prompt}
 
         {:error, _} = error ->
@@ -472,7 +478,7 @@ defmodule Singularity.PromptEngine do
 
   @doc """
   Syncs a template from the global knowledge cache via Singularity.Jobs.PgmqClient.
-  
+
   Falls back to TemplateService if NIF not available.
   """
   def sync_template_from_global(template_name) do
@@ -481,9 +487,12 @@ defmodule Singularity.PromptEngine do
     else
       # Fallback: Use TemplateService to fetch and cache template
       Logger.debug("prompt_engine NIF not available, using TemplateService fallback")
+
       case Singularity.Knowledge.TemplateService.get(template_name) do
-        {:ok, template} -> {:ok, template}
-        {:error, _} -> 
+        {:ok, template} ->
+          {:ok, template}
+
+        {:error, _} ->
           # Try to fetch via search as last resort
           case Singularity.Knowledge.TemplateService.search_patterns([template_name]) do
             {:ok, [template | _]} -> {:ok, template}
@@ -495,7 +504,7 @@ defmodule Singularity.PromptEngine do
 
   @doc """
   Invalidates the local cache for a template.
-  
+
   Falls back to local cache clear if NIF not available.
   """
   def invalidate_template(template_name) do

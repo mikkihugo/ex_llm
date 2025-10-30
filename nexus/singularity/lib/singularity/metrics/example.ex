@@ -19,6 +19,7 @@ defmodule Singularity.Metrics.Example do
 
     # 1. Analyze a file
     Logger.info("\n1. Analyzing file...")
+
     case analyze_example_file() do
       {:ok, analysis} ->
         Logger.info("✓ Analysis complete")
@@ -234,18 +235,20 @@ defmodule Singularity.Metrics.Example do
     Logger.info("Running performance benchmark...")
 
     # Create test files
-    test_files = Enum.map(1..file_count, fn i ->
-      "lib/test_module_#{i}.ex"
-    end)
+    test_files =
+      Enum.map(1..file_count, fn i ->
+        "lib/test_module_#{i}.ex"
+      end)
 
     # Benchmark batch analysis
     start_time = System.monotonic_time(:millisecond)
 
-    {ok_count, err_count, _results} = Singularity.Metrics.Orchestrator.analyze_batch(
-      test_files,
-      enrich: true,
-      store: true
-    )
+    {ok_count, err_count, _results} =
+      Singularity.Metrics.Orchestrator.analyze_batch(
+        test_files,
+        enrich: true,
+        store: true
+      )
 
     elapsed = System.monotonic_time(:millisecond) - start_time
     avg_per_file = if ok_count > 0, do: elapsed / ok_count, else: 0

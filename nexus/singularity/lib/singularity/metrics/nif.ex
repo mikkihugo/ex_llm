@@ -23,11 +23,15 @@ defmodule Singularity.Metrics.NIF do
 
   def load_nif do
     nif_file = :filename.join(:code.priv_dir(:singularity), "native/metrics")
+
     case :erlang.load_nif(nif_file, 0) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, {:load_failure, reason}} ->
         IO.warn("Failed to load metrics NIF: #{reason}")
-        :ok  # Graceful fallback
+        # Graceful fallback
+        :ok
     end
   end
 
@@ -163,11 +167,12 @@ defmodule Singularity.Metrics.NIF do
   def analyze_all(language, code) when is_atom(language) and is_binary(code) do
     with {:ok, type_safety} <- type_safety(language, code),
          {:ok, error_handling} <- error_handling(language, code) do
-      {:ok, %{
-        type_safety: type_safety,
-        error_handling: error_handling,
-        language: language
-      }}
+      {:ok,
+       %{
+         type_safety: type_safety,
+         error_handling: error_handling,
+         language: language
+       }}
     else
       {:error, reason} -> {:error, reason}
     end
@@ -211,12 +216,15 @@ defmodule Singularity.Metrics.NIF do
   Wraps NIF calls with timeouts and error recovery.
   """
   def safe_analyze(language, code, timeout_ms \\ 5000) do
-    task = Task.async(fn ->
-      analyze_all(language, code)
-    end)
+    task =
+      Task.async(fn ->
+        analyze_all(language, code)
+      end)
 
     case Task.yield(task, timeout_ms) do
-      {:ok, result} -> result
+      {:ok, result} ->
+        result
+
       nil ->
         Task.shutdown(task)
         {:error, "metric calculation timeout after #{timeout_ms}ms"}

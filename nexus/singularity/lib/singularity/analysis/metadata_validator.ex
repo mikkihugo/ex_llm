@@ -537,5 +537,4 @@ defmodule Singularity.Analysis.MetadataValidator do
       length(words) >= 3 and Enum.all?(words, &String.contains?(&1, "-"))
     end)
   end
-
 end

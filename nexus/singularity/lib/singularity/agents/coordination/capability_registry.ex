@@ -105,7 +105,10 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
             }
           rescue
             error ->
-              Logger.warning("[CapabilityRegistry] Failed to preload #{agent_name}: #{inspect(error)}")
+              Logger.warning(
+                "[CapabilityRegistry] Failed to preload #{agent_name}: #{inspect(error)}"
+              )
+
               acc
           end
         end)
@@ -154,6 +157,7 @@ defmodule Singularity.Agents.Coordination.CapabilityRegistry do
 
       {:error, :invalid_capability, errors} ->
         require Logger
+
         Logger.warning("Capability registration validation failed",
           agent_name: agent_name,
           attrs: attrs,

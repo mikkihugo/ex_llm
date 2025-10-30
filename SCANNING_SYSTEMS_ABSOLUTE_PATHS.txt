@@ -1,0 +1,243 @@
+================================================================================
+SCANNING SYSTEMS - ABSOLUTE FILE PATHS & MODULE REFERENCES
+================================================================================
+
+SCANNER IMPLEMENTATION FILES
+================================================================================
+
+QualityScanner (Working)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_analysis/scanners/quality_scanner.ex
+  Module: Singularity.CodeAnalysis.Scanners.QualityScanner
+  Size: 62 lines
+  Status: ✅ OPERATIONAL
+
+SecurityScanner (Missing - CRITICAL)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_analysis/scanners/security_scanner.ex
+  Module: Singularity.CodeAnalysis.Scanners.SecurityScanner
+  Size: DOES NOT EXIST
+  Status: ❌ MISSING (declared in config but not implemented)
+  Fix: Copy QualityScanner pattern, wrap AstSecurityScanner
+  Est. Time: 30 minutes
+
+AstQualityAnalyzer (Implementation)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_quality/ast_quality_analyzer.ex
+  Module: Singularity.CodeQuality.AstQualityAnalyzer
+  Size: 200+ lines
+  Wrapped By: QualityScanner
+  Status: ✅ FULLY IMPLEMENTED
+
+AstSecurityScanner (Implementation)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_quality/ast_security_scanner.ex
+  Module: Singularity.CodeQuality.AstSecurityScanner
+  Size: 200+ lines
+  Needs Wrapper: SecurityScanner (in progress)
+  Status: ✅ FULLY IMPLEMENTED, needs orchestrator wrapper
+
+FullRepoScanner (Complete)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code/full_repo_scanner.ex
+  Module: Singularity.Code.FullRepoScanner
+  Size: 150+ lines
+  Status: ✅ FULLY IMPLEMENTED
+
+================================================================================
+TODO/FIXME SCANNING FILES
+================================================================================
+
+TodoExtractor (Primary)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/todo_extractor.ex
+  Module: Singularity.Execution.TodoExtractor
+  Size: 370 lines
+  Key Functions:
+    - extract_from_file/2 - Extract from single file
+    - extract_after_file_update/1 - Extract after file update
+  Status: ✅ FULLY IMPLEMENTED
+
+TodoDetector (Analyzer)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code/analyzers/todo_detector.ex
+  Module: Singularity.Code.Analyzers.TodoDetector
+  Size: 176 lines
+  Key Functions:
+    - detect_todos/2 - Scan codebase for todos
+  Status: ✅ FULLY IMPLEMENTED
+
+TodoPatterns (Registry)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/todo_patterns.ex
+  Module: Singularity.Execution.TodoPatterns
+  Size: 94 lines
+  Key Functions:
+    - actionable_patterns/0 - Returns markers to extract
+    - excluded_patterns/0 - Returns markers to ignore
+    - priority_map/0 - Priority levels 1-15
+  Status: ✅ FULLY IMPLEMENTED
+
+ToDoSupervisor (Execution)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/todo_supervisor.ex
+  Module: Singularity.Execution.TodoSupervisor
+  Status: ✅ FULLY IMPLEMENTED
+
+TodoStore (Database)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/todo_store.ex
+  Module: Singularity.Execution.TodoStore
+  Status: ✅ FULLY IMPLEMENTED
+
+TodoSwarmCoordinator (Multi-Agent)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/todo_swarm_coordinator.ex
+  Module: Singularity.Execution.TodoSwarmCoordinator
+  Status: ✅ FULLY IMPLEMENTED
+
+================================================================================
+DATABASE SCHEMA & MIGRATION FILES
+================================================================================
+
+Quality Tracking Migration (Main)
+  File: /home/mhugo/code/singularity/nexus/singularity/priv/repo/migrations/20250101000018_create_quality_tracking_tables.exs
+  Migration: CreateQualityTrackingTables
+  Tables Created:
+    - quality_runs (for tool executions)
+    - quality_findings (for individual findings)
+  Status: ✅ APPLIED
+
+Todo Schema (Ecto)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/schemas/execution/todo.ex
+  Module: Singularity.Execution.Todo
+  Size: 275 lines
+  Table: todos
+  Status: ✅ FULLY IMPLEMENTED
+
+Quality Run Schema (Ecto)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/schemas/quality/run.ex
+  Module: Singularity.Quality.Run
+  Table: quality_runs
+  Status: ✅ SHOULD EXIST (embedded in migration)
+
+Quality Finding Schema (Ecto)
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/schemas/quality/finding.ex
+  Module: Singularity.Quality.Finding
+  Table: quality_findings
+  Status: ✅ SHOULD EXIST (embedded in migration)
+
+================================================================================
+CONFIGURATION FILES
+================================================================================
+
+Main Singularity Config
+  File: /home/mhugo/code/singularity/nexus/singularity/config/config.exs
+  Config Key: :singularity, :scanner_types
+  Location: Lines ~300+
+  Contents:
+    - quality: %{module: QualityScanner, enabled: true}
+    - security: %{module: SecurityScanner, enabled: true}
+  Status: ✅ CONFIG EXISTS, ❌ SecurityScanner module missing
+
+================================================================================
+OBSERVER/UI FILES
+================================================================================
+
+Todo Management UI
+  File: /home/mhugo/code/singularity/observer/lib/observer_web/live/todos_live.ex
+  Module: ObserverWeb.TodosLive
+  Port: 4002 (Observer)
+  Status: ✅ IMPLEMENTED
+
+================================================================================
+AGENT INTEGRATION FILES
+================================================================================
+
+Code Quality Improvement Workflow
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/agents/workflows/code_quality_improvement_workflow.ex
+  Module: Singularity.Agents.Workflows.CodeQualityImprovementWorkflow
+  Integrations:
+    - AstQualityAnalyzer.analyze_codebase_quality/2
+    - AstSecurityScanner.scan_codebase_for_vulnerabilities/2
+  Status: ✅ INTEGRATED
+
+Quality Enforcer Agent
+  File: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/agents/quality_enforcer.ex
+  Module: Singularity.Agents.QualityEnforcer
+  Status: ✅ IMPLEMENTED
+
+================================================================================
+LINTING ENGINE INTEGRATION POINTS
+================================================================================
+
+Parser Engine (Rust NIF)
+  Directory: /home/mhugo/code/singularity/packages/parser_engine
+  Status: ✅ AVAILABLE for integration
+
+Code Quality Engine (Rust NIF)
+  Directory: /home/mhugo/code/singularity/packages/code_quality_engine
+  Status: ✅ AVAILABLE for integration
+
+Linting Engine (Rust NIF)
+  Directory: /home/mhugo/code/singularity/packages/linting_engine
+  Status: ✅ AVAILABLE for integration
+  Languages: Clojure, Dart, PHP, Ruby, Scala, Swift (new in Oct 2025)
+
+================================================================================
+RECOMMENDED INTEGRATION STEPS (File Locations)
+================================================================================
+
+STEP 1: Create SecurityScanner Wrapper
+  1. Copy: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_analysis/scanners/quality_scanner.ex
+  2. Create: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_analysis/scanners/security_scanner.ex
+  3. Change:
+     - Module name: Singularity.CodeAnalysis.Scanners.SecurityScanner
+     - Wrap: Singularity.CodeQuality.AstSecurityScanner instead
+     - Return field mapping (security report format)
+  4. Test via: iex> SecurityScanner.scan("lib/")
+  Est. Time: 30 minutes
+
+STEP 2: Create LintingScanner Wrapper
+  1. Create: /home/mhugo/code/singularity/nexus/singularity/lib/singularity/code_analysis/scanners/linting_scanner.ex
+  2. Follow: QualityScanner pattern
+  3. Wrap: Singularity.LintingEngine or packages/linting_engine functions
+  4. Return: {ok, %{issues: [...], summary: %{...}}}
+  5. Add to config: /nexus/singularity/config/config.exs
+     linting: %{
+       module: Singularity.CodeAnalysis.Scanners.LintingScanner,
+       enabled: true,
+       description: "Multi-language linting and style analysis"
+     }
+  Est. Time: 1-2 hours
+
+STEP 3: Store Linting Results
+  1. Extend: quality_findings table to include linting results
+     - Add field: "tool" to distinguish sobelow, mix_audit, linting_engine
+     - Reuse: existing quality_runs + quality_findings schema
+  2. Update: /migrations/20250101000018 or create new migration
+  3. Run: mix ecto.migrate
+
+STEP 4: Observer Dashboard Integration
+  1. Extend: /observer/lib/observer_web/live/todos_live.ex
+  2. Or Create: /observer/lib/observer_web/live/linting_results_live.ex
+  3. Query: quality_findings where tool = 'linting_engine'
+  4. Display: File → Line → Message → Severity dashboard
+
+STEP 5: Agent Integration
+  1. Update: /agents/workflows/code_quality_improvement_workflow.ex
+  2. Add: LintingScanner.scan call
+  3. Create: fixes for linting issues (if auto-fixable)
+
+================================================================================
+KEY SEARCH PATTERNS FOR CODEBASE NAVIGATION
+================================================================================
+
+Find all scanners:
+  grep -r "defmodule.*Scanner" /home/mhugo/code/singularity/nexus/singularity/lib/singularity
+
+Find all TODO extractors:
+  grep -r "TodoExtractor\|TodoDetector" /home/mhugo/code/singularity/nexus/singularity/lib
+
+Find all quality-related files:
+  find /home/mhugo/code/singularity/nexus/singularity/lib -name "*quality*" -type f
+
+Find all scanning-related files:
+  find /home/mhugo/code/singularity/nexus/singularity/lib -name "*scan*" -type f
+
+Find orchestrators:
+  grep -r "defmodule.*Orchestrator" /home/mhugo/code/singularity/nexus/singularity/lib/singularity
+
+Find migrations with schema changes:
+  ls -la /home/mhugo/code/singularity/nexus/singularity/priv/repo/migrations/
+
+================================================================================

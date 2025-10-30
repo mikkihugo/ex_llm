@@ -104,12 +104,13 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   Enrich the request context with additional metadata
   """
   def enrich_context(%{"validated_request" => request, "agent_id" => agent_id} = context) do
-    enriched_request = Map.merge(request, %{
-      "agent_id" => agent_id,
-      "workflow_id" => Map.get(context, "workflow_id"),
-      "processed_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "source" => "agent_self_improvement"
-    })
+    enriched_request =
+      Map.merge(request, %{
+        "agent_id" => agent_id,
+        "workflow_id" => Map.get(context, "workflow_id"),
+        "processed_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "source" => "agent_self_improvement"
+      })
 
     Logger.debug("Enriched Genesis experiment request context",
       agent_id: agent_id,

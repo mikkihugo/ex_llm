@@ -207,7 +207,9 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       status: if(watcher_alive, do: :healthy, else: :unhealthy),
       watcher_alive: watcher_alive,
       metrics: metrics,
-      uptime_ms: System.monotonic_time(:millisecond) - (state[:start_time] || System.monotonic_time(:millisecond))
+      uptime_ms:
+        System.monotonic_time(:millisecond) -
+          (state[:start_time] || System.monotonic_time(:millisecond))
     }
 
     {:reply, {:ok, health}, state}
@@ -216,7 +218,10 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   @impl true
   def init(opts) do
     debounce_seconds = div(@debounce_delay, 1000)
-    Logger.info("Starting CodeFileWatcher with #{debounce_seconds}s debouncing (waits #{debounce_seconds}s after last write)...")
+
+    Logger.info(
+      "Starting CodeFileWatcher with #{debounce_seconds}s debouncing (waits #{debounce_seconds}s after last write)..."
+    )
 
     # Get project root - monitor entire project, not just lib/
     project_root = File.cwd!()
@@ -310,15 +315,22 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       %{rate_limit_window: window} = state
 
       # Filter out entries older than 1 minute
-      recent_window = Enum.filter(window, fn {_path, timestamp} -> current_time - timestamp < 60 end)
+      recent_window =
+        Enum.filter(window, fn {_path, timestamp} -> current_time - timestamp < 60 end)
 
       if length(recent_window) >= @max_files_per_minute do
-        Logger.warning("Rate limit exceeded: #{length(recent_window)} files in last minute, skipping #{file_path}")
+        Logger.warning(
+          "Rate limit exceeded: #{length(recent_window)} files in last minute, skipping #{file_path}"
+        )
+
         :telemetry.execute([:singularity, :code_file_watcher, :rate_limited], %{count: 1})
         {:noreply, %{state | pending_ingestions: new_pending, rate_limit_window: recent_window}}
       else
         debounce_seconds = div(@debounce_delay, 1000)
-        Logger.info("Re-ingesting: #{file_path} (after #{debounce_seconds}s debounce from last write)")
+
+        Logger.info(
+          "Re-ingesting: #{file_path} (after #{debounce_seconds}s debounce from last write)"
+        )
 
         # Mark as in-progress
         new_in_progress = MapSet.put(in_progress, file_path)
@@ -685,6 +697,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
       true ->
         # For non-Elixir files, use the relative path as identifier
         cwd = File.cwd!() |> String.replace("\\", "/")
+
         file_path
         |> String.replace("\\", "/")
         |> String.replace(cwd <> "/", "")
@@ -761,7 +774,8 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
                 {:ok, modules} ->
                   duration_ms = System.monotonic_time(:millisecond) - start_time
 
-                  Logger.info("🔥 Hot reloaded #{length(modules)} modules after #{Path.basename(file_path)} changed",
+                  Logger.info(
+                    "🔥 Hot reloaded #{length(modules)} modules after #{Path.basename(file_path)} changed",
                     file_path: file_path,
                     module_count: length(modules),
                     duration_ms: duration_ms
@@ -838,7 +852,9 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
             duration_ms: duration_ms
           )
 
-          Logger.debug("Hot reload stacktrace", stacktrace: Exception.format_stacktrace(stacktrace))
+          Logger.debug("Hot reload stacktrace",
+            stacktrace: Exception.format_stacktrace(stacktrace)
+          )
 
           :telemetry.execute(
             [:singularity, :code_file_watcher, :reload_exception],

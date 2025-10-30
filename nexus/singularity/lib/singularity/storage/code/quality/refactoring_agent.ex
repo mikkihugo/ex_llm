@@ -226,15 +226,16 @@ defmodule Singularity.RefactoringAgent do
   defp detect_schema_migrations_needed(analysis) do
     # Detect N+1 query patterns using CodeAnalyzer
     queries = extract_ecto_queries(analysis)
-    
+
     # Detect repeated queries in loops (N+1 patterns)
     n_plus_one_patterns = detect_n_plus_one_queries(queries, analysis)
-    
+
     if length(n_plus_one_patterns) > 0 do
       %{
         type: :n_plus_one_queries,
         severity: :high,
-        message: "N+1 query pattern detected - #{length(n_plus_one_patterns)} potential issues found",
+        message:
+          "N+1 query pattern detected - #{length(n_plus_one_patterns)} potential issues found",
         patterns: n_plus_one_patterns,
         suggestions: [
           "Add preload/join to reduce query count",
@@ -251,22 +252,24 @@ defmodule Singularity.RefactoringAgent do
   defp extract_ecto_queries(analysis) do
     # Extract Ecto queries from code AST
     functions = Map.get(analysis, :functions, [])
-    
+
     queries =
       functions
       |> Enum.flat_map(fn func ->
         code = Map.get(func, :body, "") || ""
-        
+
         # Use CodeAnalyzer to find Ecto queries
         case Singularity.CodeAnalyzer.analyze_language(code, "elixir") do
           {:ok, code_analysis} ->
             # Extract queries from AST
             extract_queries_from_ast(code_analysis)
-          _ -> []
+
+          _ ->
+            []
         end
       end)
       |> Enum.filter(&(&1 != nil))
-    
+
     queries
   end
 
@@ -278,46 +281,48 @@ defmodule Singularity.RefactoringAgent do
       ~r/from\(.*\)/,
       ~r/Ecto\.Query/
     ]
-    
+
     code_string = if Map.has_key?(ast, :code), do: Map.get(ast, :code, ""), else: ""
-    
+
     query_patterns
     |> Enum.flat_map(fn pattern ->
       Regex.scan(pattern, code_string, capture: :first)
     end)
     |> Enum.uniq()
   end
-  
+
   defp extract_queries_from_ast(_), do: []
 
   defp detect_n_plus_one_queries(queries, analysis) do
     # Find queries inside loops
     functions = Map.get(analysis, :functions, [])
-    
+
     functions
     |> Enum.flat_map(fn func ->
       body = Map.get(func, :body, "") || ""
-      
+
       # Check if function contains loops (Enum.map, for, Enum.each, etc.)
       has_loop = Regex.match?(~r/(Enum\.(map|each|reduce|filter)|for\s+.*<-)/, body)
-      
+
       if has_loop do
         # Check if queries are inside loops
-        queries_in_loop = 
+        queries_in_loop =
           queries
           |> Enum.filter(fn query ->
             # Simple heuristic: query appears after loop start
             query_in_body = String.contains?(body, query)
             query_in_body && has_loop
           end)
-        
+
         if length(queries_in_loop) > 0 do
-          [%{
-            function: Map.get(func, :name, "unknown"),
-            queries: queries_in_loop,
-            severity: :high,
-            suggestion: "Move queries outside loop or use Repo.preload"
-          }]
+          [
+            %{
+              function: Map.get(func, :name, "unknown"),
+              queries: queries_in_loop,
+              severity: :high,
+              suggestion: "Move queries outside loop or use Repo.preload"
+            }
+          ]
         else
           []
         end

@@ -440,6 +440,7 @@ defmodule Singularity.CodeStore do
       "status" => Map.get(queue_entry, :status, "pending")
     }
   end
+
   defp queue_entry_to_map(_), do: nil
 
   defp map_to_queue_entry(
@@ -464,6 +465,7 @@ defmodule Singularity.CodeStore do
       status: Map.get(map, "status", "pending")
     }
   end
+
   defp map_to_queue_entry(_), do: nil
 
   defp ensure_dir(path) do
@@ -2336,13 +2338,17 @@ defmodule Singularity.CodeStore do
 
   defp detect_repo_root do
     # Try to detect git root automatically
-    case System.cmd("git", ["rev-parse", "--show-toplevel"], cd: __DIR__ |> Path.expand() |> Path.join("../../../../..")) do
-      {root, 0} -> String.trim(root)
-      _ -> 
+    case System.cmd("git", ["rev-parse", "--show-toplevel"],
+           cd: __DIR__ |> Path.expand() |> Path.join("../../../../..")
+         ) do
+      {root, 0} ->
+        String.trim(root)
+
+      _ ->
         # Fallback: use current working directory or CODE_ROOT env var
-        System.get_env("CODE_ROOT") || 
-        Path.expand(System.cwd!()) ||
-        File.cwd!()
+        System.get_env("CODE_ROOT") ||
+          Path.expand(System.cwd!()) ||
+          File.cwd!()
     end
   rescue
     _ -> File.cwd!()

@@ -46,19 +46,23 @@ defmodule Singularity.Pipelines.CodeQualityPipeline do
 
     if pgflow_enabled do
       Logger.info("CodeQualityPipeline: Starting in PGFlow mode")
+
       [
-        module: {Broadway.PgflowProducer, [
-          workflow_name: "code_quality_training_producer",
-          queue_name: "code_quality_jobs",
-          concurrency: 2,
-          batch_size: 10,
-          pgflow_config: [timeout_ms: 300_000, retries: 3],
-          resource_hints: [cpu_cores: 4]
-        ]},
+        module:
+          {Broadway.PgflowProducer,
+           [
+             workflow_name: "code_quality_training_producer",
+             queue_name: "code_quality_jobs",
+             concurrency: 2,
+             batch_size: 10,
+             pgflow_config: [timeout_ms: 300_000, retries: 3],
+             resource_hints: [cpu_cores: 4]
+           ]},
         concurrency: 2
       ]
     else
       Logger.info("CodeQualityPipeline: Starting in Broadway mode")
+
       [
         module: {Broadway.DummyProducer, []},
         concurrency: 1
@@ -68,7 +72,9 @@ defmodule Singularity.Pipelines.CodeQualityPipeline do
 
   @impl Broadway
   def handle_message(:default, %Message{data: data} = message, _context) do
-    Logger.debug("CodeQualityPipeline: Processing message", message_id: message.metadata.message_id)
+    Logger.debug("CodeQualityPipeline: Processing message",
+      message_id: message.metadata.message_id
+    )
 
     # Analyze code quality
     case analyze_code_quality(data) do
@@ -85,28 +91,33 @@ defmodule Singularity.Pipelines.CodeQualityPipeline do
 
   @impl Broadway
   def handle_batch(:quality_analysis, messages, _batch_info, _context) do
-    Logger.info("CodeQualityPipeline: Processing quality analysis batch", batch_size: length(messages))
+    Logger.info("CodeQualityPipeline: Processing quality analysis batch",
+      batch_size: length(messages)
+    )
 
     # Process quality metrics and prepare for training if needed
-    processed_messages = Enum.map(messages, fn message ->
-      %{quality_metrics: metrics} = message.data
+    processed_messages =
+      Enum.map(messages, fn message ->
+        %{quality_metrics: metrics} = message.data
 
-      # Determine if this should trigger training
-      should_train = should_trigger_training?(metrics)
+        # Determine if this should trigger training
+        should_train = should_trigger_training?(metrics)
 
-      if should_train do
-        Message.put_batcher(message, :training_data)
-      else
-        message
-      end
-    end)
+        if should_train do
+          Message.put_batcher(message, :training_data)
+        else
+          message
+        end
+      end)
 
     processed_messages
   end
 
   @impl Broadway
   def handle_batch(:training_data, messages, _batch_info, _context) do
-    Logger.info("CodeQualityPipeline: Processing training data batch", batch_size: length(messages))
+    Logger.info("CodeQualityPipeline: Processing training data batch",
+      batch_size: length(messages)
+    )
 
     # Check if PGFlow mode is enabled for training
     pgflow_enabled = Singularity.Settings.get_boolean("pipelines.code_quality.enabled", false)

@@ -164,6 +164,7 @@ defmodule Mix.Tasks.Knowledge.Migrate do
     # In the future, we can add SHA256 column to the schema for exact deduplication
     # Note: content_sha parameter reserved for future SHA-based deduplication
     _sha = content_sha
+
     case Singularity.Repo.get_by(
            Singularity.Schemas.KnowledgeArtifact,
            artifact_type: artifact_type,

@@ -341,7 +341,8 @@ defmodule Singularity.Architecture.PatternStore do
     end)
   end
 
-  defp maybe_enqueue_false_positive(_pattern_type, _name, true, _confidence, _usage_count), do: :ok
+  defp maybe_enqueue_false_positive(_pattern_type, _name, true, _confidence, _usage_count),
+    do: :ok
 
   defp maybe_enqueue_false_positive(pattern_type, name, false, confidence, usage_count) do
     threshold =
@@ -394,7 +395,8 @@ defmodule Singularity.Architecture.PatternStore do
     end
   end
 
-  defp maybe_enqueue_false_positive(_pattern_type, _name, _success, _confidence, _usage_count), do: :ok
+  defp maybe_enqueue_false_positive(_pattern_type, _name, _success, _confidence, _usage_count),
+    do: :ok
 
   defp slugify_name(nil), do: "unknown"
 

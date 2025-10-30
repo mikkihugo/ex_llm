@@ -55,6 +55,7 @@ defmodule Singularity.Execution.Runners.Control do
           agent_id: agent_id,
           workflow_id: workflow_id
         )
+
         :ok
 
       {:error, reason} ->
@@ -62,6 +63,7 @@ defmodule Singularity.Execution.Runners.Control do
           agent_id: agent_id,
           reason: reason
         )
+
         :ok
     end
   end
@@ -104,16 +106,17 @@ defmodule Singularity.Execution.Runners.Control do
   def subscribe_to_agent(agent_id) when is_binary(agent_id) do
     # Subscribe to PGFlow workflow completion events for agent improvements
     workflow_name = "agent_improvement_#{agent_id}"
-    
+
     case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
-      handle_agent_improvement_completion(agent_id, workflow_result)
-    end) do
+           handle_agent_improvement_completion(agent_id, workflow_result)
+         end) do
       {:ok, subscription_id} ->
         Logger.info("[Control] Subscribed to agent improvements via PGFlow",
           agent_id: agent_id,
           workflow: workflow_name,
           subscription_id: subscription_id
         )
+
         :ok
 
       {:error, reason} ->
@@ -121,6 +124,7 @@ defmodule Singularity.Execution.Runners.Control do
           agent_id: agent_id,
           reason: reason
         )
+
         {:error, reason}
     end
   end
@@ -135,21 +139,23 @@ defmodule Singularity.Execution.Runners.Control do
   def subscribe_to_system_events do
     # Subscribe to PGFlow workflow completion events for system-wide events
     workflow_name = "system_events"
-    
+
     case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
-      handle_system_event_completion(workflow_result)
-    end) do
+           handle_system_event_completion(workflow_result)
+         end) do
       {:ok, subscription_id} ->
         Logger.info("[Control] Subscribed to system events via PGFlow",
           workflow: workflow_name,
           subscription_id: subscription_id
         )
+
         :ok
 
       {:error, reason} ->
         Logger.warning("[Control] Failed to subscribe to system events via PGFlow",
           reason: reason
         )
+
         {:error, reason}
     end
   end
@@ -181,7 +187,7 @@ defmodule Singularity.Execution.Runners.Control do
   def handle_cast({:broadcast_event, event}, state) do
     # Create PGFlow workflow for system events
     workflow_name = "system_event_broadcast"
-    
+
     case Pgflow.Workflow.create_workflow(
            Singularity.Workflows.SystemEventBroadcastWorkflow,
            %{
@@ -203,6 +209,7 @@ defmodule Singularity.Execution.Runners.Control do
           event_type: event.type,
           reason: reason
         )
+
         # Fallback: log the event
         Logger.debug("Broadcast system event", %{
           event_type: event.type,
@@ -243,7 +250,7 @@ defmodule Singularity.Execution.Runners.Control do
       agent_id: agent_id,
       result: result
     )
-    
+
     # Notify agent coordinator about completion
     GenServer.cast(__MODULE__, {:agent_improvement_completed, agent_id, result})
     :ok
@@ -254,6 +261,7 @@ defmodule Singularity.Execution.Runners.Control do
       agent_id: agent_id,
       error: error
     )
+
     :ok
   end
 
@@ -264,6 +272,7 @@ defmodule Singularity.Execution.Runners.Control do
     Logger.debug("[Control] System event workflow completed",
       result: result
     )
+
     :ok
   end
 
@@ -271,6 +280,7 @@ defmodule Singularity.Execution.Runners.Control do
     Logger.warning("[Control] System event workflow failed",
       error: error
     )
+
     :ok
   end
 

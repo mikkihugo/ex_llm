@@ -32,8 +32,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
         timeout_ms:
           Application.get_env(:singularity, :database_tool_workflow, %{})[:timeout_ms] ||
             60_000,
-        retries:
-          Application.get_env(:singularity, :database_tool_workflow, %{})[:retries] || 2,
+        retries: Application.get_env(:singularity, :database_tool_workflow, %{})[:retries] || 2,
         retry_delay_ms:
           Application.get_env(:singularity, :database_tool_workflow, %{})[:retry_delay_ms] ||
             5000,
@@ -110,6 +109,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
           tool: tool,
           reply_to: reply_to
         )
+
         {:ok, Map.put(context, "validated_request", request)}
       else
         {:error, "Invalid tool: #{tool}. Valid tools: #{Enum.join(valid_tools, ", ")}"}
@@ -124,7 +124,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
     # For internal tooling, use simple token-based auth if provided
     # Otherwise allow (internal tooling - no multi-tenancy)
     auth_token = Map.get(request, "auth_token")
-    
+
     if auth_token && auth_token != "" do
       Logger.debug("Request authenticated with token", tool: request["tool"])
       {:ok, Map.put(context, "authenticated", true)}
@@ -152,7 +152,11 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
 
     result =
       try do
-        GenServer.call(DatabaseToolsExecutor, {:execute_tool, tool_subject, execution_request}, 30_000)
+        GenServer.call(
+          DatabaseToolsExecutor,
+          {:execute_tool, tool_subject, execution_request},
+          30_000
+        )
       catch
         :exit, reason -> {:error, {:executor_exit, reason}}
       end
@@ -198,6 +202,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
         Logger.debug("Response formatted successfully",
           response_size: byte_size(json_response)
         )
+
         {:ok, Map.put(context, "formatted_response", json_response)}
 
       {:error, reason} ->
@@ -209,7 +214,9 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
   @doc """
   Send the response back to the requesting system
   """
-  def send_response(%{"formatted_response" => response_json, "validated_request" => request} = context) do
+  def send_response(
+        %{"formatted_response" => response_json, "validated_request" => request} = context
+      ) do
     reply_to = Map.get(context, "reply_to")
 
     # Send response via PGFlow completion notification or direct messaging
@@ -221,6 +228,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
             reply_to: reply_to,
             response_size: byte_size(response_json)
           )
+
           {:ok, Map.put(context, "response_sent", true)}
 
         {:error, reason} ->
@@ -229,12 +237,14 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
             reply_to: reply_to,
             error: reason
           )
+
           {:error, "Response delivery failed: #{inspect(reason)}"}
       end
     else
       Logger.debug("No reply_to specified - response logged only",
         tool: request["tool"]
       )
+
       {:ok, Map.put(context, "response_sent", false)}
     end
   end

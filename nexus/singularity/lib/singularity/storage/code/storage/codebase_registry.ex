@@ -41,8 +41,7 @@ defmodule Singularity.CodebaseRegistry do
 
     case Repo.insert(changeset,
            on_conflict:
-             {:replace,
-              [:metadata, :summary, :detected_technologies, :features, :inserted_at]},
+             {:replace, [:metadata, :summary, :detected_technologies, :features, :inserted_at]},
            conflict_target: [:codebase_id, :snapshot_id]
          ) do
       {:ok, snapshot} -> {:ok, snapshot}

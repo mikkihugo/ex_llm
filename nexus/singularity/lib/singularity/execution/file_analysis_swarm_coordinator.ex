@@ -359,12 +359,12 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
         # Store in codebase_metadata table for reuse
         codebase_id = Map.get(analysis, :codebase_id, "singularity")
         language = Map.get(analysis, :language, detect_language_from_path(file_path))
-        
+
         # Upsert analysis result into codebase_metadata
         case upsert_codebase_metadata(file_path, codebase_id, language, analysis) do
           {:ok, _} ->
             Logger.info("[FileAnalysisSwarm] Stored analysis for #{file_path}: #{language}")
-            
+
             # Emit Telemetry event
             Singularity.Infrastructure.Telemetry.execute(
               [:singularity, :file_analysis, :stored],
@@ -380,7 +380,7 @@ defmodule Singularity.Execution.FileAnalysisSwarmCoordinator do
 
       {:error, reason} ->
         Logger.warning("[FileAnalysisSwarm] Failed to analyze #{file_path}", reason: reason)
-        
+
         # Track failures
         Singularity.Infrastructure.Telemetry.execute(
           [:singularity, :file_analysis, :failed],

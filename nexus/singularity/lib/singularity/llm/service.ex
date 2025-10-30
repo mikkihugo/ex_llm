@@ -3,7 +3,7 @@ defmodule Singularity.LLM.Service do
   @template_version "elixir_production_v2 v2.6.0"
 
   @moduledoc """
-  @moduledoc """
+  @moduledoc \"""
   # LLM Service — Direct Pgflow orchestration for synchronous AI calls
 
   **This is the ONLY way to call LLM providers in the Elixir app.**
@@ -553,9 +553,28 @@ defmodule Singularity.LLM.Service do
     start_time = System.monotonic_time(:millisecond)
     correlation_id = generate_correlation_id()
 
+    # Handle RCA session tracking (optional)
+    session_result =
+      Singularity.RCA.SessionManager.get_or_create_session(
+        opts,
+        %{
+          initial_prompt: build_prompt_from_messages(messages),
+          agent_id: Keyword.get(opts, :agent_id, "llm_service"),
+          template_id: Keyword.get(opts, :template_id),
+          agent_version: Keyword.get(opts, :agent_version, "v1.0.0")
+        }
+      )
+
+    session_id =
+      case session_result do
+        {:ok, id} -> id
+        {:error, _} -> nil
+      end
+
     Logger.info("LLM call started", %{
       operation: :llm_call,
       correlation_id: correlation_id,
+      session_id: session_id,
       model: model,
       message_count: length(messages),
       slo_target_ms: 2000
@@ -564,7 +583,8 @@ defmodule Singularity.LLM.Service do
     :telemetry.execute([:llm_service, :call, :start], %{
       model: model,
       message_count: length(messages),
-      correlation_id: correlation_id
+      correlation_id: correlation_id,
+      session_id: session_id
     })
 
     request =
@@ -579,6 +599,7 @@ defmodule Singularity.LLM.Service do
         Logger.info("LLM call completed", %{
           operation: :llm_call,
           correlation_id: correlation_id,
+          session_id: session_id,
           model: model,
           selected_model: Map.get(response, "model"),
           duration_ms: duration,
@@ -593,7 +614,8 @@ defmodule Singularity.LLM.Service do
           duration: duration,
           slo_status: slo_status,
           tokens_used: Map.get(response, "tokens_used", 0),
-          correlation_id: correlation_id
+          correlation_id: correlation_id,
+          session_id: session_id
         })
 
         # Track SLO metrics
@@ -604,6 +626,11 @@ defmodule Singularity.LLM.Service do
           log_slo_breach(:llm_call, duration, 2000)
         end
 
+        # Record metrics in RCA session if tracking
+        if session_id do
+          Singularity.RCA.SessionManager.record_generation_metrics(session_id, response)
+        end
+
         result
 
       {:error, reason} = error ->
@@ -612,6 +639,7 @@ defmodule Singularity.LLM.Service do
         Logger.error("LLM call failed", %{
           operation: :llm_call,
           correlation_id: correlation_id,
+          session_id: session_id,
           model: model,
           error_reason: reason,
           duration_ms: duration,
@@ -623,11 +651,20 @@ defmodule Singularity.LLM.Service do
           model: model,
           reason: reason,
           duration: duration,
-          correlation_id: correlation_id
+          correlation_id: correlation_id,
+          session_id: session_id
         })
 
         # Track SLO metrics for error case
         track_slo_metric(:llm_call, duration, false)
+
+        # Record failure in RCA session if tracking
+        if session_id do
+          Singularity.RCA.SessionManager.complete_session(session_id, %{
+            final_outcome: "failure_execution",
+            failure_reason: inspect(reason)
+          })
+        end
 
         error
     end
@@ -786,12 +823,15 @@ defmodule Singularity.LLM.Service do
           nil -> Keyword.get(opts, :default_complexity, :medium)
           complexity -> complexity
         end
-      
+
       provider ->
         # Use system-wide LLM.Config
         context = %{task_type: task_type}
+
         case Singularity.LLM.Config.get_task_complexity(provider, context) do
-          {:ok, complexity} -> complexity
+          {:ok, complexity} ->
+            complexity
+
           {:error, _} ->
             # Fallback to TaskTypeRegistry if config fails
             case Singularity.MetaRegistry.TaskTypeRegistry.get_complexity(task_type) do
@@ -817,12 +857,12 @@ defmodule Singularity.LLM.Service do
 
   @doc """
   Get available models.
-  
+
   If provider is specified in opts, uses system-wide LLM.Config.
   Otherwise returns all default models.
-  
+
   ## Examples
-  
+
       iex> Service.get_available_models()
       ["claude-sonnet-4.5", "gemini-1.5-flash", ...]
       
@@ -851,7 +891,7 @@ defmodule Singularity.LLM.Service do
           # Copilot models
           "github-copilot"
         ]
-      
+
       provider ->
         # Use system-wide LLM.Config
         context = Map.new(Keyword.take(opts, [:task_type, :complexity]))
@@ -923,25 +963,26 @@ defmodule Singularity.LLM.Service do
     task_type_str = if is_atom(task_type), do: Atom.to_string(task_type), else: task_type
 
     # Prepare workflow arguments
-    workflow_args = %{
-      "request_id" => Ecto.UUID.generate(),
-      "task_type" => task_type_str,
-      "messages" => messages,
-      "model" => Keyword.get(opts, :model, "auto"),
-      "provider" => Keyword.get(opts, :provider, "auto"),
-      "api_version" => Keyword.get(opts, :api_version, "responses"),
-      "complexity" => if(is_atom(complexity), do: Atom.to_string(complexity), else: complexity),
-      "max_tokens" => Keyword.get(opts, :max_tokens),
-      "temperature" => Keyword.get(opts, :temperature),
-      "agent_id" => Keyword.get(opts, :agent_id),
-      "previous_response_id" => Keyword.get(opts, :previous_response_id),
-      "mcp_servers" => Keyword.get(opts, :mcp_servers),
-      "store" => Keyword.get(opts, :store),
-      "tools" => Keyword.get(opts, :tools)
-    }
-    # Remove nil values to keep message compact
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Map.new()
+    workflow_args =
+      %{
+        "request_id" => Ecto.UUID.generate(),
+        "task_type" => task_type_str,
+        "messages" => messages,
+        "model" => Keyword.get(opts, :model, "auto"),
+        "provider" => Keyword.get(opts, :provider, "auto"),
+        "api_version" => Keyword.get(opts, :api_version, "responses"),
+        "complexity" => if(is_atom(complexity), do: Atom.to_string(complexity), else: complexity),
+        "max_tokens" => Keyword.get(opts, :max_tokens),
+        "temperature" => Keyword.get(opts, :temperature),
+        "agent_id" => Keyword.get(opts, :agent_id),
+        "previous_response_id" => Keyword.get(opts, :previous_response_id),
+        "mcp_servers" => Keyword.get(opts, :mcp_servers),
+        "store" => Keyword.get(opts, :store),
+        "tools" => Keyword.get(opts, :tools)
+      }
+      # Remove nil values to keep message compact
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
 
     Logger.info("Executing LLM workflow synchronously",
       task_type: task_type,
@@ -1092,6 +1133,19 @@ defmodule Singularity.LLM.Service do
   # SLO monitoring and Ericsson-style logging
   defp generate_correlation_id do
     :crypto.strong_rand_bytes(16) |> Base.encode64() |> binary_part(0, 22)
+  end
+
+  # Extract prompt from message list for RCA session tracking
+  defp build_prompt_from_messages(messages) do
+    messages
+    |> Enum.filter(&(&1["role"] == "user"))
+    |> Enum.map(& &1["content"])
+    |> Enum.join("\n\n---\n\n")
+    |> case do
+      "" -> "No prompt provided"
+      # Truncate to first 500 chars
+      prompt -> String.slice(prompt, 0..500)
+    end
   end
 
   defp track_slo_metric(operation, duration, success) do

@@ -91,4 +91,3 @@ defmodule Singularity.Execution.TodoPatterns do
   @spec priority_map() :: map()
   def priority_map, do: @priority_map
 end
-

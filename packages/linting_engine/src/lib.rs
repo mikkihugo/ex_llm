@@ -78,6 +78,66 @@ pub struct LintingEngineConfig {
     pub ai_pattern_detection: bool,
 }
 
+impl LintingEngineConfig {
+    /// Check if a language is supported for linting
+    pub fn is_language_supported(&self, language_id: &str) -> bool {
+        match language_id {
+            "rust" => self.rust_clippy_enabled,
+            "javascript" => self.javascript_eslint_enabled,
+            "typescript" => self.typescript_eslint_enabled,
+            "python" => self.python_pylint_enabled || self.python_flake8_enabled || self.python_black_enabled,
+            "go" => self.go_golangci_enabled,
+            "java" => self.java_spotbugs_enabled || self.java_checkstyle_enabled,
+            "cpp" | "c++" => self.cpp_clang_tidy_enabled || self.cpp_cppcheck_enabled,
+            "c" => self.cpp_cppcheck_enabled, // Use cppcheck for C as well
+            "csharp" => self.csharp_sonar_enabled,
+            "elixir" => self.elixir_credo_enabled,
+            "erlang" => self.erlang_dialyzer_enabled,
+            "gleam" => self.gleam_check_enabled,
+            _ => false,
+        }
+    }
+
+    /// Get list of supported language IDs
+    pub fn supported_languages(&self) -> Vec<&'static str> {
+        let mut languages = Vec::new();
+        if self.rust_clippy_enabled {
+            languages.push("rust");
+        }
+        if self.javascript_eslint_enabled {
+            languages.push("javascript");
+        }
+        if self.typescript_eslint_enabled {
+            languages.push("typescript");
+        }
+        if self.python_pylint_enabled || self.python_flake8_enabled || self.python_black_enabled {
+            languages.push("python");
+        }
+        if self.go_golangci_enabled {
+            languages.push("go");
+        }
+        if self.java_spotbugs_enabled || self.java_checkstyle_enabled {
+            languages.push("java");
+        }
+        if self.cpp_clang_tidy_enabled || self.cpp_cppcheck_enabled {
+            languages.push("cpp");
+        }
+        if self.csharp_sonar_enabled {
+            languages.push("csharp");
+        }
+        if self.elixir_credo_enabled {
+            languages.push("elixir");
+        }
+        if self.erlang_dialyzer_enabled {
+            languages.push("erlang");
+        }
+        if self.gleam_check_enabled {
+            languages.push("gleam");
+        }
+        languages
+    }
+}
+
 /// Quality rule definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualityRule {
@@ -372,7 +432,7 @@ impl LintingEngine {
         let mut total_score = 100.0;
 
         // Run Rust Clippy if enabled
-        if self.config.rust_clippy_enabled {
+        if self.config.is_language_supported("rust") {
             match self.run_clippy(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -393,7 +453,7 @@ impl LintingEngine {
         }
 
         // Run JavaScript ESLint if enabled
-        if self.config.javascript_eslint_enabled {
+        if self.config.is_language_supported("javascript") {
             match self.run_javascript_eslint(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -414,7 +474,7 @@ impl LintingEngine {
         }
 
         // Run TypeScript ESLint if enabled
-        if self.config.typescript_eslint_enabled {
+        if self.config.is_language_supported("typescript") {
             match self.run_typescript_eslint(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -435,7 +495,7 @@ impl LintingEngine {
         }
 
         // Run Python Pylint if enabled
-        if self.config.python_pylint_enabled {
+        if self.config.is_language_supported("python") {
             match self.run_python_pylint(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -456,7 +516,7 @@ impl LintingEngine {
         }
 
         // Run Python Flake8 if enabled
-        if self.config.python_flake8_enabled {
+        if self.config.is_language_supported("python") {
             match self.run_python_flake8(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -477,7 +537,7 @@ impl LintingEngine {
         }
 
         // Run Go golangci-lint if enabled
-        if self.config.go_golangci_enabled {
+        if self.config.is_language_supported("go") {
             match self.run_go_golangci(project_path).await {
                 Ok(issues) => all_issues.extend(issues),
                 Err(e) => {
@@ -485,6 +545,69 @@ impl LintingEngine {
                     all_issues.push(QualityIssue {
                         rule: "go_golangci_error".to_string(),
                         message: format!("Go golangci-lint execution failed: {e}"),
+                        severity: RuleSeverity::Error,
+                        category: RuleCategory::Compliance,
+                        file_path: None,
+                        line_number: None,
+                        column: None,
+                        code_snippet: None,
+                        suggestion: None,
+                    });
+                }
+            }
+        }
+
+        // Run Elixir Credo if enabled
+        if self.config.is_language_supported("elixir") {
+            match self.run_elixir_credo(project_path).await {
+                Ok(issues) => all_issues.extend(issues),
+                Err(e) => {
+                    warn!("Elixir Credo failed: {}", e);
+                    all_issues.push(QualityIssue {
+                        rule: "elixir_credo_error".to_string(),
+                        message: format!("Elixir Credo execution failed: {e}"),
+                        severity: RuleSeverity::Error,
+                        category: RuleCategory::Compliance,
+                        file_path: None,
+                        line_number: None,
+                        column: None,
+                        code_snippet: None,
+                        suggestion: None,
+                    });
+                }
+            }
+        }
+
+        // Run Erlang Dialyzer if enabled
+        if self.config.is_language_supported("erlang") {
+            match self.run_erlang_dialyzer(project_path).await {
+                Ok(issues) => all_issues.extend(issues),
+                Err(e) => {
+                    warn!("Erlang Dialyzer failed: {}", e);
+                    all_issues.push(QualityIssue {
+                        rule: "erlang_dialyzer_error".to_string(),
+                        message: format!("Erlang Dialyzer execution failed: {e}"),
+                        severity: RuleSeverity::Error,
+                        category: RuleCategory::Compliance,
+                        file_path: None,
+                        line_number: None,
+                        column: None,
+                        code_snippet: None,
+                        suggestion: None,
+                    });
+                }
+            }
+        }
+
+        // Run Gleam Check if enabled
+        if self.config.is_language_supported("gleam") {
+            match self.run_gleam_check(project_path).await {
+                Ok(issues) => all_issues.extend(issues),
+                Err(e) => {
+                    warn!("Gleam Check failed: {}", e);
+                    all_issues.push(QualityIssue {
+                        rule: "gleam_check_error".to_string(),
+                        message: format!("Gleam Check execution failed: {e}"),
                         severity: RuleSeverity::Error,
                         category: RuleCategory::Compliance,
                         file_path: None,
@@ -770,6 +893,81 @@ impl LintingEngine {
         Ok(issues)
     }
 
+    /// Run `mix credo` for Elixir code analysis
+    async fn run_elixir_credo(&self, project_path: &str) -> Result<Vec<QualityIssue>> {
+        let output = Command::new("mix")
+            .arg("credo")
+            .arg("--format=json")
+            .arg("--strict")
+            .current_dir(project_path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()?;
+
+        let mut issues = Vec::new();
+
+        if !output.status.success() || !output.stdout.is_empty() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(&stdout) {
+                if let Some(issues_array) = json_value.get("issues").and_then(|v| v.as_array()) {
+                    for issue_obj in issues_array {
+                        if let Some(issue) = Self::parse_credo_issue(issue_obj) {
+                            issues.push(issue);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(issues)
+    }
+
+    /// Run `dialyzer` for Erlang/OTP type checking
+    async fn run_erlang_dialyzer(&self, project_path: &str) -> Result<Vec<QualityIssue>> {
+        let output = Command::new("dialyzer")
+            .arg("--src")
+            .arg(project_path)
+            .arg("--output_plt")
+            .arg(".dialyzer_plt")
+            .arg("--no_check_plt")
+            .current_dir(project_path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()?;
+
+        let mut issues = Vec::new();
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        for line in stderr.lines() {
+            if let Some(issue) = Self::parse_dialyzer_output(line) {
+                issues.push(issue);
+            }
+        }
+
+        Ok(issues)
+    }
+
+    /// Run `gleam check` for Gleam code analysis
+    async fn run_gleam_check(&self, project_path: &str) -> Result<Vec<QualityIssue>> {
+        let output = Command::new("gleam")
+            .arg("check")
+            .current_dir(project_path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()?;
+
+        let mut issues = Vec::new();
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        for line in stderr.lines() {
+            if let Some(issue) = Self::parse_gleam_output(line) {
+                issues.push(issue);
+            }
+        }
+
+        Ok(issues)
+    }
+
     /// Apply a quality rule to content
     fn apply_rule(
         content: &str,
@@ -995,6 +1193,94 @@ impl LintingEngine {
             } else {
                 None
             }
+        } else {
+            None
+        }
+    }
+
+    /// Parse Credo (Elixir) issue from JSON object
+    fn parse_credo_issue(issue_obj: &serde_json::Value) -> Option<QualityIssue> {
+        let file_path = issue_obj.get("filename")?.as_str()?.to_string();
+        let line_number = issue_obj.get("line")?.as_u64().map(|n| n as usize);
+        let column = issue_obj.get("column")?.as_u64().map(|n| n as usize);
+        let message = issue_obj.get("message")?.as_str()?.to_string();
+        let rule = issue_obj
+            .get("check")
+            .and_then(|v| v.as_str())
+            .unwrap_or("credo_check")
+            .to_string();
+        let severity = match issue_obj.get("priority").and_then(|v| v.as_i64()) {
+            Some(p) if p >= 10 => RuleSeverity::Error,
+            Some(p) if p >= 5 => RuleSeverity::Warning,
+            _ => RuleSeverity::Info,
+        };
+
+        Some(QualityIssue {
+            rule,
+            message,
+            severity,
+            category: RuleCategory::Compliance,
+            file_path: Some(file_path),
+            line_number,
+            column,
+            code_snippet: None,
+            suggestion: Some("Review Credo suggestion".to_string()),
+        })
+    }
+
+    /// Parse Dialyzer (Erlang) output with format: file:line:col: message
+    fn parse_dialyzer_output(line: &str) -> Option<QualityIssue> {
+        // Dialyzer output format: file.erl:line: message
+        let re = Regex::new(r"^(.+):(\d+):\s+(.+)$").ok()?;
+        if let Some(caps) = re.captures(line) {
+            let file_path = caps.get(1)?.as_str().to_string();
+            let line_number = caps.get(2)?.as_str().parse().ok()?;
+            let message = caps.get(3)?.as_str().to_string();
+
+            Some(QualityIssue {
+                rule: "dialyzer_type_error".to_string(),
+                message,
+                severity: RuleSeverity::Error,
+                category: RuleCategory::Compliance,
+                file_path: Some(file_path),
+                line_number: Some(line_number),
+                column: None,
+                code_snippet: None,
+                suggestion: Some("Review Dialyzer type error".to_string()),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Parse Gleam Check output with format: file:line:col: message
+    fn parse_gleam_output(line: &str) -> Option<QualityIssue> {
+        // Gleam check output format: file:line:col: error: message
+        let re = Regex::new(r"^(.+):(\d+):(\d+):\s+(\w+):\s+(.+)$").ok()?;
+        if let Some(caps) = re.captures(line) {
+            let file_path = caps.get(1)?.as_str().to_string();
+            let line_number = caps.get(2)?.as_str().parse().ok()?;
+            let column = caps.get(3)?.as_str().parse().ok()?;
+            let level = caps.get(4)?.as_str();
+            let message = caps.get(5)?.as_str().to_string();
+
+            let severity = match level {
+                "error" => RuleSeverity::Error,
+                "warning" => RuleSeverity::Warning,
+                _ => RuleSeverity::Info,
+            };
+
+            Some(QualityIssue {
+                rule: "gleam_check".to_string(),
+                message,
+                severity,
+                category: RuleCategory::Compliance,
+                file_path: Some(file_path),
+                line_number: Some(line_number),
+                column: Some(column),
+                code_snippet: None,
+                suggestion: Some("Review Gleam check issue".to_string()),
+            })
         } else {
             None
         }

@@ -107,7 +107,7 @@ impl LanguageRegistry {
             extensions: vec!["ex".to_string(), "exs".to_string()],
             aliases: vec!["elixir".to_string()],
             tree_sitter_language: Some("elixir".to_string()),
-            rca_supported: false, // RCA doesn't support BEAM languages
+            rca_supported: true, // Singularity implements full BEAM analysis + RCA metrics
             ast_grep_supported: true,
             mime_types: vec![
                 "text/x-elixir".to_string(),
@@ -124,7 +124,7 @@ impl LanguageRegistry {
             extensions: vec!["erl".to_string(), "hrl".to_string()],
             aliases: vec!["erlang".to_string()],
             tree_sitter_language: Some("erlang".to_string()),
-            rca_supported: false,
+            rca_supported: true, // Singularity implements full BEAM analysis + RCA metrics
             ast_grep_supported: true,
             mime_types: vec![
                 "text/x-erlang".to_string(),
@@ -141,7 +141,7 @@ impl LanguageRegistry {
             extensions: vec!["gleam".to_string()],
             aliases: vec!["gleam".to_string()],
             tree_sitter_language: Some("gleam".to_string()),
-            rca_supported: false,
+            rca_supported: true, // Singularity implements full BEAM analysis + RCA metrics
             ast_grep_supported: true,
             mime_types: vec![
                 "text/x-gleam".to_string(),
@@ -447,6 +447,96 @@ impl LanguageRegistry {
             mime_types: vec!["text/x-sql".to_string(), "application/sql".to_string()],
             family: Some("Database".to_string()),
             is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: Ruby (0.21.0)
+        self.register_language(LanguageInfo {
+            id: "ruby".to_string(),
+            name: "Ruby".to_string(),
+            extensions: vec!["rb".to_string()],
+            aliases: vec!["ruby".to_string()],
+            tree_sitter_language: Some("ruby".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-ruby".to_string(), "application/x-ruby".to_string()],
+            family: Some("Scripting".to_string()),
+            is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: PHP (0.23.8)
+        self.register_language(LanguageInfo {
+            id: "php".to_string(),
+            name: "PHP".to_string(),
+            extensions: vec!["php".to_string(), "php5".to_string(), "php7".to_string(), "php8".to_string()],
+            aliases: vec!["php".to_string()],
+            tree_sitter_language: Some("php".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-php".to_string(), "application/x-php".to_string()],
+            family: Some("Web".to_string()),
+            is_compiled: false,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: Dart (0.8.2)
+        self.register_language(LanguageInfo {
+            id: "dart".to_string(),
+            name: "Dart".to_string(),
+            extensions: vec!["dart".to_string()],
+            aliases: vec!["dart".to_string()],
+            tree_sitter_language: Some("dart".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-dart".to_string(), "application/x-dart".to_string()],
+            family: Some("Mobile".to_string()),
+            is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: Swift (0.3.7)
+        self.register_language(LanguageInfo {
+            id: "swift".to_string(),
+            name: "Swift".to_string(),
+            extensions: vec!["swift".to_string()],
+            aliases: vec!["swift".to_string()],
+            tree_sitter_language: Some("swift".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-swift".to_string(), "application/x-swift".to_string()],
+            family: Some("Mobile".to_string()),
+            is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: Clojure (0.1.12)
+        self.register_language(LanguageInfo {
+            id: "clojure".to_string(),
+            name: "Clojure".to_string(),
+            extensions: vec!["clj".to_string(), "cljs".to_string(), "cljc".to_string(), "edn".to_string()],
+            aliases: vec!["clojure".to_string()],
+            tree_sitter_language: Some("clojure".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-clojure".to_string(), "application/x-clojure".to_string()],
+            family: Some("Functional".to_string()),
+            is_compiled: true,
+            pattern_signatures: PatternSignatures::default(),
+        });
+
+        // NEW: Scala (0.2.4)
+        self.register_language(LanguageInfo {
+            id: "scala".to_string(),
+            name: "Scala".to_string(),
+            extensions: vec!["scala".to_string(), "sc".to_string()],
+            aliases: vec!["scala".to_string()],
+            tree_sitter_language: Some("scala".to_string()),
+            rca_supported: true,
+            ast_grep_supported: true,
+            mime_types: vec!["text/x-scala".to_string(), "application/x-scala".to_string()],
+            family: Some("JVM".to_string()),
+            is_compiled: true,
             pattern_signatures: PatternSignatures::default(),
         });
     }

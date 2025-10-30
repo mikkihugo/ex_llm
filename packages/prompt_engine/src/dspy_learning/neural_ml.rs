@@ -83,7 +83,7 @@ impl ConfidenceNet {
         let grads = loss.backward()?;
 
         // Adam optimizer implementation with momentum and adaptive learning rates
-        let mut var_map = self.varmap.lock().unwrap();
+        let var_map = self.varmap.lock().unwrap();
         let mut momentum_map = self.momentum.lock().unwrap();
         let mut velocity_map = self.velocity.lock().unwrap();
         let mut step = self.step.lock().unwrap();
@@ -545,7 +545,7 @@ mod tests {
         let features = PromptFeatures::default();
         let confidence = predictor.predict(&features).unwrap();
 
-        assert!(confidence >= 0.0 && confidence <= 1.0);
+        assert!((0.0..=1.0).contains(&confidence));
     }
 
     #[test]

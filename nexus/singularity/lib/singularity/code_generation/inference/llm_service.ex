@@ -167,17 +167,17 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
 
     # Tokenize prompt
     tokens = tokenize_prompt(prompt)
-    
+
     # Create input tensors
     input_tensor = create_input_tensor(tokens)
-    
+
     # Run forward pass via Nx (requires model weights)
     case run_model_forward_pass(input_tensor, model, max_tokens, temperature) do
       {:ok, output_tokens} ->
         # Detokenize
         code = detokenize_tokens(output_tokens)
         {:ok, code}
-      
+
       {:error, reason} ->
         Logger.error("Code generation failed", reason: reason)
         # Fallback to mock generation
@@ -203,11 +203,13 @@ defmodule Singularity.CodeGeneration.Inference.LLMService do
     # For now, return error to trigger fallback
     context_tokens = infer_context_tokens(input_tensor)
     sampling_budget = max(0, max_tokens - context_tokens)
+
     Logger.debug("LLM forward pass invoked",
       context_tokens: context_tokens,
       requested_tokens: max_tokens,
       sampling_budget: sampling_budget
     )
+
     {:error, "Model forward pass not implemented"}
   end
 

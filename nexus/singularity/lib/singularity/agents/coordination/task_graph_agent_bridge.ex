@@ -231,7 +231,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
   defp convert_to_router_task(task) do
     # Infer domain from goal text
     domain = infer_domain(task[:goal], task[:description])
-    
+
     # Get provider from task context or default to "auto"
     provider = task[:provider] || "auto"
 
@@ -280,9 +280,11 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
     else
       # Use centralized LLM.Config to get complexity based on description
       context = %{description: description}
-      
+
       case Config.get_task_complexity(provider, context) do
-        {:ok, complexity} -> complexity
+        {:ok, complexity} ->
+          complexity
+
         {:error, _} ->
           # Fallback: infer from description text
           infer_complexity_from_description(description)
@@ -292,7 +294,7 @@ defmodule Singularity.Agents.Coordination.TaskGraphAgentBridge do
 
   defp infer_complexity_from_description(description) do
     desc_text = (description || "") |> String.downcase()
-    
+
     cond do
       String.match?(desc_text, ~r/large|multi|complex|architecture/) -> :complex
       String.match?(desc_text, ~r/module|file|component/) -> :medium

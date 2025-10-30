@@ -58,9 +58,9 @@ impl TomlParser {
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
-                let text = &content[node.byte_range()];
-                let start = node.start_position();
-                let end = node.end_position();
+                let _text = &content[node.byte_range()];
+                let _start = node.start_position();
+                let _end = node.end_position();
                 
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
@@ -331,6 +331,12 @@ pub struct TomlDocument {
     pub comments: Vec<CommentInfo>,
     pub bare_keys: Vec<BareKeyInfo>,
     pub quoted_keys: Vec<QuotedKeyInfo>,
+}
+
+impl Default for TomlDocument {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TomlDocument {
@@ -611,7 +617,7 @@ impl LanguageParser for TomlParser {
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
         
-        while let Some(_) = matches.next() {
+        while matches.next().is_some() {
             element_count += 1;
         }
         

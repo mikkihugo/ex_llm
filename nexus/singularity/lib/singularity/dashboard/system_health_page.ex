@@ -122,25 +122,31 @@ defmodule Singularity.Dashboard.SystemHealthPage do
       # Query real metrics from knowledge store with proper SASL error reporting
       total_artifacts =
         case ArtifactStore.count_artifacts() do
-          {:ok, count} when is_integer(count) -> count
+          {:ok, count} when is_integer(count) ->
+            count
+
           {:error, reason} ->
             SASL.database_failure(
               :artifact_count_failed,
               "Failed to count artifacts from knowledge store",
               reason: inspect(reason)
             )
+
             0
         end
 
       ready_to_promote =
         case ArtifactStore.count_ready_to_promote() do
-          {:ok, count} when is_integer(count) -> count
+          {:ok, count} when is_integer(count) ->
+            count
+
           {:error, reason} ->
             SASL.database_failure(
               :promotion_count_failed,
               "Failed to count ready-to-promote artifacts",
               reason: inspect(reason)
             )
+
             0
         end
 
@@ -165,6 +171,7 @@ defmodule Singularity.Dashboard.SystemHealthPage do
           "Failed to fetch learning metrics - using defaults",
           error: inspect(error)
         )
+
         default_learning_metrics()
     end
   end

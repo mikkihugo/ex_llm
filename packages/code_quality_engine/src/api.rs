@@ -17,9 +17,9 @@ use anyhow::Result;
 /// * `Result<HashMap<String, f64>>` - Analysis results from quality module
 pub async fn analyze_quality(
     path: Option<PathBuf>,
-    analysis_type: String,
+    _analysis_type: String,
 ) -> Result<std::collections::HashMap<String, f64>> {
-    let target_path = path.unwrap_or_else(|| std::env::current_dir().unwrap());
+    let _target_path = path.unwrap_or_else(|| std::env::current_dir().unwrap());
 
     // Use quality module for analysis
     let mut metrics = std::collections::HashMap::new();

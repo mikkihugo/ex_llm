@@ -131,7 +131,7 @@ defmodule Singularity.DomainVocabularyTrainer do
 
     # Query for {{VARIABLE}} patterns in code chunks
     template_pattern = ~r/\{\{([A-Z_]+)\}\}/
-    
+
     query =
       from(c in "codebase_chunks",
         where: fragment("? ~ ?", c.content, ^template_pattern),
@@ -148,7 +148,9 @@ defmodule Singularity.DomainVocabularyTrainer do
             vars
             |> Enum.map(fn var -> "{{#{String.upcase(var)}}}" end)
             |> Enum.uniq()
-          _ -> []
+
+          _ ->
+            []
         end
       end)
       |> Enum.uniq()

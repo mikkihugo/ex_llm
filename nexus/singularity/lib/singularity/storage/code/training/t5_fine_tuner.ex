@@ -317,17 +317,18 @@ defmodule Singularity.T5FineTuner do
     # Implement model evaluation with test dataset
     # Use provided test_dataset parameter
     evaluation_results = evaluate_on_test_set(model_path, test_dataset)
-    
+
     Logger.info("Model evaluation completed",
       test_examples: length(test_dataset),
       metrics: evaluation_results
     )
-    
-    {:ok, Map.merge(evaluation_results, %{
-      model_path: model_path,
-      test_examples: length(test_dataset),
-      status: "evaluation_complete"
-    })}
+
+    {:ok,
+     Map.merge(evaluation_results, %{
+       model_path: model_path,
+       test_examples: length(test_dataset),
+       status: "evaluation_complete"
+     })}
   end
 
   defp evaluate_on_test_set(_model_path, test_dataset) do
@@ -336,7 +337,7 @@ defmodule Singularity.T5FineTuner do
     # 1. Run inference on each test example
     # 2. Compare with ground truth
     # 3. Calculate BLEU, ROUGE, accuracy metrics
-    
+
     # Mock evaluation for now
     %{
       bleu_score: 0.85,

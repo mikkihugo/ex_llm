@@ -127,10 +127,11 @@ defmodule Singularity.Workflows.DeadCodeReportWorkflow do
     subject = Map.get(context, "subject", "")
     category = Map.get(categories, subject, %{severity: :unknown, type: :unknown})
 
-    categorized_report = Map.merge(report, %{
-      "category" => category,
-      "categorized_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-    })
+    categorized_report =
+      Map.merge(report, %{
+        "category" => category,
+        "categorized_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      })
 
     Logger.debug("Dead code issues categorized",
       subject: subject,
@@ -170,7 +171,8 @@ defmodule Singularity.Workflows.DeadCodeReportWorkflow do
     history_attrs = %{
       check_date: DateTime.utc_now(),
       total_count: total_count,
-      change_from_baseline: 0, # Could calculate from previous check
+      # Could calculate from previous check
+      change_from_baseline: 0,
       status: status,
       triggered_by: "dead_code_workflow",
       output: Jason.encode!(report),

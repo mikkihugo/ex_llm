@@ -23,7 +23,9 @@ pub mod codebase;
 pub mod domain;
 pub mod feature;
 pub mod graph;
+#[cfg(feature = "nif")]
 pub mod nif;
+#[cfg(feature = "nif")]
 pub mod nif_bindings;
 pub mod parsing;
 pub mod repository;
@@ -34,5 +36,6 @@ pub mod vectors;
 
 // Re-export main types for easy access
 pub use graph::{Graph, CodeGraphBuilder, CodeInsightsEngine};
+#[cfg(feature = "nif")]
 pub use nif::{CodeAnalysisResult, QualityMetrics};
 pub use domain::ComplexityMetrics;

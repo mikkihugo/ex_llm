@@ -73,11 +73,15 @@ defmodule Mix.Tasks.Debug do
     Mix.Task.run("app.start")
     IO.puts("\nRegistered Processes:")
     IO.puts(String.duplicate("=", 80))
+
     Singularity.Debug.registered()
     |> Enum.each(fn {name, pid, info} ->
       mem = info[:memory] || 0
       queue = info[:message_queue_len] || 0
-      IO.puts("#{inspect(name)} | PID: #{inspect(pid)} | Memory: #{format_bytes(mem)} | Queue: #{queue}")
+
+      IO.puts(
+        "#{inspect(name)} | PID: #{inspect(pid)} | Memory: #{format_bytes(mem)} | Queue: #{queue}"
+      )
     end)
   end
 
@@ -85,6 +89,7 @@ defmodule Mix.Tasks.Debug do
     Mix.Task.run("app.start")
     IO.puts("\nGenServer States:")
     IO.puts(String.duplicate("=", 80))
+
     Singularity.Debug.genserver_states()
     |> Enum.each(fn gs ->
       IO.puts("#{inspect(gs.name)}:")
@@ -131,10 +136,17 @@ defmodule Mix.Tasks.Debug do
 
   defp format_bytes(bytes) do
     cond do
-      bytes >= 1_000_000_000 -> "#{:erlang.float_to_binary(bytes / 1_000_000_000, decimals: 2)} GB"
-      bytes >= 1_000_000 -> "#{:erlang.float_to_binary(bytes / 1_000_000, decimals: 2)} MB"
-      bytes >= 1_000 -> "#{:erlang.float_to_binary(bytes / 1_000, decimals: 2)} KB"
-      true -> "#{bytes} B"
+      bytes >= 1_000_000_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000_000_000, decimals: 2)} GB"
+
+      bytes >= 1_000_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000_000, decimals: 2)} MB"
+
+      bytes >= 1_000 ->
+        "#{:erlang.float_to_binary(bytes / 1_000, decimals: 2)} KB"
+
+      true ->
+        "#{bytes} B"
     end
   end
 end

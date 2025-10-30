@@ -42,23 +42,28 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
   Build producer configuration based on PGFlow mode setting
   """
   def build_producer_config do
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.architecture_learning.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.architecture_learning.enabled", false)
 
     if pgflow_enabled do
       Logger.info("ArchitectureLearningPipeline: Starting in PGFlow mode")
+
       [
-        module: {Broadway.PgflowProducer, [
-          workflow_name: "architecture_learning_producer",
-          queue_name: "architecture_learning_jobs",
-          concurrency: 2,
-          batch_size: 8,
-          pgflow_config: [timeout_ms: 900_000, retries: 3],
-          resource_hints: [gpu: false, memory_gb: 16]
-        ]},
+        module:
+          {Broadway.PgflowProducer,
+           [
+             workflow_name: "architecture_learning_producer",
+             queue_name: "architecture_learning_jobs",
+             concurrency: 2,
+             batch_size: 8,
+             pgflow_config: [timeout_ms: 900_000, retries: 3],
+             resource_hints: [gpu: false, memory_gb: 16]
+           ]},
         concurrency: 2
       ]
     else
       Logger.info("ArchitectureLearningPipeline: Starting in Broadway mode")
+
       [
         module: {Broadway.DummyProducer, []},
         concurrency: 1
@@ -68,7 +73,9 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
 
   @impl Broadway
   def handle_message(:default, %Message{data: data} = message, _context) do
-    Logger.debug("ArchitectureLearningPipeline: Processing message", message_id: message.metadata.message_id)
+    Logger.debug("ArchitectureLearningPipeline: Processing message",
+      message_id: message.metadata.message_id
+    )
 
     case analyze_architecture(data) do
       {:ok, architecture_metrics} ->
@@ -84,28 +91,34 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
 
   @impl Broadway
   def handle_batch(:architecture_analysis, messages, _batch_info, _context) do
-    Logger.info("ArchitectureLearningPipeline: Processing architecture analysis batch", batch_size: length(messages))
+    Logger.info("ArchitectureLearningPipeline: Processing architecture analysis batch",
+      batch_size: length(messages)
+    )
 
-    processed_messages = Enum.map(messages, fn message ->
-      %{architecture_metrics: metrics} = message.data
+    processed_messages =
+      Enum.map(messages, fn message ->
+        %{architecture_metrics: metrics} = message.data
 
-      should_learn = should_trigger_learning?(metrics)
+        should_learn = should_trigger_learning?(metrics)
 
-      if should_learn do
-        Message.put_batcher(message, :learning_data)
-      else
-        message
-      end
-    end)
+        if should_learn do
+          Message.put_batcher(message, :learning_data)
+        else
+          message
+        end
+      end)
 
     processed_messages
   end
 
   @impl Broadway
   def handle_batch(:learning_data, messages, _batch_info, _context) do
-    Logger.info("ArchitectureLearningPipeline: Processing learning data batch", batch_size: length(messages))
+    Logger.info("ArchitectureLearningPipeline: Processing learning data batch",
+      batch_size: length(messages)
+    )
 
-    pgflow_enabled = Singularity.Settings.get_boolean("pipelines.architecture_learning.enabled", false)
+    pgflow_enabled =
+      Singularity.Settings.get_boolean("pipelines.architecture_learning.enabled", false)
 
     if pgflow_enabled do
       learning_data = Enum.map(messages, & &1.data)
@@ -117,7 +130,10 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
              timeout: 300_000
            ) do
         {:ok, result} ->
-          Logger.info("ArchitectureLearningPipeline: Learning completed via PGFlow", result: result)
+          Logger.info("ArchitectureLearningPipeline: Learning completed via PGFlow",
+            result: result
+          )
+
           messages
 
         {:error, reason} ->
@@ -163,6 +179,7 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
             result: inspect(invalid),
             codebase_path: codebase_path
           )
+
           {:ok, %{architecture_complexity: 0.5, patterns: %{}, pattern_count: 0}}
 
         {:error, reason} ->
@@ -172,6 +189,7 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
             error: inspect(reason),
             codebase_path: codebase_path
           )
+
           {:ok, %{architecture_complexity: 0.5, patterns: %{}, pattern_count: 0}}
       end
     rescue
@@ -182,6 +200,7 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
           error: inspect(error),
           codebase_path: codebase_path
         )
+
         {:error, :analysis_failed}
     end
   end
@@ -198,7 +217,8 @@ defmodule Singularity.Pipelines.ArchitectureLearningPipeline do
 
   defp should_trigger_learning?(metrics) do
     complexity_score = Map.get(metrics, :architecture_complexity, 0.0)
-    complexity_score > 0.8  # High architectural complexity indicates need for learning
+    # High architectural complexity indicates need for learning
+    complexity_score > 0.8
   end
 
   defp perform_simple_learning(_learning_data) do

@@ -437,7 +437,7 @@ defmodule Singularity.CentralCloud do
     # Store patterns in knowledge_artifacts table
     Enum.each(patterns, fn pattern ->
       Logger.debug("Storing pattern locally", pattern_type: Map.get(pattern, :type))
-      
+
       # Store as knowledge artifact with type: "technology_pattern"
       store_pattern_as_artifact(pattern)
     end)
@@ -445,7 +445,7 @@ defmodule Singularity.CentralCloud do
     # Store insights in knowledge_artifacts table
     Enum.each(insights, fn insight ->
       Logger.debug("Storing insight locally", insight_type: Map.get(insight, :type))
-      
+
       # Store as JSONB in knowledge_artifacts with type: "code_insight"
       store_insight_as_artifact(insight)
     end)
@@ -456,10 +456,10 @@ defmodule Singularity.CentralCloud do
 
   defp store_pattern_as_artifact(pattern) do
     alias Singularity.Knowledge.ArtifactStore
-    
+
     artifact_type = "technology_pattern"
     artifact_id = generate_pattern_key(pattern)
-    
+
     content = %{
       type: Map.get(pattern, :type),
       name: Map.get(pattern, :name),
@@ -472,6 +472,7 @@ defmodule Singularity.CentralCloud do
     case ArtifactStore.store(artifact_type, artifact_id, content) do
       {:ok, _} ->
         Logger.debug("Pattern stored as knowledge artifact", artifact_id: artifact_id)
+
       {:error, reason} ->
         Logger.warning("Failed to store pattern artifact", reason: reason)
     end
@@ -479,12 +480,13 @@ defmodule Singularity.CentralCloud do
 
   defp store_insight_as_artifact(insight) do
     alias Singularity.Knowledge.ArtifactStore
-    
+
     artifact_type = "code_insight"
-    artifact_id = 
+
+    artifact_id =
       :crypto.hash(:sha256, Jason.encode!(insight))
       |> Base.encode16(case: :lower)
-    
+
     content = %{
       type: Map.get(insight, :type),
       insight_data: insight,
@@ -494,6 +496,7 @@ defmodule Singularity.CentralCloud do
     case ArtifactStore.store(artifact_type, artifact_id, content) do
       {:ok, _} ->
         Logger.debug("Insight stored as knowledge artifact", artifact_id: artifact_id)
+
       {:error, reason} ->
         Logger.warning("Failed to store insight artifact", reason: reason)
     end

@@ -345,6 +345,369 @@ impl LanguageSpecificRulesAnalyzer {
                 },
             ],
         );
+
+        // JVM languages (Java, Scala)
+        self.add_family_rules(
+            "JVM",
+            vec![
+                LanguageSpecificRule {
+                    id: "jvm_pascalcase_classes".to_string(),
+                    name: "PascalCase for class names".to_string(),
+                    description: "JVM languages use PascalCase for class and interface names".to_string(),
+                    applies_to: "JVM".to_string(),
+                    rule_type: LanguageRuleType::NamingConvention,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"class\s+[a-z]".to_string(),
+                    suggested_fix: Some("Use PascalCase: class MyClass".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "jvm_snake_case_constants".to_string(),
+                    name: "UPPER_CASE for constants".to_string(),
+                    description: "JVM languages use UPPER_CASE for constant names".to_string(),
+                    applies_to: "JVM".to_string(),
+                    rule_type: LanguageRuleType::NamingConvention,
+                    severity: RuleSeverity::Info,
+                    pattern: r"static\s+final\s+[A-Z][a-z]".to_string(),
+                    suggested_fix: Some("Use UPPER_CASE: static final int MAX_SIZE".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "jvm_exception_handling".to_string(),
+                    name: "Explicit exception handling".to_string(),
+                    description: "JVM code should catch specific exceptions, not Exception".to_string(),
+                    applies_to: "JVM".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"catch\s*\(\s*Exception\s+".to_string(),
+                    suggested_fix: Some("Catch specific exceptions: catch (IOException e)".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "jvm_null_pointer_risk".to_string(),
+                    name: "Avoid null pointer exceptions".to_string(),
+                    description: "JVM code should use Optional or null checks instead of assuming non-null".to_string(),
+                    applies_to: "JVM".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"\.get\(\)\.".to_string(),
+                    suggested_fix: Some("Use Optional.ifPresent() or null checks".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "jvm_n_plus_one".to_string(),
+                    name: "Avoid N+1 query problem".to_string(),
+                    description: "JVM code should avoid querying inside loops (common with ORM)".to_string(),
+                    applies_to: "JVM".to_string(),
+                    rule_type: LanguageRuleType::PerformanceRule,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"for\s*\([^)]*\)\s*\{[^}]*\.query\(|\.find\(|\.get\(".to_string(),
+                    suggested_fix: Some("Use batch queries outside loops".to_string()),
+                },
+            ],
+        );
+
+        // Functional languages (Clojure)
+        self.add_family_rules(
+            "Functional",
+            vec![
+                LanguageSpecificRule {
+                    id: "functional_kebab_case".to_string(),
+                    name: "Kebab case for function names".to_string(),
+                    description: "Functional languages use kebab-case (dashed) for function names".to_string(),
+                    applies_to: "Functional".to_string(),
+                    rule_type: LanguageRuleType::NamingConvention,
+                    severity: RuleSeverity::Info,
+                    pattern: r"defn\s+[a-z]+_[a-z]+".to_string(),
+                    suggested_fix: Some("Use kebab-case: defn my-function".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "functional_pure_functions".to_string(),
+                    name: "Prefer pure functions".to_string(),
+                    description: "Functional code should prefer immutability and pure functions".to_string(),
+                    applies_to: "Functional".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"atom\s*\(|reset!|swap!".to_string(),
+                    suggested_fix: Some("Consider using immutable data structures instead".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "functional_reduce_over_loop".to_string(),
+                    name: "Use reduce instead of mutable loops".to_string(),
+                    description: "Functional code should use reduce/fold instead of imperative loops".to_string(),
+                    applies_to: "Functional".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"loop\s*\[|while\s+".to_string(),
+                    suggested_fix: Some("Use reduce or recursion for functional transformation".to_string()),
+                },
+            ],
+        );
+
+        // Mobile/Modern languages (Dart, Swift)
+        self.add_family_rules(
+            "Mobile",
+            vec![
+                LanguageSpecificRule {
+                    id: "mobile_camelcase_naming".to_string(),
+                    name: "CamelCase for functions".to_string(),
+                    description: "Mobile languages use camelCase for method and property names".to_string(),
+                    applies_to: "Mobile".to_string(),
+                    rule_type: LanguageRuleType::NamingConvention,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"func\s+[a-z]+_[a-z]+|def\s+[a-z]+_[a-z]+".to_string(),
+                    suggested_fix: Some("Use camelCase: func myMethod()".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "mobile_null_safety".to_string(),
+                    name: "Use null-safety features".to_string(),
+                    description: "Modern mobile code should use null-safety (Optional, ?)".to_string(),
+                    applies_to: "Mobile".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"!\.unwrap\(\)|try!|\.value!".to_string(),
+                    suggested_fix: Some("Use optional unwrapping: guard let, if let, ?? operator".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "mobile_memory_leak".to_string(),
+                    name: "Avoid strong reference cycles".to_string(),
+                    description: "Mobile code should avoid strong reference cycles (use weak/unowned)".to_string(),
+                    applies_to: "Mobile".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"weak\s+self|unowned\s+self".to_string(),
+                    suggested_fix: Some("Use weak/unowned captures in closures to prevent cycles".to_string()),
+                },
+            ],
+        );
+
+        // PHP-specific rules
+        self.rules.insert(
+            "php".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "php_sql_injection".to_string(),
+                    name: "Prevent SQL injection".to_string(),
+                    description: "PHP code should use parameterized queries or prepared statements".to_string(),
+                    applies_to: "php".to_string(),
+                    rule_type: LanguageRuleType::SecurityRule,
+                    severity: RuleSeverity::Error,
+                    pattern: r#"mysqli_query\(|mysql_query\(|".*\$_.*"|'.*\$_.*'"#.to_string(),
+                    suggested_fix: Some("Use prepared statements with parameterized queries".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "php_global_variables".to_string(),
+                    name: "Minimize global variable usage".to_string(),
+                    description: "PHP code should limit use of global variables".to_string(),
+                    applies_to: "php".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"global\s+\$".to_string(),
+                    suggested_fix: Some("Use dependency injection or class properties instead".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "php_unset_variable".to_string(),
+                    name: "Proper variable scope management".to_string(),
+                    description: "PHP should use unset() to free memory when done with variables".to_string(),
+                    applies_to: "php".to_string(),
+                    rule_type: LanguageRuleType::PerformanceRule,
+                    severity: RuleSeverity::Info,
+                    pattern: r"for\s*\([^)]*\)\s*\{[^}]*\$large".to_string(),
+                    suggested_fix: Some("Use unset() to free memory in loops with large variables".to_string()),
+                },
+            ],
+        );
+
+        // Ruby-specific rules
+        self.rules.insert(
+            "ruby".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "ruby_string_interpolation".to_string(),
+                    name: "Use double quotes for interpolation".to_string(),
+                    description: "Ruby should use double quotes when interpolating".to_string(),
+                    applies_to: "ruby".to_string(),
+                    rule_type: LanguageRuleType::CodeStyle,
+                    severity: RuleSeverity::Info,
+                    pattern: r"'.*#\{".to_string(),
+                    suggested_fix: Some("Use double quotes for string interpolation".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "ruby_symbol_vs_string".to_string(),
+                    name: "Use symbols for hash keys".to_string(),
+                    description: "Ruby code should use symbols for hash keys instead of strings".to_string(),
+                    applies_to: "ruby".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r#"\{[\s\n]*"[a-z_]+"\s*=>"#.to_string(),
+                    suggested_fix: Some("Use symbol keys: { name: value } instead of { \"name\" => value }".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "ruby_n_plus_one".to_string(),
+                    name: "Avoid N+1 ActiveRecord queries".to_string(),
+                    description: "Ruby on Rails should use eager loading with includes/joins".to_string(),
+                    applies_to: "ruby".to_string(),
+                    rule_type: LanguageRuleType::PerformanceRule,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"\.each\s*\{|\.map\s*\{[^}]*\.find\(|\.where\(".to_string(),
+                    suggested_fix: Some("Use .includes() or .joins() for eager loading".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "ruby_implicit_return".to_string(),
+                    name: "Leverage implicit returns".to_string(),
+                    description: "Ruby methods have implicit returns; avoid explicit 'return'".to_string(),
+                    applies_to: "ruby".to_string(),
+                    rule_type: LanguageRuleType::CodeStyle,
+                    severity: RuleSeverity::Info,
+                    pattern: r"return\s+[^;]".to_string(),
+                    suggested_fix: Some("Omit explicit return; last expression is returned".to_string()),
+                },
+            ],
+        );
+
+        // Dart-specific rules
+        self.rules.insert(
+            "dart".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "dart_null_coalescing".to_string(),
+                    name: "Use null coalescing operators".to_string(),
+                    description: "Dart should use ?? and ?. operators for null safety".to_string(),
+                    applies_to: "dart".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"if\s*\([^)]*\s*==\s*null\)".to_string(),
+                    suggested_fix: Some("Use ?? operator: value ?? defaultValue".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "dart_const_vs_final".to_string(),
+                    name: "Use const for compile-time constants".to_string(),
+                    description: "Dart should use const for compile-time constants, final for runtime".to_string(),
+                    applies_to: "dart".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"final\s+(int|String|double|bool)\s+[A-Z]".to_string(),
+                    suggested_fix: Some("Use const for compile-time constants: const MAX_SIZE = 100".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "dart_async_build_context".to_string(),
+                    name: "Don't use BuildContext after async gaps".to_string(),
+                    description: "Flutter: don't use BuildContext after async operations (mounted check)".to_string(),
+                    applies_to: "dart".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"await\s+[^;]+;\s*[^}]*context\.".to_string(),
+                    suggested_fix: Some("Check mounted before using context after await".to_string()),
+                },
+            ],
+        );
+
+        // Swift-specific rules
+        self.rules.insert(
+            "swift".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "swift_protocol_oriented".to_string(),
+                    name: "Prefer protocols over classes".to_string(),
+                    description: "Swift should prefer protocols for composition and flexibility".to_string(),
+                    applies_to: "swift".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"class\s+[A-Z][a-zA-Z0-9]*\s*:\s*NSObject".to_string(),
+                    suggested_fix: Some("Consider using protocols for composition".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "swift_guard_let".to_string(),
+                    name: "Use guard let for early exit".to_string(),
+                    description: "Swift should use guard let for optional unwrapping with early exit".to_string(),
+                    applies_to: "swift".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"if\s+let\s+[a-z]+\s*=\s*[a-zA-Z]".to_string(),
+                    suggested_fix: Some("Use guard let for better code flow: guard let x = optional else { return }".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "swift_force_unwrap".to_string(),
+                    name: "Avoid force unwrapping (!)".to_string(),
+                    description: "Swift code should minimize force unwrapping with !".to_string(),
+                    applies_to: "swift".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"\.value!|as!\s|try!".to_string(),
+                    suggested_fix: Some("Use optional chaining, guard let, or if let instead".to_string()),
+                },
+            ],
+        );
+
+        // Scala-specific rules
+        self.rules.insert(
+            "scala".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "scala_pattern_matching".to_string(),
+                    name: "Leverage pattern matching".to_string(),
+                    description: "Scala should use pattern matching instead of if/else chains".to_string(),
+                    applies_to: "scala".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"if\s*\([^)]*\)\s*\{[^}]*\}\s*else\s+if".to_string(),
+                    suggested_fix: Some("Use match/case for pattern matching".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "scala_for_comprehension".to_string(),
+                    name: "Use for comprehensions".to_string(),
+                    description: "Scala should use for comprehensions for nested loops/maps".to_string(),
+                    applies_to: "scala".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"\.flatMap\(|\.map\([^)]*\.map\(".to_string(),
+                    suggested_fix: Some("Use for comprehension: for (x <- xs; y <- ys) yield ...".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "scala_immutability".to_string(),
+                    name: "Prefer val over var".to_string(),
+                    description: "Scala should prefer immutable val over mutable var".to_string(),
+                    applies_to: "scala".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Warning,
+                    pattern: r"var\s+[a-z_]".to_string(),
+                    suggested_fix: Some("Use val for immutability, only var if mutation is necessary".to_string()),
+                },
+            ],
+        );
+
+        // Clojure-specific rules
+        self.rules.insert(
+            "clojure".to_string(),
+            vec![
+                LanguageSpecificRule {
+                    id: "clojure_threading".to_string(),
+                    name: "Use thread-first/thread-last macros".to_string(),
+                    description: "Clojure should use -> and ->> for readable function composition".to_string(),
+                    applies_to: "clojure".to_string(),
+                    rule_type: LanguageRuleType::CodeStyle,
+                    severity: RuleSeverity::Info,
+                    pattern: r"\([a-z-]+\s+\([a-z-]+".to_string(),
+                    suggested_fix: Some("Consider using -> or ->> for better readability".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "clojure_lazy_sequences".to_string(),
+                    name: "Leverage lazy evaluation".to_string(),
+                    description: "Clojure should use lazy sequences for performance".to_string(),
+                    applies_to: "clojure".to_string(),
+                    rule_type: LanguageRuleType::PerformanceRule,
+                    severity: RuleSeverity::Info,
+                    pattern: r"vec\s*\(|doall\s*\(".to_string(),
+                    suggested_fix: Some("Use lazy sequences unless materialization is needed".to_string()),
+                },
+                LanguageSpecificRule {
+                    id: "clojure_immutability".to_string(),
+                    name: "Embrace immutability".to_string(),
+                    description: "Clojure should use immutable data structures by default".to_string(),
+                    applies_to: "clojure".to_string(),
+                    rule_type: LanguageRuleType::BestPractice,
+                    severity: RuleSeverity::Info,
+                    pattern: r"atom\s*\(|reset!|swap!".to_string(),
+                    suggested_fix: Some("Consider pure functions and immutable data instead of atoms".to_string()),
+                },
+            ],
+        );
     }
 
     /// Add rules for a language family

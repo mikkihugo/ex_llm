@@ -246,5 +246,4 @@ defmodule Mix.Tasks.Standardize.Check do
       end
     end)
   end
-
 end

@@ -79,6 +79,12 @@ tree-sitter-md = "0.5.1"
 tree-sitter-sequel = "0.3.11"
 tree-sitter-dockerfile-updated = "0.2.0"
 tree-sitter-toml-ng = "0.7.0"
+tree-sitter-ruby = { workspace = true }
+tree-sitter-php = { workspace = true }
+tree-sitter-dart = { workspace = true }
+tree-sitter-swift = { workspace = true }
+tree-sitter-clojure = { workspace = true }
+tree-sitter-scala = { workspace = true }
 
 tree-sitter-language = "0.1.5"
 

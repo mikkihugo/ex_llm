@@ -214,8 +214,10 @@ defmodule Singularity.CodeTrainer do
   defp calculate_complexity(content) do
     # Use SCA for sophisticated complexity calculation instead of string matching
     case Singularity.CodeAnalyzer.calculate_ai_complexity_score(content, "elixir") do
-      {:ok, score} -> score
-      {:error, _reason} -> 
+      {:ok, score} ->
+        score
+
+      {:error, _reason} ->
         # Fallback to basic calculation only if SCA completely fails
         basic_complexity_fallback(content)
     end

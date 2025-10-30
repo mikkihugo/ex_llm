@@ -5,6 +5,8 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   Replaces pgmq publish/subscribe patterns for agent communication.
   Now uses Oban jobs for reliable, ordered message passing between agents.
 
+  Fires real-time notifications via Pgflow for coordination visibility.
+
   Patterns replaced:
   - Agent status updates
   - Agent result broadcasting
@@ -16,6 +18,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
 
   require Logger
   alias Singularity.Workflows.AgentCoordination
+  alias Singularity.PgFlow
 
   @doc """
   Enqueue agent coordination message.
@@ -68,8 +71,17 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
           duration_ms: duration_ms
         )
 
+        # Notify observers of successful coordination
+        notify_coordination_complete(
+          args["source_agent"],
+          args["target_agent"],
+          args["message_type"],
+          duration_ms
+        )
+
         # Record result for tracking
         instance_id = System.get_env("INSTANCE_ID", "default")
+
         Singularity.Schemas.Execution.JobResult.record_success(
           workflow: "Singularity.Workflows.AgentCoordination",
           instance_id: instance_id,
@@ -90,8 +102,17 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
           duration_ms: duration_ms
         )
 
+        # Notify observers of failed coordination
+        notify_coordination_failed(
+          args["source_agent"],
+          args["target_agent"],
+          args["message_type"],
+          reason
+        )
+
         # Record failure for tracking
         instance_id = System.get_env("INSTANCE_ID", "default")
+
         Singularity.Schemas.Execution.JobResult.record_failure(
           workflow: "Singularity.Workflows.AgentCoordination",
           instance_id: instance_id,
@@ -103,6 +124,60 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
 
         # Oban will retry automatically (max_attempts: 3)
         {:error, reason}
+    end
+  end
+
+  defp notify_coordination_complete(source_agent, target_agent, message_type, duration_ms) do
+    case PgFlow.send_with_notify(
+           "agent_coordination_notifications",
+           %{
+             type: "coordination_completed",
+             source_agent: source_agent,
+             target_agent: target_agent,
+             message_type: message_type,
+             duration_ms: duration_ms,
+             timestamp: DateTime.utc_now(),
+             status: "success"
+           }
+         ) do
+      {:ok, :sent} ->
+        Logger.debug("📢 Agent coordination notification sent",
+          source: source_agent,
+          target: target_agent
+        )
+
+      {:error, reason} ->
+        Logger.warning("Failed to send coordination notification",
+          source: source_agent,
+          error: inspect(reason)
+        )
+    end
+  end
+
+  defp notify_coordination_failed(source_agent, target_agent, message_type, error) do
+    case PgFlow.send_with_notify(
+           "agent_coordination_notifications",
+           %{
+             type: "coordination_failed",
+             source_agent: source_agent,
+             target_agent: target_agent,
+             message_type: message_type,
+             error: inspect(error),
+             timestamp: DateTime.utc_now(),
+             status: "failed"
+           }
+         ) do
+      {:ok, :sent} ->
+        Logger.debug("📢 Agent coordination failure notification sent",
+          source: source_agent,
+          target: target_agent
+        )
+
+      {:error, reason} ->
+        Logger.warning("Failed to send coordination failure notification",
+          source: source_agent,
+          error: inspect(reason)
+        )
     end
   end
 end

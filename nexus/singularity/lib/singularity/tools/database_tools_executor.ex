@@ -202,13 +202,16 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
       {:ok, workflow_id} ->
         duration = System.monotonic_time(:millisecond) - start_time
         log_tool_execution(topic, decoded_request, :success, duration)
+
         Logger.info("[DatabaseToolsExecutor] Created response workflow",
           workflow_id: workflow_id,
           reply_to: reply_to
         )
 
       {:error, reason} ->
-        Logger.error("[DatabaseToolsExecutor] Failed to create response workflow: #{inspect(reason)}")
+        Logger.error(
+          "[DatabaseToolsExecutor] Failed to create response workflow: #{inspect(reason)}"
+        )
     end
 
     {:noreply, state}
@@ -740,16 +743,17 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   defp subscribe_to_pgflow_tool_requests(subject) do
     # Create PGFlow workflow subscription for tool execution requests
     workflow_name = "database_tool_execution_#{String.replace(subject, ".", "_")}"
-    
+
     case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
-      handle_tool_workflow_completion(workflow_result)
-    end) do
+           handle_tool_workflow_completion(workflow_result)
+         end) do
       {:ok, subscription_id} ->
         Logger.info("[DatabaseToolsExecutor] Subscribed to PGFlow workflow",
           subject: subject,
           workflow: workflow_name,
           subscription_id: subscription_id
         )
+
         :ok
 
       {:error, reason} ->
@@ -757,8 +761,12 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
           subject: subject,
           reason: reason
         )
+
         # Fallback: log migration status
-        Logger.info("[DatabaseToolsExecutor] Migrating subscription from pgmq to Pgflow: #{subject}")
+        Logger.info(
+          "[DatabaseToolsExecutor] Migrating subscription from pgmq to Pgflow: #{subject}"
+        )
+
         :ok
     end
   end
@@ -768,6 +776,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     Logger.debug("[DatabaseToolsExecutor] Received completed workflow result",
       result: result
     )
+
     :ok
   end
 
@@ -775,6 +784,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     Logger.error("[DatabaseToolsExecutor] Tool execution workflow failed",
       error: error
     )
+
     :ok
   end
 

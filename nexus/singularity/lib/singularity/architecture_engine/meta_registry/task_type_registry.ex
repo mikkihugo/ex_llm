@@ -32,8 +32,14 @@ defmodule Singularity.MetaRegistry.TaskTypeRegistry do
   @task_types %{
     # Complex tasks - require premium models (Claude Opus, GPT-4)
     architect: %{complexity: :complex, description: "System architecture design and analysis"},
-    code_generation: %{complexity: :complex, description: "Generating new code from specifications"},
-    pattern_analyzer: %{complexity: :complex, description: "Complex pattern recognition and analysis"},
+    code_generation: %{
+      complexity: :complex,
+      description: "Generating new code from specifications"
+    },
+    pattern_analyzer: %{
+      complexity: :complex,
+      description: "Complex pattern recognition and analysis"
+    },
     refactoring: %{complexity: :complex, description: "Code restructuring and optimization"},
     code_analysis: %{complexity: :complex, description: "Deep code understanding and analysis"},
     qa: %{complexity: :complex, description: "Quality assurance and testing strategy"},
@@ -157,10 +163,10 @@ defmodule Singularity.MetaRegistry.TaskTypeRegistry do
       }
   """
   @spec get_task_types_by_complexity() :: %{
-    complex: [atom()],
-    medium: [atom()],
-    simple: [atom()]
-  }
+          complex: [atom()],
+          medium: [atom()],
+          simple: [atom()]
+        }
   def get_task_types_by_complexity do
     %{
       complex: get_tasks_by_complexity(:complex),
