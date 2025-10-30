@@ -16,6 +16,12 @@ extern "C" {
     fn quantum_flow_send_learning_data(data: &str) -> Result<(), String>;
 }
 
+#[cfg(not(feature = "nif"))]
+unsafe fn quantum_flow_send_learning_data(_data: &str) -> Result<(), String> {
+    // Stub for CLI builds
+    Ok(())
+}
+
 /// Technology detector implementation
 pub struct TechnologyDetector {
     learned_patterns: HashMap<String, LearnedTechnologyPattern>,

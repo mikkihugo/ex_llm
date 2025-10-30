@@ -39,10 +39,13 @@ jobs:
           echo "=== Building scanner CLI ==="
           cargo build --release -p code_quality_engine --features cli
 
-          echo "=== Running code quality scan ==="
+          echo "=== Running code quality scan (all analyzers, auto-fix enabled) ==="
           ./target/release/singularity-scanner analyze \
             --path nexus/singularity \
-            --format json || true
+            --format json \
+            --output scan-results.json || true
+          
+          echo "=== Scan complete. Auto-fixes applied by default ==="
 
       - name: Commit auto-fixes
         if: github.event_name == 'pull_request'

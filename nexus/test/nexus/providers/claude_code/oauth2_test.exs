@@ -46,8 +46,8 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2Test do
 
   use ExUnit.Case, async: false
 
-  alias Nexus.Providers.ClaudeCode.OAuth2
   alias Nexus.OAuthToken
+  alias Nexus.Providers.ClaudeCode.OAuth2
 
   # ========== TEST SETUP: Dependency Injection Configuration ==========
 
@@ -493,11 +493,9 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2Test do
 
   describe "Constants and Configuration - Hybrid" do
     test "all required constants are defined" do
-      # These should not raise any errors if constants exist
-      catch_error(apply(OAuth2, :__MODULE__, []))
-
       # Verify module is loadable
       assert is_atom(OAuth2)
+      assert Code.ensure_loaded?(OAuth2)
     end
 
     test "OAuth endpoints use correct URLs" do

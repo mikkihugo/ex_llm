@@ -142,18 +142,16 @@ defmodule Nexus.LLMRouter do
   def select_model(complexity, task_type \\ nil)
 
   def select_model(:simple, _task_type) do
-    cond do
-      gemini_code_available?() ->
-        @gemini_code_prefix <> GeminiCode.default_model()
-
-      true ->
-        # Simple tasks: Use fast, cheap models
-        # Try to find a fast, cost-effective model
-        case find_model_by_criteria(:simple) do
-          {:ok, model_id} -> model_id
-          # Fallback
-          {:error, _} -> "gemini-2.5-flash"
-        end
+    if gemini_code_available?() do
+      @gemini_code_prefix <> GeminiCode.default_model()
+    else
+      # Simple tasks: Use fast, cheap models
+      # Try to find a fast, cost-effective model
+      case find_model_by_criteria(:simple) do
+        {:ok, model_id} -> model_id
+        # Fallback
+        {:error, _} -> "gemini-2.5-flash"
+      end
     end
   end
 
@@ -288,18 +286,16 @@ defmodule Nexus.LLMRouter do
     # Convert messages to ex_llm format
     formatted_messages = format_messages(messages)
 
-    cond do
-      is_binary(model) and String.starts_with?(model, @gemini_code_prefix) ->
-        gemini_model = String.replace_prefix(model, @gemini_code_prefix, "")
+    if is_binary(model) and String.starts_with?(model, @gemini_code_prefix) do
+      gemini_model = String.replace_prefix(model, @gemini_code_prefix, "")
 
-        case GeminiCode.chat(formatted_messages, Keyword.put(opts, :model, gemini_model)) do
-          {:ok, response} -> {:ok, response}
-          {:error, reason} -> {:error, reason}
-        end
-
-      true ->
-        # Call ex_llm with selected model
-        ExLLM.chat(formatted_messages, [model: model] ++ opts)
+      case GeminiCode.chat(formatted_messages, Keyword.put(opts, :model, gemini_model)) do
+        {:ok, response} -> {:ok, response}
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      # Call ex_llm with selected model
+      ExLLM.chat(formatted_messages, [model: model] ++ opts)
     end
   end
 

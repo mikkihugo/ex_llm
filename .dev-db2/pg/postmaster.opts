@@ -1,0 +1,1 @@
+/nix/store/bvhb3j9m5vmhf16071001gcxs80pwr08-postgresql-and-plugins-17.6/bin/postgres "-D" "/home/mhugo/code/singularity/.dev-db2/pg" "-p" "5432"

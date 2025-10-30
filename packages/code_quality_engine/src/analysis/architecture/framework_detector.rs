@@ -12,8 +12,15 @@ use super::{PatternDetection, PatternDetector, PatternError, PatternType, Detect
 
 // NIF callback for Quantum Flow integration (only when building NIF)
 #[cfg(feature = "nif")]
+#[cfg(feature = "nif")]
 extern "C" {
     fn quantum_flow_send_learning_data(data: &str) -> Result<(), String>;
+}
+
+#[cfg(not(feature = "nif"))]
+unsafe fn quantum_flow_send_learning_data(_data: &str) -> Result<(), String> {
+    // Stub for CLI builds
+    Ok(())
 }
 
 /// Framework detector implementation

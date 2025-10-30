@@ -2,8 +2,8 @@
 # Start PostgreSQL server
 set -euo pipefail
 
-DEV_PGROOT="${PWD}/.dev-db"
-PGDATA="${DEV_PGROOT}/pg"
+DEV_PGROOT="${DEV_PGROOT:-${PWD}/.dev-db}"
+PGDATA="${PGDATA:-${DEV_PGROOT}/pg}"
 PG_PID_FILE="${DEV_PGROOT}/postgres.pid"
 PGHOST="localhost"
 
@@ -44,7 +44,7 @@ port = $PGPORT
 unix_socket_directories = '$PGDATA'
 log_destination = 'stderr'
 logging_collector = off
-shared_preload_libraries = 'timescaledb,pg_cron'
+shared_preload_libraries = 'timescaledb,pg_cron,pgsodium'
 cron.database_name = 'singularity'
 EOF
     

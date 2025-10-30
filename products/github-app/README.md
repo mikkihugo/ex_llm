@@ -184,7 +184,7 @@ analysis:
 ### Local Setup
 ```bash
 # Clone and setup
-git clone https://github.com/singularity/singularity-github-app
+git clone https://github.com/mikkhugo/singularity-github-app
 cd singularity-github-app
 
 # Install dependencies

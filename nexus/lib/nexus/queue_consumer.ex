@@ -140,11 +140,7 @@ defmodule Nexus.QueueConsumer do
   defp run_query(_db_url, query) do
     # Use Nexus.Repo for queries to maintain connection pooling
     # and proper transaction handling
-    try do
-      {:ok, Nexus.Repo.query!(query)}
-    rescue
-      e -> {:error, e}
-    end
+    Nexus.Repo.query(query)
   end
 
   defp parse_messages(rows, columns) do

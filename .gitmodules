@@ -1,9 +1,9 @@
 [submodule "packages/singularity-workflows"]
 	path = packages/singularity-workflows
-	url = https://github.com/Singularity-ng/singularity-workflows.git
+	url = https://github.com/mikkhugo/singularity-workflows.git
 [submodule "packages/singularity-llm"]
 	path = packages/singularity-llm
-	url = https://github.com/Singularity-ng/singularity-llm.git
+	url = https://github.com/mikkhugo/singularity-llm.git
 [submodule "packages/singularity-analysis"]
 	path = packages/singularity-analysis
-	url = https://github.com/Singularity-ng/singularity-analysis.git
+	url = https://github.com/mikkhugo/singularity-analysis.git

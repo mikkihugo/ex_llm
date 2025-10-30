@@ -245,5 +245,5 @@ MIT
 ## Support
 
 For issues and feature requests:
-- GitHub: https://github.com/singularityai/singularity
+- GitHub: https://github.com/mikkhugo/singularity-incubation
 - Email: support@singularity.ai

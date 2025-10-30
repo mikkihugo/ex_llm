@@ -38,8 +38,8 @@ defmodule Nexus.Providers.Codex do
 
   require Logger
   alias Nexus.OAuthToken
-  alias Nexus.Providers.Codex.OAuth2
   alias Nexus.Providers.Codex.ConfigLoader
+  alias Nexus.Providers.Codex.OAuth2
 
   @base_url "https://chatgpt.com/backend-api"
   @default_model "gpt-5"
@@ -148,12 +148,20 @@ defmodule Nexus.Providers.Codex do
 
   # Parse JWT expiration from access token
   defp parse_jwt_expiration(token) do
-    try do
-      [_, payload, _] = String.split(token, ".")
-      decoded = Base.url_decode64!(payload <> "==")
-      %{"exp" => exp} = Jason.decode!(decoded)
-      {:ok, DateTime.from_unix!(exp)}
-    rescue
+    case String.split(token, ".") do
+      [_, payload, _] ->
+        case Base.url_decode64(payload <> "==") do
+          {:ok, decoded} ->
+            case Jason.decode(decoded) do
+              {:ok, %{"exp" => exp}} ->
+                case DateTime.from_unix(exp) do
+                  {:ok, datetime} -> {:ok, datetime}
+                  {:error, _} -> {:error, :invalid_token}
+                end
+              _ -> {:error, :invalid_token}
+            end
+          _ -> {:error, :invalid_token}
+        end
       _ -> {:error, :invalid_token}
     end
   end
@@ -223,9 +231,8 @@ defmodule Nexus.Providers.Codex do
 
       {:error, _} ->
         # Fall back to database tokens
-        with {:ok, token} <- token_repository().get("codex"),
-             {:ok, token} <- ensure_not_expired(token) do
-          {:ok, token}
+        with {:ok, token} <- token_repository().get("codex") do
+          ensure_not_expired(token)
         end
     end
   end

@@ -166,7 +166,6 @@
           git git-lfs gh curl pkg-config direnv gnused gawk coreutils findutils
           ripgrep fd jq bat btop htop tree watchexec entr just nil nixfmt-rfc-style lsof
           mold sccache cachix rustc cargo rustfmt clippy rust-analyzer cargo-watch
-          postgresql_17  # For pgxn (pg_config and dev headers)
           google-cloud-sdk  # Google Cloud CLI for GCP operations
         ] ++ lib.optionals env.gpu (if platform.hasCuda then [
           # CUDA tools only if GPU enabled and CUDA available

@@ -73,34 +73,35 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
   """
   def exchange_code(code, _opts \\ []) do
     # Verify and load PKCE state
-    with {:ok, code_verifier} <- load_and_verify_pkce_state() do
-      # Clean up the code (remove any fragments or extra params)
-      clean_code = code |> String.split("#") |> List.first() |> String.split("&") |> List.first()
+    case load_and_verify_pkce_state() do
+      {:ok, code_verifier} ->
+        # Clean up the code (remove any fragments or extra params)
+        clean_code = code |> String.split("#") |> List.first() |> String.split("&") |> List.first()
 
-      body = %{
-        grant_type: "authorization_code",
-        client_id: @client_id,
-        code: clean_code,
-        redirect_uri: @redirect_uri,
-        code_verifier: code_verifier
-      }
+        body = %{
+          grant_type: "authorization_code",
+          client_id: @client_id,
+          code: clean_code,
+          redirect_uri: @redirect_uri,
+          code_verifier: code_verifier
+        }
 
-      case http_client().post(@token_url, json: body) do
-        {:ok, %{status: 200, body: response}} ->
-          tokens = parse_tokens(response)
-          save_tokens("claude_code", tokens)
-          cleanup_pkce_state()
-          {:ok, tokens}
+        case http_client().post(@token_url, json: body) do
+          {:ok, %{status: 200, body: response}} ->
+            tokens = parse_tokens(response)
+            save_tokens("claude_code", tokens)
+            cleanup_pkce_state()
+            {:ok, tokens}
 
-        {:ok, %{status: status, body: error}} ->
-          Logger.error("Claude Code OAuth2 exchange failed: #{status} - #{inspect(error)}")
-          {:error, "Exchange failed: #{status}"}
+          {:ok, %{status: status, body: error}} ->
+            Logger.error("Claude Code OAuth2 exchange failed: #{status} - #{inspect(error)}")
+            {:error, "Exchange failed: #{status}"}
 
-        {:error, reason} ->
-          Logger.error("Claude Code OAuth2 request error: #{inspect(reason)}")
-          {:error, reason}
-      end
-    else
+          {:error, reason} ->
+            Logger.error("Claude Code OAuth2 request error: #{inspect(reason)}")
+            {:error, reason}
+        end
+
       {:error, reason} ->
         Logger.error("Claude Code OAuth2 state verification failed: #{reason}")
         {:error, reason}
@@ -127,7 +128,7 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
         _ -> nil
       end
 
-    if !refresh_token do
+    unless refresh_token do
       Logger.error("No refresh token available for Claude Code")
       {:error, "No refresh token"}
     else
@@ -158,20 +159,14 @@ defmodule Nexus.Providers.ClaudeCode.OAuth2 do
   Get current access token from database.
   """
   def get_token do
-    case token_repository().get("claude_code") do
-      {:ok, token} ->
-        if OAuthToken.expired?(token) do
-          # Try to refresh
-          case refresh(token) do
-            {:ok, refreshed} -> {:ok, refreshed.access_token}
-            {:error, _} -> {:error, :token_expired}
-          end
-        else
-          {:ok, token.access_token}
+    with {:ok, token} <- token_repository().get("claude_code") do
+      if OAuthToken.expired?(token) do
+        with {:ok, refreshed} <- refresh(token) do
+          {:ok, refreshed.access_token}
         end
-
-      {:error, reason} ->
-        {:error, reason}
+      else
+        {:ok, token.access_token}
+      end
     end
   end
 
