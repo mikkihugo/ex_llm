@@ -1,0 +1,37 @@
+[package]
+name = "singularity-scanner-mcp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Singularity AI <support@singularity.ai>"]
+license = "MIT"
+description = "MCP server for Singularity Scanner - code quality analysis"
+
+[[bin]]
+name = "singularity-scanner-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# Code quality engine
+code_quality_engine = { path = "../../packages/code_quality_engine", features = ["cli"] }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID for request tracking
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Path operations
+walkdir = "2.4"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
