@@ -13,12 +13,15 @@ permissions:
 jobs:
   scan:
     runs-on: [self-hosted, rtx4080]
-    
+
     steps:
+      - name: Clean workspace (self-hosted runner submodule fix)
+        run: |
+          rm -rf .git/modules || true
+          find . -maxdepth 2 -name ".gitmodules" -delete || true
+
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -43,12 +46,11 @@ jobs:
         run: |
           cargo build --release -p code_quality_engine --features cli
 
-      - name: Run scanner with auto-fix
+      - name: Run scanner (auto-fix enabled by default)
         run: |
           ./target/release/singularity-scanner analyze \
             --path nexus/singularity \
-            --format json \
-            --fix || true
+            --format json || true
 
       - name: Commit auto-fixes
         if: github.event_name == 'pull_request'
