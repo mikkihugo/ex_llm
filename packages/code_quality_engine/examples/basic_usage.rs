@@ -51,7 +51,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(functions) => {
             println!("📋 Found {} functions:", functions.len());
             for func in functions {
-                println!("  • {} (complexity: {}, params: {})",
+                println!(
+                    "  • {} (complexity: {}, params: {})",
                     func.name,
                     func.complexity,
                     func.parameters.len()
@@ -65,11 +66,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n3. Language Support");
     println!("-------------------");
 
-    let languages = vec!["rust", "python", "javascript", "typescript", "go", "java", "cobol"];
+    let languages = vec![
+        "rust",
+        "python",
+        "javascript",
+        "typescript",
+        "go",
+        "java",
+        "cobol",
+    ];
     for lang in languages {
         let supported = analyzer.is_language_supported(lang);
         let status = if supported { "✅" } else { "❌" };
-        println!("  {} {}: {}", status, lang, if supported { "supported" } else { "not supported" });
+        println!(
+            "  {} {}: {}",
+            status,
+            lang,
+            if supported {
+                "supported"
+            } else {
+                "not supported"
+            }
+        );
     }
 
     // Example 4: Language families
@@ -92,7 +110,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let files = vec![
         ("rust".to_string(), rust_code.to_string()),
-        ("python".to_string(), r#"
+        (
+            "python".to_string(),
+            r#"
 def factorial(n):
     '''Calculate factorial recursively'''
     if n <= 1:
@@ -109,16 +129,19 @@ def main():
 
 if __name__ == "__main__":
     main()
-"#.to_string()),
+"#
+            .to_string(),
+        ),
     ];
 
     match analyzer.detect_cross_language_patterns(&files) {
         Ok(patterns) => {
             println!("🔍 Detected {} cross-language patterns", patterns.len());
-            for pattern in patterns.iter().take(3) { // Show first 3
-                println!("  • {} (confidence: {:.2})",
-                    pattern.pattern_type,
-                    pattern.confidence
+            for pattern in patterns.iter().take(3) {
+                // Show first 3
+                println!(
+                    "  • {} (confidence: {:.2})",
+                    pattern.pattern_type, pattern.confidence
                 );
             }
         }

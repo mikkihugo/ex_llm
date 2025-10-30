@@ -17,8 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Comprehensive Luerl runtime analysis result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LuerlAnalysisResult {
     /// Luerl runtime patterns detected in Elixir code
     pub runtime_patterns: LuerlRuntimePatterns,
@@ -33,8 +32,7 @@ pub struct LuerlAnalysisResult {
 }
 
 /// Luerl runtime patterns in Elixir code
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LuerlRuntimePatterns {
     /// Lua.new() state creation calls
     pub state_creations: Vec<StateCreationInfo>,
@@ -101,8 +99,7 @@ pub struct ApiLoadInfo {
 }
 
 /// Pattern statistics
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PatternStatistics {
     pub total_lua_states: u32,
     pub total_executions: u32,
@@ -113,8 +110,7 @@ pub struct PatternStatistics {
 }
 
 /// Lua script analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LuaScriptAnalysis {
     /// Embedded Lua scripts (via ~LUA sigil)
     pub embedded_scripts: Vec<EmbeddedScriptInfo>,
@@ -182,8 +178,7 @@ pub struct ScriptMetrics {
 }
 
 /// Script categories
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ScriptCategories {
     pub rule_engine_scripts: u32,
     pub htdag_scripts: u32,
@@ -192,8 +187,7 @@ pub struct ScriptCategories {
 }
 
 /// BEAM integration analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BeamIntegrationAnalysis {
     /// LuaRunner.execute calls
     pub execute_calls: Vec<ExecuteCallInfo>,
@@ -400,8 +394,7 @@ pub enum Priority {
 }
 
 /// Performance analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PerformanceAnalysis {
     /// Script execution hotspots
     pub hotspots: Vec<PerformanceHotspot>,
@@ -486,12 +479,6 @@ pub enum ImpactLevel {
 // Default Implementations
 // ============================================================================
 
-
-
-
-
-
-
 impl Default for CallPatterns {
     fn default() -> Self {
         Self {
@@ -525,7 +512,6 @@ impl Default for ErrorHandlingCoverage {
         }
     }
 }
-
 
 impl Default for PerformanceMetrics {
     fn default() -> Self {

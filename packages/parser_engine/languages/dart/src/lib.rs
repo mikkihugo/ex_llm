@@ -4,8 +4,8 @@ use parser_core::{
     Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Tree};
 use tree_sitter::StreamingIterator;
+use tree_sitter::{Node, Parser, Tree};
 
 pub const VERSION: &str = "dart-tree-sitter-0.8";
 
@@ -135,11 +135,9 @@ impl LanguageParser for DartParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let language = tree_sitter_dart::language();
-        let query = tree_sitter::Query::new(
-            &language,
-            r#"(import_or_export_statement (uri) @uri)"#,
-        )
-        .map_err(|err| ParseError::ParseError(err.to_string()))?;
+        let query =
+            tree_sitter::Query::new(&language, r#"(import_or_export_statement (uri) @uri)"#)
+                .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut imports = Vec::new();

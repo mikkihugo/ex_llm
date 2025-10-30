@@ -1,8 +1,8 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use streaming_iterator::StreamingIterator;
+use tree_sitter::{Language, Parser, Query, QueryCursor};
 
 /// Markdown parser using tree-sitter-markdown
 ///
@@ -21,7 +21,7 @@ impl MarkdownParser {
         let language = tree_sitter_md::LANGUAGE.into();
         let mut parser = Parser::new();
         parser.set_language(&language)?;
-        
+
         // Query for common Markdown elements
         let query = Query::new(
             &language,
@@ -36,7 +36,7 @@ impl MarkdownParser {
             (block_quote) @block_quote
             (table) @table
             (paragraph) @paragraph
-            "#
+            "#,
         )?;
 
         Ok(Self {
@@ -48,7 +48,9 @@ impl MarkdownParser {
 
     /// Parse Markdown content and extract structured information
     pub fn parse(&mut self, content: &str) -> Result<MarkdownDocument, Box<dyn std::error::Error>> {
-        let tree = self.parser.parse(content, None)
+        let tree = self
+            .parser
+            .parse(content, None)
             .ok_or("Failed to parse Markdown")?;
 
         let mut cursor = QueryCursor::new();
@@ -76,7 +78,7 @@ impl MarkdownParser {
                     8 => "paragraph",
                     _ => "unknown",
                 };
-                
+
                 match capture_name {
                     "heading" => {
                         let level = self.extract_heading_level(node, content);
@@ -150,7 +152,7 @@ impl MarkdownParser {
                 }
             }
         }
-        
+
         Ok(document)
     }
 
@@ -161,7 +163,11 @@ impl MarkdownParser {
             text.chars().take_while(|&c| c == '#').count() as u32
         } else {
             // Setext headings are level 1 or 2
-            if text.contains("===") { 1 } else { 2 }
+            if text.contains("===") {
+                1
+            } else {
+                2
+            }
         }
     }
 
@@ -174,7 +180,11 @@ impl MarkdownParser {
             .to_string()
     }
 
-    fn extract_code_block_language(&self, node: tree_sitter::Node, content: &str) -> Option<String> {
+    fn extract_code_block_language(
+        &self,
+        node: tree_sitter::Node,
+        content: &str,
+    ) -> Option<String> {
         // Look for language identifier after ```
         let text = &content[node.byte_range()];
         if let Some(start) = text.find("```") {
@@ -194,7 +204,7 @@ impl MarkdownParser {
         // Remove the ```language and ``` parts
         let lines: Vec<&str> = text.lines().collect();
         if lines.len() >= 2 {
-            lines[1..lines.len()-1].join("\n")
+            lines[1..lines.len() - 1].join("\n")
         } else {
             text.to_string()
         }
@@ -263,10 +273,11 @@ impl MarkdownParser {
         let text = &content[node.byte_range()];
         let lines: Vec<&str> = text.lines().collect();
         let mut rows = Vec::new();
-        
+
         for line in lines {
             if line.contains('|') {
-                let cells: Vec<String> = line.split('|')
+                let cells: Vec<String> = line
+                    .split('|')
                     .map(|cell| cell.trim().to_string())
                     .filter(|cell| !cell.is_empty())
                     .collect();
@@ -275,7 +286,7 @@ impl MarkdownParser {
                 }
             }
         }
-        
+
         Table { rows }
     }
 
@@ -358,7 +369,7 @@ impl MarkdownDocument {
     /// Get all code examples from the document
     pub fn get_code_examples(&self) -> Vec<CodeExample> {
         let mut examples = Vec::new();
-        
+
         for code_block in &self.code_blocks {
             examples.push(CodeExample {
                 language: code_block.language.clone(),
@@ -367,7 +378,7 @@ impl MarkdownDocument {
                 context: self.get_context_for_line(code_block.line),
             });
         }
-        
+
         for code_span in &self.code_spans {
             examples.push(CodeExample {
                 language: None,
@@ -376,13 +387,14 @@ impl MarkdownDocument {
                 context: self.get_context_for_line(code_span.line),
             });
         }
-        
+
         examples
     }
 
     /// Get the document outline (headings hierarchy)
     pub fn get_outline(&self) -> Vec<OutlineItem> {
-        self.headings.iter()
+        self.headings
+            .iter()
             .map(|h| OutlineItem {
                 level: h.level,
                 title: h.title.clone(),
@@ -393,14 +405,16 @@ impl MarkdownDocument {
 
     /// Get all external links
     pub fn get_external_links(&self) -> Vec<&Link> {
-        self.links.iter()
+        self.links
+            .iter()
             .filter(|link| link.url.starts_with("http"))
             .collect()
     }
 
     fn get_context_for_line(&self, line: usize) -> Option<String> {
         // Find the nearest heading before this line
-        self.headings.iter()
+        self.headings
+            .iter()
             .filter(|h| h.line < line)
             .max_by_key(|h| h.line)
             .map(|h| h.title.clone())
@@ -521,17 +535,21 @@ impl LanguageParser for MarkdownParser {
     }
 
     fn get_extensions(&self) -> Vec<&str> {
-        vec!["md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext", "text", "txt"]
+        vec![
+            "md", "markdown", "mdown", "mkdn", "mkd", "mdwn", "mdtxt", "mdtext", "text", "txt",
+        ]
     }
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(&self.language)
+        parser
+            .set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
-        
-        let tree = parser.parse(content, None)
+
+        let tree = parser
+            .parse(content, None)
             .ok_or_else(|| ParseError::ParseError("Failed to parse Markdown".to_string()))?;
-        
+
         Ok(AST::new(tree, content.to_string()))
     }
 
@@ -539,11 +557,11 @@ impl LanguageParser for MarkdownParser {
         let content = &ast.content;
         let lines: Vec<&str> = content.lines().collect();
         let total_lines = lines.len() as u32;
-        
+
         let mut blank_lines = 0;
         let mut comment_lines = 0;
         let mut code_lines = 0;
-        
+
         for line in &lines {
             let trimmed = line.trim();
             if trimmed.is_empty() {
@@ -554,7 +572,7 @@ impl LanguageParser for MarkdownParser {
                 code_lines += 1;
             }
         }
-        
+
         // Count Markdown elements
         let mut element_count = 0;
         let mut cursor = QueryCursor::new();
@@ -563,7 +581,7 @@ impl LanguageParser for MarkdownParser {
         while matches.next().is_some() {
             element_count += 1;
         }
-        
+
         Ok(LanguageMetrics {
             total_lines: total_lines as u64,
             blank_lines: blank_lines as u64,
@@ -613,7 +631,7 @@ impl LanguageParser for MarkdownParser {
             }
             match_index += 1;
         }
-        
+
         Ok(functions)
     }
 
@@ -635,7 +653,7 @@ impl LanguageParser for MarkdownParser {
                     let comment_content = &content[node.start_byte()..node.end_byte()];
                     let line = node.start_position().row as u32 + 1;
                     let column = node.start_position().column as u32 + 1;
-                    
+
                     comments.push(Comment {
                         content: comment_content.to_string(),
                         line,
@@ -645,7 +663,7 @@ impl LanguageParser for MarkdownParser {
                 }
             }
         }
-        
+
         Ok(comments)
     }
 }

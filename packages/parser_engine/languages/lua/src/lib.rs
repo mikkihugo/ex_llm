@@ -12,7 +12,7 @@ impl LuaParser {
         let language = tree_sitter_lua::LANGUAGE.into();
         let mut parser = Parser::new();
         parser.set_language(&language)?;
-        
+
         // Query for common Lua elements
         let query = Query::new(
             &language,
@@ -37,25 +37,24 @@ impl LuaParser {
             (nil) @nil
             (comment) @comment
             (identifier) @identifier
-            "#
+            "#,
         )?;
 
-        Ok(Self {
-            parser,
-            query,
-        })
+        Ok(Self { parser, query })
     }
 
     /// Parse Lua content and extract structured information
     pub fn parse(&mut self, content: &str) -> Result<LuaDocument, Box<dyn std::error::Error>> {
-        let tree = self.parser.parse(content, None)
+        let tree = self
+            .parser
+            .parse(content, None)
             .ok_or("Failed to parse Lua")?;
-        
+
         let mut cursor = QueryCursor::new();
         let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
-        
+
         let mut document = LuaDocument::new();
-        
+
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
@@ -63,7 +62,7 @@ impl LuaParser {
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "function",
-                    1 => "local_function", 
+                    1 => "local_function",
                     2 => "variable_declaration",
                     3 => "assignment",
                     4 => "if_statement",
@@ -81,7 +80,7 @@ impl LuaParser {
                     16 => "identifier",
                     _ => "unknown",
                 };
-                
+
                 match capture_name {
                     "function" | "local_function" => {
                         let function_info = self.extract_function_info(node, content);
@@ -151,23 +150,23 @@ impl LuaParser {
                 }
             }
         }
-        
+
         Ok(document)
     }
 
     fn extract_function_info(&self, node: tree_sitter::Node, content: &str) -> FunctionInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract function name
         let name = self.extract_function_name(node, content);
-        
+
         // Extract parameters
         let parameters = self.extract_function_parameters(node, content);
-        
+
         // Check if it's local
         let is_local = text.trim_start().starts_with("local");
-        
+
         FunctionInfo {
             name,
             parameters,
@@ -200,7 +199,8 @@ impl LuaParser {
         if let Some(paren_start) = text.find('(') {
             if let Some(paren_end) = text.find(')') {
                 let params_str = &text[paren_start + 1..paren_end];
-                params_str.split(',')
+                params_str
+                    .split(',')
                     .map(|param| param.trim().to_string())
                     .filter(|param| !param.is_empty())
                     .collect()
@@ -212,16 +212,20 @@ impl LuaParser {
         }
     }
 
-    fn extract_variable_declaration(&self, node: tree_sitter::Node, content: &str) -> VariableDeclaration {
+    fn extract_variable_declaration(
+        &self,
+        node: tree_sitter::Node,
+        content: &str,
+    ) -> VariableDeclaration {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract variable names
         let variables = self.extract_variable_names(node, content);
-        
+
         // Check if it's local
         let is_local = text.trim_start().starts_with("local");
-        
+
         VariableDeclaration {
             variables,
             is_local,
@@ -233,7 +237,7 @@ impl LuaParser {
     fn extract_variable_names(&self, node: tree_sitter::Node, content: &str) -> Vec<String> {
         let text = &content[node.byte_range()];
         let mut variables = Vec::new();
-        
+
         // Look for identifiers after 'local' or before '='
         let parts: Vec<&str> = text.split('=').collect();
         if let Some(declaration_part) = parts.first() {
@@ -245,19 +249,25 @@ impl LuaParser {
                 }
             }
         }
-        
+
         variables
     }
 
     fn extract_assignment(&self, node: tree_sitter::Node, content: &str) -> Assignment {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract left side (variables) and right side (values)
         let parts: Vec<&str> = text.split('=').collect();
-        let left_side = parts.first().map(|s| s.trim().to_string()).unwrap_or_default();
-        let right_side = parts.get(1).map(|s| s.trim().to_string()).unwrap_or_default();
-        
+        let left_side = parts
+            .first()
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+        let right_side = parts
+            .get(1)
+            .map(|s| s.trim().to_string())
+            .unwrap_or_default();
+
         Assignment {
             left_side,
             right_side,
@@ -269,7 +279,7 @@ impl LuaParser {
     fn extract_if_statement(&self, node: tree_sitter::Node, content: &str) -> IfStatement {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         IfStatement {
             line: start.row,
             content: text.to_string(),
@@ -279,7 +289,7 @@ impl LuaParser {
     fn extract_for_statement(&self, node: tree_sitter::Node, content: &str) -> ForStatement {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ForStatement {
             line: start.row,
             content: text.to_string(),
@@ -289,7 +299,7 @@ impl LuaParser {
     fn extract_while_statement(&self, node: tree_sitter::Node, content: &str) -> WhileStatement {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         WhileStatement {
             line: start.row,
             content: text.to_string(),
@@ -299,7 +309,7 @@ impl LuaParser {
     fn extract_repeat_statement(&self, node: tree_sitter::Node, content: &str) -> RepeatStatement {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         RepeatStatement {
             line: start.row,
             content: text.to_string(),
@@ -309,7 +319,7 @@ impl LuaParser {
     fn extract_return_statement(&self, node: tree_sitter::Node, content: &str) -> ReturnStatement {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ReturnStatement {
             line: start.row,
             content: text.to_string(),
@@ -319,7 +329,7 @@ impl LuaParser {
     fn extract_table_info(&self, node: tree_sitter::Node, content: &str) -> TableInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         TableInfo {
             line: start.row,
             content: text.to_string(),
@@ -329,14 +339,14 @@ impl LuaParser {
     fn extract_function_call(&self, node: tree_sitter::Node, content: &str) -> FunctionCall {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract function name
         let name = if let Some(paren_pos) = text.find('(') {
             text[..paren_pos].trim().to_string()
         } else {
             text.to_string()
         };
-        
+
         FunctionCall {
             name,
             line: start.row,
@@ -347,7 +357,7 @@ impl LuaParser {
     fn extract_method_call(&self, node: tree_sitter::Node, content: &str) -> MethodCall {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract method name (after colon)
         let name = if let Some(colon_pos) = text.find(':') {
             let after_colon = &text[colon_pos + 1..];
@@ -359,7 +369,7 @@ impl LuaParser {
         } else {
             text.to_string()
         };
-        
+
         MethodCall {
             name,
             line: start.row,
@@ -370,7 +380,7 @@ impl LuaParser {
     fn extract_string_info(&self, node: tree_sitter::Node, content: &str) -> StringInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         StringInfo {
             value: text.to_string(),
             line: start.row,
@@ -380,7 +390,7 @@ impl LuaParser {
     fn extract_number_info(&self, node: tree_sitter::Node, content: &str) -> NumberInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         NumberInfo {
             value: text.to_string(),
             line: start.row,
@@ -390,7 +400,7 @@ impl LuaParser {
     fn extract_boolean_info(&self, node: tree_sitter::Node, content: &str) -> BooleanInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         BooleanInfo {
             value: text == "true",
             line: start.row,
@@ -400,7 +410,7 @@ impl LuaParser {
     fn extract_comment_info(&self, node: tree_sitter::Node, content: &str) -> CommentInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         CommentInfo {
             content: text.to_string(),
             line: start.row,
@@ -410,7 +420,7 @@ impl LuaParser {
     fn extract_identifier_info(&self, node: tree_sitter::Node, content: &str) -> IdentifierInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         IdentifierInfo {
             name: text.to_string(),
             line: start.row,
@@ -533,41 +543,35 @@ impl LuaDocument {
 
     /// Get all function names
     pub fn get_function_names(&self) -> Vec<String> {
-        self.functions.iter()
-            .map(|f| f.name.clone())
-            .collect()
+        self.functions.iter().map(|f| f.name.clone()).collect()
     }
 
     /// Get all local functions
     pub fn get_local_functions(&self) -> Vec<&FunctionInfo> {
-        self.functions.iter()
-            .filter(|f| f.is_local)
-            .collect()
+        self.functions.iter().filter(|f| f.is_local).collect()
     }
 
     /// Get all global functions
     pub fn get_global_functions(&self) -> Vec<&FunctionInfo> {
-        self.functions.iter()
-            .filter(|f| !f.is_local)
-            .collect()
+        self.functions.iter().filter(|f| !f.is_local).collect()
     }
 
     /// Get all variable names
     pub fn get_variable_names(&self) -> Vec<String> {
         let mut names = Vec::new();
-        
+
         // From variable declarations
         for var_decl in &self.variable_declarations {
             names.extend(var_decl.variables.clone());
         }
-        
+
         // From assignments
         for assignment in &self.assignments {
             if let Some(var_name) = assignment.left_side.split(',').next() {
                 names.push(var_name.trim().to_string());
             }
         }
-        
+
         names.sort();
         names.dedup();
         names
@@ -576,10 +580,10 @@ impl LuaDocument {
     /// Get all function calls
     pub fn get_all_function_calls(&self) -> Vec<String> {
         let mut calls = Vec::new();
-        
+
         calls.extend(self.function_calls.iter().map(|c| c.name.clone()));
         calls.extend(self.method_calls.iter().map(|m| m.name.clone()));
-        
+
         calls.sort();
         calls.dedup();
         calls

@@ -6,8 +6,8 @@
 //! - Performance improvements are measurable
 //! - Security analysis detects real vulnerabilities
 
+use parser_core::{ProgrammingLanguage, UniversalDependencies};
 use std::time::Instant;
-use parser_core::{UniversalDependencies, ProgrammingLanguage};
 
 fn sample_file_path(language: ProgrammingLanguage) -> &'static str {
     match language {
@@ -449,7 +449,8 @@ mod integration_tests {
 
     #[tokio::test]
     async fn test_universal_dependencies_functionality() {
-        let deps = UniversalDependencies::init().expect("Failed to initialize universal dependencies");
+        let deps =
+            UniversalDependencies::init().expect("Failed to initialize universal dependencies");
 
         // Test tokei integration
         assert!(deps.tokei_analyzer.is_available());
@@ -1053,7 +1054,8 @@ mod ast_grep_multi_pattern_tests {
             Pattern::new("let $VAR = $VALUE;").unwrap(),
         ];
 
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search failed");
 
         // Should find both patterns
@@ -1061,22 +1063,33 @@ mod ast_grep_multi_pattern_tests {
 
         // Check function pattern results
         let fn_pattern_key = "fn $NAME() -> $TYPE { $BODY }";
-        assert!(results.contains_key(fn_pattern_key), "Should find function pattern");
+        assert!(
+            results.contains_key(fn_pattern_key),
+            "Should find function pattern"
+        );
         assert_eq!(results[fn_pattern_key].len(), 2, "Should find 2 functions");
 
         // Check variable pattern results
         let var_pattern_key = "let $VAR = $VALUE;";
-        assert!(results.contains_key(var_pattern_key), "Should find variable pattern");
+        assert!(
+            results.contains_key(var_pattern_key),
+            "Should find variable pattern"
+        );
         assert_eq!(results[var_pattern_key].len(), 2, "Should find 2 variables");
 
         // Verify stats were updated
         let stats = engine.stats();
-        assert_eq!(stats.total_searches, 1, "Should record 1 multi-pattern search");
+        assert_eq!(
+            stats.total_searches, 1,
+            "Should record 1 multi-pattern search"
+        );
         assert_eq!(stats.total_patterns, 2, "Should record 2 patterns");
         assert_eq!(stats.total_matches, 4, "Should find 4 total matches");
 
-        println!("✅ Multi-pattern Rust search: {} matches across {} patterns",
-                 stats.total_matches, stats.total_patterns);
+        println!(
+            "✅ Multi-pattern Rust search: {} matches across {} patterns",
+            stats.total_matches, stats.total_patterns
+        );
     }
 
     #[test]
@@ -1098,7 +1111,8 @@ mod ast_grep_multi_pattern_tests {
             Pattern::new("function $NAME() { $BODY }").unwrap(),
         ];
 
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search failed");
 
         // Should find all variable declarations and functions
@@ -1108,7 +1122,10 @@ mod ast_grep_multi_pattern_tests {
         assert!(stats.total_matches >= 4, "Should find at least 4 matches");
         assert_eq!(stats.total_patterns, 4, "Should use 4 patterns");
 
-        println!("✅ Multi-pattern JavaScript search: {} matches", stats.total_matches);
+        println!(
+            "✅ Multi-pattern JavaScript search: {} matches",
+            stats.total_matches
+        );
     }
 
     #[test]
@@ -1139,15 +1156,22 @@ y = 20
             Pattern::new("$VAR = $VALUE").unwrap(),
         ];
 
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search failed");
 
         assert!(results.len() >= 2, "Should find at least 2 pattern types");
 
         let stats = engine.stats();
-        assert!(stats.total_matches >= 3, "Should find at least class, methods, and variables");
+        assert!(
+            stats.total_matches >= 3,
+            "Should find at least class, methods, and variables"
+        );
 
-        println!("✅ Multi-pattern Python search: {} matches", stats.total_matches);
+        println!(
+            "✅ Multi-pattern Python search: {} matches",
+            stats.total_matches
+        );
     }
 
     #[test]
@@ -1178,18 +1202,25 @@ y = 20
         ];
 
         let start = Instant::now();
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search failed");
         let duration = start.elapsed();
 
         // Should be fast even with multiple patterns
-        assert!(duration.as_millis() < 100, "Multi-pattern search should complete quickly");
+        assert!(
+            duration.as_millis() < 100,
+            "Multi-pattern search should complete quickly"
+        );
 
         let total_matches: usize = results.values().map(|v| v.len()).sum();
         assert!(total_matches >= 6, "Should find multiple matches");
 
-        println!("✅ Multi-pattern performance: {} matches in {}ms",
-                 total_matches, duration.as_millis());
+        println!(
+            "✅ Multi-pattern performance: {} matches in {}ms",
+            total_matches,
+            duration.as_millis()
+        );
     }
 
     #[test]
@@ -1202,17 +1233,22 @@ y = 20
 
         let patterns = vec![
             Pattern::new("class $NAME { $BODY }").unwrap(), // Won't match in Rust
-            Pattern::new("import $MODULE").unwrap(),         // Won't match
+            Pattern::new("import $MODULE").unwrap(),        // Won't match
         ];
 
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search should succeed even with no matches");
 
         // Should return empty results for non-matching patterns
         assert_eq!(results.len(), 2, "Should return entries for both patterns");
 
         for (_, matches) in results.iter() {
-            assert_eq!(matches.len(), 0, "Non-matching patterns should have empty results");
+            assert_eq!(
+                matches.len(),
+                0,
+                "Non-matching patterns should have empty results"
+            );
         }
 
         println!("✅ Multi-pattern empty results handled correctly");
@@ -1228,11 +1264,12 @@ y = 20
         "#;
 
         let patterns = vec![
-            Pattern::new("const $VAR = $VALUE;").unwrap(),       // Matches both
-            Pattern::new("const $VAR = { $PROPS };").unwrap(),   // Also matches both
+            Pattern::new("const $VAR = $VALUE;").unwrap(), // Matches both
+            Pattern::new("const $VAR = { $PROPS };").unwrap(), // Also matches both
         ];
 
-        let results = engine.search_multiple(code, &patterns)
+        let results = engine
+            .search_multiple(code, &patterns)
             .expect("Multi-pattern search failed");
 
         // Both patterns should match the same code
@@ -1241,7 +1278,10 @@ y = 20
         let total_matches: usize = results.values().map(|v| v.len()).sum();
         assert_eq!(total_matches, 4, "Should find overlapping matches");
 
-        println!("✅ Multi-pattern overlapping matches: {} total", total_matches);
+        println!(
+            "✅ Multi-pattern overlapping matches: {} total",
+            total_matches
+        );
     }
 
     #[test]
@@ -1263,15 +1303,25 @@ y = 20
         let stats_after_second = engine.stats();
 
         // Stats should accumulate
-        assert_eq!(stats_after_second.total_searches, 2, "Should record 2 searches");
-        assert_eq!(stats_after_second.total_patterns, 4, "Should record 4 total patterns (2+2)");
-        assert!(stats_after_second.total_matches > stats_after_first.total_matches,
-                "Matches should accumulate");
+        assert_eq!(
+            stats_after_second.total_searches, 2,
+            "Should record 2 searches"
+        );
+        assert_eq!(
+            stats_after_second.total_patterns, 4,
+            "Should record 4 total patterns (2+2)"
+        );
+        assert!(
+            stats_after_second.total_matches > stats_after_first.total_matches,
+            "Matches should accumulate"
+        );
 
-        println!("✅ Stats accumulation: {} searches, {} total patterns, {} total matches",
-                 stats_after_second.total_searches,
-                 stats_after_second.total_patterns,
-                 stats_after_second.total_matches);
+        println!(
+            "✅ Stats accumulation: {} searches, {} total patterns, {} total matches",
+            stats_after_second.total_searches,
+            stats_after_second.total_patterns,
+            stats_after_second.total_matches
+        );
     }
 
     #[test]
@@ -1279,13 +1329,14 @@ y = 20
         let mut engine = AstGrep::new("rust").expect("Failed to create Rust engine");
 
         let code = "fn foo() { let x = 10; }";
-        let patterns = vec![
-            Pattern::new("fn $NAME() { $BODY }").unwrap(),
-        ];
+        let patterns = vec![Pattern::new("fn $NAME() { $BODY }").unwrap()];
 
         // Do a search
         let _ = engine.search_multiple(code, &patterns).unwrap();
-        assert!(engine.stats().total_searches > 0, "Should have recorded searches");
+        assert!(
+            engine.stats().total_searches > 0,
+            "Should have recorded searches"
+        );
 
         // Reset stats
         engine.reset_stats();

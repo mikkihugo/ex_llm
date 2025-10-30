@@ -634,7 +634,8 @@ pub fn detect_language_by_manifest_nif(
     // Validate detected language against the centralized language registry
     let language = if detected_language != "unknown" {
         // Check if the detected language is supported by the registry
-        if let Some(registry_lang) = parser_core::language_registry::get_language(detected_language) {
+        if let Some(registry_lang) = parser_core::language_registry::get_language(detected_language)
+        {
             registry_lang.id.clone()
         } else {
             // Language not in registry, return unknown
@@ -645,7 +646,11 @@ pub fn detect_language_by_manifest_nif(
     };
 
     // Adjust confidence if language is not supported
-    let final_confidence = if language == "unknown" { 0.0 } else { confidence };
+    let final_confidence = if language == "unknown" {
+        0.0
+    } else {
+        confidence
+    };
 
     Ok(LanguageDetectionResult {
         language,

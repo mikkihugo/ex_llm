@@ -661,8 +661,8 @@ defmodule Singularity.CodeAnalyzer do
   ## Examples
 
       {:ok, result} = CodeAnalyzer.analyze_and_store(file_id)
-      IO.inspect(result.analysis.quality_score)
-      IO.inspect(result.stored.id)
+      result.analysis.quality_score
+      result.stored.id
 
   """
   def analyze_and_store(file_id, opts \\ []) do

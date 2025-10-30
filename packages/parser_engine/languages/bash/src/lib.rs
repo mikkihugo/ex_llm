@@ -46,8 +46,13 @@ impl LanguageParser for BashParser {
 
         // Use RCA for real complexity and accurate LOC metrics
         let (complexity_score, _sloc, ploc, cloc, blank_lines) =
-            parser_core::calculate_rca_complexity(&ast.content, "bash")
-                .unwrap_or((1.0, ast.content.lines().count() as u64, ast.content.lines().count() as u64, comments.len() as u64, 0));
+            parser_core::calculate_rca_complexity(&ast.content, "bash").unwrap_or((
+                1.0,
+                ast.content.lines().count() as u64,
+                ast.content.lines().count() as u64,
+                comments.len() as u64,
+                0,
+            ));
 
         Ok(LanguageMetrics {
             lines_of_code: ploc.saturating_sub(blank_lines + cloc),
@@ -55,7 +60,7 @@ impl LanguageParser for BashParser {
             blank_lines,
             total_lines: ast.content.lines().count() as u64,
             functions: functions.len() as u64,
-            classes: 0, // Bash doesn't have classes
+            classes: 0,       // Bash doesn't have classes
             complexity_score, // Real cyclomatic complexity from RCA!
             ..LanguageMetrics::default()
         })

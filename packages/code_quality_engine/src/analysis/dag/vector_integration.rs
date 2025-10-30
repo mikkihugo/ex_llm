@@ -487,9 +487,21 @@ impl VectorIntegration {
             maintainability: self.calculate_maintainability_index(content),
             function_count: result.functions.len(),
             class_count: result.classes.len(),
-            halstead_volume: result.complexity_metrics.get("halstead_volume").copied().unwrap_or(0.0),
-            halstead_difficulty: result.complexity_metrics.get("halstead_difficulty").copied().unwrap_or(0.0),
-            halstead_effort: result.complexity_metrics.get("halstead_effort").copied().unwrap_or(0.0),
+            halstead_volume: result
+                .complexity_metrics
+                .get("halstead_volume")
+                .copied()
+                .unwrap_or(0.0),
+            halstead_difficulty: result
+                .complexity_metrics
+                .get("halstead_difficulty")
+                .copied()
+                .unwrap_or(0.0),
+            halstead_effort: result
+                .complexity_metrics
+                .get("halstead_effort")
+                .copied()
+                .unwrap_or(0.0),
             total_lines: content.lines().count(),
             code_lines: content
                 .lines()
@@ -1449,10 +1461,10 @@ impl VectorIntegration {
 
         // Generate context-aware prompts with file path context
         let prompts = self.generate_microservice_prompts(
-            &ms_patterns, 
-            architecture_type, 
+            &ms_patterns,
+            architecture_type,
             related_files,
-            file_path
+            file_path,
         );
 
         // Inject prompts into SPARC system

@@ -646,8 +646,7 @@ impl CodeGraphBuilder {
         let mut graph = CodeGraph::new(GraphType::SemanticGraph);
 
         // Build CodeMetadata list for vectorization
-        let metadata_list: Vec<CodeMetadata> = metadata_cache.values().cloned()
-            .collect();
+        let metadata_list: Vec<CodeMetadata> = metadata_cache.values().cloned().collect();
 
         // Initialize ML vectorizer with production algorithms
         let vectorizer = MLVectorizer::new_from_metadata(&metadata_list, 1000)?;

@@ -1,10 +1,10 @@
 //! Benchmarks for Code Quality Engine performance testing
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use code_quality_engine::analyzer::CodebaseAnalyzer;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn bench_analyze_rust_code(c: &mut Criterion) {
-    let analyzer = CodebaseAnalyzer::new();
+    let analyzer = CodebaseAnalyzer::new().expect("Failed to create analyzer");
     let rust_code = include_str!("../examples/sample_rust_code.rs");
 
     c.bench_function("analyze_rust_code", |b| {
@@ -15,7 +15,7 @@ fn bench_analyze_rust_code(c: &mut Criterion) {
 }
 
 fn bench_extract_functions(c: &mut Criterion) {
-    let analyzer = CodebaseAnalyzer::new();
+    let analyzer = CodebaseAnalyzer::new().expect("Failed to create analyzer");
     let rust_code = include_str!("../examples/sample_rust_code.rs");
 
     c.bench_function("extract_functions", |b| {
@@ -26,7 +26,7 @@ fn bench_extract_functions(c: &mut Criterion) {
 }
 
 fn bench_language_detection(c: &mut Criterion) {
-    let analyzer = CodebaseAnalyzer::new();
+    let analyzer = CodebaseAnalyzer::new().expect("Failed to create analyzer");
     let languages = vec!["rust", "python", "javascript", "typescript", "go", "java"];
 
     c.bench_function("language_support_check", |b| {
@@ -39,10 +39,16 @@ fn bench_language_detection(c: &mut Criterion) {
 }
 
 fn bench_cross_language_patterns(c: &mut Criterion) {
-    let analyzer = CodebaseAnalyzer::new();
+    let analyzer = CodebaseAnalyzer::new().expect("Failed to create analyzer");
     let files = vec![
-        ("rust".to_string(), include_str!("../examples/sample_rust_code.rs").to_string()),
-        ("python".to_string(), include_str!("../examples/sample_python_code.py").to_string()),
+        (
+            "rust".to_string(),
+            include_str!("../examples/sample_rust_code.rs").to_string(),
+        ),
+        (
+            "python".to_string(),
+            include_str!("../examples/sample_python_code.py").to_string(),
+        ),
     ];
 
     c.bench_function("cross_language_patterns", |b| {
@@ -53,12 +59,13 @@ fn bench_cross_language_patterns(c: &mut Criterion) {
 }
 
 fn bench_language_rules(c: &mut Criterion) {
-    let analyzer = CodebaseAnalyzer::new();
+    let analyzer = CodebaseAnalyzer::new().expect("Failed to create analyzer");
     let rust_code = include_str!("../examples/sample_rust_code.rs");
 
     c.bench_function("language_rules_check", |b| {
         b.iter(|| {
-            let _violations = analyzer.check_language_rules(black_box(rust_code), black_box("rust"));
+            let _violations =
+                analyzer.check_language_rules(black_box(rust_code), black_box("rust"));
         })
     });
 }

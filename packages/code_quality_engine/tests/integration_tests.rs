@@ -99,19 +99,27 @@ mod integration_tests {
         let analyzer = CodebaseAnalyzer::new();
 
         let files = vec![
-            ("rust".to_string(), r#"
+            (
+                "rust".to_string(),
+                r#"
                 use reqwest::Client;
                 async fn fetch_data() -> Result<String, reqwest::Error> {
                     let client = Client::new();
                     client.get("https://api.example.com").send().await?.text().await
                 }
-            "#.to_string()),
-            ("python".to_string(), r#"
+            "#
+                .to_string(),
+            ),
+            (
+                "python".to_string(),
+                r#"
                 import requests
                 def fetch_data():
                     response = requests.get("https://api.example.com")
                     return response.text
-            "#.to_string()),
+            "#
+                .to_string(),
+            ),
         ];
 
         let result = analyzer.detect_cross_language_patterns(&files);

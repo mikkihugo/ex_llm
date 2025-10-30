@@ -15,8 +15,8 @@ pub use parser_core::{PolyglotCodeParser, PolyglotCodeParserFrameworkConfig};
 use parser_core::{
     AnalysisResult as CoreAnalysisResult, ClassInfo as CoreClassInfo,
     CodeMetrics as CoreCodeMetrics, DependencyAnalysis as CoreDependencyAnalysis,
-    FunctionInfo as CoreFunctionInfo, RcaMetrics as CoreRcaMetrics,
-    TreeSitterAnalysis as CoreTreeSitterAnalysis, FrameworkInfo as CoreFrameworkInfo,
+    FrameworkInfo as CoreFrameworkInfo, FunctionInfo as CoreFunctionInfo,
+    RcaMetrics as CoreRcaMetrics, TreeSitterAnalysis as CoreTreeSitterAnalysis,
 };
 
 // NIF-specific wrappers with rustler::NifStruct
@@ -195,9 +195,9 @@ impl From<CoreDependencyAnalysis> for DependencyAnalysis {
             total_dependencies: core.total_dependencies,
             outdated_dependencies: core.outdated_dependencies,
             security_vulnerabilities: core.security_vulnerabilities,
-            frameworks: core.frameworks.map(|frameworks| {
-                frameworks.into_iter().map(|f| f.into()).collect()
-            }),
+            frameworks: core
+                .frameworks
+                .map(|frameworks| frameworks.into_iter().map(|f| f.into()).collect()),
             manifest_file: core.manifest_file,
         }
     }

@@ -144,10 +144,7 @@ impl MetricsCollector {
         };
 
         let mut metrics = self.metrics.write().unwrap();
-        metrics
-            .entry(name.to_string())
-            .or_default()
-            .push(point);
+        metrics.entry(name.to_string()).or_default().push(point);
     }
 
     /// Increment a counter metric

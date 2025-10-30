@@ -3,9 +3,9 @@
 //! PSEUDO CODE: How parsers provide coverage data to analysis-suite.
 
 use anyhow::Result;
-use std::path::Path;
 use parser_core::language_registry::detect_language;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 /// Parser coverage data
 #[derive(Debug, Clone, Serialize, Deserialize)]

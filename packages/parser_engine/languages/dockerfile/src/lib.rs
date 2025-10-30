@@ -1,8 +1,8 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use streaming_iterator::StreamingIterator;
+use tree_sitter::{Language, Parser, Query, QueryCursor};
 
 /// Dockerfile parser using tree-sitter-dockerfile
 pub struct DockerfileParser {
@@ -41,7 +41,7 @@ impl DockerfileParser {
             (shell_statement) @shell
             (comment) @comment
             (string) @string
-            "#
+            "#,
         )?;
 
         Ok(Self {
@@ -52,8 +52,13 @@ impl DockerfileParser {
     }
 
     /// Parse Dockerfile content and extract structured information
-    pub fn parse(&mut self, content: &str) -> Result<DockerfileDocument, Box<dyn std::error::Error>> {
-        let tree = self.parser.parse(content, None)
+    pub fn parse(
+        &mut self,
+        content: &str,
+    ) -> Result<DockerfileDocument, Box<dyn std::error::Error>> {
+        let tree = self
+            .parser
+            .parse(content, None)
             .ok_or("Failed to parse Dockerfile")?;
 
         let mut cursor = QueryCursor::new();
@@ -67,7 +72,7 @@ impl DockerfileParser {
                 let _text = &content[node.byte_range()];
                 let _start = node.start_position();
                 let _end = node.end_position();
-                
+
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "from",
@@ -91,7 +96,7 @@ impl DockerfileParser {
                     18 => "string",
                     _ => "unknown",
                 };
-                
+
                 match capture_name {
                     "from" => {
                         let from_info = self.extract_from_info(node, content);
@@ -173,17 +178,17 @@ impl DockerfileParser {
                 }
             }
         }
-        
+
         Ok(document)
     }
 
     fn extract_from_info(&self, node: tree_sitter::Node, content: &str) -> FromInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract base image from FROM statement
         let base_image = self.extract_base_image(text);
-        
+
         FromInfo {
             base_image,
             line: start.row,
@@ -194,7 +199,7 @@ impl DockerfileParser {
     fn extract_run_info(&self, node: tree_sitter::Node, content: &str) -> RunInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         RunInfo {
             line: start.row,
             content: text.to_string(),
@@ -204,7 +209,7 @@ impl DockerfileParser {
     fn extract_copy_info(&self, node: tree_sitter::Node, content: &str) -> CopyInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         CopyInfo {
             line: start.row,
             content: text.to_string(),
@@ -214,7 +219,7 @@ impl DockerfileParser {
     fn extract_add_info(&self, node: tree_sitter::Node, content: &str) -> AddInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         AddInfo {
             line: start.row,
             content: text.to_string(),
@@ -224,7 +229,7 @@ impl DockerfileParser {
     fn extract_cmd_info(&self, node: tree_sitter::Node, content: &str) -> CmdInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         CmdInfo {
             line: start.row,
             content: text.to_string(),
@@ -234,7 +239,7 @@ impl DockerfileParser {
     fn extract_entrypoint_info(&self, node: tree_sitter::Node, content: &str) -> EntrypointInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         EntrypointInfo {
             line: start.row,
             content: text.to_string(),
@@ -244,7 +249,7 @@ impl DockerfileParser {
     fn extract_env_info(&self, node: tree_sitter::Node, content: &str) -> EnvInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         EnvInfo {
             line: start.row,
             content: text.to_string(),
@@ -254,7 +259,7 @@ impl DockerfileParser {
     fn extract_expose_info(&self, node: tree_sitter::Node, content: &str) -> ExposeInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ExposeInfo {
             line: start.row,
             content: text.to_string(),
@@ -264,7 +269,7 @@ impl DockerfileParser {
     fn extract_volume_info(&self, node: tree_sitter::Node, content: &str) -> VolumeInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         VolumeInfo {
             line: start.row,
             content: text.to_string(),
@@ -274,7 +279,7 @@ impl DockerfileParser {
     fn extract_workdir_info(&self, node: tree_sitter::Node, content: &str) -> WorkdirInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         WorkdirInfo {
             line: start.row,
             content: text.to_string(),
@@ -284,7 +289,7 @@ impl DockerfileParser {
     fn extract_user_info(&self, node: tree_sitter::Node, content: &str) -> UserInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         UserInfo {
             line: start.row,
             content: text.to_string(),
@@ -294,7 +299,7 @@ impl DockerfileParser {
     fn extract_arg_info(&self, node: tree_sitter::Node, content: &str) -> ArgInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ArgInfo {
             line: start.row,
             content: text.to_string(),
@@ -304,7 +309,7 @@ impl DockerfileParser {
     fn extract_label_info(&self, node: tree_sitter::Node, content: &str) -> LabelInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         LabelInfo {
             line: start.row,
             content: text.to_string(),
@@ -314,7 +319,7 @@ impl DockerfileParser {
     fn extract_onbuild_info(&self, node: tree_sitter::Node, content: &str) -> OnbuildInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         OnbuildInfo {
             line: start.row,
             content: text.to_string(),
@@ -324,7 +329,7 @@ impl DockerfileParser {
     fn extract_stopsignal_info(&self, node: tree_sitter::Node, content: &str) -> StopsignalInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         StopsignalInfo {
             line: start.row,
             content: text.to_string(),
@@ -334,7 +339,7 @@ impl DockerfileParser {
     fn extract_healthcheck_info(&self, node: tree_sitter::Node, content: &str) -> HealthcheckInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         HealthcheckInfo {
             line: start.row,
             content: text.to_string(),
@@ -344,7 +349,7 @@ impl DockerfileParser {
     fn extract_shell_info(&self, node: tree_sitter::Node, content: &str) -> ShellInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ShellInfo {
             line: start.row,
             content: text.to_string(),
@@ -354,7 +359,7 @@ impl DockerfileParser {
     fn extract_comment_info(&self, node: tree_sitter::Node, content: &str) -> CommentInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         CommentInfo {
             content: text.to_string(),
             line: start.row,
@@ -364,7 +369,7 @@ impl DockerfileParser {
     fn extract_string_info(&self, node: tree_sitter::Node, content: &str) -> StringInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         StringInfo {
             value: text.to_string(),
             line: start.row,
@@ -519,7 +524,8 @@ impl DockerfileDocument {
 
     /// Get base images used
     pub fn get_base_images(&self) -> Vec<String> {
-        self.froms.iter()
+        self.froms
+            .iter()
             .map(|f| f.base_image.clone())
             .filter(|img| !img.is_empty())
             .collect()
@@ -527,29 +533,23 @@ impl DockerfileDocument {
 
     /// Get exposed ports
     pub fn get_exposed_ports(&self) -> Vec<String> {
-        self.exposes.iter()
-            .map(|e| e.content.clone())
-            .collect()
+        self.exposes.iter().map(|e| e.content.clone()).collect()
     }
 
     /// Get environment variables
     pub fn get_environment_variables(&self) -> Vec<String> {
-        self.envs.iter()
-            .map(|e| e.content.clone())
-            .collect()
+        self.envs.iter().map(|e| e.content.clone()).collect()
     }
 
     /// Get build arguments
     pub fn get_build_arguments(&self) -> Vec<String> {
-        self.args.iter()
-            .map(|a| a.content.clone())
-            .collect()
+        self.args.iter().map(|a| a.content.clone()).collect()
     }
 
     /// Get complexity score
     pub fn get_complexity_score(&self) -> u32 {
         let mut score = 0;
-        
+
         score += self.runs.len() as u32;
         score += self.copies.len() as u32;
         score += self.adds.len() as u32;
@@ -557,7 +557,7 @@ impl DockerfileDocument {
         score += self.volumes.len() as u32;
         score += self.workdirs.len() as u32;
         score += self.labels.len() as u32;
-        
+
         score
     }
 }
@@ -718,12 +718,14 @@ impl LanguageParser for DockerfileParser {
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(&self.language)
+        parser
+            .set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
-        
-        let tree = parser.parse(content, None)
+
+        let tree = parser
+            .parse(content, None)
             .ok_or_else(|| ParseError::ParseError("Failed to parse Dockerfile".to_string()))?;
-        
+
         Ok(AST::new(tree, content.to_string()))
     }
 
@@ -731,11 +733,11 @@ impl LanguageParser for DockerfileParser {
         let content = &ast.content;
         let lines: Vec<&str> = content.lines().collect();
         let total_lines = lines.len() as u32;
-        
+
         let mut blank_lines = 0;
         let mut comment_lines = 0;
         let mut code_lines = 0;
-        
+
         for line in &lines {
             let trimmed = line.trim();
             if trimmed.is_empty() {
@@ -746,7 +748,7 @@ impl LanguageParser for DockerfileParser {
                 code_lines += 1;
             }
         }
-        
+
         // Count Dockerfile instructions
         let mut instruction_count = 0;
         let mut cursor = QueryCursor::new();
@@ -755,7 +757,7 @@ impl LanguageParser for DockerfileParser {
         while matches.next().is_some() {
             instruction_count += 1;
         }
-        
+
         Ok(LanguageMetrics {
             total_lines: total_lines as u64,
             blank_lines: blank_lines as u64,
@@ -783,11 +785,11 @@ impl LanguageParser for DockerfileParser {
                 let end_byte = node.end_byte();
                 let start_line = node.start_position().row as u32 + 1;
                 let end_line = node.end_position().row as u32 + 1;
-                
+
                 // Extract instruction content
                 let instruction_content = &content[start_byte..end_byte];
                 let name = format!("{}_instruction_{}", instruction_type, match_index);
-                
+
                 functions.push(FunctionInfo {
                     name,
                     line_start: start_line,
@@ -828,7 +830,7 @@ impl LanguageParser for DockerfileParser {
                     let comment_content = &content[node.start_byte()..node.end_byte()];
                     let line = node.start_position().row as u32 + 1;
                     let column = node.start_position().column as u32 + 1;
-                    
+
                     comments.push(Comment {
                         content: comment_content.to_string(),
                         line,
@@ -838,7 +840,7 @@ impl LanguageParser for DockerfileParser {
                 }
             }
         }
-        
+
         Ok(comments)
     }
 }

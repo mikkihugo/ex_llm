@@ -288,9 +288,7 @@ impl SparcTemplateGenerator {
         #[cfg(feature = "with-package-indexer")]
         {
             let registry = crate::RegistryTemplate::new();
-            registry
-                .get(template_id)
-                .map(|t| t.template.clone())
+            registry.get(template_id).map(|t| t.template.clone())
         }
         #[cfg(not(feature = "with-package-indexer"))]
         {

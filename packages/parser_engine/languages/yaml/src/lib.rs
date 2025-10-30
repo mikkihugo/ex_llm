@@ -48,9 +48,9 @@ impl LanguageParser for YamlParser {
             lines_of_comments: comments.len() as u64,
             blank_lines: 0, // TODO: implement blank line counting
             total_lines: ast.content.lines().count() as u64,
-            functions: 0, // YAML doesn't have functions
-            classes: 0, // YAML doesn't have classes
-            imports: 0, // YAML doesn't have imports
+            functions: 0,          // YAML doesn't have functions
+            classes: 0,            // YAML doesn't have classes
+            imports: 0,            // YAML doesn't have imports
             complexity_score: 0.0, // TODO: implement complexity calculation
         })
     }

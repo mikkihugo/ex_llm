@@ -129,7 +129,9 @@ pub fn parse_mermaid(diagram_text: &str) -> Result<MermaidDiagram, String> {
 
             // Check for parse errors
             if root.has_error() {
-                diagram.errors.push("Parse error detected in Mermaid syntax".to_string());
+                diagram
+                    .errors
+                    .push("Parse error detected in Mermaid syntax".to_string());
             }
 
             // Extract diagram type from AST root
@@ -148,7 +150,9 @@ pub fn parse_mermaid(diagram_text: &str) -> Result<MermaidDiagram, String> {
             diagram.parsed = !diagram.errors.is_empty() || root.has_error();
         }
         None => {
-            diagram.errors.push("Failed to parse Mermaid diagram".to_string());
+            diagram
+                .errors
+                .push("Failed to parse Mermaid diagram".to_string());
         }
     }
 
@@ -260,7 +264,12 @@ fn extract_node_from_ast(node: Node, diagram: &mut MermaidDiagram, source: &str)
                 id = child.utf8_text(source_bytes).unwrap_or("").to_string();
             }
             "string" | "label" => {
-                label = child.utf8_text(source_bytes).unwrap_or("").to_string().trim_matches('"').to_string();
+                label = child
+                    .utf8_text(source_bytes)
+                    .unwrap_or("")
+                    .to_string()
+                    .trim_matches('"')
+                    .to_string();
             }
             "shape" => {
                 shape = child.utf8_text(source_bytes).unwrap_or("box").to_string();
@@ -533,16 +542,11 @@ fn extract_diagram_metadata(diagram: &mut MermaidDiagram, text: &str) {
 
         // Extract description from comments (lines starting with %%)
         if trimmed.starts_with("%%") && trimmed.len() > 2 {
-            let comment = trimmed
-                .strip_prefix("%%")
-                .unwrap_or("")
-                .trim()
-                .to_string();
+            let comment = trimmed.strip_prefix("%%").unwrap_or("").trim().to_string();
 
             if let Some(existing) = &diagram.metadata.description {
                 // Append to existing description
-                diagram.metadata.description =
-                    Some(format!("{}\n{}", existing, comment));
+                diagram.metadata.description = Some(format!("{}\n{}", existing, comment));
             } else {
                 diagram.metadata.description = Some(comment);
             }
@@ -661,10 +665,8 @@ fn calculate_complexity(diagram: &mut MermaidDiagram) {
     };
 
     // Clamp to 0.0-10.0 range
-    diagram.metadata.complexity_score =
-        diagram.metadata.complexity_score.min(10.0).max(0.0);
+    diagram.metadata.complexity_score = diagram.metadata.complexity_score.min(10.0).max(0.0);
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -683,7 +685,7 @@ mod tests {
         let result = parse_mermaid(mermaid).unwrap();
         // With tree-sitter AST parsing, diagram type should be detected
         assert!(!result.diagram_type.is_empty());
-        assert!(result.nodes.len() > 0 || result.edges.len() > 0);
+        assert!(!result.nodes.is_empty() || !result.edges.is_empty());
     }
 
     #[test]
@@ -695,7 +697,12 @@ mod tests {
 
         let result = parse_mermaid(mermaid).unwrap();
         // Should extract diagram type and basic structure
-        assert!(result.nodes.len() > 0 || result.edges.len() > 0 || result.diagram_type == "flowchart" || result.diagram_type == "generic");
+        assert!(
+            !result.nodes.is_empty()
+                || !result.edges.is_empty()
+                || result.diagram_type == "flowchart"
+                || result.diagram_type == "generic"
+        );
     }
 
     #[test]

@@ -130,10 +130,10 @@ impl VulnerabilityAnalyzer {
     /// Analyze vulnerabilities with CentralCloud security patterns
     pub async fn analyze(&self, content: &str, file_path: &str) -> Result<VulnerabilityAnalysis> {
         let start_time = std::time::Instant::now();
-        
+
         // Perform security analysis
         let vulnerabilities = self.detect_vulnerabilities(content, file_path, &[]).await?;
-        
+
         let duration = start_time.elapsed();
         tracing::info!("Security analysis completed in {:?}", duration);
 

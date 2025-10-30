@@ -100,10 +100,7 @@ impl VectorStore {
         self.vectors.insert(id.clone(), vector);
 
         // Add to file index
-        self.file_vectors
-            .entry(file_path)
-            .or_default()
-            .push(id);
+        self.file_vectors.entry(file_path).or_default().push(id);
     }
 
     /// Get a vector by ID

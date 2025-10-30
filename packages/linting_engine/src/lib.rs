@@ -85,7 +85,11 @@ impl LintingEngineConfig {
             "rust" => self.rust_clippy_enabled,
             "javascript" => self.javascript_eslint_enabled,
             "typescript" => self.typescript_eslint_enabled,
-            "python" => self.python_pylint_enabled || self.python_flake8_enabled || self.python_black_enabled,
+            "python" => {
+                self.python_pylint_enabled
+                    || self.python_flake8_enabled
+                    || self.python_black_enabled
+            }
             "go" => self.go_golangci_enabled,
             "java" => self.java_spotbugs_enabled || self.java_checkstyle_enabled,
             "cpp" | "c++" => self.cpp_clang_tidy_enabled || self.cpp_cppcheck_enabled,

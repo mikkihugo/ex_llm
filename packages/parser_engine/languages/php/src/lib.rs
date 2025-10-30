@@ -4,8 +4,8 @@ use parser_core::{
     Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Tree};
 use tree_sitter::StreamingIterator;
+use tree_sitter::{Node, Parser, Tree};
 
 pub const VERSION: &str = "php-tree-sitter-0.23";
 
@@ -175,11 +175,8 @@ impl LanguageParser for PHPParser {
 
     fn get_comments(&self, ast: &AST) -> Result<Vec<Comment>, ParseError> {
         let language = tree_sitter_php::LANGUAGE_PHP.into();
-        let query = tree_sitter::Query::new(
-            &language,
-            r#"(comment) @comment"#,
-        )
-        .map_err(|err| ParseError::ParseError(err.to_string()))?;
+        let query = tree_sitter::Query::new(&language, r#"(comment) @comment"#)
+            .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut comments = Vec::new();

@@ -4,8 +4,8 @@ use parser_core::{
     Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Tree};
 use tree_sitter::StreamingIterator;
+use tree_sitter::{Node, Parser, Tree};
 
 pub const VERSION: &str = "scala-tree-sitter-0.2";
 
@@ -157,11 +157,9 @@ impl LanguageParser for ScalaParser {
 
     fn get_imports(&self, ast: &AST) -> Result<Vec<Import>, ParseError> {
         let language = tree_sitter_scala::LANGUAGE.into();
-        let query = tree_sitter::Query::new(
-            &language,
-            r#"(import_declaration (identifier) @module)"#,
-        )
-        .map_err(|err| ParseError::ParseError(err.to_string()))?;
+        let query =
+            tree_sitter::Query::new(&language, r#"(import_declaration (identifier) @module)"#)
+                .map_err(|err| ParseError::ParseError(err.to_string()))?;
 
         let mut cursor = tree_sitter::QueryCursor::new();
         let mut imports = Vec::new();

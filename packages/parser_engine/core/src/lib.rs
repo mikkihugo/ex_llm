@@ -323,24 +323,16 @@ impl PolyglotCodeParser {
         // See: https://github.com/tree-sitter/tree-sitter/tree/master/lib/binding_rust
 
         // BEAM Languages - Functional, immutable, built on BEAM VM
-        self.language_cache.insert(
-            "elixir".to_string(),
-            tree_sitter_elixir::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "erlang".to_string(),
-            tree_sitter_erlang::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "gleam".to_string(),
-            tree_sitter_gleam::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("elixir".to_string(), tree_sitter_elixir::LANGUAGE.into());
+        self.language_cache
+            .insert("erlang".to_string(), tree_sitter_erlang::LANGUAGE.into());
+        self.language_cache
+            .insert("gleam".to_string(), tree_sitter_gleam::LANGUAGE.into());
 
         // Systems Programming Languages - For performance-critical code
-        self.language_cache.insert(
-            "rust".to_string(),
-            tree_sitter_rust::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("rust".to_string(), tree_sitter_rust::LANGUAGE.into());
         self.language_cache
             .insert("c".to_string(), tree_sitter_c::LANGUAGE.into());
         self.language_cache
@@ -355,80 +347,50 @@ impl PolyglotCodeParser {
             "typescript".to_string(),
             tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
         );
-        self.language_cache.insert(
-            "json".to_string(),
-            tree_sitter_json::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("json".to_string(), tree_sitter_json::LANGUAGE.into());
 
         // Dynamic Languages - Interpreted, flexible, rapid prototyping
-        self.language_cache.insert(
-            "python".to_string(),
-            tree_sitter_python::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("python".to_string(), tree_sitter_python::LANGUAGE.into());
         self.language_cache
             .insert("lua".to_string(), tree_sitter_lua::LANGUAGE.into());
-        self.language_cache.insert(
-            "bash".to_string(),
-            tree_sitter_bash::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("bash".to_string(), tree_sitter_bash::LANGUAGE.into());
 
         // Other Languages - Special purpose and ecosystem languages
         self.language_cache
             .insert("go".to_string(), tree_sitter_go::LANGUAGE.into());
-        self.language_cache.insert(
-            "java".to_string(),
-            tree_sitter_java::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "csharp".to_string(),
-            tree_sitter_c_sharp::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "yaml".to_string(),
-            tree_sitter_yaml::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "sql".to_string(),
-            tree_sitter_sequel::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("java".to_string(), tree_sitter_java::LANGUAGE.into());
+        self.language_cache
+            .insert("csharp".to_string(), tree_sitter_c_sharp::LANGUAGE.into());
+        self.language_cache
+            .insert("yaml".to_string(), tree_sitter_yaml::LANGUAGE.into());
+        self.language_cache
+            .insert("sql".to_string(), tree_sitter_sequel::LANGUAGE.into());
         self.language_cache.insert(
             "dockerfile".to_string(),
             tree_sitter_dockerfile_updated::language(),
         );
-        self.language_cache.insert(
-            "toml".to_string(),
-            tree_sitter_toml_ng::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "markdown".to_string(),
-            tree_sitter_md::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("toml".to_string(), tree_sitter_toml_ng::LANGUAGE.into());
+        self.language_cache
+            .insert("markdown".to_string(), tree_sitter_md::LANGUAGE.into());
 
         // NEW: Additional language parsers
-        self.language_cache.insert(
-            "ruby".to_string(),
-            tree_sitter_ruby::language(),
-        );
-        self.language_cache.insert(
-            "php".to_string(),
-            tree_sitter_php::LANGUAGE_PHP.into(),
-        );
-        self.language_cache.insert(
-            "dart".to_string(),
-            tree_sitter_dart::language(),
-        );
-        self.language_cache.insert(
-            "swift".to_string(),
-            tree_sitter_swift::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "clojure".to_string(),
-            tree_sitter_clojure::LANGUAGE.into(),
-        );
-        self.language_cache.insert(
-            "scala".to_string(),
-            tree_sitter_scala::LANGUAGE.into(),
-        );
+        self.language_cache
+            .insert("ruby".to_string(), tree_sitter_ruby::language());
+        self.language_cache
+            .insert("php".to_string(), tree_sitter_php::LANGUAGE_PHP.into());
+        self.language_cache
+            .insert("dart".to_string(), tree_sitter_dart::language());
+        self.language_cache
+            .insert("swift".to_string(), tree_sitter_swift::LANGUAGE.into());
+        self.language_cache
+            .insert("clojure".to_string(), tree_sitter_clojure::LANGUAGE.into());
+        self.language_cache
+            .insert("scala".to_string(), tree_sitter_scala::LANGUAGE.into());
 
         tracing::info!(
             "Initialized {} tree-sitter language parsers",
@@ -504,16 +466,13 @@ impl PolyglotCodeParser {
         use crate::language_registry::get_language_by_alias;
 
         // Resolve incoming identifier to a concrete LANG variant
-        let resolved_lang = self
-            .code_analyzer
-            .language_from_str(language)
-            .or_else(|| {
-                get_language_by_alias(&language.to_lowercase()).and_then(|info| {
-                    self.code_analyzer
-                        .language_from_str(&info.name)
-                        .or_else(|| self.code_analyzer.language_from_str(&info.id))
-                })
-            });
+        let resolved_lang = self.code_analyzer.language_from_str(language).or_else(|| {
+            get_language_by_alias(&language.to_lowercase()).and_then(|info| {
+                self.code_analyzer
+                    .language_from_str(&info.name)
+                    .or_else(|| self.code_analyzer.language_from_str(&info.id))
+            })
+        });
 
         if let Some(lang) = resolved_lang {
             match self.code_analyzer.analyze_language(
@@ -524,7 +483,10 @@ impl PolyglotCodeParser {
                 Ok(result) => {
                     let metrics = result.metrics();
                     return Ok(RcaMetrics {
-                        cyclomatic_complexity: format!("{:.1}", metrics.cyclomatic.cyclomatic_average()),
+                        cyclomatic_complexity: format!(
+                            "{:.1}",
+                            metrics.cyclomatic.cyclomatic_average()
+                        ),
                         halstead_metrics: serde_json::to_string(&metrics.halstead)?,
                         maintainability_index: format!("{:.2}", metrics.mi.mi_original()),
                         source_lines_of_code: metrics.loc.sloc() as u64,
@@ -635,7 +597,6 @@ impl PolyglotCodeParser {
             manifest_file: analysis_result.manifest_found,
         })
     }
-
 }
 
 impl Default for PolyglotCodeParser {
@@ -836,15 +797,13 @@ pub fn calculate_rca_complexity(
     static ANALYZER: OnceLock<SingularityCodeAnalyzer> = OnceLock::new();
     let analyzer = ANALYZER.get_or_init(SingularityCodeAnalyzer::new);
 
-    let resolved_lang = analyzer
-        .language_from_str(language)
-        .or_else(|| {
-            get_language_by_alias(&language.to_lowercase()).and_then(|info| {
-                analyzer
-                    .language_from_str(&info.name)
-                    .or_else(|| analyzer.language_from_str(&info.id))
-            })
-        });
+    let resolved_lang = analyzer.language_from_str(language).or_else(|| {
+        get_language_by_alias(&language.to_lowercase()).and_then(|info| {
+            analyzer
+                .language_from_str(&info.name)
+                .or_else(|| analyzer.language_from_str(&info.id))
+        })
+    });
 
     let lang = match resolved_lang {
         Some(lang) => lang,
@@ -1048,229 +1007,229 @@ end
     }
 
     /*
-    #[test]
-    fn test_parse_code_rust() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let rust_code = r#"
-fn main() {
-    let x = 42;
-    println!("Hello, world!");
-}
-"#;
-        let result = parser.parse_code(rust_code, "rust").unwrap();
-        assert_eq!(result.language, "Rust");
-        assert!(result.functions.len() >= 0);
-        assert!(result.comments.len() >= 0);
+        #[test]
+        fn test_parse_code_rust() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let rust_code = r#"
+    fn main() {
+        let x = 42;
+        println!("Hello, world!");
     }
-
-    #[test]
-    fn test_parse_code_elixir() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let elixir_code = r#"
-defmodule Test do
-  def main do
-    x = 42
-    IO.puts("Hello, world!")
-  end
-end
-"#;
-        let result = parser.parse_code(elixir_code, "elixir").unwrap();
-        assert_eq!(result.language, "Elixir");
-        assert!(result.functions.len() >= 0);
-        assert!(result.comments.len() >= 0);
-    }
-
-    #[test]
-    fn test_parse_code_javascript() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let js_code = r#"
-function main() {
-    const x = 42;
-    console.log("Hello, world!");
-}
-"#;
-        let result = parser.parse_code(js_code, "javascript").unwrap();
-        assert_eq!(result.language, "JavaScript");
-        assert!(result.functions.len() >= 0);
-        assert!(result.comments.len() >= 0);
-    }
-
-    #[test]
-    fn test_parse_code_empty() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let result = parser.parse_code("", "rust").unwrap();
-        assert_eq!(result.language, "Rust");
-        assert_eq!(result.functions.len(), 0);
-        assert_eq!(result.comments.len(), 0);
-    }
-
-    #[test]
-    fn test_parse_code_with_comments() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = r#"
-// This is a comment
-fn main() {
-    // Another comment
-    println!("Hello, world!");
-}
-"#;
-        let result = parser.parse_code(code, "rust").unwrap();
-        assert!(result.comments.len() > 0);
-    }
-
-    #[test]
-    fn test_parse_code_with_functions() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = r#"
-fn main() {
-    println!("Hello, world!");
-}
-
-fn helper() {
-    println!("Helper function");
-}
-"#;
-        let result = parser.parse_code(code, "rust").unwrap();
-        assert!(result.functions.len() >= 1);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = r#"
-fn main() {
-    let x = 42;
-    println!("Hello, world!");
-}
-"#;
-        let result = parser.analyze_code_metrics(code, "rust").unwrap();
-        assert!(result.basic_metrics.lines_of_code > 0);
-        assert!(result.rca_metrics.cyclomatic_complexity >= 0);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_elixir() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = r#"
-defmodule Test do
-  def main do
-    x = 42
-    IO.puts("Hello, world!")
-  end
-end
-"#;
-        let result = parser.analyze_code_metrics(code, "elixir").unwrap();
-        assert!(result.basic_metrics.lines_of_code > 0);
-        // Elixir should use basic RCA metrics
-        assert!(result.rca_metrics.cyclomatic_complexity >= 0);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_unsupported_language() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = "some code";
-        let result = parser.analyze_code_metrics(code, "nonexistent");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_empty() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let result = parser.analyze_code_metrics("", "rust").unwrap();
-        assert_eq!(result.basic_metrics.lines_of_code, 0);
-        assert_eq!(result.rca_metrics.cyclomatic_complexity, 0);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_large_code() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let mut code = String::new();
-        for i in 0..100 {
-            code.push_str(&format!(
-                "fn function_{}() {{\n    println!(\"Function {}\");\n}}\n",
-                i, i
-            ));
+    "#;
+            let result = parser.parse_code(rust_code, "rust").unwrap();
+            assert_eq!(result.language, "Rust");
+            assert!(result.functions.len() >= 0);
+            assert!(result.comments.len() >= 0);
         }
 
-        let result = parser.analyze_code_metrics(&code, "rust").unwrap();
-        assert!(result.basic_metrics.lines_of_code > 100);
-        assert!(result.functions.len() >= 100);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_complex_code() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = r#"
-fn complex_function(x: i32, y: i32) -> i32 {
-    if x > 0 {
-        if y > 0 {
-            x + y
-        } else {
-            x - y
+        #[test]
+        fn test_parse_code_elixir() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let elixir_code = r#"
+    defmodule Test do
+      def main do
+        x = 42
+        IO.puts("Hello, world!")
+      end
+    end
+    "#;
+            let result = parser.parse_code(elixir_code, "elixir").unwrap();
+            assert_eq!(result.language, "Elixir");
+            assert!(result.functions.len() >= 0);
+            assert!(result.comments.len() >= 0);
         }
-    } else {
-        if y > 0 {
-            y - x
-        } else {
-            -(x + y)
+
+        #[test]
+        fn test_parse_code_javascript() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let js_code = r#"
+    function main() {
+        const x = 42;
+        console.log("Hello, world!");
+    }
+    "#;
+            let result = parser.parse_code(js_code, "javascript").unwrap();
+            assert_eq!(result.language, "JavaScript");
+            assert!(result.functions.len() >= 0);
+            assert!(result.comments.len() >= 0);
         }
+
+        #[test]
+        fn test_parse_code_empty() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let result = parser.parse_code("", "rust").unwrap();
+            assert_eq!(result.language, "Rust");
+            assert_eq!(result.functions.len(), 0);
+            assert_eq!(result.comments.len(), 0);
+        }
+
+        #[test]
+        fn test_parse_code_with_comments() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = r#"
+    // This is a comment
+    fn main() {
+        // Another comment
+        println!("Hello, world!");
     }
-}
+    "#;
+            let result = parser.parse_code(code, "rust").unwrap();
+            assert!(result.comments.len() > 0);
+        }
 
-fn main() {
-    let result = complex_function(10, 20);
-    println!("Result: {}", result);
-}
-"#;
-        let result = parser.analyze_code_metrics(code, "rust").unwrap();
-        assert!(result.basic_metrics.lines_of_code > 0);
-        assert!(result.rca_metrics.cyclomatic_complexity > 1); // Should have some complexity
-        assert!(result.functions.len() >= 2);
-    }
-
-    #[test]
-    fn test_analyze_code_metrics_multiple_languages() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-
-        // Test Rust
-        let rust_code = "fn main() { println!(\"Hello\"); }";
-        let rust_result = parser.analyze_code_metrics(rust_code, "rust").unwrap();
-        assert_eq!(rust_result.language, "Rust");
-
-        // Test Elixir
-        let elixir_code = "defmodule Test do def main, do: IO.puts(\"Hello\") end";
-        let elixir_result = parser.analyze_code_metrics(elixir_code, "elixir").unwrap();
-        assert_eq!(elixir_result.language, "Elixir");
-
-        // Test JavaScript
-        let js_code = "function main() { console.log('Hello'); }";
-        let js_result = parser.analyze_code_metrics(js_code, "javascript").unwrap();
-        assert_eq!(js_result.language, "JavaScript");
+        #[test]
+        fn test_parse_code_with_functions() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = r#"
+    fn main() {
+        println!("Hello, world!");
     }
 
-    #[test]
-    fn test_analyze_code_metrics_error_handling() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-
-        // Test with invalid language
-        let result = parser.analyze_code_metrics("code", "invalid_language");
-        assert!(result.is_err());
-
-        // Test with empty language
-        let result = parser.analyze_code_metrics("code", "");
-        assert!(result.is_err());
+    fn helper() {
+        println!("Helper function");
     }
+    "#;
+            let result = parser.parse_code(code, "rust").unwrap();
+            assert!(result.functions.len() >= 1);
+        }
 
-    #[test]
-    fn test_analyze_code_metrics_performance() {
-        let mut parser = PolyglotCodeParser::new().unwrap();
-        let code = "fn main() { println!(\"Hello, world!\"); }";
-
-        // Test multiple calls to ensure no performance degradation
-        for _ in 0..10 {
+        #[test]
+        fn test_analyze_code_metrics() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = r#"
+    fn main() {
+        let x = 42;
+        println!("Hello, world!");
+    }
+    "#;
             let result = parser.analyze_code_metrics(code, "rust").unwrap();
             assert!(result.basic_metrics.lines_of_code > 0);
+            assert!(result.rca_metrics.cyclomatic_complexity >= 0);
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_elixir() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = r#"
+    defmodule Test do
+      def main do
+        x = 42
+        IO.puts("Hello, world!")
+      end
+    end
+    "#;
+            let result = parser.analyze_code_metrics(code, "elixir").unwrap();
+            assert!(result.basic_metrics.lines_of_code > 0);
+            // Elixir should use basic RCA metrics
+            assert!(result.rca_metrics.cyclomatic_complexity >= 0);
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_unsupported_language() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = "some code";
+            let result = parser.analyze_code_metrics(code, "nonexistent");
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_empty() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let result = parser.analyze_code_metrics("", "rust").unwrap();
+            assert_eq!(result.basic_metrics.lines_of_code, 0);
+            assert_eq!(result.rca_metrics.cyclomatic_complexity, 0);
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_large_code() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let mut code = String::new();
+            for i in 0..100 {
+                code.push_str(&format!(
+                    "fn function_{}() {{\n    println!(\"Function {}\");\n}}\n",
+                    i, i
+                ));
+            }
+
+            let result = parser.analyze_code_metrics(&code, "rust").unwrap();
+            assert!(result.basic_metrics.lines_of_code > 100);
+            assert!(result.functions.len() >= 100);
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_complex_code() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = r#"
+    fn complex_function(x: i32, y: i32) -> i32 {
+        if x > 0 {
+            if y > 0 {
+                x + y
+            } else {
+                x - y
+            }
+        } else {
+            if y > 0 {
+                y - x
+            } else {
+                -(x + y)
+            }
         }
     }
-    */
+
+    fn main() {
+        let result = complex_function(10, 20);
+        println!("Result: {}", result);
+    }
+    "#;
+            let result = parser.analyze_code_metrics(code, "rust").unwrap();
+            assert!(result.basic_metrics.lines_of_code > 0);
+            assert!(result.rca_metrics.cyclomatic_complexity > 1); // Should have some complexity
+            assert!(result.functions.len() >= 2);
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_multiple_languages() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+
+            // Test Rust
+            let rust_code = "fn main() { println!(\"Hello\"); }";
+            let rust_result = parser.analyze_code_metrics(rust_code, "rust").unwrap();
+            assert_eq!(rust_result.language, "Rust");
+
+            // Test Elixir
+            let elixir_code = "defmodule Test do def main, do: IO.puts(\"Hello\") end";
+            let elixir_result = parser.analyze_code_metrics(elixir_code, "elixir").unwrap();
+            assert_eq!(elixir_result.language, "Elixir");
+
+            // Test JavaScript
+            let js_code = "function main() { console.log('Hello'); }";
+            let js_result = parser.analyze_code_metrics(js_code, "javascript").unwrap();
+            assert_eq!(js_result.language, "JavaScript");
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_error_handling() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+
+            // Test with invalid language
+            let result = parser.analyze_code_metrics("code", "invalid_language");
+            assert!(result.is_err());
+
+            // Test with empty language
+            let result = parser.analyze_code_metrics("code", "");
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_analyze_code_metrics_performance() {
+            let mut parser = PolyglotCodeParser::new().unwrap();
+            let code = "fn main() { println!(\"Hello, world!\"); }";
+
+            // Test multiple calls to ensure no performance degradation
+            for _ in 0..10 {
+                let result = parser.analyze_code_metrics(code, "rust").unwrap();
+                assert!(result.basic_metrics.lines_of_code > 0);
+            }
+        }
+        */
 }

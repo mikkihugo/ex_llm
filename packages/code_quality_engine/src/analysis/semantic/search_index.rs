@@ -392,13 +392,17 @@ impl CodeIndex {
         // Extract Rust function names: fn name( or pub fn name(
         let start_pos = if line.starts_with("pub fn ") { 7 } else { 3 };
         let after_fn = &line[start_pos..];
-        after_fn.find('(').map(|paren_pos| after_fn[..paren_pos].trim().to_string())
+        after_fn
+            .find('(')
+            .map(|paren_pos| after_fn[..paren_pos].trim().to_string())
     }
 
     fn extract_python_function_name(&self, line: &str) -> Option<String> {
         // Extract Python function names: def name(
         let after_def = &line[4..];
-        after_def.find('(').map(|paren_pos| after_def[..paren_pos].trim().to_string())
+        after_def
+            .find('(')
+            .map(|paren_pos| after_def[..paren_pos].trim().to_string())
     }
 
     fn detect_common_patterns(&self, line: &str, patterns: &mut Vec<String>) {

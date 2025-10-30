@@ -8,7 +8,7 @@ use std::collections::HashMap;
 pub fn factorial(n: u64) -> u64 {
     match n {
         0 | 1 => 1,
-        _ => n * factorial(n - 1)
+        _ => n * factorial(n - 1),
     }
 }
 
@@ -77,7 +77,8 @@ pub struct User {
 }
 
 pub fn process_users(users: Vec<User>) -> Vec<User> {
-    users.into_iter()
+    users
+        .into_iter()
         .filter(|user| user.active)
         .map(|mut user| {
             user.name = user.name.trim().to_string();
@@ -147,7 +148,8 @@ pub fn validate_input(input: &str) -> Result<(), AppError> {
 
 /// Iterator processing
 pub fn process_numbers(numbers: Vec<i32>) -> Vec<i32> {
-    numbers.into_iter()
+    numbers
+        .into_iter()
         .filter(|&n| n > 0)
         .map(|n| n * 2)
         .collect()
@@ -185,9 +187,24 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Complex data processing
     let users = vec![
-        User { id: 1, name: " Alice ".to_string(), email: "alice@example.com".to_string(), active: true },
-        User { id: 2, name: " Bob ".to_string(), email: "bob@example.com".to_string(), active: false },
-        User { id: 3, name: " Charlie ".to_string(), email: "charlie@example.com".to_string(), active: true },
+        User {
+            id: 1,
+            name: " Alice ".to_string(),
+            email: "alice@example.com".to_string(),
+            active: true,
+        },
+        User {
+            id: 2,
+            name: " Bob ".to_string(),
+            email: "bob@example.com".to_string(),
+            active: false,
+        },
+        User {
+            id: 3,
+            name: " Charlie ".to_string(),
+            email: "charlie@example.com".to_string(),
+            active: true,
+        },
     ];
 
     let processed_users = process_users(users);

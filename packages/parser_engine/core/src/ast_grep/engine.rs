@@ -449,8 +449,7 @@ impl AstGrep {
         }
 
         for edit in edits.into_iter().rev() {
-            root.edit(edit)
-                .map_err(AstGrepError::ReplacementError)?;
+            root.edit(edit).map_err(AstGrepError::ReplacementError)?;
         }
 
         Ok((root.generate(), replacement_count))

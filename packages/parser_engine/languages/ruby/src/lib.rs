@@ -1,12 +1,11 @@
 //! Ruby parser implemented with tree-sitter and the parser-framework traits.
 
 use parser_core::{
-    Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError,
-    AST,
+    Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Tree};
 use tree_sitter::StreamingIterator;
+use tree_sitter::{Node, Parser, Tree};
 
 pub const VERSION: &str = "ruby-tree-sitter-0.21";
 

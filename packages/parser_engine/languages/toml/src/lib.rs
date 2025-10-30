@@ -1,7 +1,7 @@
-use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
 use parser_core::{
     Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
+use tree_sitter::{Language, Parser, Query, QueryCursor, StreamingIterator};
 
 /// TOML parser using tree-sitter-toml
 pub struct TomlParser {
@@ -17,7 +17,7 @@ impl TomlParser {
         let language = language_fn.into();
         let mut parser = Parser::new();
         parser.set_language(&language)?;
-        
+
         // Query for common TOML elements
         let query = Query::new(
             &language,
@@ -35,7 +35,7 @@ impl TomlParser {
             (comment) @comment
             (bare_key) @bare_key
             (quoted_key) @quoted_key
-            "#
+            "#,
         )?;
 
         Ok(Self {
@@ -47,21 +47,23 @@ impl TomlParser {
 
     /// Parse TOML content and extract structured information
     pub fn parse(&mut self, content: &str) -> Result<TomlDocument, Box<dyn std::error::Error>> {
-        let tree = self.parser.parse(content, None)
+        let tree = self
+            .parser
+            .parse(content, None)
             .ok_or("Failed to parse TOML")?;
-        
+
         let mut cursor = QueryCursor::new();
         let mut captures = cursor.captures(&self.query, tree.root_node(), content.as_bytes());
-        
+
         let mut document = TomlDocument::new();
-        
+
         while let Some((matched_node, _)) = captures.next() {
             for capture in matched_node.captures {
                 let node = capture.node;
                 let _text = &content[node.byte_range()];
                 let _start = node.start_position();
                 let _end = node.end_position();
-                
+
                 // Map capture index to capture name based on query order
                 let capture_name = match capture.index {
                     0 => "table",
@@ -79,7 +81,7 @@ impl TomlParser {
                     12 => "quoted_key",
                     _ => "unknown",
                 };
-                
+
                 match capture_name {
                     "table" => {
                         let table_info = self.extract_table_info(node, content);
@@ -137,17 +139,17 @@ impl TomlParser {
                 }
             }
         }
-        
+
         Ok(document)
     }
 
     fn extract_table_info(&self, node: tree_sitter::Node, content: &str) -> TableInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract table name
         let name = self.extract_table_name(text);
-        
+
         TableInfo {
             name,
             line: start.row,
@@ -158,10 +160,10 @@ impl TomlParser {
     fn extract_table_array_info(&self, node: tree_sitter::Node, content: &str) -> TableArrayInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract table array name
         let name = self.extract_table_array_name(text);
-        
+
         TableArrayInfo {
             name,
             line: start.row,
@@ -172,10 +174,10 @@ impl TomlParser {
     fn extract_key_value_info(&self, node: tree_sitter::Node, content: &str) -> KeyValueInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         // Extract key and value
         let (key, value) = self.extract_key_value(text);
-        
+
         KeyValueInfo {
             key,
             value,
@@ -187,7 +189,7 @@ impl TomlParser {
     fn extract_array_info(&self, node: tree_sitter::Node, content: &str) -> ArrayInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         ArrayInfo {
             line: start.row,
             content: text.to_string(),
@@ -197,7 +199,7 @@ impl TomlParser {
     fn extract_inline_table_info(&self, node: tree_sitter::Node, content: &str) -> InlineTableInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         InlineTableInfo {
             line: start.row,
             content: text.to_string(),
@@ -207,7 +209,7 @@ impl TomlParser {
     fn extract_string_info(&self, node: tree_sitter::Node, content: &str) -> StringInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         StringInfo {
             value: text.to_string(),
             line: start.row,
@@ -217,7 +219,7 @@ impl TomlParser {
     fn extract_integer_info(&self, node: tree_sitter::Node, content: &str) -> IntegerInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         IntegerInfo {
             value: text.to_string(),
             line: start.row,
@@ -227,7 +229,7 @@ impl TomlParser {
     fn extract_float_info(&self, node: tree_sitter::Node, content: &str) -> FloatInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         FloatInfo {
             value: text.to_string(),
             line: start.row,
@@ -237,7 +239,7 @@ impl TomlParser {
     fn extract_boolean_info(&self, node: tree_sitter::Node, content: &str) -> BooleanInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         BooleanInfo {
             value: text.to_lowercase() == "true",
             line: start.row,
@@ -247,7 +249,7 @@ impl TomlParser {
     fn extract_date_info(&self, node: tree_sitter::Node, content: &str) -> DateInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         DateInfo {
             value: text.to_string(),
             line: start.row,
@@ -257,7 +259,7 @@ impl TomlParser {
     fn extract_comment_info(&self, node: tree_sitter::Node, content: &str) -> CommentInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         CommentInfo {
             content: text.to_string(),
             line: start.row,
@@ -267,7 +269,7 @@ impl TomlParser {
     fn extract_bare_key_info(&self, node: tree_sitter::Node, content: &str) -> BareKeyInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         BareKeyInfo {
             key: text.to_string(),
             line: start.row,
@@ -277,7 +279,7 @@ impl TomlParser {
     fn extract_quoted_key_info(&self, node: tree_sitter::Node, content: &str) -> QuotedKeyInfo {
         let text = &content[node.byte_range()];
         let start = node.start_position();
-        
+
         QuotedKeyInfo {
             key: text.to_string(),
             line: start.row,
@@ -413,10 +415,10 @@ impl TomlDocument {
     /// Get all table names
     pub fn get_table_names(&self) -> Vec<String> {
         let mut names = Vec::new();
-        
+
         names.extend(self.tables.iter().map(|t| t.name.clone()));
         names.extend(self.table_arrays.iter().map(|ta| ta.name.clone()));
-        
+
         names.sort();
         names.dedup();
         names
@@ -425,11 +427,11 @@ impl TomlDocument {
     /// Get all keys
     pub fn get_all_keys(&self) -> Vec<String> {
         let mut keys = Vec::new();
-        
+
         keys.extend(self.key_values.iter().map(|kv| kv.key.clone()));
         keys.extend(self.bare_keys.iter().map(|bk| bk.key.clone()));
         keys.extend(self.quoted_keys.iter().map(|qk| qk.key.clone()));
-        
+
         keys.sort();
         keys.dedup();
         keys
@@ -438,24 +440,24 @@ impl TomlDocument {
     /// Get key-value pairs as a map
     pub fn get_key_value_map(&self) -> std::collections::HashMap<String, String> {
         let mut map = std::collections::HashMap::new();
-        
+
         for kv in &self.key_values {
             map.insert(kv.key.clone(), kv.value.clone());
         }
-        
+
         map
     }
 
     /// Get complexity score
     pub fn get_complexity_score(&self) -> u32 {
         let mut score = 0;
-        
+
         score += self.tables.len() as u32;
-        score += self.table_arrays.len() as u32 * 2;  // Arrays are more complex
+        score += self.table_arrays.len() as u32 * 2; // Arrays are more complex
         score += self.key_values.len() as u32;
         score += self.arrays.len() as u32;
         score += self.inline_tables.len() as u32;
-        
+
         score
     }
 }
@@ -565,8 +567,8 @@ target = "x86_64-unknown-linux-gnu"
         let mut parser = TomlParser::new().unwrap();
         let doc = parser.parse(toml).unwrap();
 
-        assert_eq!(doc.tables.len(), 1);  // [dependencies]
-        assert_eq!(doc.table_arrays.len(), 1);  // [[build]]
+        assert_eq!(doc.tables.len(), 1); // [dependencies]
+        assert_eq!(doc.table_arrays.len(), 1); // [[build]]
         assert!(doc.key_values.len() > 0);
         assert_eq!(doc.comments.len(), 1);
     }
@@ -583,12 +585,14 @@ impl LanguageParser for TomlParser {
 
     fn parse(&self, content: &str) -> Result<AST, ParseError> {
         let mut parser = Parser::new();
-        parser.set_language(&self.language)
+        parser
+            .set_language(&self.language)
             .map_err(|err| ParseError::TreeSitterError(err.to_string()))?;
-        
-        let tree = parser.parse(content, None)
+
+        let tree = parser
+            .parse(content, None)
             .ok_or_else(|| ParseError::ParseError("Failed to parse TOML".to_string()))?;
-        
+
         Ok(AST::new(tree, content.to_string()))
     }
 
@@ -596,11 +600,11 @@ impl LanguageParser for TomlParser {
         let content = &ast.content;
         let lines: Vec<&str> = content.lines().collect();
         let total_lines = lines.len() as u32;
-        
+
         let mut blank_lines = 0;
         let mut comment_lines = 0;
         let mut code_lines = 0;
-        
+
         for line in &lines {
             let trimmed = line.trim();
             if trimmed.is_empty() {
@@ -611,16 +615,16 @@ impl LanguageParser for TomlParser {
                 code_lines += 1;
             }
         }
-        
+
         // Count TOML elements
         let mut element_count = 0;
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
+
         while matches.next().is_some() {
             element_count += 1;
         }
-        
+
         Ok(LanguageMetrics {
             total_lines: total_lines as u64,
             blank_lines: blank_lines as u64,
@@ -638,7 +642,7 @@ impl LanguageParser for TomlParser {
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
+
         let mut match_index = 0;
         while let Some(_match) = matches.next() {
             for capture in _match.captures {
@@ -648,11 +652,11 @@ impl LanguageParser for TomlParser {
                 let end_byte = node.end_byte();
                 let start_line = node.start_position().row as u32 + 1;
                 let end_line = node.end_position().row as u32 + 1;
-                
+
                 // Extract element content
                 let element_content = &content[start_byte..end_byte];
                 let name = format!("{}_element_{}", element_type, match_index);
-                
+
                 functions.push(FunctionInfo {
                     name,
                     line_start: start_line,
@@ -670,7 +674,7 @@ impl LanguageParser for TomlParser {
             }
             match_index += 1;
         }
-        
+
         Ok(functions)
     }
 
@@ -684,7 +688,7 @@ impl LanguageParser for TomlParser {
         let content = &ast.content;
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&self.query, ast.tree.root_node(), content.as_bytes());
-        
+
         while let Some(_match) = matches.next() {
             for capture in _match.captures {
                 if capture.node.kind() == "comment" {
@@ -692,7 +696,7 @@ impl LanguageParser for TomlParser {
                     let comment_content = &content[node.start_byte()..node.end_byte()];
                     let line = node.start_position().row as u32 + 1;
                     let column = node.start_position().column as u32 + 1;
-                    
+
                     comments.push(Comment {
                         content: comment_content.to_string(),
                         line,
@@ -702,7 +706,7 @@ impl LanguageParser for TomlParser {
                 }
             }
         }
-        
+
         Ok(comments)
     }
 }

@@ -36,8 +36,7 @@ defmodule Singularity.Agents.RemediationEngine do
       # Get fixes without applying
       {:ok, fixes} = RemediationEngine.generate_fixes("lib/my_module.ex", [])
       Enum.each(fixes, fn fix ->
-        IO.inspect(fix.description)
-        IO.inspect(fix.replacement)
+        {:ok, fix.description, fix.replacement}
       end)
 
       # Apply specific fix

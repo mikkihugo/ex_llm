@@ -435,8 +435,8 @@ pub struct InfrastructureAnalysis {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::TempDir;
     use serde_json::json;
+    use tempfile::TempDir;
 
     use super::*;
 

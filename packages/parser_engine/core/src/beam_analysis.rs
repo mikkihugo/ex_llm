@@ -10,8 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// BEAM-specific analysis result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BeamAnalysisResult {
     /// OTP patterns detected in the code
     pub otp_patterns: OtpPatterns,
@@ -26,8 +25,7 @@ pub struct BeamAnalysisResult {
 }
 
 /// OTP (Open Telecom Platform) patterns
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OtpPatterns {
     /// GenServer implementations
     pub genservers: Vec<GenServerInfo>,
@@ -121,8 +119,7 @@ pub struct DynamicSupervisorInfo {
 }
 
 /// Actor model analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ActorAnalysis {
     /// Process spawning patterns
     pub process_spawning: ProcessSpawningAnalysis,
@@ -133,8 +130,7 @@ pub struct ActorAnalysis {
 }
 
 /// Process spawning analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProcessSpawningAnalysis {
     /// spawn/1 calls
     pub spawn_calls: Vec<SpawnCall>,
@@ -174,8 +170,7 @@ pub struct ProcessRegistration {
 }
 
 /// Message passing analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MessagePassingAnalysis {
     /// send/2 calls
     pub send_calls: Vec<SendCall>,
@@ -213,8 +208,7 @@ pub struct MessagePattern {
 }
 
 /// Mailbox analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MailboxAnalysis {
     /// Estimated message queue size
     pub estimated_queue_size: u32,
@@ -225,8 +219,7 @@ pub struct MailboxAnalysis {
 }
 
 /// Concurrency patterns
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ConcurrencyPatterns {
     /// Agent usage (Elixir)
     pub agents: Vec<AgentInfo>,
@@ -275,8 +268,7 @@ pub struct PortUsage {
 }
 
 /// Fault tolerance analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FaultToleranceAnalysis {
     /// try/catch expressions
     pub try_catch_expressions: Vec<TryCatchExpression>,
@@ -336,8 +328,7 @@ pub struct BeamMetrics {
 }
 
 /// Language-specific features
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LanguageFeatures {
     /// Elixir-specific features
     pub elixir: Option<ElixirFeatures>,
@@ -676,14 +667,6 @@ pub struct WebPatterns {
     pub web_safety_features: Vec<String>,
 }
 
-
-
-
-
-
-
-
-
 impl Default for BeamMetrics {
     fn default() -> Self {
         Self {
@@ -697,4 +680,3 @@ impl Default for BeamMetrics {
         }
     }
 }
-

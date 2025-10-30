@@ -99,7 +99,6 @@ pub struct AstExtraction {
     pub classes: Option<Vec<crate::nif_bindings::ClassMetadataResult>>,
 }
 
-
 impl std::fmt::Debug for CrossLanguageCodePatternsDetector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CrossLanguageCodePatternsDetector")
@@ -302,9 +301,9 @@ impl CrossLanguageCodePatternsDetector {
     /// Get or extract AST for a code snippet, with caching
     #[cfg(feature = "nif")]
     pub fn get_or_extract_ast(&self, code: &str, language_id: &str) -> Option<AstExtraction> {
-        use std::hash::{Hash, Hasher};
         use seahash::SeaHasher;
-        
+        use std::hash::{Hash, Hasher};
+
         // Calculate hash for code + language
         let mut hasher = SeaHasher::new();
         code.hash(&mut hasher);
@@ -338,13 +337,21 @@ impl CrossLanguageCodePatternsDetector {
 
     /// AST-aware API integration pattern detection
     #[cfg(feature = "nif")]
-    fn has_api_pattern_ast(&self, _code: &str, _language_id: &str, ast: Option<&AstExtraction>) -> bool {
+    fn has_api_pattern_ast(
+        &self,
+        _code: &str,
+        _language_id: &str,
+        ast: Option<&AstExtraction>,
+    ) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
                 // Look for HTTP client or API call signatures in function names
                 return functions.iter().any(|f| {
                     let name = f.name.to_lowercase();
-                    name.contains("http") || name.contains("request") || name.contains("fetch") || name.contains("axios")
+                    name.contains("http")
+                        || name.contains("request")
+                        || name.contains("fetch")
+                        || name.contains("axios")
                 });
             }
         }
@@ -355,14 +362,23 @@ impl CrossLanguageCodePatternsDetector {
 
     /// AST-aware error handling pattern detection
     #[cfg(feature = "nif")]
-    fn has_error_handling_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+    fn has_error_handling_pattern_ast(
+        &self,
+        code: &str,
+        language_id: &str,
+        ast: Option<&AstExtraction>,
+    ) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
                 // Look for error/exception/Result/Option in function names or parameters
                 return functions.iter().any(|f| {
                     let name = f.name.to_lowercase();
-                    name.contains("error") || name.contains("result") || name.contains("option") ||
-                    f.parameters.iter().any(|p| p.to_lowercase().contains("error"))
+                    name.contains("error")
+                        || name.contains("result")
+                        || name.contains("option")
+                        || f.parameters
+                            .iter()
+                            .any(|p| p.to_lowercase().contains("error"))
                 });
             }
         }
@@ -373,13 +389,22 @@ impl CrossLanguageCodePatternsDetector {
 
     /// AST-aware logging pattern detection
     #[cfg(feature = "nif")]
-    fn has_logging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+    fn has_logging_pattern_ast(
+        &self,
+        code: &str,
+        language_id: &str,
+        ast: Option<&AstExtraction>,
+    ) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
                 // Look for log/debug/info/warn/error in function names
                 return functions.iter().any(|f| {
                     let name = f.name.to_lowercase();
-                    name.contains("log") || name.contains("debug") || name.contains("info") || name.contains("warn") || name.contains("error")
+                    name.contains("log")
+                        || name.contains("debug")
+                        || name.contains("info")
+                        || name.contains("warn")
+                        || name.contains("error")
                 });
             }
         }
@@ -390,15 +415,23 @@ impl CrossLanguageCodePatternsDetector {
 
     /// AST-aware messaging pattern detection
     #[cfg(feature = "nif")]
-    fn has_messaging_pattern_ast(&self, code: &str, language_id: &str, ast: Option<&AstExtraction>) -> bool {
+    fn has_messaging_pattern_ast(
+        &self,
+        code: &str,
+        language_id: &str,
+        ast: Option<&AstExtraction>,
+    ) -> bool {
         if let Some(ast) = ast {
             if let Some(functions) = &ast.functions {
                 // Look for messaging-related function names
                 return functions.iter().any(|f| {
                     let name = f.name.to_lowercase();
-                    name.contains("publish") || name.contains("subscribe") || 
-                    name.contains("nats") || name.contains("kafka") || 
-                    name.contains("queue") || name.contains("message")
+                    name.contains("publish")
+                        || name.contains("subscribe")
+                        || name.contains("nats")
+                        || name.contains("kafka")
+                        || name.contains("queue")
+                        || name.contains("message")
                 });
             }
         }
@@ -459,7 +492,13 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("pgmq")
                     || code.contains("ex_pgflow")
             }
-            _ => code.contains("nats") || code.contains("kafka") || code.contains("message") || code.contains("pgmq") || code.contains("ex_pgflow"),
+            _ => {
+                code.contains("nats")
+                    || code.contains("kafka")
+                    || code.contains("message")
+                    || code.contains("pgmq")
+                    || code.contains("ex_pgflow")
+            }
         }
     }
 
@@ -541,12 +580,17 @@ mod tests {
         let tokens_by_file = vec![vec![], vec![]]; // Not used in AST path
 
         let patterns = detector.detect_patterns(&files, &tokens_by_file);
-        let found = patterns.iter().any(|p| p.pattern_type == CrossLanguageCodePatternType::ApiIntegration);
+        let found = patterns
+            .iter()
+            .any(|p| p.pattern_type == CrossLanguageCodePatternType::ApiIntegration);
         assert!(found, "Should detect API integration pattern via AST");
 
         // Check cache is populated for both files
         let ast1 = detector.get_or_extract_ast(rust_api_code(), "rust");
         let ast2 = detector.get_or_extract_ast(python_api_code(), "python");
-        assert!(ast1.is_some() && ast2.is_some(), "AST cache should be populated");
+        assert!(
+            ast1.is_some() && ast2.is_some(),
+            "AST cache should be populated"
+        );
     }
 }

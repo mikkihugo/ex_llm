@@ -32,8 +32,7 @@ pub struct RustAnalysisResult {
 }
 
 /// Ownership and borrowing patterns
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OwnershipPatterns {
     /// Move semantics usage
     pub moves: Vec<MovePattern>,
@@ -132,8 +131,7 @@ pub enum SmartPointerType {
 }
 
 /// Trait system analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TraitAnalysis {
     /// Trait definitions
     pub trait_definitions: Vec<TraitDefinition>,
@@ -183,8 +181,7 @@ pub struct TraitObject {
 }
 
 /// Async/await analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AsyncAnalysis {
     /// Async functions
     pub async_functions: Vec<AsyncFunction>,
@@ -233,8 +230,7 @@ pub enum AsyncRuntime {
 }
 
 /// Macro analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MacroAnalysis {
     /// Declarative macros (macro_rules!)
     pub declarative_macros: Vec<DeclarativeMacro>,
@@ -292,8 +288,7 @@ pub struct DeriveMacro {
 }
 
 /// Unsafe code analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UnsafeAnalysis {
     /// Unsafe blocks
     pub unsafe_blocks: Vec<UnsafeBlock>,
@@ -358,8 +353,7 @@ pub struct FfiUsage {
 }
 
 /// Error handling analysis
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ErrorHandlingAnalysis {
     /// Result type usage
     pub result_usage: Vec<ResultUsage>,
@@ -648,9 +642,3 @@ impl RustAnalyzer {
 }
 
 // Default implementations
-
-
-
-
-
-

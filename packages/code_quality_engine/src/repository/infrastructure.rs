@@ -70,7 +70,8 @@ impl DetectionContext {
         for entry in std::fs::read_dir(&self.root_path)
             .ok()
             .into_iter()
-            .flatten().flatten()
+            .flatten()
+            .flatten()
         {
             if let Ok(contents) = std::fs::read_to_string(entry.path()) {
                 if contents.contains(pattern) {

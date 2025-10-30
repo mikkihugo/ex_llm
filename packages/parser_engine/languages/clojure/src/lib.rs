@@ -4,8 +4,8 @@ use parser_core::{
     Class, Comment, FunctionInfo, Import, LanguageMetrics, LanguageParser, ParseError, AST,
 };
 use std::sync::Mutex;
-use tree_sitter::{Node, Parser, Tree};
 use tree_sitter::StreamingIterator;
+use tree_sitter::{Node, Parser, Tree};
 
 pub const VERSION: &str = "clojure-tree-sitter-0.1";
 
@@ -85,9 +85,7 @@ impl LanguageParser for ClojureParser {
             // Check if this is a defn (function definition)
             if let Some(first) = node.named_child(0) {
                 if first.kind() == "sym_lit" {
-                    let symbol = first
-                        .utf8_text(ast.content.as_bytes())
-                        .unwrap_or_default();
+                    let symbol = first.utf8_text(ast.content.as_bytes()).unwrap_or_default();
 
                     if symbol == "defn" {
                         if let Some(name_node) = node.named_child(1) {
@@ -138,9 +136,7 @@ impl LanguageParser for ClojureParser {
         visit_nodes(ast.tree.root_node(), "list_lit", &mut |node| {
             if let Some(first) = node.named_child(0) {
                 if first.kind() == "sym_lit" {
-                    let symbol = first
-                        .utf8_text(ast.content.as_bytes())
-                        .unwrap_or_default();
+                    let symbol = first.utf8_text(ast.content.as_bytes()).unwrap_or_default();
 
                     if symbol == "require" || symbol == "use" {
                         if let Some(arg) = node.named_child(1) {

@@ -75,8 +75,7 @@ pub enum DependencyHealthStatus {
 }
 
 /// Dependency metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DependencyMetadata {
     pub description: Option<String>,
     pub homepage: Option<String>,
@@ -95,8 +94,7 @@ pub struct DependencyMetadata {
 }
 
 /// Dependency usage
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DependencyUsage {
     pub files_using: Vec<String>,
     pub functions_using: Vec<String>,
@@ -572,7 +570,6 @@ impl DependencyHealthAnalyzer {
 }
 
 // Default implementations
-
 
 impl Default for DependencyImpact {
     fn default() -> Self {

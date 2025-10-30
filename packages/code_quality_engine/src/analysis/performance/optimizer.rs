@@ -142,10 +142,10 @@ impl PerformanceOptimizer {
     /// Analyze performance optimizations with CentralCloud patterns
     pub async fn analyze(&self, content: &str, file_path: &str) -> Result<OptimizationAnalysis> {
         let start_time = std::time::Instant::now();
-        
+
         // Perform performance analysis
         let analysis_result = self.detect_optimizations(content, file_path, &[]).await?;
-        
+
         let duration = start_time.elapsed();
         tracing::info!("Performance analysis completed in {:?}", duration);
 

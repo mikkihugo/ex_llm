@@ -423,9 +423,8 @@ mod tests {
 
     #[test]
     fn test_semantic_features() {
-        let features = MLVectorizer::extract_semantic_features(
-            "function complex_algorithm if for while",
-        );
+        let features =
+            MLVectorizer::extract_semantic_features("function complex_algorithm if for while");
         assert_eq!(features.word_count, 5);
         assert!(features.complexity_score > 0.0);
     }

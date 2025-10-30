@@ -127,8 +127,7 @@ pub enum MaturityLevel {
 }
 
 /// Performance profile for capability execution
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PerformanceProfile {
     /// Average execution time in milliseconds
     pub avg_time_ms: Option<f32>,
@@ -232,7 +231,6 @@ impl Default for CapabilityMetadata {
         }
     }
 }
-
 
 /// Capability index for fast lookups
 #[derive(Debug, Default)]
