@@ -29,7 +29,7 @@ defmodule Singularity.Jobs.HealthMetricsWorker do
   def record_health_metrics(codebase_path) do
     %{"codebase_path" => codebase_path}
     |> new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @impl Oban.Worker

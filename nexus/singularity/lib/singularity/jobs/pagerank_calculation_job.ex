@@ -48,7 +48,7 @@ defmodule Singularity.Jobs.PageRankCalculationJob do
   ```elixir
   %{"codebase_id" => "singularity"}
   |> Singularity.Jobs.PageRankCalculationJob.new()
-  |> Oban.insert()
+  |> Singularity.JobQueue.insert()
   ```
 
   ## Performance

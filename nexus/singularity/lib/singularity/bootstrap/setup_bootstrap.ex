@@ -118,7 +118,7 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
     } = spec
 
     case module.new(args, unique_for: :infinity, priority: priority)
-         |> Oban.insert() do
+         |> Singularity.JobQueue.insert() do
       {:ok, job} ->
         Logger.info("Scheduled setup job: #{unique_key} (job_id: #{job.id})")
 

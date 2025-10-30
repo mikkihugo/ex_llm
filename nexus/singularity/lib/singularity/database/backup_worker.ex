@@ -21,7 +21,7 @@ defmodule Singularity.Database.BackupWorker do
     # Schedule a job manually
     %{"type" => "hourly"}
     |> Singularity.Database.BackupWorker.new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   """
 
   use Singularity.JobQueue.Worker, queue: :maintenance
