@@ -30,6 +30,7 @@ impl TechnologyDetection {
             let file_path = entry.path();
 
             if let Some(file_name) = file_path.file_name().and_then(|n| n.to_str()) {
+                #[allow(clippy::collapsible_match)]
                 match file_name {
                     "package.json" | "Cargo.toml" | "mix.exs" | "requirements.txt"
                     | "pyproject.toml" | "go.mod" | "composer.json" => {

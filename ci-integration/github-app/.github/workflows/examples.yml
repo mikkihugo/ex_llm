@@ -1,0 +1,160 @@
+# Example GitHub Actions workflows using Singularity
+
+## Basic Quality Check
+name: Code Quality
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Singularity Analysis
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1  # When published
+        with:
+          enable-intelligence: true
+
+---
+
+## Advanced Quality Gates
+name: Quality Assurance
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Code Quality Analysis
+        id: analysis
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          fail-on-quality-threshold: 7.5
+          severity-threshold: medium
+          exclude-patterns: '**/test/**,**/node_modules/**,**/*.md'
+          format: github
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔍 Code Quality Analysis\n\nQuality Score: **${{ steps.analysis.outputs.quality-score }}/10**\n\n${{ steps.analysis.outputs.results }}`
+            })
+
+---
+
+## Monorepo Analysis
+name: Monorepo Quality
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [api, web, mobile, shared]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze ${{ matrix.package }}
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          working-directory: packages/${{ matrix.package }}
+          exclude-patterns: '**/dist/**,**/build/**,**/coverage/**'
+
+---
+
+## Security-Focused Analysis
+name: Security Scan
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Security Analysis
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          severity-threshold: high
+          format: json
+          api-key: ${{ secrets.SINGULARITY_API_KEY }}
+          enable-intelligence: true
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-analysis.json
+
+---
+
+## Self-Hosted Runner
+name: Enterprise Analysis
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enterprise Code Analysis
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          enable-intelligence: false  # Air-gapped environment
+          fail-on-quality-threshold: 8.0
+          working-directory: src
+
+---
+
+## Multi-Language Monorepo
+name: Multi-Language Analysis
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze Rust Code
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          working-directory: rust
+          exclude-patterns: '**/target/**'
+
+      - name: Analyze Elixir Code
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          working-directory: elixir
+          exclude-patterns: '**/deps/**,**/_build/**'
+
+      - name: Analyze JavaScript
+        uses: ./ci-integration/github-app/action
+        # uses: singularity-incubation/code-quality-action@v1
+        with:
+          working-directory: js
+          exclude-patterns: '**/node_modules/**,**/*.min.js'

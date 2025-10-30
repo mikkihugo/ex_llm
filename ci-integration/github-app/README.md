@@ -4,6 +4,24 @@
 ## Overview
 The Singularity GitHub App automatically analyzes code quality on every push and pull request, providing AI-powered insights directly in your GitHub workflow.
 
+**Part of the Singularity Monorepo**: This GitHub App is fully integrated with the existing Singularity system, leveraging the same core Rust analysis engines, PostgreSQL workflow orchestration (ex_pgflow), and intelligence collection infrastructure used across all Singularity services.
+
+## Integration with Singularity Ecosystem
+
+This GitHub App shares infrastructure with:
+- **Core Analysis Engine**: Uses `packages/code_quality_engine/` (Rust NIF)
+- **Workflow Orchestration**: Leverages `packages/ex_pgflow/` for async processing
+- **Intelligence Collection**: Feeds anonymized patterns back to main Singularity system
+- **Database**: Shares PostgreSQL instance with main Singularity services
+- **Business Logic**: Same analysis modules as CLI and CI/CD integrations
+
+### Architecture Flow
+```
+GitHub Webhook → GitHub App → ex_pgflow Workflows → Rust Analysis Engine → Results → Intelligence Database
+                                      ↓
+                            Shared with CLI & CI/CD tools
+```
+
 ## Features
 - 🤖 **Automatic Analysis**: Runs on every push and PR
 - 📊 **Quality Scores**: Comprehensive code quality metrics
@@ -12,11 +30,42 @@ The Singularity GitHub App automatically analyzes code quality on every push and
 - 📈 **Trend Analysis**: Code quality trends over time
 - 🎯 **Check Runs**: GitHub status checks with pass/fail thresholds
 
-## Installation
+## Installation Options
+
+### Option 1: GitHub App (Recommended)
 1. Visit the [GitHub Marketplace](https://github.com/marketplace/singularity)
 2. Click "Install"
 3. Select repositories to analyze
 4. Configure settings (optional)
+
+### Option 2: GitHub Action
+For self-hosted or custom workflows, use the Singularity GitHub Action:
+
+```yaml
+# .github/workflows/singularity-analysis.yml
+name: Code Quality Analysis
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Singularity Analysis
+        uses: singularity-incubation/code-quality-action@v1
+        with:
+          api-key: ${{ secrets.SINGULARITY_API_KEY }}
+          enable-intelligence: true
+```
+
+### Option 3: CLI Tool
+```bash
+# Install CLI
+curl -fsSL https://get.singularity.dev | bash
+
+# Run analysis
+singularity-scanner analyze --path . --format github
+```
 
 ## How It Works
 
@@ -40,10 +89,40 @@ The Singularity GitHub App automatically analyzes code quality on every push and
 - Updates repository dashboard with trends
 - Collects anonymized intelligence data (opt-in)
 
-## Permissions Required
-- **Read access** to code, metadata, pull requests, commits
-- **Write access** to checks, pull request comments, statuses
-- **No access** to private keys, secrets, or billing info
+## GitHub Action Alternative
+
+For users who prefer running analysis in their own CI/CD pipelines rather than using the GitHub App, we provide a **GitHub Action** that delivers the same analysis capabilities:
+
+### Key Differences
+
+| Aspect | GitHub App | GitHub Action |
+|--------|------------|----------------|
+| **Execution** | Automatic on GitHub events | Manual in CI workflows |
+| **Infrastructure** | Singularity-hosted | Your GitHub runners |
+| **Intelligence** | Shared across all users | Per-workflow opt-in |
+| **Setup** | One-click install | Add to workflow YAML |
+| **Cost** | Subscription-based | GitHub Actions minutes |
+
+### GitHub Action Usage
+
+```yaml
+name: Code Quality
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Singularity Analysis
+        uses: singularity-incubation/code-quality-action@v1
+        with:
+          api-key: ${{ secrets.SINGULARITY_API_KEY }}
+          enable-intelligence: true
+          fail-on-quality-threshold: 7.5
+```
+
+See [`action/README.md`](action/README.md) for complete GitHub Action documentation and [workflow examples](.github/workflows/examples.yml) for common use cases.
 
 ## Pricing
 - **Free**: 100 analyses/month per repository
@@ -128,7 +207,7 @@ mix test
 curl -X POST localhost:4000/webhooks/github \
   -H "X-GitHub-Event: pull_request" \
   -d @test/fixtures/pr_webhook.json
-```
+```yes
 
 ## Deployment
 - **Docker**: Containerized deployment

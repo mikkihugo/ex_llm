@@ -524,6 +524,7 @@ impl VectorIntegration {
     }
 
     /// Generate comprehensive vectors for a file
+    #[allow(clippy::vec_init_then_push)]
     fn generate_file_vectors(&self, content: &str) -> Vec<String> {
         let mut vectors = Vec::new();
 

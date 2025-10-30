@@ -90,7 +90,7 @@ defmodule Singularity.Schemas.Execution.Task do
       purpose: Read task properties for planning and scheduling
       frequency: high
 
-    - module: Singularity.Execution.ExecutionOrchestrator
+    - module: Singularity.Execution.Planning.TaskGraphExecutor
       purpose: Update task status during execution
       frequency: high
 
@@ -132,7 +132,7 @@ defmodule Singularity.Schemas.Execution.Task do
 
   #### ❌ DO NOT create "TaskManager" or "TaskRegistry" modules
   **Why:** Tasks are lightweight structs passed between agents/planners.
-  **Use instead:** Pass tasks through execution pipeline (ExecutionOrchestrator).
+  **Use instead:** Pass tasks through execution pipeline (TaskGraphExecutor or agents).
 
   ### Search Keywords
 

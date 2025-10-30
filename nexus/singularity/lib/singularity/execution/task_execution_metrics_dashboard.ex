@@ -12,7 +12,7 @@ defmodule Singularity.Execution.TaskExecutionMetricsDashboard do
 
   Data sources:
   - ExecutionMetric table - Per-execution tracking
-  - ExecutionOrchestrator - Current execution state
+  - TaskGraphExecutor - Current execution state
   - Task DAG history - Pipeline execution logs
   """
 

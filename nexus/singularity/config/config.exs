@@ -854,3 +854,33 @@ config :singularity, :task_adapters,
     priority: 20,
     description: "Synchronous task execution via GenServer agents"
   }
+
+# Config-Driven Workflow Registry System
+# Centralized workflow definitions for pgflow and RCA integration
+config :singularity, :workflows,
+  registry: [
+    # Pipeline workflows
+    agent_improvement: Singularity.Workflows.AgentImprovementWorkflow,
+    architecture_learning: Singularity.Workflows.ArchitectureLearningWorkflow,
+    code_metrics: Singularity.Workflows.CodeMetricsWorkflow,
+    code_quality_training: Singularity.Workflows.CodeQualityTrainingWorkflow,
+    embedding_training: Singularity.Workflows.EmbeddingTrainingWorkflow,
+
+    # System workflows
+    centralcloud_sync: Singularity.Workflows.CentralCloudSyncWorkflow,
+    codebase_registry_sync: Singularity.Workflows.CodebaseRegistrySyncWorkflow,
+    database_tool_execution: Singularity.Workflows.DatabaseToolExecutionWorkflow,
+    dead_code_report: Singularity.Workflows.DeadCodeReportWorkflow,
+    deduplication: Singularity.Workflows.DeduplicationWorkflow,
+    genesis_experiment_request: Singularity.Workflows.GenesisExperimentRequestWorkflow,
+    rca: Singularity.Workflows.RcaWorkflow,
+    system_event_broadcast: Singularity.Workflows.SystemEventBroadcastWorkflow
+  ],
+  # Workflow type aliases for convenience
+  aliases: [
+    quality: :code_quality_training,
+    architecture: :architecture_learning,
+    embedding: :embedding_training,
+    rca_base: :rca,
+    sync: :centralcloud_sync
+  ]

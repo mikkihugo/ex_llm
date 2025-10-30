@@ -116,7 +116,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
       critical: true
 
   called_by:
-    - module: Singularity.Execution.ExecutionOrchestrator
+    - module: Singularity.Execution.Planning.TaskGraphExecutor
       purpose: SPARC strategy execution
       frequency: medium
 

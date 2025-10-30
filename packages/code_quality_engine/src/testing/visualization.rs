@@ -507,10 +507,10 @@ pub struct VisualizationMetadata {
 
 /// Coverage visualizer
 pub struct CoverageVisualizer {
-    fact_system_interface: FactSystemInterface,
-    chart_generators: Vec<Box<dyn ChartGenerator>>,
-    map_generators: Vec<Box<dyn MapGenerator>>,
-    dashboard_generator: Box<dyn DashboardGenerator>,
+    #[allow(dead_code)] fact_system_interface: FactSystemInterface,
+    #[allow(dead_code)] chart_generators: Vec<Box<dyn ChartGenerator>>,
+    #[allow(dead_code)] map_generators: Vec<Box<dyn MapGenerator>>,
+    #[allow(dead_code)] dashboard_generator: Box<dyn DashboardGenerator>,
 }
 
 /// Interface to fact-system for visualization knowledge

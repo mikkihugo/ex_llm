@@ -1,0 +1,44 @@
+name: 'Singularity Code Quality Analysis'
+description: 'Run automated code quality analysis using Singularity'
+author: 'Singularity Team'
+inputs:
+  api-key:
+    description: 'Singularity API key for intelligence collection'
+    required: false
+  enable-intelligence:
+    description: 'Enable anonymized intelligence collection'
+    required: false
+    default: 'true'
+  fail-on-quality-threshold:
+    description: 'Fail the action if quality score is below threshold (0-10)'
+    required: false
+  format:
+    description: 'Output format (text, json, github)'
+    required: false
+    default: 'github'
+  exclude-patterns:
+    description: 'Comma-separated patterns to exclude from analysis'
+    required: false
+  severity-threshold:
+    description: 'Minimum severity level to report (low, medium, high, critical)'
+    required: false
+    default: 'low'
+  working-directory:
+    description: 'Directory to analyze (relative to repository root)'
+    required: false
+    default: '.'
+runs:
+  using: 'docker'
+  image: 'Dockerfile.action'
+  args:
+    - ${{ inputs.api-key }}
+    - ${{ inputs.enable-intelligence }}
+    - ${{ inputs.fail-on-quality-threshold }}
+    - ${{ inputs.format }}
+    - ${{ inputs.exclude-patterns }}
+    - ${{ inputs.severity-threshold }}
+    - ${{ inputs.working-directory }}
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
