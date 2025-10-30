@@ -119,6 +119,8 @@ defmodule Singularity.SelfImprovingAgent do
   alias Singularity.DynamicCompiler
   alias Singularity.HITL.ApprovalOrchestrator
   alias Singularity.Agents.TemplatePerformance
+  alias Singularity.Control.QueueCrdt
+  alias Singularity.Agents.DocumentationPipeline, as: DocPipeline
   alias MapSet
 
   @default_tick_ms 5_000

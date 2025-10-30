@@ -2,7 +2,7 @@ defmodule Singularity.Repo.Migrations.CreateEvolutionProposals do
   use Ecto.Migration
 
   def change do
-    create table(:evolution_proposals, primary_key: false) do
+    create_if_not_exists table(:evolution_proposals, primary_key: false) do
       add :id, :binary_id, primary_key: true
       add :agent_type, :string, null: false
       add :agent_id, :string
@@ -33,15 +33,15 @@ defmodule Singularity.Repo.Migrations.CreateEvolutionProposals do
     end
 
     # Indexes for query performance
-    create index(:evolution_proposals, [:status])
-    create index(:evolution_proposals, [:agent_type])
-    create index(:evolution_proposals, [:agent_id])
-    create index(:evolution_proposals, [:priority_score])
-    create index(:evolution_proposals, [:created_at])
-    create index(:evolution_proposals, [:consensus_required])
+    create_if_not_exists index(:evolution_proposals, [:status])
+    create_if_not_exists index(:evolution_proposals, [:agent_type])
+    create_if_not_exists index(:evolution_proposals, [:agent_id])
+    create_if_not_exists index(:evolution_proposals, [:priority_score])
+    create_if_not_exists index(:evolution_proposals, [:inserted_at])
+    create_if_not_exists index(:evolution_proposals, [:consensus_required])
 
     # Composite indexes for common queries
-    create index(:evolution_proposals, [:status, :priority_score, :created_at])
-    create index(:evolution_proposals, [:agent_type, :status])
+    create_if_not_exists index(:evolution_proposals, [:status, :priority_score, :inserted_at])
+    create_if_not_exists index(:evolution_proposals, [:agent_type, :status])
   end
 end

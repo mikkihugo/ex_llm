@@ -53,8 +53,9 @@ defmodule Singularity.Repo.Migrations.CreateCentralCloudTemplatesReplica do
     create index(:central_cloud_templates, :metadata, using: "gin")
     create index(:central_cloud_templates, :content, using: "gin")
     
-    # Vector index for semantic search
-    create index(:central_cloud_templates, :embedding, using: "ivfflat", with: "lists = 100")
+    # Vector similarity index disabled - both HNSW and ivfflat limited to 2000 dims
+    # We use 2560-dim vectors (Qodo 1536 + Jina 1024), exceeding index limits
+    # Vector search uses sequential scan (adequate for template replica size)
     
     # Composite indexes
     create index(:central_cloud_templates, [:category, :deprecated])

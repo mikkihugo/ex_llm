@@ -18,7 +18,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   - ✅ Single language ecosystem
   """
 
-  use Pgflow.Worker, queue: :default, max_attempts: 3
+  use Singularity.QuantumFlow.Worker, queue: :default, max_attempts: 3
 
   require Logger
   alias Singularity.Workflows.LlmRequest

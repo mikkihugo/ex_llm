@@ -15,7 +15,7 @@ projects:
 
   # External Elixir packages
   - 'packages/ex_llm'
-  - 'packages/ex_pgflow'
+  - 'packages/ex_quantum_flow'
 
   # Rust workspace (all Rust engines consolidated)
   - 'rust'

@@ -46,7 +46,7 @@ defmodule Singularity.Execution.Runners.Control do
     }
 
     # Use Pgflow workflow instead of direct pgmq publishing
-    case Pgflow.Workflow.create_workflow(
+    case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
            Singularity.Workflows.AgentImprovementWorkflow,
            %{"event" => event}
          ) do
@@ -107,7 +107,7 @@ defmodule Singularity.Execution.Runners.Control do
     # Subscribe to PGFlow workflow completion events for agent improvements
     workflow_name = "agent_improvement_#{agent_id}"
 
-    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+    case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_agent_improvement_completion(agent_id, workflow_result)
          end) do
       {:ok, subscription_id} ->
@@ -140,7 +140,7 @@ defmodule Singularity.Execution.Runners.Control do
     # Subscribe to PGFlow workflow completion events for system-wide events
     workflow_name = "system_events"
 
-    case Pgflow.Workflow.subscribe(workflow_name, fn workflow_result ->
+    case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_system_event_completion(workflow_result)
          end) do
       {:ok, subscription_id} ->
@@ -188,7 +188,7 @@ defmodule Singularity.Execution.Runners.Control do
     # Create PGFlow workflow for system events
     workflow_name = "system_event_broadcast"
 
-    case Pgflow.Workflow.create_workflow(
+    case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
            Singularity.Workflows.SystemEventBroadcastWorkflow,
            %{
              "event_type" => event.type,

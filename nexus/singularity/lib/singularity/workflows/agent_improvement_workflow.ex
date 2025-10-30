@@ -12,7 +12,7 @@ defmodule Singularity.Workflows.AgentImprovementWorkflow do
   4. Update Metrics - Update agent performance metrics
   """
 
-  use Singularity.Infrastructure.PgFlow.Workflow
+  use Pgflow.Workflow
 
   require Logger
 

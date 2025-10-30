@@ -1,5 +1,5 @@
-[submodule "packages/ex_pgflow"]
-	path = packages/ex_pgflow
+[submodule "packages/ex_quantum_flow"]
+	path = packages/ex_quantum_flow
 	url = git@github.com:mikkihugo/ex_pgflow.git
 [submodule "packages/ex_llm"]
 	path = packages/ex_llm

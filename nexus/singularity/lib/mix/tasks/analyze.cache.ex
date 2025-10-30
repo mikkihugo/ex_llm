@@ -31,7 +31,6 @@ defmodule Mix.Tasks.Analyze.Cache do
   """
 
   use Mix.Task
-  alias Singularity.CodeAnalyzer.ResultCache
 
   @requirements ["app.start"]
 
@@ -41,26 +40,26 @@ defmodule Mix.Tasks.Analyze.Cache do
   end
 
   def run(["stats"]) do
-    case Process.whereis(Cache) do
+    case Process.whereis(Singularity.CodeAnalyzer.ResultCache) do
       nil ->
         Mix.shell().error("Cache is not running. Start the application first.")
         System.halt(1)
 
       _pid ->
-        stats = Cache.stats()
+        stats = Singularity.CodeAnalyzer.ResultCache.stats()
         print_stats(stats)
     end
   end
 
   def run(["clear"]) do
-    case Process.whereis(Cache) do
+    case Process.whereis(Singularity.CodeAnalyzer.ResultCache) do
       nil ->
         Mix.shell().error("Cache is not running. Start the application first.")
         System.halt(1)
 
       _pid ->
         Mix.shell().info("Clearing Singularity.CodeAnalyzer cache...")
-        :ok = Cache.clear()
+        :ok = Singularity.CodeAnalyzer.ResultCache.clear()
         Mix.shell().info("✓ Cache cleared successfully")
     end
   end

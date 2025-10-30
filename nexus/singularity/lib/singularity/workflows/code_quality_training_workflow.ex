@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   5. Model Deployment - Save and deploy trained quality models
   """
 
-  use Singularity.Infrastructure.PgFlow.Workflow
+  use Pgflow.Workflow
 
   require Logger
 

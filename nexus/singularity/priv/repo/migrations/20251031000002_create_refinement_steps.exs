@@ -39,7 +39,7 @@ defmodule Singularity.Repo.Migrations.CreateRefinementSteps do
 
     # Foreign key for generation_session
     alter table(:refinement_steps) do
-      modify :generation_session_id, references(:code_generation_sessions, type: :uuid, on_delete: :cascade)
+      modify :generation_session_id, references(:code_generation_sessions, type: :uuid, on_delete: :delete_all)
     end
   end
 end

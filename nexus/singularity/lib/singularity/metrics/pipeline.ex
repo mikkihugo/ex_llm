@@ -57,7 +57,7 @@ defmodule Singularity.Metrics.Pipeline do
         name: Keyword.get(opts, :workflow_name, CodeMetricsWorkflowSupervisor)
       ]
 
-    case WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
+    case PGFlow.WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
       {:ok, _pid} ->
         Logger.info("Metrics PGFlow workflow supervisor started")
 

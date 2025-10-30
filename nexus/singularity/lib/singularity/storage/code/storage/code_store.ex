@@ -1121,7 +1121,7 @@ defmodule Singularity.CodeStore do
   end
 
   defp get_analysis_path(root, codebase_id) do
-    Path.join(root, "analyses", "#{codebase_id}.json")
+    Path.join([root, "analyses", "#{codebase_id}.json"])
   end
 
   # Advanced analysis functions for complex codebases like singularity-engine
@@ -2347,7 +2347,7 @@ defmodule Singularity.CodeStore do
       _ ->
         # Fallback: use current working directory or CODE_ROOT env var
         System.get_env("CODE_ROOT") ||
-          Path.expand(System.cwd!()) ||
+          Path.expand(File.cwd!()) ||
           File.cwd!()
     end
   rescue

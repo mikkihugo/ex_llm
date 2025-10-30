@@ -19,7 +19,7 @@ defmodule Singularity.Repo.Migrations.CreateLanguageDetectionConfidence do
     # Indexes for efficient lookups
     create index(:language_detection_confidence, [:detection_method, :language_id])
     create index(:language_detection_confidence, [:pattern])
-    create unique_index(:language_detection_confidence, [:detection_method, :pattern],
+    create unique_index(:language_detection_confidence, [:detection_method, :pattern, :language_id],
                         name: :unique_detection_method_pattern)
 
     # Insert default confidence values (will be learned/adapted over time)
@@ -59,7 +59,8 @@ defmodule Singularity.Repo.Migrations.CreateLanguageDetectionConfidence do
 
     -- Filename-based detection (specific cases)
     ('filename', 'dockerfile', 'Dockerfile', 0.95, 0, 0, 0.0, NOW(), NOW(), NOW()),
-    ('filename', 'dockerfile', 'dockerfile', 0.95, 0, 0, 0.0, NOW(), NOW(), NOW());
+    ('filename', 'dockerfile', 'dockerfile', 0.95, 0, 0, 0.0, NOW(), NOW(), NOW())
+    ON CONFLICT (detection_method, pattern, language_id) DO NOTHING;
     """
   end
 end

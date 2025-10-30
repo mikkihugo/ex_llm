@@ -11,8 +11,8 @@ defmodule Singularity.Repo.Migrations.CreateTestExecutions do
       add :generation_session_id, :uuid  # If testing was part of validation
 
       # Test execution results
-      add :test_pass_rate, :decimal, precision: 5, scale: 2, default: Decimal.new(0)  # 0.0 to 100.0
-      add :test_coverage_line, :decimal, precision: 5, scale: 2, default: Decimal.new(0)  # 0.0 to 100.0
+      add :test_pass_rate, :decimal, precision: 5, scale: 2, default: 0  # 0.0 to 100.0
+      add :test_coverage_line, :decimal, precision: 5, scale: 2, default: 0  # 0.0 to 100.0
       add :test_coverage_branch, :decimal, precision: 5, scale: 2  # Optional branch coverage
       add :failed_test_count, :integer, default: 0
       add :passed_test_count, :integer, default: 0

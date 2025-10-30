@@ -54,6 +54,9 @@ litellm/
 **/_build/
 **/deps/
 **/priv/plts/
+# Explicitly ignore nexus umbrella build artifacts that may recreate consolidated dirs
+nexus/singularity/_build/
+nexus/singularity/_build/dev/lib/singularity/consolidated/
 
 # Rebar3 build artifacts (within deps directories)
 **/.rebar3/

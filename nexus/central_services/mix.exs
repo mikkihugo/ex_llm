@@ -29,7 +29,7 @@ defmodule CentralServices.MixProject do
       {:oban, "~> 2.18"},
       # Workflow orchestration via ex_pgflow macros
       # NOTE: override: true is necessary due to conflicting env specifications in dependencies
-      {:ex_pgflow, in_umbrella: true, env: Mix.env(), override: true},
+      {:ex_quantum_flow, in_umbrella: true, env: Mix.env(), override: true},
       
       # Data Processing Pipeline for ML training
       {:broadway, "~> 1.0"},

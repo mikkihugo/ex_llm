@@ -23,7 +23,7 @@ defmodule BroadwayPgflow.MixProject do
   defp deps do
     [
       {:broadway, "~> 1.0"},
-      {:ex_pgflow, in_umbrella: true, env: Mix.env()},
+      {:ex_quantum_flow, in_umbrella: true, env: Mix.env()},
       {:ecto_sql, "~> 3.10"}
     ]
   end

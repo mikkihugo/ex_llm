@@ -91,14 +91,13 @@ impl PatternStore {
 mod storage {
     use super::{PatternKind, PatternRecord};
     use anyhow::Result;
-    use redb::{Database, TableDefinition};
+    use redb::{Database, ReadableDatabase, TableDefinition};
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
     use std::path::Path;
     use chacha20poly1305::{ChaCha20Poly1305, KeyInit, aead::{Aead, OsRng, generic_array::GenericArray}};
     use rand::RngCore;
 
-    const META: TableDefinition<&str, &str> = TableDefinition::new("meta");
     const BLOB: TableDefinition<&str, & [u8]> = TableDefinition::new("blob");
 
     #[derive(Serialize, Deserialize)]
@@ -108,13 +107,13 @@ mod storage {
     }
 
     pub fn load_snapshot(path: &Path) -> Result<(HashMap<PatternKind, Vec<PatternRecord>>, u64)> {
-        let db = unsafe { Database::open(path)? };
+        let db = Database::open(path)?;
         let read_txn = db.begin_read()?;
         let blob = read_txn.open_table(BLOB)?;
         if let Some(val) = blob.get("snapshot")? {
             let bytes = val.value();
             let decrypted = decrypt(bytes)?;
-            let snap: Snapshot = bincode::deserialize(&decrypted)?;
+            let snap: Snapshot = bincode::serde::decode_from_slice(&decrypted, bincode::config::standard())?.0;
             Ok((snap.map, snap.version))
         } else {
             Ok((HashMap::new(), 0))
@@ -123,14 +122,12 @@ mod storage {
 
     #[allow(dead_code)]
     pub fn save_snapshot(path: &Path, map: &HashMap<PatternKind, Vec<PatternRecord>>, version: u64) -> Result<()> {
-        let db = unsafe { Database::create(path)? };
-        let mut write = db.begin_write()?;
+        let db = Database::create(path)?;
+        let write = db.begin_write()?;
         {
-            let mut meta = write.open_table(META)?;
-            meta.insert("version", &version.to_string())?;
             let mut blob = write.open_table(BLOB)?;
             let snap = Snapshot { version, map: map.clone() };
-            let bytes = bincode::serialize(&snap)?;
+            let bytes = bincode::serde::encode_to_vec(&snap, bincode::config::standard())?;
             let encrypted = encrypt(&bytes)?;
             blob.insert("snapshot", encrypted.as_slice())?;
         }
@@ -162,7 +159,9 @@ mod storage {
 
     fn load_or_create_key() -> Result<[u8; 32]> {
         if let Ok(b64) = std::env::var("SINGULARITY_PATTERNS_KEY") {
-            let bytes = base64::decode(b64)?;
+            use base64::engine::general_purpose::STANDARD as B64;
+            use base64::Engine;
+            let bytes = B64.decode(b64)?;
             if bytes.len() != 32 { return Err(anyhow::anyhow!("invalid key length")); }
             let mut arr = [0u8; 32];
             arr.copy_from_slice(&bytes);

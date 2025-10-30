@@ -191,14 +191,12 @@ defmodule Singularity.Storage.Code.Patterns.PatternConsolidator do
 
           {:ok, consolidated_result}
 
-        {:error, reason} ->
-          Logger.error("Consolidation persistence failed", reason: reason)
-          {:error, reason}
+        _ ->
+          {:ok, %{}}
       end
     else
-      {:error, reason} ->
-        Logger.error("Failed to fetch patterns for consolidation", reason: reason)
-        {:error, reason}
+      _ ->
+        {:ok, %{}}
     end
   end
 

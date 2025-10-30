@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
   5. Track Sync - Record synchronization status
   """
 
-  use Singularity.Infrastructure.PgFlow.Workflow
+  use Singularity.QuantumFlow.Workflow
 
   require Logger
 

@@ -39,6 +39,8 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
   ```
   """
 
+  alias Singularity.Database.MessageQueue
+
   require Logger
   alias Singularity.Agents.Coordination.CapabilityRegistry
 

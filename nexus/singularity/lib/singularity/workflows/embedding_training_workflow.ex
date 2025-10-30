@@ -189,16 +189,13 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
 
     case Resilience.with_timeout_retry(
            fn ->
-             case train_model_impl(task_data.model_type, prepared_data) do
-               {:ok, trained_model, metrics} ->
-                 {:ok, %{trained_model: trained_model, training_metrics: metrics}}
+            case train_model_impl(task_data.model_type, prepared_data) do
+              {:ok, trained_model, metrics} ->
+                {:ok, %{trained_model: trained_model, training_metrics: metrics}}
 
-               {:ok, trainers, metrics} ->
-                 {:ok, %{trained_model: trainers, training_metrics: metrics}}
-
-               {:error, reason} ->
-                 raise "embedding model training failed: #{inspect(reason)}"
-             end
+              {:error, reason} ->
+                raise "embedding model training failed: #{inspect(reason)}"
+            end
            end,
            timeout_ms: 180_000,
            retry_opts: [max_retries: 3, base_delay_ms: 1_000, max_delay_ms: 20_000],

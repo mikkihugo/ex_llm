@@ -13,7 +13,6 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
 
   import Ecto.Query
 
-  alias Singularity.Metrics.MetricsOrchestrator
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 

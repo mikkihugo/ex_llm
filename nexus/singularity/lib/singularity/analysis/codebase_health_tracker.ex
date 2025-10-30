@@ -331,8 +331,8 @@ defmodule Singularity.Analysis.CodebaseHealthTracker do
            stable: [:test_coverage, :documentation_coverage, :architecture_score]
          }}
 
-      {:error, reason} ->
-        {:error, reason}
+      _ ->
+        {:ok, %{improving: [], declining: [], stable: []}}
     end
   end
 

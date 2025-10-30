@@ -6,7 +6,7 @@ defmodule Singularity.Workflows.SystemEventBroadcastWorkflow do
   via PGFlow workflow orchestration with proper notification handling.
   """
 
-  use Singularity.Infrastructure.PgFlow.Workflow
+  use Pgflow.Workflow
 
   require Logger
 

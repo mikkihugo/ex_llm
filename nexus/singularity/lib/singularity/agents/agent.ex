@@ -84,6 +84,7 @@ defmodule Singularity.Agents.Agent do
   require Logger
 
   alias Singularity.{CodeStore, ProcessRegistry}
+  alias Singularity.Control.QueueCrdt
   alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter

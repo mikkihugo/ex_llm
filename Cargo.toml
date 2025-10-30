@@ -40,6 +40,8 @@ members = [
     "packages/prompt_engine",
     "packages/package_intelligence",
     "packages/patterns_store",
+    # Singularity Products
+    "products/singularity-smart-package-context/backend",
 ]
 
 exclude = [
