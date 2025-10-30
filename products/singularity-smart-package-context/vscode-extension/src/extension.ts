@@ -6,6 +6,7 @@ import { searchPatterns } from './commands/searchPatterns';
 import { analyzeFile } from './commands/analyzeFile';
 import { MCP } from './utils/mcp';
 import { Logger } from './utils/logger';
+import { CopilotChatHandler } from './copilot/chatHandler';
 
 let logger: Logger;
 let mcp: MCP;
@@ -94,6 +95,23 @@ export async function activate(context: vscode.ExtensionContext) {
       () => showStatus()
     )
   );
+
+  // Register Copilot chat handler
+  try {
+    const copilotChat = vscode.extensions.getExtension('github.copilot-chat');
+    if (copilotChat) {
+      const chatHandler = new CopilotChatHandler(mcp, logger);
+      context.subscriptions.push(
+        vscode.chat.registerChatParticipantHandler(
+          'singularitySmartPackageContext.chat',
+          chatHandler
+        )
+      );
+      logger.log('Copilot chat participant registered');
+    }
+  } catch (error) {
+    logger.warn(`Copilot chat not available: ${error}`);
+  }
 
   // Cleanup on deactivation
   context.subscriptions.push({

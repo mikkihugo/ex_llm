@@ -34,7 +34,8 @@
     "onCommand:singularitySmartPackageContext.getPackageExamples",
     "onCommand:singularitySmartPackageContext.getPackagePatterns",
     "onCommand:singularitySmartPackageContext.searchPatterns",
-    "onCommand:singularitySmartPackageContext.analyzeFile"
+    "onCommand:singularitySmartPackageContext.analyzeFile",
+    "onCopilotChat"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -68,6 +69,32 @@
         "command": "singularitySmartPackageContext.showStatus",
         "title": "Smart Package Context: Show Status",
         "description": "Show extension status and configuration"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "singularitySmartPackageContext.chat",
+        "name": "smartpackage",
+        "description": "Get package intelligence - docs, examples, and patterns",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "info",
+            "description": "Get package information"
+          },
+          {
+            "name": "examples",
+            "description": "Get code examples"
+          },
+          {
+            "name": "patterns",
+            "description": "Get consensus patterns"
+          },
+          {
+            "name": "search",
+            "description": "Search patterns"
+          }
+        ]
       }
     ],
     "menus": {
