@@ -32,6 +32,8 @@ use types::{PatternKind, PatternRecord};
 struct PatternStoreInner {
     by_kind: HashMap<PatternKind, Vec<PatternRecord>>, // kind -> records
     version: u64,
+    last_fetched_unix: i64,
+    etag: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -53,6 +55,26 @@ impl PatternStore {
         self.inner.read().await.version
     }
 
+    /// Returns true if the cached snapshot is older than `max_age_secs`.
+    pub async fn is_stale(&self, max_age_secs: i64) -> bool {
+        let guard = self.inner.read().await;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        if guard.last_fetched_unix == 0 { return true; }
+        (now - guard.last_fetched_unix) > max_age_secs
+    }
+
+    pub async fn get_etag(&self) -> Option<String> {
+        self.inner.read().await.etag.clone()
+    }
+
+    pub async fn set_etag(&self, tag: Option<String>) {
+        let mut guard = self.inner.write().await;
+        guard.etag = tag;
+    }
+
     pub async fn replace_all(
         &self,
         mut map: HashMap<PatternKind, Vec<PatternRecord>>,
@@ -64,6 +86,17 @@ impl PatternStore {
         let mut guard = self.inner.write().await;
         guard.by_kind = map;
         guard.version = version;
+        // Do not update last_fetched here; save will stamp the time
+    }
+
+    /// Mark the cache as freshly fetched (now timestamp).
+    pub async fn mark_fetched_now(&self) {
+        let mut guard = self.inner.write().await;
+        let now_unix = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        guard.last_fetched_unix = now_unix;
     }
 
     /// Load a cached snapshot from the default redb location.
@@ -73,9 +106,14 @@ impl PatternStore {
         if !path.exists() {
             return Ok(Self::new());
         }
-        let (map, version) = storage::load_snapshot(&path)?;
+        let (map, version, last_fetched_unix, etag) = storage::load_snapshot(&path)?;
         let store = Self::new();
-        store.replace_all(map, version).await;
+        {
+            store.replace_all(map, version).await;
+            let mut guard = store.inner.write().await;
+            guard.last_fetched_unix = last_fetched_unix;
+            guard.etag = etag;
+        }
         Ok(store)
     }
 
@@ -83,7 +121,7 @@ impl PatternStore {
     pub async fn save_default_cache(&self) -> anyhow::Result<()> {
         let path = default_cache_path()?;
         let guard = self.inner.read().await;
-        storage::save_snapshot(&path, &guard.by_kind, guard.version)?;
+        storage::save_snapshot(&path, &guard.by_kind, guard.version, guard.last_fetched_unix, guard.etag.clone())?;
         Ok(())
     }
 }
@@ -97,6 +135,7 @@ mod storage {
     use std::path::Path;
     use chacha20poly1305::{ChaCha20Poly1305, KeyInit, aead::{Aead, OsRng, generic_array::GenericArray}};
     use rand::RngCore;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     const BLOB: TableDefinition<&str, & [u8]> = TableDefinition::new("blob");
 
@@ -104,9 +143,11 @@ mod storage {
     struct Snapshot {
         version: u64,
         map: HashMap<PatternKind, Vec<PatternRecord>>,
+        last_fetched_unix: i64,
+        etag: Option<String>,
     }
 
-    pub fn load_snapshot(path: &Path) -> Result<(HashMap<PatternKind, Vec<PatternRecord>>, u64)> {
+    pub fn load_snapshot(path: &Path) -> Result<(HashMap<PatternKind, Vec<PatternRecord>>, u64, i64, Option<String>)> {
         let db = Database::open(path)?;
         let read_txn = db.begin_read()?;
         let blob = read_txn.open_table(BLOB)?;
@@ -114,19 +155,20 @@ mod storage {
             let bytes = val.value();
             let decrypted = decrypt(bytes)?;
             let snap: Snapshot = bincode::serde::decode_from_slice(&decrypted, bincode::config::standard())?.0;
-            Ok((snap.map, snap.version))
+            Ok((snap.map, snap.version, snap.last_fetched_unix, snap.etag))
         } else {
-            Ok((HashMap::new(), 0))
+            Ok((HashMap::new(), 0, 0, None))
         }
     }
 
     #[allow(dead_code)]
-    pub fn save_snapshot(path: &Path, map: &HashMap<PatternKind, Vec<PatternRecord>>, version: u64) -> Result<()> {
+    pub fn save_snapshot(path: &Path, map: &HashMap<PatternKind, Vec<PatternRecord>>, version: u64, last_fetched_unix: i64, etag: Option<String>) -> Result<()> {
         let db = Database::create(path)?;
         let write = db.begin_write()?;
         {
             let mut blob = write.open_table(BLOB)?;
-            let snap = Snapshot { version, map: map.clone() };
+            let now_unix = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0);
+            let snap = Snapshot { version, map: map.clone(), last_fetched_unix: if last_fetched_unix == 0 { now_unix } else { last_fetched_unix }, etag };
             let bytes = bincode::serde::encode_to_vec(&snap, bincode::config::standard())?;
             let encrypted = encrypt(&bytes)?;
             blob.insert("snapshot", encrypted.as_slice())?;

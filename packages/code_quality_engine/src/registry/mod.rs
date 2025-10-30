@@ -13,6 +13,7 @@ use patterns_store::types::{PatternKind as StorePatternKind, PatternRecord as St
 pub struct MetaRegistry {
     package_registry: PackageRegistry,
     pattern_registry: PatternRegistry,
+    patterns_snapshot: Option<(StdHashMap<StorePatternKind, Vec<StorePatternRecord>>, u64, Option<String>)>,
 }
 
 impl MetaRegistry {
@@ -20,6 +21,7 @@ impl MetaRegistry {
         Self {
             package_registry: PackageRegistry::new(),
             pattern_registry: PatternRegistry::new(),
+            patterns_snapshot: None,
         }
     }
 
@@ -53,7 +55,7 @@ impl MetaRegistry {
         // TODO: Implement CentralCloud sync via pgmq queues
         // Instead of direct HTTP calls:
         // 1. Send registry data to "centralcloud_sync" queue
-        // 2. ex_quantum_flow workflow consumes and forwards to CentralCloud
+        // 2. quantum_flow workflow consumes and forwards to CentralCloud
         // 3. Receive consensus data back through response queues
         // 4. Update local registry with merged results
 
@@ -65,7 +67,26 @@ impl MetaRegistry {
     pub async fn export_patterns_snapshot(
         &self,
     ) -> Option<(StdHashMap<StorePatternKind, Vec<StorePatternRecord>>, u64)> {
-        None
+        self.patterns_snapshot
+            .as_ref()
+            .map(|(map, version, _)| (map.clone(), *version))
+    }
+
+    /// Export snapshot along with ETag if available (for conditional requests)
+    pub async fn export_patterns_snapshot_with_etag(
+        &self,
+    ) -> Option<(StdHashMap<StorePatternKind, Vec<StorePatternRecord>>, u64, Option<String>)> {
+        self.patterns_snapshot.clone()
+    }
+
+    /// Minimal setter used by CentralCloud hydration to store the latest snapshot and ETag
+    pub async fn set_patterns_snapshot(
+        &mut self,
+        map: StdHashMap<StorePatternKind, Vec<StorePatternRecord>>,
+        version: u64,
+        etag: Option<String>,
+    ) {
+        self.patterns_snapshot = Some((map, version, etag));
     }
 }
 

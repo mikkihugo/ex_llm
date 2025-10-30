@@ -42,28 +42,29 @@ impl AnalysisOrchestrator {
 
         let mut results = AnalysisResults::default();
 
-        // Hydrate detectors from CentralCloud when requested
-        let mut hydrated_snapshot: Option<(std::collections::HashMap<patterns_store::types::PatternKind, Vec<patterns_store::types::PatternRecord>>, u64)> = None;
-        if input.detection_options.use_learned_patterns {
-            let mut meta = MetaRegistry::new();
-            let _ = self.pattern_orchestrator.hydrate_from_central(&mut meta).await;
-            // Try to export a snapshot from MetaRegistry (if CentralCloud provided data)
-            if let Some(snap) = meta.export_patterns_snapshot().await {
-                hydrated_snapshot = Some(snap);
-            }
-        }
-
         // Attach centralized PatternStore to options if requested
         let mut det_opts = input.detection_options.clone();
         if det_opts.use_learned_patterns {
-            // Try to load cached patterns (encrypted redb). Fallback to empty store.
-            let mut store = match PatternStore::load_default_cache().await {
+            // Load cached patterns (encrypted redb). Fallback to empty store.
+            let store = match PatternStore::load_default_cache().await {
                 Ok(s) => s,
                 Err(_) => PatternStore::new(),
             };
-            // If we received a fresh snapshot from Central, replace and persist
-            if let Some((map, version)) = hydrated_snapshot {
-                store.replace_all(map, version).await;
+            // If cache is stale (> 24h), hydrate from CentralCloud
+            if store.is_stale(24 * 60 * 60).await {
+                let mut hydrated_snapshot: Option<(std::collections::HashMap<patterns_store::types::PatternKind, Vec<patterns_store::types::PatternRecord>>, u64, Option<String>)> = None;
+                let mut meta = MetaRegistry::new();
+                let _ = self.pattern_orchestrator.hydrate_from_central(&mut meta).await;
+                if let Some((map, version, etag)) = meta.export_patterns_snapshot_with_etag().await {
+                    hydrated_snapshot = Some((map, version, etag));
+                } else if let Some((map, version)) = meta.export_patterns_snapshot().await {
+                    hydrated_snapshot = Some((map, version, None));
+                }
+                if let Some((map, version, etag)) = hydrated_snapshot {
+                    store.replace_all(map, version).await;
+                    store.mark_fetched_now().await;
+                    store.set_etag(etag).await;
+                }
             }
             let store = Arc::new(store);
             let _ = store.save_default_cache().await; // persist current snapshot (cache refresh if replaced)
@@ -134,11 +135,11 @@ impl AnalysisOrchestrator {
     async fn send_learning_data(&self, _results: &AnalysisResults) -> Result<(), AnalysisError> {
         // TODO: Send aggregated learning data to CentralCloud via pgmq queues
         // Instead of HTTP calls, send messages to PostgreSQL queues that
-        // ex_quantum_flow workflows will consume and forward to CentralCloud
+        // quantum_flow workflows will consume and forward to CentralCloud
         //
         // Flow:
         // 1. Rust NIF sends message to "centralcloud_learning" queue
-        // 2. Elixir ex_quantum_flow workflow consumes message
+        // 2. Elixir quantum_flow workflow consumes message
         // 3. Workflow communicates with CentralCloud for consensus
         // 4. Results flow back through response queues if needed
 

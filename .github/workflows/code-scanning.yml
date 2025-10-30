@@ -1,0 +1,53 @@
+name: Code Scanning (Singularity Scanner)
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  scan:
+    name: Run Singularity Scanner and upload SARIF
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build scanner (CLI)
+        run: |
+          cargo build --release -p code_quality_engine --no-default-features --features cli
+
+      - name: Run scanner (SARIF)
+        run: |
+          ./target/release/singularity-scanner analyze --path . --format sarif > singularity.sarif
+
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: singularity.sarif
+          category: singularity-scanner

@@ -9,6 +9,11 @@ use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 use std::sync::Arc;
 
+// Expose built-in detectors
+pub mod framework_detector;
+pub mod technology_detector;
+pub mod service_architecture_detector;
+
 /// Pattern detection result
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PatternDetection {
@@ -131,10 +136,49 @@ impl PatternDetectorOrchestrator {
         &self,
         meta: &mut crate::registry::MetaRegistry,
     ) -> Result<(), PatternError> {
+        // First, perform any background sync (stubbed)
         meta
             .sync_with_centralcloud()
             .await
-            .map_err(|e| PatternError::CentralCloudError(e.to_string()))
+            .map_err(|e| PatternError::CentralCloudError(e.to_string()))?;
+
+        // Minimal conditional hydration: if env var points to a snapshot JSON, load it.
+        // Expected JSON format:
+        // { "version": 123, "etag": "..optional..", "records": [ {"kind": "Technology", "id": "...", "name": "rust", "description": null, "confidence": 1.0, "metadata": {}, "version": 1, "tags": [] }, ... ] }
+        if let Ok(path) = std::env::var("CENTRALCLOUD_PATTERNS_SNAPSHOT") {
+            let data = std::fs::read_to_string(path).map_err(|e| PatternError::CentralCloudError(e.to_string()))?;
+            let v: serde_json::Value = serde_json::from_str(&data).map_err(|e| PatternError::CentralCloudError(e.to_string()))?;
+            let version = v.get("version").and_then(|n| n.as_u64()).unwrap_or(0);
+            let etag = v.get("etag").and_then(|s| s.as_str()).map(|s| s.to_string());
+            let mut map: HashMap<patterns_store::types::PatternKind, Vec<patterns_store::types::PatternRecord>> = HashMap::new();
+            if let Some(arr) = v.get("records").and_then(|r| r.as_array()) {
+                for rec in arr {
+                    let kind_str = rec.get("kind").and_then(|s| s.as_str()).unwrap_or("");
+                    let kind = match kind_str {
+                        "Framework" | "framework" => patterns_store::types::PatternKind::Framework,
+                        "Technology" | "technology" => patterns_store::types::PatternKind::Technology,
+                        "ServiceArchitecture" | "servicearchitecture" | "service_architecture" => patterns_store::types::PatternKind::ServiceArchitecture,
+                        "Infrastructure" | "infrastructure" => patterns_store::types::PatternKind::Infrastructure,
+                        _ => continue,
+                    };
+                    let record = patterns_store::types::PatternRecord {
+                        id: rec.get("id").and_then(|s| s.as_str()).unwrap_or("").to_string(),
+                        kind: kind.clone(),
+                        name: rec.get("name").and_then(|s| s.as_str()).unwrap_or("").to_string(),
+                        description: rec.get("description").and_then(|s| s.as_str()).map(|s| s.to_string()),
+                        confidence: rec.get("confidence").and_then(|n| n.as_f64()).unwrap_or(1.0),
+                        metadata: rec.get("metadata").cloned().unwrap_or(serde_json::json!({})),
+                        version: rec.get("version").and_then(|n| n.as_u64()).unwrap_or(1),
+                        tags: rec.get("tags").and_then(|t| t.as_array()).map(|a| a.iter().filter_map(|x| x.as_str().map(|s| s.to_string())).collect()).unwrap_or_else(|| vec![]),
+                    };
+                    map.entry(kind).or_default().push(record);
+                }
+            }
+            // Save into meta
+            meta.set_patterns_snapshot(map, version, etag).await;
+        }
+
+        Ok(())
     }
 
     /// Detect patterns using all enabled detectors
