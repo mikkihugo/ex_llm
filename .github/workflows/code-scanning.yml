@@ -20,7 +20,7 @@ jobs:
   scan:
     name: Run Singularity Scanner and upload SARIF
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && github.repository == 'mikkihugo/quantum_flow'
 
     steps:
       - name: Checkout
