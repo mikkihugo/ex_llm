@@ -73,7 +73,7 @@ defmodule Genesis.Application do
   Enable PgFlow consumer in `config/config.exs`:
 
   ```elixir
-  config :genesis, :pgflow_consumer,
+  config :genesis, :quantum_flow_consumer,
     enabled: true,
     poll_interval_ms: 1000,
     batch_size: 10,

@@ -15,7 +15,7 @@ defmodule Singularity.Workflows.Analysis do
     repo_name: repo_name,
     commit_sha: commit_sha
   } = params) do
-    # Create analysis workflow using ex_pgflow
+    # Create analysis workflow using ex_quantum_flow
     workflow_params = %{
       "type" => Atom.to_string(type),
       "installation_id" => installation_id,

@@ -5,7 +5,7 @@
 //! No I/O operations - designed for NIF usage.
 //!
 //! NOTE: NATS-based storage disabled (Phase 4 NATS removal)
-//! Use ex_pgflow/pgmq via Elixir for persistent storage
+//! Use ex_quantum_flow/pgmq via Elixir for persistent storage
 
 use crate::prompt_tracking::types::{PromptExecutionData, PromptTrackingQuery};
 use anyhow::Error;
@@ -66,10 +66,10 @@ impl PromptTrackingStorage {
     }
 
     /// Create global instance with NATS client (for NIF usage)
-    /// NOTE: NATS disabled - use ex_pgflow/pgmq via Elixir for persistent storage
+    /// NOTE: NATS disabled - use ex_quantum_flow/pgmq via Elixir for persistent storage
     pub async fn new_global() -> Result<Self> {
         // NATS-based storage disabled - use local cache with Elixir integration
-        log::info!("PromptTrackingStorage using local cache (NATS disabled, use ex_pgflow/pgmq via Elixir)");
+        log::info!("PromptTrackingStorage using local cache (NATS disabled, use ex_quantum_flow/pgmq via Elixir)");
 
         Ok(Self {
             executions: HashMap::new(),
@@ -99,7 +99,7 @@ impl PromptTrackingStorage {
 
     /// Async store method for NIF compatibility
     /// NOTE: NATS-based storage disabled (Phase 4 NATS removal)
-    /// Use ex_pgflow/pgmq via Elixir for persistent storage
+    /// Use ex_quantum_flow/pgmq via Elixir for persistent storage
     pub async fn store(&self, _data: PromptExecutionData) -> Result<String, Error> {
         // NATS-based storage disabled - use in-memory stub with Elixir integration
         // Generate correlation ID
@@ -109,13 +109,13 @@ impl PromptTrackingStorage {
 
     /// Async query method for NIF compatibility
     /// NOTE: NATS-based storage disabled (Phase 4 NATS removal)
-    /// Use ex_pgflow/pgmq via Elixir for persistent storage
+    /// Use ex_quantum_flow/pgmq via Elixir for persistent storage
     pub async fn query(
         &self,
         _query: PromptTrackingQuery,
     ) -> Result<Vec<PromptExecutionData>, Error> {
         // NATS-based storage disabled - return empty results with Elixir integration
-        // For persistent queries, use ex_pgflow/pgmq via Elixir
+        // For persistent queries, use ex_quantum_flow/pgmq via Elixir
         Ok(Vec::new())
     }
 

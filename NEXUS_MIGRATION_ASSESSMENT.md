@@ -19,7 +19,7 @@ The synapse_core implementation contains several valuable architectural patterns
 # - Oban background jobs with cron scheduling
 # - Multiple PGMQ consumers for distributed processing
 # - ML Pipeline Supervisors with Broadway orchestration
-# - PGFlow workflow orchestration with better observability
+# - QuantumFlow workflow orchestration with better observability
 ```
 
 **Migration Status:** ✅ **ENHANCED** - More sophisticated and production-ready

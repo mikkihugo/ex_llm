@@ -11,7 +11,7 @@
 ### 🎯 Phase 1: Foundation (Complete) ✅
 
 #### 1. Singularity PgFlow Producers
-**File:** `nexus/singularity/lib/singularity/evolution/pgflow/producers.ex` (380 lines)
+**File:** `nexus/singularity/lib/singularity/evolution/QuantumFlow/producers.ex` (380 lines)
 
 Asynchronous, durable message publishing:
 - ✅ `propose_for_consensus/1` - Send proposals to CentralCloud
@@ -21,7 +21,7 @@ Asynchronous, durable message publishing:
 - ✅ Telemetry integration at every step
 
 #### 2. Singularity PgFlow Consumers
-**File:** `nexus/singularity/lib/singularity/evolution/pgflow/consumers.ex` (380 lines)
+**File:** `nexus/singularity/lib/singularity/evolution/QuantumFlow/consumers.ex` (380 lines)
 
 Process incoming messages from CentralCloud:
 - ✅ `handle_consensus_result/1` - Receive voting results
@@ -31,7 +31,7 @@ Process incoming messages from CentralCloud:
 - ✅ Automatic retry on failure
 
 #### 3. CentralCloud PgFlow Producers
-**File:** `nexus/central_services/lib/centralcloud/evolution/pgflow/producers.ex` (320 lines)
+**File:** `nexus/central_services/lib/centralcloud/evolution/QuantumFlow/producers.ex` (320 lines)
 
 Send results back to instances:
 - ✅ `send_consensus_result/5` - Broadcast voting outcomes
@@ -41,7 +41,7 @@ Send results back to instances:
 - ✅ Broadcast support (all instances)
 
 #### 4. CentralCloud PgFlow Consumers
-**File:** `nexus/central_services/lib/centralcloud/evolution/pgflow/consumers.ex` (380 lines)
+**File:** `nexus/central_services/lib/centralcloud/evolution/QuantumFlow/consumers.ex` (380 lines)
 
 Receive messages from instances:
 - ✅ `handle_proposal_for_consensus/1` - Collect proposals
@@ -85,7 +85,7 @@ Step-by-step deployment guide:
 ┌─────────────────────────────────────────────────────────┐
 │         PostgreSQL (Single DB for all)                  │
 │                                                          │
-│  pgflow_queues     pgflow_messages     pgflow_dlq       │
+│  quantum_flow_queues     quantum_flow_messages     quantum_flow_dlq       │
 │  ├─ proposals_for_consensus_queue                       │
 │  ├─ consensus_results_queue                             │
 │  ├─ metrics_to_guardian_queue                           │
@@ -156,7 +156,7 @@ Step-by-step deployment guide:
 
 ### Before Deployment
 ```
-1. Add ex_pgflow to mix.exs
+1. Add ex_quantum_flow to mix.exs
    ✅ Code ready
 
 2. Configure PgFlow
@@ -166,10 +166,10 @@ Step-by-step deployment guide:
    - Worker counts
 
 3. Run migrations
-   ✅ mix pgflow.init
+   ✅ mix QuantumFlow.init
 
 4. Update supervision tree
-   ✅ Add ExPgflow.Consumer
+   ✅ Add ExQuantumFlow.Consumer
 ```
 
 ### During Development
@@ -289,12 +289,12 @@ Consensus Result Message:
 
 ```
 Singularity:
-  nexus/singularity/lib/singularity/evolution/pgflow/
+  nexus/singularity/lib/singularity/evolution/QuantumFlow/
     ├── producers.ex      (380 lines) ✅
     └── consumers.ex      (380 lines) ✅
 
 CentralCloud:
-  nexus/central_services/lib/centralcloud/evolution/pgflow/
+  nexus/central_services/lib/centralcloud/evolution/QuantumFlow/
     ├── producers.ex      (320 lines) ✅
     └── consumers.ex      (380 lines) ✅
 
@@ -380,26 +380,26 @@ See PGFLOW_IMPLEMENTATION_CHECKLIST.md for examples
 ### Queue Status
 ```elixir
 # In iex:
-ExPgflow.list_queues()
-ExPgflow.get_queue_stats("proposals_for_consensus_queue")
-ExPgflow.list_pending_messages("proposals_for_consensus_queue")
-ExPgflow.list_dlq_messages()
+ExQuantumFlow.list_queues()
+ExQuantumFlow.get_queue_stats("proposals_for_consensus_queue")
+ExQuantumFlow.list_pending_messages("proposals_for_consensus_queue")
+ExQuantumFlow.list_dlq_messages()
 ```
 
 ### Database Queries
 ```sql
 -- View pending messages
 SELECT id, queue_name, payload, retry_count
-FROM pgflow_messages
+FROM quantum_flow_messages
 WHERE status = 'pending'
 ORDER BY priority DESC;
 
 -- View failed messages
-SELECT id, queue_name, error FROM pgflow_dlq;
+SELECT id, queue_name, error FROM quantum_flow_dlq;
 
 -- Queue statistics
 SELECT queue_name, COUNT(*) as pending
-FROM pgflow_messages
+FROM quantum_flow_messages
 WHERE status = 'pending'
 GROUP BY queue_name;
 ```
@@ -461,21 +461,21 @@ GROUP BY queue_name;
 
 ### Messages Not Processing
 1. Check consumer running: `Supervisor.which_children(Singularity.Supervisor)`
-2. Check pending messages: `ExPgflow.list_pending_messages("queue_name")`
-3. Check DLQ for errors: `ExPgflow.list_dlq_messages()`
+2. Check pending messages: `ExQuantumFlow.list_pending_messages("queue_name")`
+3. Check DLQ for errors: `ExQuantumFlow.list_dlq_messages()`
 4. Review logs: `Logger.info` at each step
 
 ### High Latency
 1. Increase worker count: `export PGFLOW_WORKERS=4`
-2. Check database: `SELECT * FROM pgflow_messages WHERE status='processing'`
+2. Check database: `SELECT * FROM quantum_flow_messages WHERE status='processing'`
 3. Monitor slow queries
 4. Profile with `mix profile.fprof`
 
 ### Database Issues
 1. Verify connection: `psql $PGFLOW_DATABASE_URL`
-2. Check tables exist: `\dt pgflow_*`
+2. Check tables exist: `\dt quantum_flow_*`
 3. Check disk space: `SELECT pg_database.datname, pg_size_pretty(pg_database_size(pg_database.datname))`
-4. Run VACUUM: `VACUUM pgflow_messages`
+4. Run VACUUM: `VACUUM quantum_flow_messages`
 
 ---
 
@@ -511,8 +511,8 @@ GROUP BY queue_name;
 ### Day 1: Setup (2 hours)
 ```bash
 # 1. Add dependency
-echo '{:ex_pgflow, "~> 0.1"}' >> nexus/singularity/mix.exs
-echo '{:ex_pgflow, "~> 0.1"}' >> nexus/central_services/mix.exs
+echo '{:ex_quantum_flow, "~> 0.1"}' >> nexus/singularity/mix.exs
+echo '{:ex_quantum_flow, "~> 0.1"}' >> nexus/central_services/mix.exs
 
 # 2. Get dependencies
 cd nexus/singularity && mix deps.get
@@ -521,11 +521,11 @@ cd ../central_services && mix deps.get
 # 3. Copy configuration from PGFLOW_CONFIGURATION.md to config/config.exs
 
 # 4. Run migrations
-cd nexus/singularity && mix pgflow.init
-cd ../central_services && mix pgflow.init
+cd nexus/singularity && mix QuantumFlow.init
+cd ../central_services && mix QuantumFlow.init
 
 # 5. Start services and test
-mix test test/singularity/evolution/pgflow/
+mix test test/singularity/evolution/QuantumFlow/
 ```
 
 ### Day 2-3: Integration (6-8 hours)

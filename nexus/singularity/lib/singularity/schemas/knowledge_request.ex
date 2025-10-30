@@ -1,7 +1,7 @@
 defmodule Singularity.Schemas.KnowledgeRequest do
   @moduledoc """
   Generic knowledge request ticket used to coordinate between Singularity
-  and CentralCloud/PGFlow workflows.
+  and CentralCloud/QuantumFlow workflows.
 
   Supports multiple request types (patterns, signatures, datasets, models, workflows)
   and tracks lifecycle state so downstream systems can react via NOTIFY.

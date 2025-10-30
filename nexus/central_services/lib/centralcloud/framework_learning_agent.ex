@@ -38,7 +38,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
   alias CentralCloud.Repo
   alias CentralCloud.Schemas.Package
   alias CentralCloud.{TemplateService}
-  alias Pgflow
+  alias QuantumFlow
 
   # ETS table for prompt caching
   @prompt_cache_table :framework_prompt_cache
@@ -245,7 +245,7 @@ defmodule CentralCloud.FrameworkLearningAgent do
 
     Logger.info("Calling LLM for #{package.name}, request_id=#{request_id}")
 
-    case Pgflow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
+    case QuantumFlow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",

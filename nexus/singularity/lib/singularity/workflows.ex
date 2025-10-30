@@ -7,7 +7,7 @@ defmodule Singularity.Workflows do
   - Workflow execution (replaces HTDAG.Executor)
   - Approval/authorization (integrates with Arbiter)
 
-  All workflows are stored in ETS `:pgflow_workflows` table for immediate visibility,
+  All workflows are stored in ETS `:quantum_flow_workflows` table for immediate visibility,
   with optional database persistence for durability.
   """
 
@@ -15,7 +15,7 @@ defmodule Singularity.Workflows do
   alias Singularity.Agents.Arbiter
   alias Singularity.Architecture.PatternDetector
 
-  @table :pgflow_workflows
+  @table :quantum_flow_workflows
 
   def init do
     :ets.new(@table, [:named_table, :public, read_concurrency: true])

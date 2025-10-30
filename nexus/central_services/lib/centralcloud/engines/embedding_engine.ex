@@ -22,7 +22,7 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
       model: model
     }
 
-    with :ok <- Pgflow.send_with_notify("embedding.request", request, CentralCloud.Repo, expect_reply: false) do
+    with :ok <- QuantumFlow.send_with_notify("embedding.request", request, CentralCloud.Repo, expect_reply: false) do
       wait_for_embedding_response(timeout)
     else
       {:error, reason} ->
@@ -102,7 +102,7 @@ defmodule CentralCloud.Engines.EmbeddingEngine do
     }})
     
     # Send with reply tracking
-    case Pgflow.send_with_notify("embedding.request", %{"request_id" => request_id}, CentralCloud.Repo, expect_reply: true, timeout: timeout) do
+    case QuantumFlow.send_with_notify("embedding.request", %{"request_id" => request_id}, CentralCloud.Repo, expect_reply: true, timeout: timeout) do
       {:ok, response} ->
         # Update tracking
         :ets.insert(:embedding_requests, {request_id, %{

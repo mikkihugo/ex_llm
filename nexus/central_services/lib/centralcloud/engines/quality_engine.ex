@@ -1,15 +1,15 @@
 defmodule CentralCloud.Engines.LintingEngine do
   @moduledoc """
-  Linting Engine – delegates code quality analysis to Singularity via PGFlow.
+  Linting Engine – delegates code quality analysis to Singularity via QuantumFlow.
 
   CentralCloud keeps Rust NIF compilation disabled, so all linting and quality
   evaluation runs inside Singularity. This module provides a thin façade that
-  packages requests, sends them through PGFlow, and returns the structured
+  packages requests, sends them through QuantumFlow, and returns the structured
   responses.
   """
 
   require Logger
-  alias Pgflow
+  alias QuantumFlow
 
   @default_quality_checks ["maintainability", "performance", "security", "architecture"]
   @default_languages ["elixir", "rust", "javascript"]
@@ -66,7 +66,7 @@ defmodule CentralCloud.Engines.LintingEngine do
   # ---------------------------------------------------------------------------
 
   defp linting_engine_call(operation, request) do
-    case Pgflow.send_with_notify("engine.linting.#{operation}", request, CentralCloud.Repo,
+    case QuantumFlow.send_with_notify("engine.linting.#{operation}", request, CentralCloud.Repo,
            timeout: 30_000
          ) do
       {:ok, response} ->

@@ -103,7 +103,7 @@ defmodule Singularity.Knowledge.TemplateService do
       purpose: Render templates with Solid/Handlebars engine
       critical: true
 
-    - module: Singularity.Messaging.Client (PGFlow-based)
+    - module: Singularity.Messaging.Client (QuantumFlow-based)
       function: publish/2, subscribe/1
       purpose: pgmq messaging for template requests/responses
       critical: true
@@ -127,7 +127,7 @@ defmodule Singularity.Knowledge.TemplateService do
       frequency: high
 
   depends_on:
-    - Singularity.Messaging.Client (PGFlow-based messaging)
+    - Singularity.Messaging.Client (QuantumFlow-based messaging)
     - Singularity.Knowledge.TemplateCache (MUST start first - storage)
     - PostgreSQL knowledge_artifacts table (MUST exist)
 
@@ -215,14 +215,14 @@ defmodule Singularity.Knowledge.TemplateService do
 
   @impl true
   def init(opts) do
-    # PGFlow-based messaging client (not pgmq/NATS)
-    messaging_client_name = :pgflow_client
+    # QuantumFlow-based messaging client (not pgmq/NATS)
+    messaging_client_name = :quantum_flow_client
 
-    # Check if PGFlow messaging is enabled
-    pgflow_enabled = Application.get_env(:singularity, :pgflow, %{})[:enabled] != false
+    # Check if QuantumFlow messaging is enabled
+    quantum_flow_enabled = Application.get_env(:singularity, :quantum_flow, %{})[:enabled] != false
 
-    if pgflow_enabled do
-      # Subscribe to template requests using PGFlow workflows
+    if quantum_flow_enabled do
+      # Subscribe to template requests using QuantumFlow workflows
       Enum.each(
         [
           "template.get.>",
@@ -236,17 +236,17 @@ defmodule Singularity.Knowledge.TemplateService do
         end
       )
 
-      Logger.info("Template PGFlow service started")
+      Logger.info("Template QuantumFlow service started")
       Logger.info("  Listening on: template.get.*, template.search.*")
     else
-      Logger.info("Template service running in local-only mode (PGFlow disabled)")
+      Logger.info("Template service running in local-only mode (QuantumFlow disabled)")
     end
 
     {:ok,
      %{
        messaging_client: messaging_client_name,
        requests_handled: 0,
-       pgflow_enabled: pgflow_enabled
+       quantum_flow_enabled: quantum_flow_enabled
      }}
   end
 

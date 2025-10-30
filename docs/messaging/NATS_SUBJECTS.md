@@ -1,19 +1,19 @@
-# pgflow Queue Architecture
+# QuantumFlow Queue Architecture
 
-This document defines the pgflow queue patterns for Singularity's distributed architecture.
+This document defines the QuantumFlow queue patterns for Singularity's distributed architecture.
 
-**Note:** This document has been updated from NATS subjects to pgflow queues as part of the migration from NATS to pgflow-based messaging.
+**Note:** This document has been updated from NATS subjects to QuantumFlow queues as part of the migration from NATS to quantum_flow-based messaging.
 
 ## Queue Hierarchy
 
-### Unified pgflow Queues (PostgreSQL-based)
+### Unified QuantumFlow Queues (PostgreSQL-based)
 ```
-pgflow_requests             # All requests go here (unified entry point)
-pgflow_responses            # All responses come back
-pgflow_request_simple       # Simple complexity requests
-pgflow_request_medium       # Medium complexity requests  
-pgflow_request_complex      # Complex complexity requests
-pgflow_request_direct       # Direct routing bypass (internal use)
+quantum_flow_requests             # All requests go here (unified entry point)
+quantum_flow_responses            # All responses come back
+quantum_flow_request_simple       # Simple complexity requests
+quantum_flow_request_medium       # Medium complexity requests  
+quantum_flow_request_complex      # Complex complexity requests
+quantum_flow_request_direct       # Direct routing bypass (internal use)
 ```
 
 ### LLM Communication
@@ -25,7 +25,7 @@ llm_stream                  # Streaming LLM requests
 llm_tools_execute           # LLM tool execution requests
 llm_tools_result            # LLM tool execution results
 
-# HTDAG Self-Evolution LLM (pgflow-first architecture)
+# HTDAG Self-Evolution LLM (quantum_flow-first architecture)
 llm_req_<model_id>          # Model-specific LLM completion requests
 llm_resp_<run_id>_<node_id> # Direct reply queue for LLM responses
 llm_tokens_<run_id>_<node_id> # Token streaming for real-time feedback
@@ -185,8 +185,8 @@ system_capabilities_available        # List only available capabilities
 
 **Example: Agent discovering what it can do**
 ```elixir
-# Agent sends pgflow request
-{:ok, response} = Pgflow.send_with_notify("system_capabilities_available", %{}, Repo)
+# Agent sends QuantumFlow request
+{:ok, response} = QuantumFlow.send_with_notify("system_capabilities_available", %{}, Repo)
 
 # Response shows all available capabilities
 %{

@@ -4,7 +4,7 @@ defmodule Singularity.Repo.Migrations.CreateJobResultsTable do
   @moduledoc """
   Create job_results table for workflow execution tracking and result storage.
 
-  This table stores the results of all workflow executions via Pgflow.Executor,
+  This table stores the results of all workflow executions via QuantumFlow.Executor,
   enabling:
   - Result persistence and querying
   - Workflow execution history
@@ -60,9 +60,9 @@ defmodule Singularity.Repo.Migrations.CreateJobResultsTable do
     # Composite index for common queries (workflow + status + date)
     create index(:job_results, [:workflow, :status, :inserted_at])
 
-    # Foreign key reference to pgflow_instances
+    # Foreign key reference to quantum_flow_instances
     alter table(:job_results) do
-      modify :instance_id, references(:pgflow_instances, column: :instance_id, type: :uuid, on_delete: :nilify_all)
+      modify :instance_id, references(:quantum_flow_instances, column: :instance_id, type: :uuid, on_delete: :nilify_all)
     end
   end
 end

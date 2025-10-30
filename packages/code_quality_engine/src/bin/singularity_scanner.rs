@@ -10,11 +10,11 @@ use serde::{Deserialize, Serialize};
 use anyhow::Result;
 
 mod scanner;
-mod api_client;
+// api_client temporarily disabled (stub)
 mod formatter;
 
 use scanner::CodeScanner;
-use formatter::OutputFormatter;
+use formatter::{OutputFormatter, AnalysisResult as FmtResult, Recommendation as FmtRec};
 
 /// Singularity Code Quality Scanner
 #[derive(Parser)]
@@ -99,17 +99,21 @@ async fn main() -> Result<()> {
         } => {
             let target_path = path.unwrap_or_else(|| PathBuf::from("."));
 
-            // Try cloud analysis first, fallback to local
-            let result = if let (Some(endpoint), Some(key)) = (api_endpoint, api_key) {
-                match api_client::analyze_cloud(&endpoint, &key, &target_path, enable_intelligence).await {
-                    Ok(result) => result,
-                    Err(e) => {
-                        eprintln!("Cloud analysis failed: {}, falling back to local", e);
-                        scanner::analyze_local(&target_path).await?
-                    }
-                }
-            } else {
-                scanner::analyze_local(&target_path).await?
+            // Run local analysis (cloud path disabled in stub)
+            let local = scanner::analyze_local(&target_path).await?;
+            let result = FmtResult {
+                quality_score: local.quality_score,
+                issues_count: local.issues_count,
+                recommendations: local.recommendations.into_iter().map(|r| FmtRec {
+                    r#type: r.r#type,
+                    severity: r.severity,
+                    message: r.message,
+                    file: r.file,
+                    line: r.line,
+                }).collect(),
+                metrics: local.metrics,
+                patterns_detected: local.patterns_detected,
+                intelligence_collected: local.intelligence_collected,
             };
 
             // Format and output results

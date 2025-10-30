@@ -2,7 +2,7 @@
 
 ## Overview
 
-Single knowledge artifact system in CentralCloud PostgreSQL with pgvector, distributed via pgflow to Singularity instances as read-only mirrors.
+Single knowledge artifact system in CentralCloud PostgreSQL with pgvector, distributed via QuantumFlow to Singularity instances as read-only mirrors.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ CentralCloud.TemplateService.sync_from_disk()
     ↓
 PostgreSQL (templates table) + pgvector (2560-dim embeddings)
     ↓
-pgflow.send_with_notify() → Singularity instances
+QuantumFlow.send_with_notify() → Singularity instances
     ↓
 Logical Replication → Singularity DB (read-only replica)
 ```
@@ -30,7 +30,7 @@ Logical Replication → Singularity DB (read-only replica)
 - **Table**: `central_cloud_templates` (read-only replica)
 - **Same schema** as CentralCloud templates
 - **Writable**: NO (read-only mirror)
-- **Sync**: Via PostgreSQL Logical Replication + pgflow notifications
+- **Sync**: Via PostgreSQL Logical Replication + QuantumFlow notifications
 
 ## Artifact Categories
 
@@ -56,7 +56,7 @@ All artifact types stored in same table:
 
 ## Communication
 
-- **CentralCloud → Singularity**: pgflow (not NATS)
+- **CentralCloud → Singularity**: QuantumFlow (not NATS)
   - Subjects: `template.sync.{category}.{id}`
   - Subjects: `central.template.get`, `central.template.search`, `central.template.store`
 - **Replication**: PostgreSQL Logical Replication (automatic, real-time)
@@ -66,7 +66,7 @@ All artifact types stored in same table:
 
 1. **Single Source of Truth**: CentralCloud PostgreSQL
 2. **Semantic Search**: pgvector (2560-dim embeddings)
-3. **Distribution**: pgflow notifications + logical replication
+3. **Distribution**: QuantumFlow notifications + logical replication
 4. **Read-only Mirrors**: Singularity instances have local read-only copies
 5. **Versioning**: Templates versioned, can query latest or specific version
 6. **Unified Storage**: Templates, models, patterns all in one table

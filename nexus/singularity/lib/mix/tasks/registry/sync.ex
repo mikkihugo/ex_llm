@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Registry.Sync do
   use Mix.Task
 
-  alias Pgflow.Executor
+  alias QuantumFlow.Executor
   alias Singularity.Workflows.CodebaseRegistrySyncWorkflow
 
   @shortdoc "Run analyzers and persist results to the codebase registry"
@@ -12,7 +12,7 @@ defmodule Mix.Tasks.Registry.Sync do
 
     codebase_id = Application.get_env(:singularity, :codebase_id, "singularity")
 
-    Mix.shell().info("Running registry sync for #{codebase_id} via PGFlow")
+    Mix.shell().info("Running registry sync for #{codebase_id} via QuantumFlow")
 
     case Executor.execute(
            CodebaseRegistrySyncWorkflow,
@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Registry.Sync do
         Mix.shell().info("Registry snapshot saved (#{snapshot_codebase}/#{snapshot_id})")
 
       {:error, reason} ->
-        Mix.raise("PGFlow registry sync failed: #{inspect(reason)}")
+        Mix.raise("QuantumFlow registry sync failed: #{inspect(reason)}")
     end
   end
 

@@ -24,7 +24,7 @@ defmodule Singularity.Database.BackupWorker do
     |> Oban.insert()
   """
 
-  use Oban.Worker, queue: :maintenance
+  use Singularity.JobQueue.Worker, queue: :maintenance
 
   require Logger
 
@@ -60,7 +60,7 @@ defmodule Singularity.Database.BackupWorker do
   def schedule_hourly do
     %{"type" => "hourly"}
     |> new(schedule_in: {1, :hour})
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @doc """
@@ -69,7 +69,7 @@ defmodule Singularity.Database.BackupWorker do
   def schedule_daily do
     %{"type" => "daily"}
     |> new(schedule_in: {1, :day})
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   # Private functions

@@ -30,15 +30,15 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ## Performance Notes
 
-  - Change proposal: 10-50ms (async via ex_pgflow)
-  - Pattern recording: 5-20ms (async via ex_pgflow)
+  - Change proposal: 10-50ms (async via ex_quantum_flow)
+  - Pattern recording: 5-20ms (async via ex_quantum_flow)
   - Consensus await: 100ms-30s (configurable timeout)
   - Rollback handling: 50-200ms
 
   ## Concurrency Semantics
 
   - Single-threaded GenServer for state management
-  - Async messaging via ex_pgflow (pgmq + NOTIFY)
+  - Async messaging via ex_quantum_flow (pgmq + NOTIFY)
   - Thread-safe change tracking
   - Parallel consensus awaiting support
 
@@ -76,7 +76,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ## Relationships
 
-  - **Uses**: `ExPgflow` - Message queue orchestration
+  - **Uses**: `ExQuantumFlow` - Message queue orchestration
   - **Uses**: `Singularity.Database.MessageQueue` - pgmq integration
   - **Uses**: `Singularity.Evolution.SafetyProfiles` - Safety threshold lookup
   - **Used by**: All agents via AgentBehavior callbacks
@@ -100,7 +100,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "CentralCloud.Guardian": "Sends change proposals",
       "CentralCloud.PatternAggregator": "Sends patterns",
       "CentralCloud.Consensus": "Receives approval decisions",
-      "ExPgflow": "Message transport layer"
+      "ExQuantumFlow": "Message transport layer"
     }
   }
   ```
@@ -109,7 +109,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ```mermaid
   graph TD
-    A[AgentCoordinator] -->|propose_change| B[ExPgflow]
+    A[AgentCoordinator] -->|propose_change| B[ExQuantumFlow]
     A -->|record_pattern| B
     A -->|await_consensus| C[Consensus Tracker]
 
@@ -138,11 +138,11 @@ defmodule Singularity.Evolution.AgentCoordinator do
     propose_change/3:
       - validate_change/1
       - SafetyProfiles.get_profile/1
-      - ExPgflow.publish/2
+      - ExQuantumFlow.publish/2
       - track_change/2
     record_pattern/3:
       - validate_pattern/1
-      - ExPgflow.publish/2
+      - ExQuantumFlow.publish/2
     await_consensus/1:
       - poll_consensus_response/1
       - handle_consensus_result/2
@@ -161,7 +161,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
 
   ## Search Keywords
 
-  agent-coordinator, centralcloud-bridge, consensus-awaiting, change-proposal, pattern-recording, rollback-handling, bidirectional-communication, ex-pgflow, guardian, aggregator
+  agent-coordinator, centralcloud-bridge, consensus-awaiting, change-proposal, pattern-recording, rollback-handling, bidirectional-communication, ex-quantum_flow, guardian, aggregator
   """
 
   use GenServer

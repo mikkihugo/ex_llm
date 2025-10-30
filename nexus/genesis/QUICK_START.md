@@ -81,7 +81,7 @@ In Genesis logs, you'll see 4 jobs processing in parallel:
 **File:** `config/config.exs`
 
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,                         # ✅ ENABLED
   poll_interval_ms: 1000,                # Poll every 1 second
   batch_size: 10,                        # 10 workflows per batch
@@ -114,7 +114,7 @@ config :genesis, :shared_queue,
 | File | Change |
 |------|--------|
 | `config/config.exs` | Added PgFlow consumer config, disabled legacy |
-| `lib/genesis/pgflow_workflow_consumer.ex` | Added parallel processing |
+| `lib/genesis/quantum_flow_workflow_consumer.ex` | Added parallel processing |
 | `lib/genesis/application.ex` | Already integrated |
 
 ## Monitoring
@@ -175,7 +175,7 @@ tail -f log/dev.log | grep Genesis
 
 - `PGFLOW_INTEGRATION.md` - Complete technical reference
 - `TEST_PGFLOW_INTEGRATION.md` - Detailed test scenarios
-- `lib/genesis/pgflow_workflow_consumer.ex` - Source code with extensive docs
+- `lib/genesis/quantum_flow_workflow_consumer.ex` - Source code with extensive docs
 - `lib/genesis/rule_engine.ex` - Rule application logic
 - `lib/genesis/llm_config_manager.ex` - LLM configuration updates
 - `lib/genesis/job_executor.ex` - Job execution logic

@@ -101,7 +101,7 @@ Phase 4: Integration & Learning
     ┌──────────────────────────────┐
     │ Workflows.create_workflow/1  │
     │ Persists to:                 │
-    │ - ETS (:pgflow_workflows)    │
+    │ - ETS (:quantum_flow_workflows)    │
     │ - [Future] PostgreSQL        │
     └────────────┬─────────────────┘
                  │
@@ -146,7 +146,7 @@ Phase 4: Integration & Learning
 
 ### 1. Workflows (Central Hub)
 - **Purpose**: Unified HTDAG + approval orchestration
-- **State**: ETS table `:pgflow_workflows` for fast lookups
+- **State**: ETS table `:quantum_flow_workflows` for fast lookups
 - **Future**: PostgreSQL for durability
 - **Backward Compatibility**: PgFlowAdapter + HTDAG.Executor are shims
 
@@ -357,7 +357,7 @@ iex> SelfImprovementAgent.apply_workflow_with_approval(codebase_id, token)
 | Supervisor Modules | 5+ | Lifecycle management trees |
 | Workflow Nodes per Todo | ~40 | 4 phases × 2 issues × varying workers |
 | Approval Token TTL | 60 seconds | One-time use, auto-expire |
-| ETS Table Lookups | O(1) | `:pgflow_workflows` for fast visibility |
+| ETS Table Lookups | O(1) | `:quantum_flow_workflows` for fast visibility |
 | Default Behavior | Dry-run safe | All workers default to `dry_run: true` |
 | Backward Compatibility | 100% | Old PgFlow + HTDAG APIs still work |
 
@@ -405,7 +405,7 @@ iex> SelfImprovementAgent.apply_workflow_with_approval(codebase_id, token)
 - `lib/singularity/execution/todo_swarm_coordinator.ex` - Updated to use Workflows
 
 ### Backward Compatibility Shims
-- `lib/singularity/pgflow_adapter.ex` - Delegates to Workflows
+- `lib/singularity/quantum_flow_adapter.ex` - Delegates to Workflows
 - `lib/singularity/htdag/executor.ex` - Delegates to Workflows
 
 ---

@@ -424,7 +424,7 @@ defmodule Singularity.Execution.TodoStore do
   def notify_ready_todos(todos) when is_list(todos) do
     if length(todos) > 0 do
       # Send general notification that todos are ready (not specific IDs for efficiency)
-      case Pgflow.Notifications.send_with_notify(
+      case QuantumFlow.Notifications.send_with_notify(
              "todo_ready",
              %{type: "todos_ready", count: length(todos)},
              Singularity.Repo

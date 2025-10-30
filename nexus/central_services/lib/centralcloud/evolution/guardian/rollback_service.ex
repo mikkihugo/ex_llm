@@ -12,7 +12,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
   2. Learning from failures to compute optimal rollback strategies
   3. Auto-approving safe changes based on similarity to past successes
   4. Auto-rolling back dangerous changes when metrics breach thresholds
-  5. Broadcasting rollback commands to affected instances via ex_pgflow
+  5. Broadcasting rollback commands to affected instances via ex_quantum_flow
 
   ## Architecture
 
@@ -56,7 +56,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
     ],
     "dependencies": [
       "CentralCloud.Repo",
-      "PGFlow (ex_pgflow)",
+      "QuantumFlow (ex_quantum_flow)",
       "pgvector (embeddings)"
     ]
   }
@@ -84,7 +84,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
     auto_rollback_on_threshold_breach/3:
       - detects metric threshold violations
       - retrieves rollback strategy
-      - broadcasts rollback command via ex_pgflow
+      - broadcasts rollback command via ex_quantum_flow
   ```
 
   ## Anti-Patterns
@@ -292,7 +292,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
   Automatically rollback a change that breached safety thresholds.
 
   Triggered when report_metrics/3 detects a threshold violation. Retrieves the learned
-  rollback strategy, broadcasts rollback command to the affected instance via ex_pgflow,
+  rollback strategy, broadcasts rollback command to the affected instance via ex_quantum_flow,
   and updates the change status.
 
   ## Parameters
@@ -596,7 +596,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
   defp execute_rollback(instance_id, change_id, strategy, breach_reason) do
     rollback_id = Ecto.UUID.generate()
 
-    # Broadcast rollback command via ex_pgflow
+    # Broadcast rollback command via ex_quantum_flow
     rollback_command = %{
       rollback_id: rollback_id,
       change_id: change_id,
@@ -606,7 +606,7 @@ defmodule CentralCloud.Evolution.Guardian.RollbackService do
       timestamp: DateTime.utc_now()
     }
 
-    # TODO: Publish to ex_pgflow queue "evolution_rollback_commands"
+    # TODO: Publish to ex_quantum_flow queue "evolution_rollback_commands"
     Logger.info("[Guardian] Broadcasting rollback command",
       rollback_id: rollback_id,
       instance_id: instance_id,

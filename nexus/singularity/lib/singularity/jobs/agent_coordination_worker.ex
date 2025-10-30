@@ -5,7 +5,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   Replaces pgmq publish/subscribe patterns for agent communication.
   Now uses Oban jobs for reliable, ordered message passing between agents.
 
-  Fires real-time notifications via Pgflow for coordination visibility.
+  Fires real-time notifications via QuantumFlow for coordination visibility.
 
   Patterns replaced:
   - Agent status updates
@@ -14,7 +14,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
   - Agent coordination signals
   """
 
-  use Singularity.QuantumFlow.Worker, queue: :default, max_attempts: 3
+  use QuantumFlow.Worker, queue: :default, max_attempts: 3
 
   require Logger
   alias Singularity.Workflows.AgentCoordination
@@ -37,7 +37,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
     |> new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @impl Oban.Worker
@@ -59,7 +59,7 @@ defmodule Singularity.Jobs.AgentCoordinationWorker do
       "payload" => args["payload"] || %{}
     }
 
-    case Pgflow.Executor.execute(AgentCoordination, input, timeout: 30000) do
+    case QuantumFlow.Executor.execute(AgentCoordination, input, timeout: 30000) do
       {:ok, result} ->
         duration_ms = System.monotonic_time(:millisecond) - start_time
 

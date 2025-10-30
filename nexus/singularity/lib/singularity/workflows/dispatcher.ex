@@ -11,7 +11,7 @@ defmodule Singularity.Workflows.Dispatcher do
   - ✅ Config-driven workflow definitions
   - ✅ Dynamic workflow instantiation
   - ✅ Backward compatible with existing workflow modules
-  - ✅ Support for pgflow and RCA workflows
+  - ✅ Support for QuantumFlow and RCA workflows
   - ✅ Lazy loading and caching
 
   ## Usage
@@ -73,7 +73,7 @@ defmodule Singularity.Workflows.Dispatcher do
       Agent[Agent/System] -->|request workflow| Dispatcher[WorkflowDispatcher]
       Dispatcher -->|lookup config| Registry[Workflow Registry]
       Registry -->|return module| Module[Workflow Module]
-      Module -->|execute| Pgflow[PGFlow Executor]
+      Module -->|execute| QuantumFlow[QuantumFlow Executor]
 
       style Dispatcher fill:#90EE90
       style Registry fill:#FFD700
@@ -112,7 +112,7 @@ defmodule Singularity.Workflows.Dispatcher do
   ### Search Keywords
 
   workflow dispatcher, workflow registry, config-driven, centralized workflow,
-  pgflow integration, workflow instantiation, workflow discovery
+  QuantumFlow integration, workflow instantiation, workflow discovery
   """
 
   require Logger
@@ -226,7 +226,7 @@ defmodule Singularity.Workflows.Dispatcher do
   Looks up workflow module and calls its workflow_definition/0 function,
   merging in provided config overrides.
 
-  Returns workflow definition map suitable for pgflow execution.
+  Returns workflow definition map suitable for QuantumFlow execution.
   """
   @spec create_workflow(atom() | String.t(), map()) ::
           {:ok, map()} | {:error, :workflow_not_found | :invalid_config}
@@ -244,7 +244,7 @@ defmodule Singularity.Workflows.Dispatcher do
   @doc """
   Get workflow definition from a module safely.
 
-  Handles both pgflow.Workflow and BaseWorkflow-style definitions.
+  Handles both QuantumFlow.Workflow and BaseWorkflow-style definitions.
   """
   @spec safe_call_workflow_definition(module()) ::
           {:ok, map()} | {:error, :definition_failed}

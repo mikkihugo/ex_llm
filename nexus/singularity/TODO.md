@@ -6,8 +6,8 @@
 - [x] Compilation Error - artifact_store.ex - Already has `import Ecto.Query` (line 91)
 - [x] Compilation Error - system_health_page.ex - Fixed type matching
 - [x] SASL logging configured for all environments (dev/test/prod)
-- [x] All NATS references removed - Migrated to PGFlow
-- [x] Dependency conflict with ex_pgflow - Fixed with `override: true`
+- [x] All NATS references removed - Migrated to QuantumFlow
+- [x] Dependency conflict with ex_quantum_flow - Fixed with `override: true`
 
 ### Documentation Tasks - COMPLETED ✅
 - [x] Updated README.md - Removed outdated sections
@@ -32,7 +32,7 @@
 - [x] Database tool execution workflow - Implemented with DatabaseToolsExecutor integration
 - [x] Database tool authentication - Implemented (internal tooling - token-based if provided)
 - [x] Database tool response delivery - Implemented via Messaging.Client.publish
-- [x] Database tool PGFlow subscription - Implemented subscribe_to_pgflow_tool_requests
+- [x] Database tool QuantumFlow subscription - Implemented subscribe_to_quantum_flow_tool_requests
 
 #### Story Decomposition & SPARC (2 implementations)
 - [x] Story decomposition SPARC integration - Implemented integrate_with_sparc_completion
@@ -60,7 +60,7 @@
 - [x] Chat conversation metrics - Implemented generate_daily_summary with Telemetry queries
 - [x] Telemetry backend integration - Implemented get_counter_value (StatsD/Prometheus/Internal ETS)
 
-#### PGFlow Subscriptions & Workflows (4 implementations)
+#### QuantumFlow Subscriptions & Workflows (4 implementations)
 - [x] Control agent improvement subscription - Implemented subscribe_to_agent + handle_agent_improvement_completion
 - [x] Control system events subscription - Implemented subscribe_to_system_events
 - [x] System event broadcast workflow - Created SystemEventBroadcastWorkflow module
@@ -87,11 +87,11 @@
   - Dev: `:tty` console output
   - Test: `:silent` (errors via ExUnit)
   - Prod: `{:file, ~c"log/sasl-error.log"}` with UTC timestamps
-- **NATS Removal:** ✅ Complete - all migrated to PGFlow
-- **Dependencies:** ✅ Fixed ex_pgflow conflict with override: true
+- **NATS Removal:** ✅ Complete - all migrated to QuantumFlow
+- **Dependencies:** ✅ Fixed ex_quantum_flow conflict with override: true
 - **Simple Implementations:** ✅ Completed (26+ implementations)
 - **Complex ML Features:** ✅ Production-grade scaffolding completed
-- **Architectural Placeholders:** ✅ All PGFlow migrations completed
+- **Architectural Placeholders:** ✅ All QuantumFlow migrations completed
 
 **Total Implementations:** 26+ core features + 10 ML scaffolding features = **36+ TODOs completed**
 

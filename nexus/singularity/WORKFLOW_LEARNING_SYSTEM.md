@@ -136,7 +136,7 @@ config :singularity, :workflows,
   ]
 ```
 
-### 3. PgFlow Integration (lib/singularity/evolution/pgflow/)
+### 3. PgFlow Integration (lib/singularity/evolution/QuantumFlow/)
 
 **Queue Structure:**
 
@@ -148,7 +148,7 @@ config :singularity, :workflows,
 | `singularity_rollback_triggers` | ← Guardian | Rollback signals | `Consumers.handle_rollback_trigger` |
 | `singularity_safety_profiles` | ← Genesis | Safety updates | `Consumers.handle_safety_profile_update` |
 
-**Producers (lib/singularity/evolution/pgflow/producers.ex):**
+**Producers (lib/singularity/evolution/QuantumFlow/producers.ex):**
 ```elixir
 # Send workflow patterns to CentralCloud
 {:ok, msg_id} = Producers.publish_message(
@@ -157,7 +157,7 @@ config :singularity, :workflows,
 )
 ```
 
-**Consumers (lib/singularity/evolution/pgflow/consumers.ex):**
+**Consumers (lib/singularity/evolution/QuantumFlow/consumers.ex):**
 ```elixir
 # Handle consensus patterns from CentralCloud
 {:ok, "registered"} = Consumers.handle_workflow_consensus_patterns(%{
@@ -178,7 +178,7 @@ config :singularity, :workflows,
 })
 ```
 
-**Message Router (lib/singularity/evolution/pgflow/message_router.ex):**
+**Message Router (lib/singularity/evolution/QuantumFlow/message_router.ex):**
 ```elixir
 # Routes messages to appropriate handler based on type
 {:ok, "processed"} = MessageRouter.route_message(%{
@@ -190,7 +190,7 @@ config :singularity, :workflows,
 {:ok, pid} = MessageRouter.listen_on_queue("singularity_workflow_consensus_patterns")
 ```
 
-**Listener (lib/singularity/evolution/pgflow/listener.ex):**
+**Listener (lib/singularity/evolution/QuantumFlow/listener.ex):**
 ```elixir
 # Auto-starts on application boot if configured
 # Listens to all configured queues
@@ -301,7 +301,7 @@ export CENTRALCLOUD_ENABLED=true
 ### Configuration (config/config.exs)
 
 ```elixir
-config :singularity, :pgflow_queues,
+config :singularity, :quantum_flow_queues,
   enabled: true,
   queue_listeners: [
     "singularity_workflow_consensus_patterns",
@@ -414,10 +414,10 @@ CentralCloud service needs to:
 |------|---------|
 | `lib/singularity/evolution/genesis_workflow_learner.ex` | Core learning engine (680 lines) |
 | `lib/singularity/workflows/dispatcher.ex` | Config-driven workflow registry (383 lines) |
-| `lib/singularity/evolution/pgflow/message_router.ex` | Message routing to handlers (NEW, 200 lines) |
-| `lib/singularity/evolution/pgflow/listener.ex` | Auto-start queue listeners (NEW, 280 lines) |
-| `lib/singularity/evolution/pgflow/consumers.ex` | Message handlers (extended, +50 lines) |
-| `lib/singularity/evolution/pgflow/producers.ex` | Message publishing (existing) |
+| `lib/singularity/evolution/QuantumFlow/message_router.ex` | Message routing to handlers (NEW, 200 lines) |
+| `lib/singularity/evolution/QuantumFlow/listener.ex` | Auto-start queue listeners (NEW, 280 lines) |
+| `lib/singularity/evolution/QuantumFlow/consumers.ex` | Message handlers (extended, +50 lines) |
+| `lib/singularity/evolution/QuantumFlow/producers.ex` | Message publishing (existing) |
 | `config/config.exs` | Workflow + PgFlow config (extended) |
 
 ## Testing the System
@@ -427,7 +427,7 @@ CentralCloud service needs to:
 cd singularity
 mix test test/singularity/evolution/genesis_workflow_learner_test.exs
 mix test test/singularity/workflows/dispatcher_test.exs
-mix test test/singularity/evolution/pgflow/message_router_test.exs
+mix test test/singularity/evolution/QuantumFlow/message_router_test.exs
 ```
 
 ### Integration Tests
@@ -442,7 +442,7 @@ mix test --only integration
 ### Manual Testing
 ```elixir
 # Check if listeners are running
-Singularity.Evolution.Pgflow.Listener.start_link()
+Singularity.Evolution.QuantumFlow.Listener.start_link()
 
 # Send test message
 payload = %{
@@ -462,7 +462,7 @@ payload = %{
   ]
 }
 
-Singularity.Evolution.Pgflow.MessageRouter.route_message(payload)
+Singularity.Evolution.QuantumFlow.MessageRouter.route_message(payload)
 ```
 
 ## Monitoring & Observability
@@ -473,7 +473,7 @@ Singularity.Evolution.Pgflow.MessageRouter.route_message(payload)
 :telemetry.execute([:evolution, :workflow, :analyzed], %{count: N})
 :telemetry.execute([:evolution, :workflow, :published_to_genesis], %{count: N})
 :telemetry.execute([:evolution, :workflow, :reported_to_centralcloud], %{count: N})
-:telemetry.execute([:evolution, :pgflow, :workflow_patterns_registered], %{count: N})
+:telemetry.execute([:evolution, :QuantumFlow, :workflow_patterns_registered], %{count: N})
 ```
 
 ### Database Queries
@@ -543,7 +543,7 @@ Singularity.PgFlow.list_queues()
 
 ```elixir
 # 1. Check if listener is running
-Process.whereis(Singularity.Evolution.Pgflow.Listener)
+Process.whereis(Singularity.Evolution.QuantumFlow.Listener)
 
 # 2. Check queue for pending messages
 Singularity.PgFlow.read_from_queue("singularity_workflow_consensus_patterns")

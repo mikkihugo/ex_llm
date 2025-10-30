@@ -1,8 +1,8 @@
-defmodule Singularity.RCA.PgflowIntegration do
+defmodule Singularity.RCA.QuantumFlowIntegration do
   @moduledoc """
   RCA + PgFlow Integration - Tracks workflow execution within RCA sessions
 
-  Enables RCA system to understand which pgflow workflows are used in code generation
+  Enables RCA system to understand which QuantumFlow workflows are used in code generation
   and record their execution metrics for learning.
 
   ## Lifecycle Integration
@@ -10,7 +10,7 @@ defmodule Singularity.RCA.PgflowIntegration do
   ```
   GenerationSession started
     ↓
-  Pgflow workflow begins (LlmRequest, CodeQualityImprovement, etc.)
+  QuantumFlow workflow begins (LlmRequest, CodeQualityImprovement, etc.)
     ↓
   track_workflow_start/2 - Record workflow ID in session
     ↓
@@ -26,7 +26,7 @@ defmodule Singularity.RCA.PgflowIntegration do
   ## Usage
 
   ```elixir
-  alias Singularity.RCA.PgflowIntegration
+  alias Singularity.RCA.QuantumFlowIntegration
 
   # 1. Start tracking a workflow in an RCA session
   {:ok, session} = Singularity.RCA.SessionManager.start_session(%{
@@ -35,13 +35,13 @@ defmodule Singularity.RCA.PgflowIntegration do
   })
 
   # 2. When workflow begins
-  {:ok, updated} = PgflowIntegration.track_workflow_start(
+  {:ok, updated} = QuantumFlowIntegration.track_workflow_start(
     session.id,
     "Singularity.Workflows.CodeQualityImprovement"
   )
 
   # 3. Record each workflow step as refinement step
-  {:ok, step} = PgflowIntegration.record_workflow_step(
+  {:ok, step} = QuantumFlowIntegration.record_workflow_step(
     session.id,
     1,
     "analyze_metrics",
@@ -49,7 +49,7 @@ defmodule Singularity.RCA.PgflowIntegration do
   )
 
   # 4. When workflow completes
-  {:ok, final} = PgflowIntegration.record_workflow_completion(
+  {:ok, final} = QuantumFlowIntegration.record_workflow_completion(
     session.id,
     "success",
     %{"improvements" => 42}
@@ -78,7 +78,7 @@ defmodule Singularity.RCA.PgflowIntegration do
   alias Singularity.Schemas.RCA.{GenerationSession, RefinementStep}
 
   @doc """
-  Track the start of a pgflow workflow within an RCA session.
+  Track the start of a QuantumFlow workflow within an RCA session.
 
   Records which workflow is being executed and stores it in the session for later analysis.
 
@@ -111,7 +111,7 @@ defmodule Singularity.RCA.PgflowIntegration do
   end
 
   @doc """
-  Record a single step of pgflow workflow execution.
+  Record a single step of QuantumFlow workflow execution.
 
   Each workflow step becomes a RefinementStep for learning about which steps are effective.
 

@@ -9,7 +9,7 @@ All messaging and real-time communication has been consolidated into **PgFlow** 
 ### **1. Metrics Pipeline - Made PgFlow Mandatory** ✅
 - **Before**: Optional PgFlow with fallback to direct execution
 - **After**: PgFlow is mandatory for all metrics processing
-- **Removed**: `pgflow_enabled` configuration flag
+- **Removed**: `quantum_flow_enabled` configuration flag
 - **Result**: All metrics workflows go through PgFlow consistently
 
 ### **2. PgFlow Enhanced with Real-time Messaging** ✅
@@ -104,7 +104,7 @@ end
 # Multiple systems
 PgmqNotify.send_with_notify(queue, message, repo)
 Postgrex.Notifications.listen(repo, channel)
-PGFlow.Workflow.execute(workflow, payload)  # Optional
+QuantumFlow.Workflow.execute(workflow, payload)  # Optional
 ```
 
 ### **New Code (After)**

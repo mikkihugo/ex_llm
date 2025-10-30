@@ -4,7 +4,7 @@ defmodule Singularity.Repo.Migrations.CreateCentralCloudTemplatesReplica do
   
   Templates are synced from CentralCloud via:
   1. PostgreSQL Logical Replication (automatic, real-time)
-  2. pgflow notifications (real-time updates)
+  2. QuantumFlow notifications (real-time updates)
   
   This table is READ-ONLY - Singularity instances never write to it.
   CentralCloud is the single source of truth.
@@ -68,7 +68,7 @@ defmodule Singularity.Repo.Migrations.CreateCentralCloudTemplatesReplica do
     execute """
     COMMENT ON TABLE central_cloud_templates IS 
     'Read-only replica of CentralCloud templates. 
-     Templates are synced from CentralCloud via logical replication and pgflow.
+     Templates are synced from CentralCloud via logical replication and QuantumFlow.
      DO NOT INSERT/UPDATE/DELETE directly - use CentralCloud.TemplateService.'
     """
   end

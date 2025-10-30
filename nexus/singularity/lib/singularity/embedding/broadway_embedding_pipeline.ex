@@ -120,13 +120,13 @@ defmodule Singularity.Embedding.BroadwayEmbeddingPipeline do
       name: __MODULE__.Pipeline,
       producer: [
         module:
-          {Broadway.PgflowProducer,
+          {Broadway.QuantumFlowProducer,
            [
              workflow_name: "embedding_producer",
              queue_name: "embedding_jobs",
              concurrency: 10,
              batch_size: batch_size,
-             pgflow_config: [timeout_ms: 300_000, retries: 3],
+             quantum_flow_config: [timeout_ms: 300_000, retries: 3],
              resource_hints: [gpu: true]
            ]},
         concurrency: 10

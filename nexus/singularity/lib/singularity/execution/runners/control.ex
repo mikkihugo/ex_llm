@@ -3,7 +3,7 @@ defmodule Singularity.Execution.Runners.Control do
   Modern control system for coordinating agent improvements and system events.
 
   Provides a clean interface for:
-  - Publishing improvement events via Pgflow workflows
+  - Publishing improvement events via QuantumFlow workflows
   - Managing system state
   - Coordinating between agents
   - Event broadcasting
@@ -45,7 +45,7 @@ defmodule Singularity.Execution.Runners.Control do
       metadata: %{source: :control}
     }
 
-    # Use Pgflow workflow instead of direct pgmq publishing
+    # Use QuantumFlow workflow instead of direct pgmq publishing
     case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
            Singularity.Workflows.AgentImprovementWorkflow,
            %{"event" => event}
@@ -99,19 +99,19 @@ defmodule Singularity.Execution.Runners.Control do
   @doc """
   Subscribe to improvement events for a specific agent.
 
-  Note: With Pgflow migration, subscriptions are handled through workflow completion
+  Note: With QuantumFlow migration, subscriptions are handled through workflow completion
   notifications rather than direct pgmq subscriptions.
   """
   @spec subscribe_to_agent(String.t()) :: :ok | {:error, term()}
   def subscribe_to_agent(agent_id) when is_binary(agent_id) do
-    # Subscribe to PGFlow workflow completion events for agent improvements
+    # Subscribe to QuantumFlow workflow completion events for agent improvements
     workflow_name = "agent_improvement_#{agent_id}"
 
     case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_agent_improvement_completion(agent_id, workflow_result)
          end) do
       {:ok, subscription_id} ->
-        Logger.info("[Control] Subscribed to agent improvements via PGFlow",
+        Logger.info("[Control] Subscribed to agent improvements via QuantumFlow",
           agent_id: agent_id,
           workflow: workflow_name,
           subscription_id: subscription_id
@@ -120,7 +120,7 @@ defmodule Singularity.Execution.Runners.Control do
         :ok
 
       {:error, reason} ->
-        Logger.warning("[Control] Failed to subscribe to agent improvements via PGFlow",
+        Logger.warning("[Control] Failed to subscribe to agent improvements via QuantumFlow",
           agent_id: agent_id,
           reason: reason
         )
@@ -132,19 +132,19 @@ defmodule Singularity.Execution.Runners.Control do
   @doc """
   Subscribe to all system events.
 
-  Note: With Pgflow migration, subscriptions are handled through workflow completion
+  Note: With QuantumFlow migration, subscriptions are handled through workflow completion
   notifications rather than direct pgmq subscriptions.
   """
   @spec subscribe_to_system_events() :: :ok | {:error, term()}
   def subscribe_to_system_events do
-    # Subscribe to PGFlow workflow completion events for system-wide events
+    # Subscribe to QuantumFlow workflow completion events for system-wide events
     workflow_name = "system_events"
 
     case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_system_event_completion(workflow_result)
          end) do
       {:ok, subscription_id} ->
-        Logger.info("[Control] Subscribed to system events via PGFlow",
+        Logger.info("[Control] Subscribed to system events via QuantumFlow",
           workflow: workflow_name,
           subscription_id: subscription_id
         )
@@ -152,7 +152,7 @@ defmodule Singularity.Execution.Runners.Control do
         :ok
 
       {:error, reason} ->
-        Logger.warning("[Control] Failed to subscribe to system events via PGFlow",
+        Logger.warning("[Control] Failed to subscribe to system events via QuantumFlow",
           reason: reason
         )
 
@@ -185,7 +185,7 @@ defmodule Singularity.Execution.Runners.Control do
 
   @impl true
   def handle_cast({:broadcast_event, event}, state) do
-    # Create PGFlow workflow for system events
+    # Create QuantumFlow workflow for system events
     workflow_name = "system_event_broadcast"
 
     case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
@@ -198,7 +198,7 @@ defmodule Singularity.Execution.Runners.Control do
            }
          ) do
       {:ok, workflow_id} ->
-        Logger.debug("Broadcast system event via PGFlow workflow",
+        Logger.debug("Broadcast system event via QuantumFlow workflow",
           event_type: event.type,
           source: event.source,
           workflow: workflow_name,
@@ -206,7 +206,7 @@ defmodule Singularity.Execution.Runners.Control do
         )
 
       {:error, reason} ->
-        Logger.warning("Failed to create PGFlow workflow for system event",
+        Logger.warning("Failed to create QuantumFlow workflow for system event",
           event_type: event.type,
           workflow: workflow_name,
           reason: reason

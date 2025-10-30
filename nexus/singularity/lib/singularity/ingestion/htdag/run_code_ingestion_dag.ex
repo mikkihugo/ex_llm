@@ -84,7 +84,7 @@ defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   """
 
   require Logger
-  alias PGFlow.WorkflowSupervisor
+  alias QuantumFlow.WorkflowSupervisor
   alias Singularity.Ingestion.Core.{IngestCodeArtifacts, DetectCurrentCodebase}
 
   @dag_type "htdag_auto_code_ingestion"

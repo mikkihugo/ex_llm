@@ -1,8 +1,8 @@
 defmodule Observer.Pgmq do
   @moduledoc """
-  Pgflow-based messaging helper for Observer.
+  QuantumFlow-based messaging helper for Observer.
 
-  Uses Pgflow.Notifications for reliable message delivery with real-time notifications.
+  Uses QuantumFlow.Notifications for reliable message delivery with real-time notifications.
   """
 
   require Logger
@@ -10,13 +10,13 @@ defmodule Observer.Pgmq do
 
   @spec send_message(String.t(), map()) :: {:ok, non_neg_integer()} | {:error, term()}
   def send_message(queue, message) do
-    Pgflow.Notifications.send_with_notify(queue, message, Repo, expect_reply: false)
+    QuantumFlow.Notifications.send_with_notify(queue, message, Repo, expect_reply: false)
   end
 
   @spec read_messages(String.t(), non_neg_integer()) :: [{non_neg_integer(), map()}]
   def read_messages(queue, limit \\ 1) do
-    # For reading, we still need to use raw PGMQ since Pgflow is primarily for sending
-    # TODO: Consider using Pgflow.Workflow for complete workflow orchestration
+    # For reading, we still need to use raw PGMQ since QuantumFlow is primarily for sending
+    # TODO: Consider using QuantumFlow.Workflow for complete workflow orchestration
     ensure_queue(queue)
 
     try do
@@ -91,7 +91,7 @@ defmodule Observer.Pgmq do
 
   @spec send_reply(String.t(), map()) :: :ok | {:error, term()}
   def send_reply(reply_queue, message) do
-    Pgflow.Notifications.send_with_notify(reply_queue, message, Repo, expect_reply: false)
+    QuantumFlow.Notifications.send_with_notify(reply_queue, message, Repo, expect_reply: false)
   end
 
   defp decode_body(body) when is_binary(body) do

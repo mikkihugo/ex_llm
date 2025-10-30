@@ -17,7 +17,7 @@ defmodule CentralCloud.TemplateService do
       ↓
   PostgreSQL (templates) + pgvector
       ↓
-  pgflow.send_with_notify() → Singularity instances
+  QuantumFlow.send_with_notify() → Singularity instances
       ↓
   Logical Replication → Singularity DB (mirrored, read-only)
   ```
@@ -25,7 +25,7 @@ defmodule CentralCloud.TemplateService do
   ## Features
   
   - Loads templates/models from `templates_data/` on startup
-  - Provides artifacts via pgflow (not NATS)
+  - Provides artifacts via QuantumFlow (not NATS)
   - Semantic search using pgvector
   - Tracks usage analytics for learning
   - Distributes artifacts to Singularity instances
@@ -207,7 +207,7 @@ defmodule CentralCloud.TemplateService do
 
     case Repo.insert_or_update(changeset) do
       {:ok, template} ->
-        # Distribute via pgflow
+        # Distribute via QuantumFlow
         broadcast_template_update(template)
         {:ok, template_to_map(template)}
 
@@ -257,7 +257,7 @@ defmodule CentralCloud.TemplateService do
   def init(_opts) do
     Logger.info("Starting CentralCloud TemplateService...")
 
-    # Subscribe to template requests via pgflow
+    # Subscribe to template requests via QuantumFlow
     subscribe_to_template_requests()
 
     # Load templates from templates_data/ on startup
@@ -273,8 +273,8 @@ defmodule CentralCloud.TemplateService do
   end
 
   @impl true
-  def handle_info({:pgflow_notification, notification}, state) do
-    handle_pgflow_notification(notification)
+  def handle_info({:quantum_flow_notification, notification}, state) do
+    handle_quantum_flow_notification(notification)
     {:noreply, state}
   end
 
@@ -283,24 +283,24 @@ defmodule CentralCloud.TemplateService do
   # ============================
 
   defp subscribe_to_template_requests do
-    Logger.info("TemplateService: Subscribing to template requests via pgflow...")
+    Logger.info("TemplateService: Subscribing to template requests via QuantumFlow...")
     
     # Subscribe to template requests
-    {:ok, _pid} = Pgflow.listen("central.template.get", CentralCloud.Repo)
-    {:ok, _pid} = Pgflow.listen("central.template.search", CentralCloud.Repo)
-    {:ok, _pid} = Pgflow.listen("central.template.store", CentralCloud.Repo)
-    {:ok, _pid} = Pgflow.listen("central.template.sync", CentralCloud.Repo)
+    {:ok, _pid} = QuantumFlow.listen("central.template.get", CentralCloud.Repo)
+    {:ok, _pid} = QuantumFlow.listen("central.template.search", CentralCloud.Repo)
+    {:ok, _pid} = QuantumFlow.listen("central.template.store", CentralCloud.Repo)
+    {:ok, _pid} = QuantumFlow.listen("central.template.sync", CentralCloud.Repo)
     
-    Logger.info("TemplateService: Subscribed to pgflow channels")
+    Logger.info("TemplateService: Subscribed to QuantumFlow channels")
   end
 
-  defp handle_pgflow_notification(notification) do
+  defp handle_quantum_flow_notification(notification) do
     case Jason.decode(notification.payload) do
       {:ok, message} ->
         handle_template_message(message)
 
       {:error, reason} ->
-        Logger.error("Failed to decode pgflow notification: #{inspect(reason)}")
+        Logger.error("Failed to decode QuantumFlow notification: #{inspect(reason)}")
     end
   end
 
@@ -311,13 +311,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, template} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -334,13 +334,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, templates} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{templates: templates}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{templates: templates}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -352,13 +352,13 @@ defmodule CentralCloud.TemplateService do
       {:ok, template} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{template: template}, CentralCloud.Repo, expect_reply: false)
         end
 
       {:error, reason} ->
         reply_to = Map.get(message, "reply_to")
         if reply_to do
-          Pgflow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
+          QuantumFlow.send_with_notify(reply_to, %{error: reason}, CentralCloud.Repo, expect_reply: false)
         end
     end
   end
@@ -553,11 +553,11 @@ defmodule CentralCloud.TemplateService do
 
   defp broadcast_template_update(template) do
     subject = "template.updated.#{template.category}.#{template.id}"
-    Pgflow.send_with_notify(subject, template_to_map(template), CentralCloud.Repo, expect_reply: false)
+    QuantumFlow.send_with_notify(subject, template_to_map(template), CentralCloud.Repo, expect_reply: false)
   end
 
   defp distribute_templates_to_instances do
-    Logger.info("Distributing templates to Singularity instances via pgflow...")
+    Logger.info("Distributing templates to Singularity instances via QuantumFlow...")
     
     # Use UpdateBroadcaster to sync templates
     CentralCloud.Consumers.UpdateBroadcaster.sync_approved_templates()

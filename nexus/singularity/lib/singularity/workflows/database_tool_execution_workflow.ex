@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Database Tool Execution
+  QuantumFlow Workflow Definition for Database Tool Execution
 
-  Replaces pgmq-based database tool execution with PGFlow workflow orchestration.
+  Replaces pgmq-based database tool execution with QuantumFlow workflow orchestration.
   Provides durable, observable database tool execution with proper response handling.
 
   Workflow Stages:
@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
   5. Send Response - Deliver response to requesting system
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
   alias Singularity.Tools.DatabaseToolsExecutor
@@ -219,7 +219,7 @@ defmodule Singularity.Workflows.DatabaseToolExecutionWorkflow do
       ) do
     reply_to = Map.get(context, "reply_to")
 
-    # Send response via PGFlow completion notification or direct messaging
+    # Send response via QuantumFlow completion notification or direct messaging
     if reply_to do
       case Singularity.Messaging.Client.publish(reply_to, response_json) do
         :ok ->

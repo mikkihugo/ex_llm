@@ -1,8 +1,8 @@
 defmodule Singularity.Monitoring.AgentTaskTracker do
   @moduledoc """
-  Agent task lifecycle tracker (PGFlow port).
+  Agent task lifecycle tracker (QuantumFlow port).
 
-  The legacy branch pushed task events through Phoenix PubSub. In the PGFlow layout we rely
+  The legacy branch pushed task events through Phoenix PubSub. In the QuantumFlow layout we rely
   on Telemetry and structured logging instead, which keeps the module dependency-free while
   preserving the behavioural pattern (start/completion/failure hooks).
 
@@ -48,7 +48,7 @@ defmodule Singularity.Monitoring.AgentTaskTracker do
   end
 
   @doc """
-  Emit an in-progress heartbeat. Helpful for long-lived PGFlow workflows.
+  Emit an in-progress heartbeat. Helpful for long-lived QuantumFlow workflows.
   """
   @spec track_progress(task_id(), non_neg_integer(), task_metadata()) :: :ok
   def track_progress(task_id, step, metadata \\ %{}) do

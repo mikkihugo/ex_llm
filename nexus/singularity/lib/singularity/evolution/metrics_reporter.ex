@@ -75,7 +75,7 @@ defmodule Singularity.Evolution.MetricsReporter do
 
   ## Relationships
 
-  - **Uses**: `ExPgflow` - Message queue for batch reports
+  - **Uses**: `ExQuantumFlow` - Message queue for batch reports
   - **Uses**: `Singularity.Database.MessageQueue` - pgmq integration
   - **Used by**: All agents for performance tracking
   - **Sends to**: CentralCloud Guardian for monitoring
@@ -97,7 +97,7 @@ defmodule Singularity.Evolution.MetricsReporter do
     "relationships": {
       "All Agents": "Record metrics during execution",
       "CentralCloud.Guardian": "Receives batched metrics",
-      "ExPgflow": "Message transport layer"
+      "ExQuantumFlow": "Message transport layer"
     }
   }
   ```
@@ -114,7 +114,7 @@ defmodule Singularity.Evolution.MetricsReporter do
     F[RefactoringAgent] -->|record_metric| A
 
     A -->|every 60s| G[Batch Report Task]
-    G --> H[ExPgflow]
+    G --> H[ExQuantumFlow]
     H --> I[pgmq: agent_metrics]
     I --> J[CentralCloud.Guardian]
 
@@ -152,7 +152,7 @@ defmodule Singularity.Evolution.MetricsReporter do
 
   ## Search Keywords
 
-  metrics-reporter, agent-metrics, batching, performance-tracking, centralcloud-guardian, error-rate, cost-tracking, ets-cache, ex-pgflow, batch-reporting
+  metrics-reporter, agent-metrics, batching, performance-tracking, centralcloud-guardian, error-rate, cost-tracking, ets-cache, ex-quantum_flow, batch-reporting
   """
 
   use GenServer

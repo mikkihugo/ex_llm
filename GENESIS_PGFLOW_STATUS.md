@@ -129,7 +129,7 @@ Genesis compilation: **SUCCESS**
 
 **NEW - PgFlow Consumer (Enabled):**
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,                        # ✅
   poll_interval_ms: 1000,               # ✅
   batch_size: 10,                       # ✅
@@ -181,14 +181,14 @@ IMPROVEMENT: 4x Faster! 🚀
     • Updated documentation
     • Lines added: +33
 
-✏️  nexus/genesis/lib/genesis/pgflow_workflow_consumer.ex
+✏️  nexus/genesis/lib/genesis/quantum_flow_workflow_consumer.ex
     • Added parallel processing function
     • Lines added: +22
 ```
 
 ### Created (7 files)
 ```
-✨ nexus/genesis/lib/genesis/pgflow_workflow_consumer.ex     (540 lines)
+✨ nexus/genesis/lib/genesis/quantum_flow_workflow_consumer.ex     (540 lines)
 ✨ nexus/genesis/lib/genesis/rule_engine.ex                  (232 lines)
 ✨ nexus/genesis/lib/genesis/llm_config_manager.ex           (294 lines)
 ✨ nexus/genesis/lib/genesis/job_executor.ex                 (436 lines)

@@ -1,21 +1,21 @@
 defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
   @moduledoc """
-  Architecture Learning Pipeline with PGFlow Migration Support
+  Architecture Learning Pipeline with QuantumFlow Migration Support
 
-  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
-  Use PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true to enable PGFlow mode.
+  Supports both Broadway (legacy) and QuantumFlow (new) orchestration modes.
+  Use PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true to enable QuantumFlow mode.
 
   ## Migration Notes
 
   - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
-  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
   ## Configuration
 
   ```elixir
   config :singularity, :architecture_learning_pipeline,
-    pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
+    quantum_flow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
     canary_percentage: String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
   ```
   """
@@ -29,28 +29,28 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
   @doc """
   Start the architecture learning pipeline.
 
-  Supports both Broadway and PGFlow modes based on configuration.
+  Supports both Broadway and QuantumFlow modes based on configuration.
   """
   def start_link(opts \\ []) do
-    if pgflow_enabled?() do
-      start_pgflow_pipeline(opts)
+    if quantum_flow_enabled?() do
+      start_quantum_flow_pipeline(opts)
     else
       start_broadway_pipeline(opts)
     end
   end
 
-  # Check if PGFlow mode is enabled
-  defp pgflow_enabled? do
+  # Check if QuantumFlow mode is enabled
+  defp quantum_flow_enabled? do
     Application.get_env(:singularity, :architecture_learning_pipeline, %{})
-    |> Map.get(:pgflow_enabled, false)
+    |> Map.get(:quantum_flow_enabled, false)
   end
 
-  # Start PGFlow-based pipeline
-  defp start_pgflow_pipeline(_opts) do
-    Logger.info("🚀 Starting Architecture Learning Pipeline (PGFlow mode)")
+  # Start QuantumFlow-based pipeline
+  defp start_quantum_flow_pipeline(_opts) do
+    Logger.info("🚀 Starting Architecture Learning Pipeline (QuantumFlow mode)")
 
-    # Start PGFlow workflow supervisor
-    PGFlow.WorkflowSupervisor.start_workflow(
+    # Start QuantumFlow workflow supervisor
+    QuantumFlow.WorkflowSupervisor.start_workflow(
       Singularity.Workflows.ArchitectureLearningWorkflow,
       name: ArchitectureLearningWorkflowSupervisor
     )
@@ -209,7 +209,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipeline do
     end)
   end
 
-  # Private helper functions (shared between Broadway and PGFlow)
+  # Private helper functions (shared between Broadway and QuantumFlow)
   defp extract_pattern_features(pattern) do
     # Mock feature extraction - in real implementation, this would:
     # 1. Extract structural features

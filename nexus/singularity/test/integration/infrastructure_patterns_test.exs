@@ -31,10 +31,10 @@ defmodule Singularity.InfrastructurePatternsTest do
 
   describe "ErrorRateTracker" do
     test "tracks success and error rates" do
-      ErrorRateTracker.record_error(:pgflow_job, RuntimeError.exception("oops"))
-      ErrorRateTracker.record_success(:pgflow_job)
+      ErrorRateTracker.record_error(:quantum_flow_job, RuntimeError.exception("oops"))
+      ErrorRateTracker.record_success(:quantum_flow_job)
 
-      stats = ErrorRateTracker.get_rate(:pgflow_job)
+      stats = ErrorRateTracker.get_rate(:quantum_flow_job)
 
       assert stats.error_count >= 1
       assert stats.total_count >= 1
@@ -78,10 +78,10 @@ defmodule Singularity.InfrastructurePatternsTest do
   end
 
   describe "ProcessRegistry" do
-    test "exposes PGFlow-focused keyword registry" do
+    test "exposes QuantumFlow-focused keyword registry" do
       keywords = Singularity.ProcessRegistry.process_keywords()
 
-      assert Map.has_key?(keywords, "PGFlow.WorkflowSupervisor")
+      assert Map.has_key?(keywords, "QuantumFlow.WorkflowSupervisor")
       assert Map.has_key?(keywords, "Singularity.Infrastructure.Overseer")
     end
   end

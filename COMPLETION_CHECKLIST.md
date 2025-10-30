@@ -26,7 +26,7 @@
 
 ---
 
-### User Request 2: "Find all HTDAG in singularity and merge into one big pgflow based"
+### User Request 2: "Find all HTDAG in singularity and merge into one big QuantumFlow based"
 
 ✅ **COMPLETE**
 - [x] Located all HTDAG implementations across codebase
@@ -39,7 +39,7 @@
 
 **Files**:
 - `lib/singularity/workflows.ex` (NEW - central hub)
-- `lib/singularity/pgflow_adapter.ex` (UPDATED - now shim)
+- `lib/singularity/quantum_flow_adapter.ex` (UPDATED - now shim)
 - `lib/singularity/htdag/executor.ex` (UPDATED - now shim)
 
 ---
@@ -171,7 +171,7 @@
 7. `lib/singularity/execution/refactor_worker.ex` - Enhanced with full implementation
 
 ### Backward Compatibility Shims (2)
-1. `lib/singularity/pgflow_adapter.ex` - Delegates to Workflows
+1. `lib/singularity/quantum_flow_adapter.ex` - Delegates to Workflows
 2. `lib/singularity/htdag/executor.ex` - Delegates to Workflows
 
 ### Documentation Files (5)

@@ -9,7 +9,7 @@ defmodule Singularity.Infrastructure.PgFlow.Queue do
   require Logger
   alias Singularity.Infrastructure.PgFlow.Repo
   alias Singularity.Infrastructure.PgFlow.Workflow
-  alias Pgflow
+  alias QuantumFlow
 
   defdelegate persist_workflow(attrs), to: __MODULE__, as: :create_workflow
   defdelegate fetch_workflow(id), to: __MODULE__, as: :get_workflow
@@ -54,7 +54,7 @@ defmodule Singularity.Infrastructure.PgFlow.Queue do
   """
   @spec send_with_notify(String.t(), map(), Ecto.Repo.t()) :: {:ok, term()} | {:error, any()}
   def send_with_notify(queue_name, message, repo \\ Singularity.Repo) do
-    case Pgflow.send_with_notify(queue_name, message, repo, expect_reply: false) do
+    case QuantumFlow.send_with_notify(queue_name, message, repo, expect_reply: false) do
       :ok -> {:ok, :sent}
       {:ok, response} -> {:ok, response}
       {:error, reason} -> {:error, reason}
@@ -78,7 +78,7 @@ defmodule Singularity.Infrastructure.PgFlow.Queue do
   """
   @spec notify_only(String.t(), String.t(), Ecto.Repo.t()) :: :ok | {:error, any()}
   def notify_only(channel, payload, repo \\ Singularity.Repo) do
-    Pgflow.notify_only(channel, payload, repo)
+    QuantumFlow.notify_only(channel, payload, repo)
   end
 
   @doc """
@@ -105,7 +105,7 @@ defmodule Singularity.Infrastructure.PgFlow.Queue do
   """
   @spec listen(String.t(), Ecto.Repo.t()) :: {:ok, pid()} | {:error, any()}
   def listen(queue_name, repo \\ Singularity.Repo) do
-    Pgflow.listen(queue_name, repo)
+    QuantumFlow.listen(queue_name, repo)
   end
 
   @doc """
@@ -138,7 +138,7 @@ defmodule Singularity.Infrastructure.PgFlow.Queue do
   """
   @spec unlisten(pid(), Ecto.Repo.t()) :: :ok | {:error, any()}
   def unlisten(pid, repo \\ Singularity.Repo) do
-    Pgflow.unlisten(pid, repo)
+    QuantumFlow.unlisten(pid, repo)
   end
 
   # -- Private Helpers ------------------------------------------------------------

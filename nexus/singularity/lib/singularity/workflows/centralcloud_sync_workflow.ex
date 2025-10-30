@@ -1,15 +1,15 @@
 defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for CentralCloud Synchronization
+  QuantumFlow Workflow Definition for CentralCloud Synchronization
 
-  Replaces pgmq-based CentralCloud sync with PGFlow workflow orchestration.
+  Replaces pgmq-based CentralCloud sync with QuantumFlow workflow orchestration.
   Provides durable, observable data synchronization with CentralCloud.
 
   Workflow Stages:
   1. Collect Data - Gather data to be synchronized
   2. Validate Data - Ensure data integrity before sync
   3. Compress/Encode - Prepare data for transmission
-  4. Send to CentralCloud - Route data to CentralCloud via Pgflow
+  4. Send to CentralCloud - Route data to CentralCloud via QuantumFlow
   5. Track Sync - Record synchronization status
   """
 
@@ -71,7 +71,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
         %{
           id: :send_to_centralcloud,
           name: "Send to CentralCloud",
-          description: "Send the encoded data to CentralCloud via Pgflow",
+          description: "Send the encoded data to CentralCloud via QuantumFlow",
           function: &__MODULE__.send_to_centralcloud/1,
           timeout_ms: 60000,
           retry_count: 3,
@@ -179,7 +179,7 @@ defmodule Singularity.Workflows.CentralCloudSyncWorkflow do
   def send_to_centralcloud(%{"encoded_data" => encoded_data, "validated_data" => data} = context) do
     sync_type = data["sync_type"]
 
-    # Send data to CentralCloud via pgflow queue (CentralCloud has consumers processing centralcloud_updates)
+    # Send data to CentralCloud via QuantumFlow queue (CentralCloud has consumers processing centralcloud_updates)
     message_payload = %{
       "data" => encoded_data,
       "sync_type" => sync_type,

@@ -52,7 +52,7 @@ workflow_payload = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 ## **Performance Improvements**
 
 ### **🚀 Memory Usage**
-- **Reduced**: No more ETS table `:pgflow_workflows`
+- **Reduced**: No more ETS table `:quantum_flow_workflows`
 - **Benefit**: Lower memory footprint, better scalability
 
 ### **🚀 Data Consistency**

@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.CodeMetricsWorkflow do
   @moduledoc """
-  PGFlow workflow for running the code-metrics pipeline end-to-end.
+  QuantumFlow workflow for running the code-metrics pipeline end-to-end.
 
   Accepts either a list of file paths (`:file_paths`) or a `:codebase_id`
   registered with `Singularity.CodeStore`. For each target file it invokes
@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
   then stores the results via `Singularity.Metrics.CodeMetrics`.
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
   require Logger
 
   import Ecto.Query

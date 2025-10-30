@@ -15,7 +15,7 @@ defmodule CentralCloud.PromptManagement do
   ## Architecture
   
   ```
-  Prompt → EmbeddingEngine (via pgflow) → pgvector → PostgreSQL
+  Prompt → EmbeddingEngine (via QuantumFlow) → pgvector → PostgreSQL
   ```
   
   ## Examples
@@ -218,7 +218,7 @@ defmodule CentralCloud.PromptManagement do
   # ============================================================================
 
   defp generate_embedding(text) when is_binary(text) and text != "" do
-    # Use CentralCloud's EmbeddingEngine (delegates to Singularity via pgflow)
+    # Use CentralCloud's EmbeddingEngine (delegates to Singularity via QuantumFlow)
     # Returns 2560-dim vector (Qodo 1536 + Jina v3 1024)
     case EmbeddingEngine.embed_text(text) do
       {:ok, embedding} when is_list(embedding) -> {:ok, embedding}

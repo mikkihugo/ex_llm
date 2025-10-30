@@ -1,12 +1,12 @@
 # RCA + PgFlow - Optimal Usage Guide
 
-**Complete guide to using RCA with pgflow workflows for maximum learning and optimization.**
+**Complete guide to using RCA with QuantumFlow workflows for maximum learning and optimization.**
 
 ## Overview
 
-The RCA system is **fully integrated with pgflow workflows** enabling:
+The RCA system is **fully integrated with QuantumFlow workflows** enabling:
 
-✅ Automatic RCA tracking in pgflow workflows
+✅ Automatic RCA tracking in QuantumFlow workflows
 ✅ Agent learning from workflow execution patterns
 ✅ Intelligent workflow selection based on learnings
 ✅ Continuous optimization of workflow execution
@@ -34,7 +34,7 @@ The RCA system is **fully integrated with pgflow workflows** enabling:
 └──────────────────┬───────────────────┘
                    ↓
 ┌──────────────────────────────────────┐
-│ Pgflow Workflow Execution            │
+│ QuantumFlow Workflow Execution            │
 │ (RcaWorkflow base class)             │
 │ ├─ Step 1 (tracked)                  │
 │ ├─ Step 2 (tracked)                  │
@@ -97,12 +97,12 @@ Agents query RCA learnings to pick the best workflow:
 
 ```elixir
 defmodule Singularity.Agents.QualityAgent do
-  alias Singularity.RCA.{SessionManager, PgflowIntegration}
+  alias Singularity.RCA.{SessionManager, QuantumFlowIntegration}
 
   def improve_code_quality(codebase_id) do
     # 1. Query RCA learnings
-    best_workflows = PgflowIntegration.compare_workflows(limit: 5)
-    workflow_patterns = PgflowIntegration.analyze_workflow_patterns()
+    best_workflows = QuantumFlowIntegration.compare_workflows(limit: 5)
+    workflow_patterns = QuantumFlowIntegration.analyze_workflow_patterns()
 
     Logger.info("RCA learnings", %{
       best_workflow: hd(best_workflows).workflow,
@@ -121,7 +121,7 @@ defmodule Singularity.Agents.QualityAgent do
     })
 
     # 4. Execute workflow (with automatic RCA tracking)
-    {:ok, result} = Pgflow.Executor.execute(
+    {:ok, result} = QuantumFlow.Executor.execute(
       String.to_atom(selected_workflow),
       %{
         codebase_id: codebase_id,
@@ -155,7 +155,7 @@ Full integration with agent feedback and continuous improvement:
 defmodule Singularity.Agents.LearningAgent do
   alias Singularity.RCA.{
     SessionManager,
-    PgflowIntegration,
+    QuantumFlowIntegration,
     LearningQueries,
     FailureAnalysis
   }
@@ -184,7 +184,7 @@ defmodule Singularity.Agents.LearningAgent do
     result = execute_workflow(strategy.workflow, session.id, task_spec)
 
     # 5. Record outcome
-    PgflowIntegration.record_workflow_completion(
+    QuantumFlowIntegration.record_workflow_completion(
       session.id,
       if(result.success, do: "success", else: "failure_execution"),
       result.metrics
@@ -207,9 +207,9 @@ defmodule Singularity.Agents.LearningAgent do
       # Areas needing improvement
       difficult_failures: FailureAnalysis.difficult_to_fix_failures(5, 50.0),
       # Workflow patterns
-      workflow_comparison: PgflowIntegration.compare_workflows(10),
-      workflow_patterns: PgflowIntegration.analyze_workflow_patterns(),
-      workflow_steps: PgflowIntegration.analyze_workflow_steps()
+      workflow_comparison: QuantumFlowIntegration.compare_workflows(10),
+      workflow_patterns: QuantumFlowIntegration.analyze_workflow_patterns(),
+      workflow_steps: QuantumFlowIntegration.analyze_workflow_steps()
     }
   end
 
@@ -224,7 +224,7 @@ defmodule Singularity.Agents.LearningAgent do
   end
 
   defp execute_workflow(workflow_module, session_id, task_spec) do
-    case Pgflow.Executor.execute(
+    case QuantumFlow.Executor.execute(
       String.to_atom(workflow_module),
       Map.merge(task_spec, %{session_id: session_id}),
       timeout: 60000
@@ -332,7 +332,7 @@ defmodule OrchestrationWorkflow do
 
   def run_quality(input) do
     # Execute sub-workflow
-    case Pgflow.Executor.execute(
+    case QuantumFlow.Executor.execute(
       Singularity.Workflows.CodeQualityImprovementRca,
       input,
       timeout: 30000
@@ -344,7 +344,7 @@ defmodule OrchestrationWorkflow do
 
   def run_architecture(input) do
     # Execute another sub-workflow
-    case Pgflow.Executor.execute(
+    case QuantumFlow.Executor.execute(
       Singularity.Workflows.ArchitectureAnalysisRca,
       input,
       timeout: 30000
@@ -371,7 +371,7 @@ Complete example of agent that learns and improves:
 
 ```elixir
 defmodule Singularity.Agents.SelfImprovingQualityAgent do
-  alias Singularity.RCA.{SessionManager, PgflowIntegration, LearningQueries}
+  alias Singularity.RCA.{SessionManager, QuantumFlowIntegration, LearningQueries}
 
   @doc """
   Execute code quality improvement with learning.
@@ -387,7 +387,7 @@ defmodule Singularity.Agents.SelfImprovingQualityAgent do
     Logger.info("Self-improving quality agent starting", %{codebase: codebase_id})
 
     # 1. Get learnings from RCA system
-    best_workflows = PgflowIntegration.compare_workflows(limit: 3)
+    best_workflows = QuantumFlowIntegration.compare_workflows(limit: 3)
 
     if Enum.empty?(best_workflows) do
       Logger.info("No workflow learnings yet, using default")
@@ -428,7 +428,7 @@ defmodule Singularity.Agents.SelfImprovingQualityAgent do
   end
 
   defp execute_with_timeout(workflow_module, session_id, codebase_id, timeout) do
-    case Pgflow.Executor.execute(
+    case QuantumFlow.Executor.execute(
       String.to_atom(workflow_module),
       %{
         codebase_id: codebase_id,
@@ -462,7 +462,7 @@ defmodule Singularity.Agents.SelfImprovingQualityAgent do
       agent_id: "self-improving-quality-agent"
     })
 
-    Pgflow.Executor.execute(
+    QuantumFlow.Executor.execute(
       Singularity.Workflows.CodeQualityImprovementRca,
       %{codebase_id: codebase_id, session_id: session.id},
       timeout: 60000
@@ -470,7 +470,7 @@ defmodule Singularity.Agents.SelfImprovingQualityAgent do
   end
 
   defp get_learnings_summary do
-    workflows = PgflowIntegration.compare_workflows(limit: 1)
+    workflows = QuantumFlowIntegration.compare_workflows(limit: 1)
 
     if Enum.empty?(workflows) do
       %{best_workflow: "none", best_success_rate: 0}
@@ -538,17 +538,17 @@ end
 
 ```elixir
 # Best performing workflows
-best = PgflowIntegration.compare_workflows(limit: 10)
+best = QuantumFlowIntegration.compare_workflows(limit: 10)
 
 # Worst performing workflows (need improvement)
 worst = Enum.reverse(best)
 
 # Workflow evolution over time
-recent = PgflowIntegration.compare_workflows(limit: 100)
+recent = QuantumFlowIntegration.compare_workflows(limit: 100)
   |> Enum.sort_by(& &1.total_sessions, :desc)
 
 # Most impactful steps
-impactful_steps = PgflowIntegration.analyze_workflow_steps()
+impactful_steps = QuantumFlowIntegration.analyze_workflow_steps()
   |> Enum.sort_by(&elem(&1, 1).success_rate, :desc)
 ```
 
@@ -566,7 +566,7 @@ improvable = workflows
   |> Enum.filter(&(&1.total_sessions > 100))
 
 # 3. Expensive steps that could be optimized
-expensive_steps = PgflowIntegration.analyze_workflow_steps()
+expensive_steps = QuantumFlowIntegration.analyze_workflow_steps()
   |> Enum.sort_by(&elem(&1, 1).avg_tokens, :desc)
   |> Enum.take(5)
 ```
@@ -592,7 +592,7 @@ expensive_steps = PgflowIntegration.analyze_workflow_steps()
 3. **Query learnings regularly**
    ```elixir
    # Check workflow effectiveness
-   PgflowIntegration.compare_workflows(limit: 10)
+   QuantumFlowIntegration.compare_workflows(limit: 10)
    |> IO.inspect()
    ```
 
@@ -600,14 +600,14 @@ expensive_steps = PgflowIntegration.analyze_workflow_steps()
    ```elixir
    # Are workflows getting more expensive?
    workflows_old = # workflows from 1 week ago
-   workflows_new = PgflowIntegration.compare_workflows()
+   workflows_new = QuantumFlowIntegration.compare_workflows()
    cost_increase = calculate_cost_trend(workflows_old, workflows_new)
    ```
 
 5. **Optimize high-usage workflows**
    ```elixir
    # Workflows used > 100 times should be optimized
-   high_volume = PgflowIntegration.compare_workflows()
+   high_volume = QuantumFlowIntegration.compare_workflows()
      |> Enum.filter(&(&1.total_sessions > 100))
    ```
 
@@ -646,4 +646,4 @@ expensive_steps = PgflowIntegration.analyze_workflow_steps()
 - `lib/singularity/workflows/rca_workflow.ex` - RcaWorkflow base class
 - `lib/singularity/workflows/code_quality_improvement_rca.ex` - Example implementation
 - `RCA_SYSTEM_GUIDE.md` - Complete RCA system guide
-- `RCA_PGFLOW_INTEGRATION.md` - pgflow integration details
+- `RCA_PGFLOW_INTEGRATION.md` - QuantumFlow integration details

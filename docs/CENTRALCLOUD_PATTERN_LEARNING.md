@@ -2,7 +2,7 @@
 
 > **Architecture Update (October 2025)**
 >
-> The legacy NATS distribution path has been replaced. Singularity instances now submit pattern updates via PGFlow workflows, and CentralCloud replicates approved data back into each instance using logical replication/read-only table copies. Mentions of NATS in this document remain for historical context and correspond to the PGFlow + replication pipeline.
+> The legacy NATS distribution path has been replaced. Singularity instances now submit pattern updates via QuantumFlow workflows, and CentralCloud replicates approved data back into each instance using logical replication/read-only table copies. Mentions of NATS in this document remain for historical context and correspond to the QuantumFlow + replication pipeline.
 
 ## Executive Summary
 
@@ -12,7 +12,7 @@ The system has a complete **automatic learning loop** for framework/library patt
 
 1. **Detection** → Rust CodebaseAnalyzer + FrameworkDetector detect patterns in code
 2. **Learning** → Patterns stored in PostgreSQL `framework_patterns` table with confidence scores
-3. **Synchronization** → FrameworkPatternSync triggers PGFlow replication (CentralCloud → replicated tables)
+3. **Synchronization** → FrameworkPatternSync triggers QuantumFlow replication (CentralCloud → replicated tables)
 4. **Enrichment** → Low-confidence detections query CentralCloud for collective knowledge
 5. **Evolution** → Success rates update confidence, best patterns auto-promote
 
@@ -36,8 +36,8 @@ PatternSignatures {
 **Why separate?** Languages evolve slowly, syntax is standardized, no need for learning.
 
 ### CentralCloud (Framework/Library Patterns - LEARNED)
-**Location:** PostgreSQL `framework_patterns` table + PGFlow replication + logical replication copies
-**Scope:** Framework/library patterns (kafka, PGFlow, reqwest, express, Django, etc.)
+**Location:** PostgreSQL `framework_patterns` table + QuantumFlow replication + logical replication copies
+**Scope:** Framework/library patterns (kafka, QuantumFlow, reqwest, express, Django, etc.)
 
 ```sql
 CREATE TABLE framework_patterns (
@@ -146,17 +146,17 @@ def learn_and_sync(detection_result) do
   # 1. Store in PostgreSQL (source of truth)
   {:ok, id} = FrameworkPatternStore.learn_pattern(detection_result)
 
-  # 2. Enqueue PGFlow replication (distribute to other Singularity instances)
-  schedule_pgflow_replication(detection_result)
+  # 2. Enqueue QuantumFlow replication (distribute to other Singularity instances)
+  schedule_quantum_flow_replication(detection_result)
 
   # 3. Update vector caches / pg_cache_age metadata for fast similarity search
   refresh_pgvector_caches(detection_result)
 end
 ```
 
-**PGFlow Replication:**
+**QuantumFlow Replication:**
 ```elixir
-defp schedule_pgflow_replication(pattern) do
+defp schedule_quantum_flow_replication(pattern) do
   Singularity.Workflows.schedule_pattern_replication(%{
     pattern_type: :framework,
     framework: pattern.framework_name,
@@ -242,7 +242,7 @@ sequenceDiagram
     participant FD as FrameworkDetector
     participant PG as PostgreSQL (source)
     participant Sync as FrameworkPatternSync
-    participant PGFlow as PGFlow Workflow
+    participant QuantumFlow as QuantumFlow Workflow
     participant CC as CentralCloud
     participant Replica as ApprovedPatterns (replica)
     participant IH as IntelligenceHub
@@ -261,8 +261,8 @@ sequenceDiagram
 
     FD->>PG: Store learned pattern
     PG->>Sync: Pattern stored
-    Sync->>PGFlow: Enqueue replication workflow
-    PGFlow->>CC: Persist + publish to replication slot
+    Sync->>QuantumFlow: Enqueue replication workflow
+    QuantumFlow->>CC: Persist + publish to replication slot
     CC->>Replica: Stream change via logical replication
 
     FD->>IH: Record detection event (local database/telemetry)
@@ -346,14 +346,14 @@ ON CONFLICT (framework_name, framework_type) DO UPDATE SET
   last_detected_at = NOW();
 ```
 
-**Step 5: Trigger PGFlow Broadcast**
-- Singularity enqueues a PGFlow replication workflow for the new/updated pattern
+**Step 5: Trigger QuantumFlow Broadcast**
+- Singularity enqueues a QuantumFlow replication workflow for the new/updated pattern
 - CentralCloud workflow persists the change and marks it for replication
 - Logical replication streams the approved row into each Singularity instance's `approved_patterns` table
 
 **Step 6: Other Instances Learn**
 - Instance B: Detects kafka with 0.65 confidence
-- Instance B: Submits a PGFlow task to CentralCloud
+- Instance B: Submits a QuantumFlow task to CentralCloud
 - CentralCloud broadcasts the approved pattern via logical replication / table copies
 - Instance B: Refreshes local replica and gets patterns from Instance A (your detection!)
 - Instance B: Boosts confidence 0.65 → 0.82
@@ -427,7 +427,7 @@ fastify.get('/api', async (req, reply) => { ... });
 - ✅ Best patterns auto-promote to high-confidence tier
 
 ### 2. Collective Intelligence
-- ✅ All Singularity instances share knowledge via PGFlow replication + replicated tables
+- ✅ All Singularity instances share knowledge via QuantumFlow replication + replicated tables
 - ✅ Low-confidence detections boosted by CentralCloud
 - ✅ Rare frameworks detected faster (shared learning)
 - ✅ IntelligenceHub aggregates patterns across codebases
@@ -440,7 +440,7 @@ fastify.get('/api', async (req, reply) => { ... });
 
 ### 4. Multi-Layer Performance
 - ✅ PostgreSQL: <50ms reads (indexed patterns with pgvector)
-- ✅ PGFlow replication: sub-second replication into local tables
+- ✅ QuantumFlow replication: sub-second replication into local tables
 - ✅ Rust JSON: <1ms (offline detection without DB)
 
 ### 5. Self-Documenting
@@ -496,7 +496,7 @@ let analysis = LanguageAnalysis {
 
 ✅ **Detection** → Rust Analyzer + FrameworkDetector find patterns
 ✅ **Storage** → PostgreSQL stores with confidence scores
-✅ **Synchronization** → PGFlow replication distributes to all instances
+✅ **Synchronization** → QuantumFlow replication distributes to all instances
 ✅ **Enrichment** → Low-confidence queries CentralCloud
 ✅ **Evolution** → Success rates update, best patterns promote
 ✅ **Discovery** → New frameworks learned from code analysis
@@ -510,7 +510,7 @@ let analysis = LanguageAnalysis {
 |--------|---------|------|
 | FrameworkDetector | Main detection orchestrator | `lib/singularity/detection/framework_detector.ex` |
 | FrameworkPatternStore | PostgreSQL storage + learning | `lib/singularity/architecture_engine/framework_pattern_store.ex` |
-| FrameworkPatternSync | PGFlow replication | `lib/singularity/architecture_engine/framework_pattern_sync.ex` |
+| FrameworkPatternSync | QuantumFlow replication | `lib/singularity/architecture_engine/framework_pattern_sync.ex` |
 | TechnologyAgent | Technology detection API | `lib/singularity/detection/technology_agent.ex` |
 | Language Registry | Language syntax (static) | `rust/parser_engine/core/src/language_registry.rs` |
 | CodebaseAnalyzer | Rust analysis orchestrator | `rust/code_engine/src/analyzer.rs` |

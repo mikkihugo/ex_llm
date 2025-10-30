@@ -107,7 +107,7 @@ defmodule Observer.HITL do
   end
 
   @doc """
-  Broadcast a decision to the requester via pgflow.
+  Broadcast a decision to the requester via QuantumFlow.
   """
   @spec publish_decision(Approval.t()) :: :ok | {:error, term()}
   def publish_decision(%Approval{response_queue: nil}), do: :ok

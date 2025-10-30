@@ -31,7 +31,7 @@ Todo → Planner (4 phases) → Workflows (unified hub) → Arbiter (approval) �
 **File**: `lib/singularity/workflows.ex`
 - Central orchestration point for all workflows
 - Executes HTDAG nodes with proper dependency management
-- Persists to ETS `:pgflow_workflows` for visibility
+- Persists to ETS `:quantum_flow_workflows` for visibility
 - One-time approval tokens via Arbiter
 - Backward compatibility: PgFlowAdapter + HTDAG.Executor are shims
 
@@ -160,7 +160,7 @@ Creates complete flow:
          ┌───────────────────────────┐
          │ Workflows.create_workflow │
          │ Persists to:              │
-         │ - ETS (:pgflow_workflows) │
+         │ - ETS (:quantum_flow_workflows) │
          │ - [Future] PostgreSQL     │
          └────────────┬──────────────┘
                       │
@@ -214,7 +214,7 @@ todo = %{codebase_id: "myapp", file_path: "lib/foo.ex"}
 ### Step 3: Persist to Workflows
 ```elixir
 {:ok, workflow} = Workflows.create_workflow(%{nodes: nodes, workflow_id: wf})
-# Stored in ETS `:pgflow_workflows`
+# Stored in ETS `:quantum_flow_workflows`
 ```
 
 ### Step 4: Dry-run execution
@@ -285,7 +285,7 @@ Workflows.execute_workflow(workflow)  # Safe! (dry_run: true)
 | `lib/singularity/agents/arbiter.ex` | Updated | Consistent persistence |
 | `lib/singularity/agents/self_improvement_agent.ex` | Updated | Workflows integration |
 | `lib/singularity/execution/todo_swarm_coordinator.ex` | Updated | Entry point integration |
-| `lib/singularity/pgflow_adapter.ex` | Shim | Backward compatibility |
+| `lib/singularity/quantum_flow_adapter.ex` | Shim | Backward compatibility |
 | `lib/singularity/htdag/executor.ex` | Shim | Backward compatibility |
 
 ---

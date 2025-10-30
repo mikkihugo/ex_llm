@@ -20,7 +20,7 @@ A complete autonomous Genesis workflow consumer system that:
 
 ```elixir
 # NEW: PgFlow consumer enabled
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   enable_parallel_processing: true,
   max_parallel_workers: 4
@@ -48,7 +48,7 @@ children = [
 **Impact:** Consumer auto-starts with Genesis application.
 
 ### 3. Parallel Processing Optimized ✅
-**File:** `nexus/genesis/lib/genesis/pgflow_workflow_consumer.ex`
+**File:** `nexus/genesis/lib/genesis/quantum_flow_workflow_consumer.ex`
 
 Added `process_workflows_parallel/2` function:
 - Uses `Task.async_stream/3` for concurrent execution
@@ -62,7 +62,7 @@ Added `process_workflows_parallel/2` function:
 
 | Component | File | Lines | Purpose |
 |-----------|------|-------|---------|
-| **PgFlowWorkflowConsumer** | `lib/genesis/pgflow_workflow_consumer.ex` | 540 | Main consumer GenServer |
+| **PgFlowWorkflowConsumer** | `lib/genesis/quantum_flow_workflow_consumer.ex` | 540 | Main consumer GenServer |
 | **RuleEngine** | `lib/genesis/rule_engine.ex` | 232 | Apply evolved rules |
 | **LlmConfigManager** | `lib/genesis/llm_config_manager.ex` | 294 | Update LLM config |
 | **JobExecutor** | `lib/genesis/job_executor.ex` | 436 | Execute code analysis |
@@ -129,7 +129,7 @@ config :genesis, :shared_queue,
 
 ### After (Current)
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   poll_interval_ms: 1000,
   batch_size: 10,
@@ -192,13 +192,13 @@ end
 ```
 nexus/genesis/config/config.exs              [+13 lines] Config auto-enable
 nexus/genesis/lib/genesis/application.ex     [+33 lines] Supervision + docs
-nexus/genesis/lib/genesis/pgflow_workflow_consumer.ex
+nexus/genesis/lib/genesis/quantum_flow_workflow_consumer.ex
   - Added parallel processing function          [+22 lines]
 ```
 
 ### Created
 ```
-nexus/genesis/lib/genesis/pgflow_workflow_consumer.ex    [540 lines] Main consumer
+nexus/genesis/lib/genesis/quantum_flow_workflow_consumer.ex    [540 lines] Main consumer
 nexus/genesis/lib/genesis/rule_engine.ex                 [232 lines] Rule handler
 nexus/genesis/lib/genesis/llm_config_manager.ex          [294 lines] Config handler
 nexus/genesis/lib/genesis/job_executor.ex                [436 lines] Job handler

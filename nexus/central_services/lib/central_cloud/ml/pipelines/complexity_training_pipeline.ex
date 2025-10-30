@@ -1,21 +1,21 @@
 defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipeline do
   @moduledoc """
-  Complexity Training Pipeline with PGFlow Migration Support
+  Complexity Training Pipeline with QuantumFlow Migration Support
 
-  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
-  Use PGFLOW_COMPLEXITY_TRAINING_ENABLED=true to enable PGFlow mode.
+  Supports both Broadway (legacy) and QuantumFlow (new) orchestration modes.
+  Use PGFLOW_COMPLEXITY_TRAINING_ENABLED=true to enable QuantumFlow mode.
 
   ## Migration Notes
 
   - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
-  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
   ## Configuration
 
   ```elixir
   config :centralcloud, :complexity_training_pipeline,
-    pgflow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
+    quantum_flow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
     canary_percentage: String.to_integer(System.get_env("COMPLEXITY_TRAINING_CANARY_PERCENT", "10"))
   ```
   """
@@ -29,28 +29,28 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipeline do
   @doc """
   Start the complexity training pipeline.
 
-  Supports both Broadway and PGFlow modes based on configuration.
+  Supports both Broadway and QuantumFlow modes based on configuration.
   """
   def start_link(opts \\ []) do
-    if pgflow_enabled?() do
-      start_pgflow_pipeline(opts)
+    if quantum_flow_enabled?() do
+      start_quantum_flow_pipeline(opts)
     else
       start_broadway_pipeline(opts)
     end
   end
 
-  # Check if PGFlow mode is enabled
-  defp pgflow_enabled? do
+  # Check if QuantumFlow mode is enabled
+  defp quantum_flow_enabled? do
     Application.get_env(:centralcloud, :complexity_training_pipeline, %{})
-    |> Map.get(:pgflow_enabled, false)
+    |> Map.get(:quantum_flow_enabled, false)
   end
 
-  # Start PGFlow-based pipeline
-  defp start_pgflow_pipeline(_opts) do
-    Logger.info("🚀 Starting Complexity Training Pipeline (PGFlow mode)")
+  # Start QuantumFlow-based pipeline
+  defp start_quantum_flow_pipeline(_opts) do
+    Logger.info("🚀 Starting Complexity Training Pipeline (QuantumFlow mode)")
 
-    # Start PGFlow workflow supervisor
-    PGFlow.WorkflowSupervisor.start_workflow(
+    # Start QuantumFlow workflow supervisor
+    QuantumFlow.WorkflowSupervisor.start_workflow(
       CentralCloud.Workflows.ComplexityTrainingWorkflow,
       name: ComplexityTrainingWorkflowSupervisor
     )
@@ -174,7 +174,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipeline do
     end
   end
 
-  # Private helper functions (shared between Broadway and PGFlow)
+  # Private helper functions (shared between Broadway and QuantumFlow)
 
   defp collect_training_data(task_data) do
     # Collect training data from various sources

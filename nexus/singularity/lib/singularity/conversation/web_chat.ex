@@ -51,7 +51,7 @@ defmodule Singularity.Conversation.WebChat do
   require Logger
 
   alias Singularity.Conversation.MessageHistory
-  alias Pgflow.Notifications
+  alias QuantumFlow.Notifications
 
   @notifications_queue "observer_notifications"
   @approvals_queue "observer_approvals"
@@ -65,7 +65,7 @@ defmodule Singularity.Conversation.WebChat do
   Send a notification to the Observer web UI.
 
   Notifications are displayed in real-time but don't require human response.
-  Uses Pgflow.Notifications for instant delivery via PostgreSQL NOTIFY.
+  Uses QuantumFlow.Notifications for instant delivery via PostgreSQL NOTIFY.
   """
   @spec notify(String.t(), map()) :: {:ok, String.t()} | {:error, term()}
   def notify(message, metadata \\ %{}) when is_binary(message) do
@@ -185,7 +185,7 @@ defmodule Singularity.Conversation.WebChat do
             timestamp: DateTime.utc_now()
           }
 
-          case Pgflow.Notifications.send_with_notify(
+          case QuantumFlow.Notifications.send_with_notify(
                  @approvals_queue,
                  approval_payload,
                  Singularity.Repo

@@ -1,8 +1,8 @@
-defmodule Singularity.Evolution.Pgflow.MessageRouter do
+defmodule Singularity.Evolution.QuantumFlow.MessageRouter do
   @moduledoc """
-  PgFlow Message Router - Routes incoming pgflow messages to appropriate consumer handlers.
+  PgFlow Message Router - Routes incoming QuantumFlow messages to appropriate consumer handlers.
 
-  This module listens to pgflow queues and routes messages to the appropriate handler
+  This module listens to QuantumFlow queues and routes messages to the appropriate handler
   based on message type. Handles acknowledgment, retries, and dead-letter queue routing.
 
   ## AI Navigation Metadata
@@ -11,12 +11,12 @@ defmodule Singularity.Evolution.Pgflow.MessageRouter do
 
   ```json
   {
-    "module": "Singularity.Evolution.Pgflow.MessageRouter",
-    "purpose": "Routes incoming pgflow messages to consumer handlers",
+    "module": "Singularity.Evolution.QuantumFlow.MessageRouter",
+    "purpose": "Routes incoming QuantumFlow messages to consumer handlers",
     "role": "orchestrator",
     "layer": "integration",
     "introduced_in": "October 2025",
-    "depends_on": ["Consumers", "ExPgflow", "PgFlow"],
+    "depends_on": ["Consumers", "ExQuantumFlow", "PgFlow"],
     "features": ["message_routing", "handler_dispatch", "acknowledgment", "retry_handling"]
   }
   ```
@@ -47,11 +47,11 @@ defmodule Singularity.Evolution.Pgflow.MessageRouter do
 
   called_by:
     - Application (supervisor)
-    - Pgflow.listen_worker (queue listener)
+    - QuantumFlow.listen_worker (queue listener)
 
   depends_on:
-    - Singularity.Evolution.Pgflow.Consumers
-    - ExPgflow (pgflow library)
+    - Singularity.Evolution.QuantumFlow.Consumers
+    - ExQuantumFlow (QuantumFlow library)
     - Singularity.PgFlow (message queue API)
   ```
 
@@ -66,16 +66,16 @@ defmodule Singularity.Evolution.Pgflow.MessageRouter do
 
   ### Search Keywords
 
-  pgflow message router, message routing, handler dispatch, queue listener,
+  QuantumFlow message router, message routing, handler dispatch, queue listener,
   message acknowledgment, consensus patterns, workflow patterns
   """
 
   require Logger
 
-  alias Singularity.Evolution.Pgflow.Consumers
+  alias Singularity.Evolution.QuantumFlow.Consumers
 
   @doc """
-  Route incoming pgflow message to appropriate consumer handler.
+  Route incoming QuantumFlow message to appropriate consumer handler.
 
   Dispatches message to handler based on message type field.
   Returns {:ok, "processed"} or {:error, reason} for retry.
@@ -89,7 +89,7 @@ defmodule Singularity.Evolution.Pgflow.MessageRouter do
   """
   @spec route_message(map()) :: {:ok, String.t()} | {:error, any()}
   def route_message(%{"type" => type} = message) do
-    Logger.debug("Routing pgflow message of type: #{type}")
+    Logger.debug("Routing QuantumFlow message of type: #{type}")
 
     case type do
       "consensus_result" ->
@@ -120,7 +120,7 @@ defmodule Singularity.Evolution.Pgflow.MessageRouter do
   end
 
   @doc """
-  Listen for messages on a specific pgflow queue and route them.
+  Listen for messages on a specific QuantumFlow queue and route them.
 
   Starts listening to queue and processes messages continuously.
   Returns {:ok, pid} or {:error, reason}.

@@ -1,6 +1,6 @@
 defmodule Singularity.ProcessRegistry do
   @moduledoc """
-  Central registry of notable processes inside the PGFlow-era Singularity runtime.
+  Central registry of notable processes inside the QuantumFlow-era Singularity runtime.
 
   Two responsibilities:
 
@@ -20,20 +20,20 @@ defmodule Singularity.ProcessRegistry do
 
   @process_keywords %{
     # Infrastructure
-    "Singularity.Repo" => "PostgreSQL connection pool backing PGFlow + embeddings",
+    "Singularity.Repo" => "PostgreSQL connection pool backing QuantumFlow + embeddings",
     "Singularity.Health.HttpServer" => "HTTP health + readiness endpoint",
-    "Singularity.Infrastructure.Overseer" => "Runtime health monitor for PGFlow + DB",
+    "Singularity.Infrastructure.Overseer" => "Runtime health monitor for QuantumFlow + DB",
     "Singularity.Infrastructure.ErrorRateTracker" => "ETS-backed error rate tracker",
     "Singularity.Infrastructure.CircuitBreakerSupervisor" =>
       "Dynamic supervisor for circuit breakers",
 
-    # PGFlow orchestration
-    "PGFlow.WorkflowSupervisor" => "PGFlow workflow orchestrator (demand, ack, retries)",
-    "Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow" => "Auto code ingestion workflow (PGFlow)",
-    "Singularity.Workflows.EmbeddingTrainingWorkflow" => "Embedding training workflow (PGFlow)",
+    # QuantumFlow orchestration
+    "QuantumFlow.WorkflowSupervisor" => "QuantumFlow workflow orchestrator (demand, ack, retries)",
+    "Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow" => "Auto code ingestion workflow (QuantumFlow)",
+    "Singularity.Workflows.EmbeddingTrainingWorkflow" => "Embedding training workflow (QuantumFlow)",
     "Singularity.Workflows.ArchitectureLearningWorkflow" =>
-      "Architecture learning workflow (PGFlow)",
-    "Broadway.PgflowProducer" => "Broadway producer (PGFlow-backed)",
+      "Architecture learning workflow (QuantumFlow)",
+    "Broadway.QuantumFlowProducer" => "Broadway producer (QuantumFlow-backed)",
 
     # ML pipelines
     "Singularity.ML.PipelineSupervisor" => "Supervisor for ML/Broadway pipelines",
@@ -47,7 +47,7 @@ defmodule Singularity.ProcessRegistry do
     # Agents
     "Singularity.Agents.RuntimeBootstrapper" => "Agent runtime initialisation",
     "Singularity.Agents.Arbiter" => "Agent arbitration and escalation",
-    "Singularity.Agents.ChangeTracker" => "Code change tracker feeding PGFlow",
+    "Singularity.Agents.ChangeTracker" => "Code change tracker feeding QuantumFlow",
     "Singularity.Agents.SelfImprovementAgent" => "Self-improvement orchestration",
     "Singularity.Agents.DocumentationPipelineGitIntegration" =>
       "Documentation pipeline (git sync)",
@@ -84,12 +84,12 @@ defmodule Singularity.ProcessRegistry do
       "Singularity.Infrastructure.ErrorRateTracker",
       "Singularity.Infrastructure.CircuitBreakerSupervisor"
     ],
-    pgflow: [
-      "PGFlow.WorkflowSupervisor",
+    QuantumFlow: [
+      "QuantumFlow.WorkflowSupervisor",
       "Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow",
       "Singularity.Workflows.EmbeddingTrainingWorkflow",
       "Singularity.Workflows.ArchitectureLearningWorkflow",
-      "Broadway.PgflowProducer"
+      "Broadway.QuantumFlowProducer"
     ],
     pipelines: [
       "Singularity.ML.PipelineSupervisor",
@@ -132,7 +132,7 @@ defmodule Singularity.ProcessRegistry do
   }
 
   @quick_searches %{
-    "Check PGFlow workflows" => "PGFlow",
+    "Check QuantumFlow workflows" => "QuantumFlow",
     "See auto-ingestion activity" => "AutoCodeIngestion",
     "Inspect embedding pipeline" => "BroadwayEmbeddingPipeline",
     "Monitor agent orchestration" => "Agent",
@@ -161,7 +161,7 @@ defmodule Singularity.ProcessRegistry do
   Pretty-print registry information to STDOUT for quick reference.
   """
   def print_registry do
-    IO.puts("\n=== Singularity Process Registry (PGFlow era) ===\n")
+    IO.puts("\n=== Singularity Process Registry (QuantumFlow era) ===\n")
     IO.puts("Use these keywords in LiveDashboard Processes tab:")
     IO.puts("  http://localhost:4000/dashboard/processes\n")
 

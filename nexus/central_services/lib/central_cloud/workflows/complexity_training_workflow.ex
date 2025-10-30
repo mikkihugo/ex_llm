@@ -1,8 +1,8 @@
 defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Complexity Training Pipeline
+  QuantumFlow Workflow Definition for Complexity Training Pipeline
 
-  Replaces Broadway-based complexity training with PGFlow workflow orchestration.
+  Replaces Broadway-based complexity training with QuantumFlow workflow orchestration.
   Provides better observability, error handling, and resource management.
 
   Workflow Stages:
@@ -13,7 +13,7 @@ defmodule CentralCloud.Workflows.ComplexityTrainingWorkflow do
   5. Model Deployment - Save and deploy trained model
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   alias CentralCloud.Models.{MLComplexityTrainer, TrainingDataCollector, ModelCache}
   alias CentralCloud.Repo

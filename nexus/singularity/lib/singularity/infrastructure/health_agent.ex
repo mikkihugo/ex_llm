@@ -1,9 +1,9 @@
 defmodule Singularity.Infrastructure.HealthAgent do
   @moduledoc """
-  Health Agent - PGFlow-aligned monitoring façade for Singularity runtime services.
+  Health Agent - QuantumFlow-aligned monitoring façade for Singularity runtime services.
 
   This module is a direct lift from the legacy branch with light wording updates so the
-  design language matches the current PGFlow + PGMQ architecture. It keeps the same
+  design language matches the current QuantumFlow + PGMQ architecture. It keeps the same
   responsibilities and stubbed pipeline, which makes it ideal for cherry-picking operational
   patterns without dragging the entire legacy supervision tree.
 

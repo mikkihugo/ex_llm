@@ -353,7 +353,7 @@ defmodule CentralCloud.Jobs.StatisticsJob do
       knowledge_growth: statistics.knowledge_growth
     }
 
-    Pgflow.send_with_notify("intelligence.statistics.global", summary, CentralCloud.Repo)
+    QuantumFlow.send_with_notify("intelligence.statistics.global", summary, CentralCloud.Repo)
     Logger.debug("Published global statistics summary to intelligence.statistics.global via PgFlow")
   end
 

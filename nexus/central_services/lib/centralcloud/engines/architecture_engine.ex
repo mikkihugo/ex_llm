@@ -8,7 +8,7 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
   """
 
   require Logger
-  alias Pgflow.Executor
+  alias QuantumFlow.Executor
 
   @doc """
   Detect frameworks in codebase.
@@ -86,7 +86,7 @@ defmodule CentralCloud.Engines.ArchitectureEngine do
     end
   end
 
-  # Implement Pgflow delegation to Singularity (replaces NATS)
+  # Implement QuantumFlow delegation to Singularity (replaces NATS)
   defp request_singularity(operation, request) do
     payload = %{
       "operation" => operation,

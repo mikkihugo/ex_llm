@@ -1,8 +1,8 @@
-defmodule CentralCloud.Evolution.Pgflow.Producers do
+defmodule CentralCloud.Evolution.QuantumFlow.Producers do
   @moduledoc """
   PgFlow Producers - Send messages to Singularity instance queues.
 
-  Handles asynchronous, durable messaging to Singularity instances via ex_pgflow.
+  Handles asynchronous, durable messaging to Singularity instances via ex_quantum_flow.
   All messages are persisted in PostgreSQL and automatically retried on failure.
 
   ## AI Navigation Metadata
@@ -10,7 +10,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
   ### Module Identity
   ```json
   {
-    "module": "CentralCloud.Evolution.Pgflow.Producers",
+    "module": "CentralCloud.Evolution.QuantumFlow.Producers",
     "purpose": "Publish messages to Singularity instances via durable queues",
     "role": "service",
     "layer": "integration",
@@ -26,7 +26,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
       - Guardian.RollbackService (send_rollback)
       - PatternLearningLoop (send_profiles)
     calls_to:
-      - ExPgflow.publish
+      - ExQuantumFlow.publish
       - Telemetry
   ```
 
@@ -37,7 +37,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
   - ✅ DO handle publish failures gracefully
 
   ### Search Keywords
-  pgflow producers, consensus distribution, rollback triggers, safety profile updates,
+  QuantumFlow producers, consensus distribution, rollback triggers, safety profile updates,
   instance messaging, queue-based communication
 
   ## Usage
@@ -79,7 +79,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
         )
 
         :telemetry.execute(
-          [:evolution, :pgflow, :consensus_result_published],
+          [:evolution, :quantum_flow, :consensus_result_published],
           %{confidence: confidence},
           %{proposal_id: proposal_id, status: status, instance_id: instance_id}
         )
@@ -113,7 +113,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
         )
 
         :telemetry.execute(
-          [:evolution, :pgflow, :rollback_trigger_published],
+          [:evolution, :quantum_flow, :rollback_trigger_published],
           %{},
           %{proposal_id: proposal_id, reason: reason, instance_id: instance_id}
         )
@@ -146,7 +146,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
         Logger.info("Published safety profile update for #{agent_type} to #{target}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :profile_update_published],
+          [:evolution, :quantum_flow, :profile_update_published],
           %{},
           %{agent_type: agent_type, target: target}
         )
@@ -200,7 +200,7 @@ defmodule CentralCloud.Evolution.Pgflow.Producers do
 
   defp publish_message(queue_name, message) do
     try do
-      {:ok, message_id} = ExPgflow.publish(
+      {:ok, message_id} = ExQuantumFlow.publish(
         :centralcloud,
         queue_name,
         message,

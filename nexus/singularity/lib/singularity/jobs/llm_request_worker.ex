@@ -2,7 +2,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   @moduledoc """
   LLM Request Worker - Execute LLM requests via Elixir workflow
 
-  Replaces: pgmq llm.request topic + TypeScript pgflow
+  Replaces: pgmq llm.request topic + TypeScript QuantumFlow
 
   Architecture:
   - Oban job enqueues with request details
@@ -10,7 +10,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   - Workflow steps: receive → select model → call provider → publish result
   - All in Elixir (no network overhead, direct function calls)
 
-  Benefits vs TypeScript pgflow:
+  Benefits vs TypeScript QuantumFlow:
   - ✅ No network latency (direct execution)
   - ✅ Native Elixir (type-safe, pattern matching)
   - ✅ Direct access to Singularity code
@@ -18,7 +18,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
   - ✅ Single language ecosystem
   """
 
-  use Singularity.QuantumFlow.Worker, queue: :default, max_attempts: 3
+  use QuantumFlow.Worker, queue: :default, max_attempts: 3
 
   require Logger
   alias Singularity.Workflows.LlmRequest
@@ -61,7 +61,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
 
     case %{}
          |> new(args)
-         |> Oban.insert() do
+         |> Singularity.JobQueue.insert() do
       {:ok, job} ->
         Logger.info("LLM request enqueued",
           request_id: request_id,
@@ -92,8 +92,8 @@ defmodule Singularity.Jobs.LlmRequestWorker do
       task_type: args["task_type"]
     )
 
-    # Execute the LLM workflow directly via ExPgflow (no network overhead!)
-    case Pgflow.Executor.execute(LlmRequest, args, timeout: 30000) do
+    # Execute the LLM workflow directly via ExQuantumFlow (no network overhead!)
+    case QuantumFlow.Executor.execute(LlmRequest, args, timeout: 30000) do
       {:ok, result} ->
         duration_ms = System.monotonic_time(:millisecond) - start_time
 
@@ -106,7 +106,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
         # Record result in database for tracking and CentralCloud learning
         Singularity.Schemas.Execution.JobResult.record_success(
           workflow: "Singularity.Workflows.LlmRequest",
-          instance_id: Pgflow.Instance.Registry.instance_id(),
+          instance_id: QuantumFlow.Instance.Registry.instance_id(),
           job_id: job_id,
           input: args,
           output: result,
@@ -129,7 +129,7 @@ defmodule Singularity.Jobs.LlmRequestWorker do
         # Record failure for tracking
         Singularity.Schemas.Execution.JobResult.record_failure(
           workflow: "Singularity.Workflows.LlmRequest",
-          instance_id: Pgflow.Instance.Registry.instance_id(),
+          instance_id: QuantumFlow.Instance.Registry.instance_id(),
           job_id: job_id,
           input: args,
           error: inspect(reason),

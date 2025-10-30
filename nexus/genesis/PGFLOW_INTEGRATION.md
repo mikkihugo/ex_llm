@@ -43,7 +43,7 @@ Genesis.PgFlowWorkflowConsumer
 ## Components Created
 
 ### 1. Genesis.PgFlowWorkflowConsumer
-**File:** `lib/genesis/pgflow_workflow_consumer.ex`
+**File:** `lib/genesis/quantum_flow_workflow_consumer.ex`
 
 Main consumer GenServer that:
 - Polls three queues: `genesis_rule_updates`, `genesis_llm_config_updates`, `code_execution_requests`
@@ -55,7 +55,7 @@ Main consumer GenServer that:
 
 **Configuration:**
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   poll_interval_ms: 1000,
   batch_size: 10,
@@ -287,7 +287,7 @@ Strategy: `:one_for_one` - Each service is independent, restarts don't cascade
 
 ### Enable PgFlow Consumer
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   poll_interval_ms: 1000,
   batch_size: 10,
@@ -377,7 +377,7 @@ All dependencies already available in Genesis.
 ## Files Modified/Created
 
 **Created:**
-- `lib/genesis/pgflow_workflow_consumer.ex` - Main consumer (513 lines)
+- `lib/genesis/quantum_flow_workflow_consumer.ex` - Main consumer (513 lines)
 - `lib/genesis/rule_engine.ex` - Rule management (232 lines)
 - `lib/genesis/llm_config_manager.ex` - LLM config (294 lines)
 - `lib/genesis/job_executor.ex` - Job execution (436 lines)

@@ -196,16 +196,16 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
           end)
       }
 
-      # Publish to CentralCloud via pgflow (pgmq + NOTIFY)
+      # Publish to CentralCloud via QuantumFlow (pgmq + NOTIFY)
       case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_push_queue, message) do
         {:ok, :sent} ->
-          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via pgflow",
+          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via QuantumFlow",
             capability_count: length(capabilities),
             instance_id: @instance_id
           )
 
         {:ok, workflow_id} when is_integer(workflow_id) ->
-          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via pgflow",
+          Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via QuantumFlow",
             capability_count: length(capabilities),
             instance_id: @instance_id,
             workflow_id: workflow_id

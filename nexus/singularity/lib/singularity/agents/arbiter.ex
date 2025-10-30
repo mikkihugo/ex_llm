@@ -131,7 +131,7 @@ defmodule Singularity.Agents.Arbiter do
           :ets.delete(@table, token)
 
           try do
-            :ets.delete(:pgflow_workflows, token)
+            :ets.delete(:quantum_flow_workflows, token)
           rescue
             _ -> :ok
           end
@@ -159,7 +159,7 @@ defmodule Singularity.Agents.Arbiter do
           :ets.delete(@table, token)
           # remove persisted record for safety/consumption
           try do
-            :ets.delete(:pgflow_workflows, token)
+            :ets.delete(:quantum_flow_workflows, token)
           rescue
             _ -> :ok
           end
@@ -170,7 +170,7 @@ defmodule Singularity.Agents.Arbiter do
           :ets.delete(@table, token)
 
           try do
-            :ets.delete(:pgflow_workflows, token)
+            :ets.delete(:quantum_flow_workflows, token)
           rescue
             _ -> :ok
           end

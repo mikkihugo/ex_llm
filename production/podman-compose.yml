@@ -37,7 +37,7 @@ services:
       - all
       - db
 
-  # NATS removed - using pgflow (PostgreSQL-based messaging)
+  # NATS removed - using QuantumFlow (PostgreSQL-based messaging)
   # All messaging now goes through PostgreSQL with pgmq
 
   # LLM Server - AI Provider Gateway (TypeScript/Bun)
@@ -47,7 +47,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      # NATS removed - using pgflow (PostgreSQL-based messaging)
+      # NATS removed - using QuantumFlow (PostgreSQL-based messaging)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GOOGLE_AI_STUDIO_API_KEY: ${GOOGLE_AI_STUDIO_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -56,7 +56,7 @@ services:
     networks:
       - singularity-net
     depends_on:
-      # nats removed - using pgflow
+      # nats removed - using QuantumFlow
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
@@ -76,7 +76,7 @@ services:
       RELEASE_DISTRIBUTION: name
       RELEASE_NODE: centralcloud@127.0.0.1
       DATABASE_URL: ${CENTRALCLOUD_DATABASE_URL:-postgres://postgres:postgres@postgresql:5432/centralcloud}
-      # NATS removed - using pgflow (PostgreSQL-based messaging)
+      # NATS removed - using QuantumFlow (PostgreSQL-based messaging)
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       FRAMEWORK_LEARNING_ENABLED: ${FRAMEWORK_LEARNING_ENABLED:-true}
       PACKAGE_SYNC_ENABLED: ${PACKAGE_SYNC_ENABLED:-true}
@@ -88,7 +88,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-      # nats removed - using pgflow
+      # nats removed - using QuantumFlow
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 30s
@@ -108,7 +108,7 @@ services:
       RELEASE_DISTRIBUTION: name
       RELEASE_NODE: genesis@127.0.0.1
       DATABASE_URL: ${GENESIS_DATABASE_URL:-postgres://postgres:postgres@postgresql:5432/genesis}
-      # NATS removed - using pgflow (PostgreSQL-based messaging)
+      # NATS removed - using QuantumFlow (PostgreSQL-based messaging)
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       METRICS_TRACKING_ENABLED: ${METRICS_TRACKING_ENABLED:-true}
       AUTO_ROLLBACK_ENABLED: ${AUTO_ROLLBACK_ENABLED:-true}
@@ -120,7 +120,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-      # nats removed - using pgflow
+      # nats removed - using QuantumFlow
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 30s
@@ -140,7 +140,7 @@ services:
       RELEASE_DISTRIBUTION: name
       RELEASE_NODE: singularity@127.0.0.1
       DATABASE_URL: ${SINGULARITY_DATABASE_URL:-postgres://postgres:postgres@postgresql:5432/singularity}
-      # NATS removed - using pgflow (PostgreSQL-based messaging)
+      # NATS removed - using QuantumFlow (PostgreSQL-based messaging)
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       CENTRALCLOUD_URL: ${CENTRALCLOUD_URL:-http://centralcloud:4000}
       GENESIS_URL: ${GENESIS_URL:-http://genesis:4000}
@@ -158,7 +158,7 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-      # nats removed - using pgflow
+      # nats removed - using QuantumFlow
       llm-server:
         condition: service_healthy
       centralcloud:
@@ -228,6 +228,6 @@ networks:
 # Profile usage:
 # podman-compose --profile all up -d          # Start all services
 # podman-compose --profile db up -d           # Just database
-# podman-compose --profile messaging up -d    # Just messaging services (now pgflow-based)
+# podman-compose --profile messaging up -d    # Just messaging services (now QuantumFlow-based)
 # podman-compose --profile services up -d     # Just apps
 # podman-compose --profile proxy up -d        # Just Nginx

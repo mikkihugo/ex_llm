@@ -1183,7 +1183,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
                      store_goal_locally(goal_id, goal, nil)
 
                      Logger.info(
-                       "Enqueued goal #{goal_id} with priority #{goal.priority} via pgflow"
+                       "Enqueued goal #{goal_id} with priority #{goal.priority} via QuantumFlow"
                      )
 
                      %{id: goal_id, message_id: nil, queued_at: DateTime.utc_now()}
@@ -1193,7 +1193,7 @@ defmodule Singularity.Conversation.ChatConversationAgent do
                      store_goal_locally(goal_id, goal, message_id)
 
                      Logger.info(
-                       "Enqueued goal #{goal_id} with priority #{goal.priority} (pgflow msg_id: #{message_id})"
+                       "Enqueued goal #{goal_id} with priority #{goal.priority} (QuantumFlow msg_id: #{message_id})"
                      )
 
                      %{id: goal_id, message_id: message_id, queued_at: DateTime.utc_now()}

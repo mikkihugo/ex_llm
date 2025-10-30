@@ -195,16 +195,16 @@ defmodule Singularity.Settings do
   defp get_description(key) do
     case key do
       "pipelines.code_quality.enabled" ->
-        "Enable PGFlow mode for code quality training pipeline"
+        "Enable QuantumFlow mode for code quality training pipeline"
 
       "pipelines.complexity_training.enabled" ->
-        "Enable PGFlow mode for complexity analysis training pipeline"
+        "Enable QuantumFlow mode for complexity analysis training pipeline"
 
       "pipelines.architecture_learning.enabled" ->
-        "Enable PGFlow mode for architecture learning pipeline"
+        "Enable QuantumFlow mode for architecture learning pipeline"
 
       "pipelines.embedding_training.enabled" ->
-        "Enable PGFlow mode for embedding training pipeline"
+        "Enable QuantumFlow mode for embedding training pipeline"
 
       "workflows.code_quality.timeout_ms" ->
         "Timeout in milliseconds for code quality training workflow"

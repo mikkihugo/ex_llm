@@ -121,7 +121,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   @spec publish_rules(keyword()) ::
           {:ok, %{summary: map(), results: [publication_result()]}} | {:error, term()}
   def publish_rules(opts \\ []) do
-    Logger.info("GenesisPublisher: Publishing rules via Pgflow workflow", opts: opts)
+    Logger.info("GenesisPublisher: Publishing rules via QuantumFlow workflow", opts: opts)
 
     try do
       case RuleEvolutionSystem.publish_confident_rules(opts) do
@@ -225,13 +225,13 @@ defmodule Singularity.Evolution.GenesisPublisher do
     repo = Keyword.get(opts, :repo, Singularity.Repo)
     executor_opts = Keyword.take(opts, [:timeout, :poll_interval, :worker_id])
 
-    Logger.info("GenesisPublisher: Importing rules via Pgflow workflow",
+    Logger.info("GenesisPublisher: Importing rules via QuantumFlow workflow",
       namespace: namespace,
       min_confidence: min_confidence,
       limit: limit
     )
 
-    case Pgflow.Executor.execute(
+    case QuantumFlow.Executor.execute(
            Singularity.Workflows.RuleImport,
            %{
              "options" => %{
@@ -649,7 +649,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
   """
   @spec publish_llm_config_rules(keyword()) :: {:ok, map()} | {:error, term()}
   def publish_llm_config_rules(opts \\ []) do
-    Logger.info("GenesisPublisher: Publishing LLM configuration rules via Pgflow workflow",
+    Logger.info("GenesisPublisher: Publishing LLM configuration rules via QuantumFlow workflow",
       opts: opts
     )
 
@@ -662,7 +662,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       repo = Keyword.get(opts, :repo, Singularity.Repo)
       executor_opts = Keyword.take(opts, [:timeout, :poll_interval, :worker_id])
 
-      case Pgflow.Executor.execute(
+      case QuantumFlow.Executor.execute(
              Singularity.Workflows.LlmConfigRulePublish,
              %{"options" => workflow_input},
              repo,
@@ -1000,14 +1000,14 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_llm_config_updates", payload) do
       {:ok, :sent} ->
-        Logger.debug("GenesisPublisher: LLM config rule published to Genesis via pgflow",
+        Logger.debug("GenesisPublisher: LLM config rule published to Genesis via QuantumFlow",
           pattern: inspect(rule.pattern)
         )
 
         {:ok, :sent}
 
       {:ok, msg_id} when is_integer(msg_id) ->
-        Logger.debug("GenesisPublisher: LLM config rule published to Genesis via pgflow",
+        Logger.debug("GenesisPublisher: LLM config rule published to Genesis via QuantumFlow",
           pattern: inspect(rule.pattern),
           message_id: msg_id
         )

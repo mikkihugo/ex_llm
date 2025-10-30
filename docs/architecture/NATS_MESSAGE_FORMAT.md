@@ -1,8 +1,8 @@
-# pgflow Message Format Specification
+# QuantumFlow Message Format Specification
 
-Complete specification for pgflow queue naming and message formats in Singularity's distributed architecture.
+Complete specification for QuantumFlow queue naming and message formats in Singularity's distributed architecture.
 
-**Note:** This document has been updated from NATS subjects to pgflow queues as part of the migration from NATS to pgflow-based messaging.
+**Note:** This document has been updated from NATS subjects to QuantumFlow queues as part of the migration from NATS to quantum_flow-based messaging.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ Complete specification for pgflow queue naming and message formats in Singularit
 
 ## Overview
 
-Singularity uses **pgflow** (PostgreSQL-based messaging) for distributed messaging between:
+Singularity uses **QuantumFlow** (PostgreSQL-based messaging) for distributed messaging between:
 
 - **Singularity instances** (local development environments)
 - **Central Cloud** (global aggregation service)

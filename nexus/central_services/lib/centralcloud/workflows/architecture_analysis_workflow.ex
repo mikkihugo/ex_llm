@@ -1,8 +1,8 @@
 defmodule CentralCloud.Workflows.ArchitectureAnalysisWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Architecture Analysis Requests
+  QuantumFlow Workflow Definition for Architecture Analysis Requests
 
-  Replaces NATS-based delegation to Singularity with PGFlow workflow orchestration.
+  Replaces NATS-based delegation to Singularity with QuantumFlow workflow orchestration.
   Provides durable, observable architecture analysis request processing.
 
   Workflow Stages:
@@ -12,10 +12,10 @@ defmodule CentralCloud.Workflows.ArchitectureAnalysisWorkflow do
   4. Format Results - Format results for CentralCloud consumption
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
-  alias Pgflow.Executor
+  alias QuantumFlow.Executor
 
   @doc """
   Define the architecture analysis workflow structure
@@ -54,7 +54,7 @@ defmodule CentralCloud.Workflows.ArchitectureAnalysisWorkflow do
         %{
           id: :route_to_singularity,
           name: "Route to Singularity",
-          description: "Send the analysis request to Singularity via Pgflow",
+          description: "Send the analysis request to Singularity via QuantumFlow",
           function: &__MODULE__.route_to_singularity/1,
           timeout_ms: 90000,
           retry_count: 2,

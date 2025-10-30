@@ -12,7 +12,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Telemetry** - Observability and metrics
   - **Circuit Breaker** - Fault tolerance for external services
   - **PostgreSQL Persistence** - Execution history and state management
-  - **PGFlow Messaging** - Distributed coordination and messaging
+  - **QuantumFlow Messaging** - Distributed coordination and messaging
 
   ## Key Features
 
@@ -23,7 +23,7 @@ defmodule Singularity.Execution.Runners.Runner do
   - **Dynamic Scaling** - Adjusts resources based on load
   - **Event-Driven** - Responds to system events
   - **Persistent State** - Execution history survives restarts
-  - **Distributed Coordination** - PGFlow-backed task distribution
+  - **Distributed Coordination** - QuantumFlow-backed task distribution
 
   ## Usage
 
@@ -160,15 +160,15 @@ defmodule Singularity.Execution.Runners.Runner do
     # Initialize circuit breakers for external services
     circuit_breakers = initialize_circuit_breakers()
 
-    # Connect to PGFlow messaging if available
+    # Connect to QuantumFlow messaging if available
     messaging_client =
-      case connect_to_pgflow() do
+      case connect_to_quantum_flow() do
         {:ok, client} ->
-          Logger.info("Connected to PGFlow messaging")
+          Logger.info("Connected to QuantumFlow messaging")
           client
 
         {:error, reason} ->
-          Logger.warning("PGFlow messaging connection failed: #{inspect(reason)}")
+          Logger.warning("QuantumFlow messaging connection failed: #{inspect(reason)}")
           nil
       end
 
@@ -203,7 +203,7 @@ defmodule Singularity.Execution.Runners.Runner do
       }
     }
 
-    Logger.info("Runner started", supervisor_ref: supervisor_ref, pgflow: messaging_client != nil)
+    Logger.info("Runner started", supervisor_ref: supervisor_ref, QuantumFlow: messaging_client != nil)
     {:ok, state}
   end
 
@@ -215,7 +215,7 @@ defmodule Singularity.Execution.Runners.Runner do
     case persist_execution(execution_id, task, :pending) do
       :ok ->
         # Publish task started event
-        publish_pgflow_event(state.messaging_client, "system.events.runner.task.started", %{
+        publish_quantum_flow_event(state.messaging_client, "system.events.runner.task.started", %{
           execution_id: execution_id,
           task_type: task.type,
           timestamp: DateTime.utc_now()
@@ -314,7 +314,7 @@ defmodule Singularity.Execution.Runners.Runner do
       metrics: state.metrics,
       circuit_breakers: state.circuit_breakers,
       supervisor_children: DynamicSupervisor.count_children(state.supervisor_ref),
-      pgflow_connected: state.messaging_client != nil,
+      quantum_flow_connected: state.messaging_client != nil,
       execution_history_count: length(state.execution_history)
     }
 
@@ -351,7 +351,7 @@ defmodule Singularity.Execution.Runners.Runner do
 
   @impl true
   def handle_call({:publish_event, event_type, payload}, _from, state) do
-    result = publish_pgflow_event(state.messaging_client, event_type, payload)
+    result = publish_quantum_flow_event(state.messaging_client, event_type, payload)
     {:reply, result, state}
   end
 
@@ -386,7 +386,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish completion event
-    publish_pgflow_event(state.messaging_client, "system.events.runner.task.completed", %{
+    publish_quantum_flow_event(state.messaging_client, "system.events.runner.task.completed", %{
       execution_id: execution_id,
       result: result,
       timestamp: DateTime.utc_now()
@@ -427,7 +427,7 @@ defmodule Singularity.Execution.Runners.Runner do
     end
 
     # Publish failure event
-    publish_pgflow_event(state.messaging_client, "system.events.runner.task.failed", %{
+    publish_quantum_flow_event(state.messaging_client, "system.events.runner.task.failed", %{
       execution_id: execution_id,
       error: reason,
       timestamp: DateTime.utc_now()
@@ -448,7 +448,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_pgflow_event(state.messaging_client, "system.events.runner.circuit.opened", %{
+    publish_quantum_flow_event(state.messaging_client, "system.events.runner.circuit.opened", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -468,7 +468,7 @@ defmodule Singularity.Execution.Runners.Runner do
       end)
 
     # Publish circuit breaker event
-    publish_pgflow_event(state.messaging_client, "system.events.runner.circuit.closed", %{
+    publish_quantum_flow_event(state.messaging_client, "system.events.runner.circuit.closed", %{
       service: service,
       timestamp: DateTime.utc_now()
     })
@@ -761,27 +761,27 @@ defmodule Singularity.Execution.Runners.Runner do
   end
 
   # ============================================================================
-  # PGFlow INTEGRATION
+  # QuantumFlow INTEGRATION
   # ============================================================================
 
-  defp connect_to_pgflow do
+  defp connect_to_quantum_flow do
     try do
-      # Messaging is handled by the global PGFlow messaging client, which is registered
+      # Messaging is handled by the global QuantumFlow messaging client, which is registered
       # during application startup. Returning nil keeps the state consistent; callers
       # simply check for a present client before publishing events.
-      {:ok, Process.whereis(:pgflow_messaging_client)}
+      {:ok, Process.whereis(:quantum_flow_messaging_client)}
     rescue
       error ->
         {:error, error}
     end
   end
 
-  defp publish_pgflow_event(nil, _event_type, _payload) do
-    # PGFlow messaging not available, silently ignore
+  defp publish_quantum_flow_event(nil, _event_type, _payload) do
+    # QuantumFlow messaging not available, silently ignore
     :ok
   end
 
-  defp publish_pgflow_event(_messaging_client, event_type, payload) do
+  defp publish_quantum_flow_event(_messaging_client, event_type, payload) do
     try do
       subject = "system.events.runner.#{event_type}"
       message = Jason.encode!(payload)
@@ -789,7 +789,7 @@ defmodule Singularity.Execution.Runners.Runner do
       :ok
     rescue
       error ->
-        Logger.error("Failed to publish PGFlow event", event: event_type, error: error)
+        Logger.error("Failed to publish QuantumFlow event", event: event_type, error: error)
         {:error, error}
     end
   end
@@ -1099,7 +1099,7 @@ defmodule Singularity.Execution.Runners.Runner do
         do: [:phoenix | frameworks],
         else: frameworks
 
-    # PGFlow messaging detection
+    # QuantumFlow messaging detection
     frameworks =
       if String.contains?(file_path, "pgmq"), do: [:pgmq | frameworks], else: frameworks
 

@@ -1,8 +1,8 @@
-defmodule CentralCloud.Evolution.Pgflow.Consumers do
+defmodule CentralCloud.Evolution.QuantumFlow.Consumers do
   @moduledoc """
   PgFlow Consumers - Handle messages from Singularity instance queues.
 
-  Processes incoming messages from Singularity instances via ex_pgflow.
+  Processes incoming messages from Singularity instances via ex_quantum_flow.
   Each message is processed atomically with automatic retry on failure.
 
   ## AI Navigation Metadata
@@ -10,7 +10,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
   ### Module Identity
   ```json
   {
-    "module": "CentralCloud.Evolution.Pgflow.Consumers",
+    "module": "CentralCloud.Evolution.QuantumFlow.Consumers",
     "purpose": "Process messages from Singularity instances",
     "role": "service",
     "layer": "integration",
@@ -22,7 +22,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
   ```yaml
   Consumers:
     calls_from:
-      - ExPgflow (proposal, metrics, pattern messages)
+      - ExQuantumFlow (proposal, metrics, pattern messages)
     calls_to:
       - Consensus.Engine.propose_change
       - Guardian.RollbackService.report_metrics
@@ -37,7 +37,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
   - ✅ DO return error to trigger retry on failure
 
   ### Search Keywords
-  pgflow consumers, proposal reception, metrics aggregation, pattern collection,
+  QuantumFlow consumers, proposal reception, metrics aggregation, pattern collection,
   message validation, multi-instance coordination
 
   ## Message Types Handled
@@ -233,7 +233,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
       Logger.info("Proposal #{message["proposal_id"]} recorded for consensus")
 
       :telemetry.execute(
-        [:evolution, :pgflow, :proposal_received],
+        [:evolution, :quantum_flow, :proposal_received],
         %{},
         %{
           proposal_id: message["proposal_id"],
@@ -263,7 +263,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
       Logger.debug("Metrics recorded for proposal #{message["proposal_id"]}")
 
       :telemetry.execute(
-        [:evolution, :pgflow, :metrics_received],
+        [:evolution, :quantum_flow, :metrics_received],
         %{},
         %{
           proposal_id: message["proposal_id"],
@@ -295,7 +295,7 @@ defmodule CentralCloud.Evolution.Pgflow.Consumers do
       )
 
       :telemetry.execute(
-        [:evolution, :pgflow, :pattern_received],
+        [:evolution, :quantum_flow, :pattern_received],
         %{success_rate: message["success_rate"]},
         %{
           instance_id: message["instance_id"],

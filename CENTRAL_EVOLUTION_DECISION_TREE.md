@@ -26,7 +26,7 @@ graph TD
     J --> K[Instances Vote<br/>Consensus.vote_on_change/4]
     K --> L{Consensus Met?<br/>2/3 votes, 85%+ confidence}
 
-    L -->|Yes| M[Broadcast via ex_pgflow<br/>Consensus.execute_if_consensus/1]
+    L -->|Yes| M[Broadcast via ex_quantum_flow<br/>Consensus.execute_if_consensus/1]
     L -->|No| N[Reject Change]
 
     M --> H
@@ -81,7 +81,7 @@ sequenceDiagram
         PA->>DB: Mark as consensus_pattern
         Note over PA: Daily aggregation job
         PA->>PA: aggregate_learnings/0
-        PA->>G: Promote to Genesis<br/>(via ex_pgflow)
+        PA->>G: Promote to Genesis<br/>(via ex_quantum_flow)
         PA->>DB: Set promoted_to_genesis=true
     end
 
@@ -103,7 +103,7 @@ sequenceDiagram
     participant A as Agent
     participant G as Guardian
     participant DB as CentralCloud DB
-    participant I as Instance (via ex_pgflow)
+    participant I as Instance (via ex_quantum_flow)
 
     Note over A: Before applying change
 
@@ -122,7 +122,7 @@ sequenceDiagram
 
         alt Threshold Breached
             G->>G: get_rollback_strategy/1<br/>(change_type)
-            G->>I: Broadcast rollback command<br/>(via ex_pgflow queue)
+            G->>I: Broadcast rollback command<br/>(via ex_quantum_flow queue)
             G-->>A: {:ok, :threshold_breach_detected}
             Note over A: Agent receives rollback<br/>command and reverts
         else Metrics OK
@@ -150,7 +150,7 @@ sequenceDiagram
 sequenceDiagram
     participant I1 as Instance 1<br/>(Proposer)
     participant CE as Consensus Engine
-    participant PG as ex_pgflow Queue
+    participant PG as ex_quantum_flow Queue
     participant I2 as Instance 2
     participant I3 as Instance 3
     participant DB as CentralCloud DB

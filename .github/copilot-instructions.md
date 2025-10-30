@@ -1,23 +1,23 @@
 # GitHub Copilot Project Briefing
 
-Updated for the pgmq/ex_pgflow architecture (October 2025).
+Updated for the pgmq/ex_quantum_flow architecture (October 2025).
 
 ---
 
 ## 1. What Singularity Is
 
-- **Core**: Elixir monorepo with multiple applications (`singularity/`, `centralcloud/`, `genesis/`, `ex_pgflow/`) + Rust NIF packages in `packages/`.
+- **Core**: Elixir monorepo with multiple applications (`singularity/`, `centralcloud/`, `genesis/`, `ex_quantum_flow/`) + Rust NIF packages in `packages/`.
 - **Mission**: Autonomous code-improvement agents + rule evolution + knowledge retention.
-- **Messaging / Workflows**: PostgreSQL (`singularity` DB) with pgmq + ex_pgflow.
-  (NATS is gone; everything queues through pgmq/ex_pgflow.)
+- **Messaging / Workflows**: PostgreSQL (`singularity` DB) with pgmq + ex_quantum_flow.
+  (NATS is gone; everything queues through pgmq/ex_quantum_flow.)
 - **Embeddings**: Local ONNX/Nx pipeline (Qodo-Embed-1 + Jina v3 concatenated → 2560‑dim vectors).
-- **Rule Evolution**: `Singularity.Evolution.*` modules synthesize rules, publish/import via Pgflow workflows.
+- **Rule Evolution**: `Singularity.Evolution.*` modules synthesize rules, publish/import via QuantumFlow workflows.
 - **Agents**: 6 specialized agent types (Self-Improving, Cost-Optimized, Architecture, Technology, Refactoring, Chat) using unified infrastructure.
 
 High-level lifecycle:
 ```
 Execute work → collect metrics/failures → analyze patterns → synthesize rules →
-confidence gate → publish via Pgflow → other services import → feedback loop updates thresholds
+confidence gate → publish via QuantumFlow → other services import → feedback loop updates thresholds
 ```
 
 ---
@@ -29,7 +29,7 @@ confidence gate → publish via Pgflow → other services import → feedback lo
 | `singularity/` | Main Elixir app (agents, embeddings, workflows) | `cd singularity && mix phx.server` |
 | `centralcloud/` | Pattern aggregation & consensus (multi-instance learning) | `cd centralcloud && mix phx.server` |
 | `genesis/` | Autonomous improvement workflows & rule evolution | `cd genesis && mix phx.server` |
-| `ex_pgflow/` | Workflow orchestration library | `cd ex_pgflow && mix compile` |
+| `ex_quantum_flow/` | Workflow orchestration library | `cd ex_quantum_flow && mix compile` |
 | `packages/` | Rust NIF engines (parsing, analysis, quality) | `cd packages/<engine> && cargo test` |
 | `observer/` | Phoenix web UI for monitoring | `cd observer && mix phx.server` |
 | `scripts/` | Setup scripts (`setup-database.sh`, helpers) | `./scripts/setup-database.sh` |
@@ -45,7 +45,7 @@ lib/singularity/
 ├── evolution/                 # Rule synthesis & publishing
 ├── interfaces/                # MCP/NATS interfaces
 ├── tools/                     # Tool definitions
-└── workflows/                 # ex_pgflow workflow steps
+└── workflows/                 # ex_quantum_flow workflow steps
 ```
 
 ---
@@ -196,7 +196,7 @@ moon run templates_data:sync-from-db
 
 ## 7. Integration Points & Dependencies
 
-**Messaging**: Always use Pgflow workflows, never direct pgmq calls
+**Messaging**: Always use QuantumFlow workflows, never direct pgmq calls
 ```elixir
 # ✅ Correct
 {:ok, workflow} = Singularity.Workflows.RulePublish.execute(params)
@@ -226,13 +226,13 @@ ExLLM.chat(:claude, messages)
 
 | Symptom | Likely Fix |
 |---------|------------|
-| `relation "workflow_runs" does not exist` | Run `mix ecto.migrate` (Pgflow tables) |
+| `relation "workflow_runs" does not exist` | Run `mix ecto.migrate` (QuantumFlow tables) |
 | `extension "vector" is not available` | Migrations continue with JSON fallback |
 | Rule publish returns integer | Update to expect `%{summary, results}` format |
 | Validation metrics store undefined | Ensure storage modules loaded; use stubs for tests |
 
 **Code Review Checklist**:
-- Architecture: Verify Pgflow workflows, not ad-hoc queue calls
+- Architecture: Verify QuantumFlow workflows, not ad-hoc queue calls
 - Rule Evolution: Check summaries, confidence thresholds, structured returns
 - Agents: Follow hybrid pattern (rules → cache → LLM)
 - Orchestrators: Register implementations in config.exs
@@ -240,4 +240,4 @@ ExLLM.chat(:claude, messages)
 
 ---
 
-Keep this document aligned with the pgmq/ex_pgflow architecture. For deeper details, see `README.md`, `AGENTS.md`, and `CLAUDE.md`.
+Keep this document aligned with the pgmq/ex_quantum_flow architecture. For deeper details, see `README.md`, `AGENTS.md`, and `CLAUDE.md`.

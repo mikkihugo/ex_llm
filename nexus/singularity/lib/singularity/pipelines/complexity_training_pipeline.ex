@@ -4,7 +4,7 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
 
   Supports dual modes:
   - Broadway mode: Uses Broadway.DummyProducer for simple in-memory processing
-  - PGFlow mode: Uses Broadway.PgflowProducer for durable, orchestrated processing
+  - QuantumFlow mode: Uses Broadway.QuantumFlowProducer for durable, orchestrated processing
 
   Mode is determined by PGFLOW_COMPLEXITY_TRAINING_ENABLED environment variable.
   """
@@ -39,24 +39,24 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
   end
 
   @doc """
-  Build producer configuration based on PGFlow mode setting
+  Build producer configuration based on QuantumFlow mode setting
   """
   def build_producer_config do
-    pgflow_enabled =
+    quantum_flow_enabled =
       Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
 
-    if pgflow_enabled do
-      Logger.info("ComplexityTrainingPipeline: Starting in PGFlow mode")
+    if quantum_flow_enabled do
+      Logger.info("ComplexityTrainingPipeline: Starting in QuantumFlow mode")
 
       [
         module:
-          {Broadway.PgflowProducer,
+          {Broadway.QuantumFlowProducer,
            [
              workflow_name: "complexity_training_producer",
              queue_name: "complexity_training_jobs",
              concurrency: 3,
              batch_size: 15,
-             pgflow_config: [timeout_ms: 600_000, retries: 5],
+             quantum_flow_config: [timeout_ms: 600_000, retries: 5],
              resource_hints: [gpu: true, cpu_cores: 8]
            ]},
         concurrency: 3
@@ -117,15 +117,15 @@ defmodule Singularity.Pipelines.ComplexityTrainingPipeline do
       batch_size: length(messages)
     )
 
-    pgflow_enabled =
+    quantum_flow_enabled =
       Singularity.Settings.get_boolean("pipelines.complexity_training.enabled", false)
 
-    if pgflow_enabled do
+    if quantum_flow_enabled do
       training_data = Enum.map(messages, & &1.data)
 
       case ComplexityTrainingWorkflow.execute(%{training_data: training_data}) do
         {:ok, result} ->
-          Logger.info("ComplexityTrainingPipeline: Training completed via PGFlow", result: result)
+          Logger.info("ComplexityTrainingPipeline: Training completed via QuantumFlow", result: result)
           messages
 
         {:error, reason} ->

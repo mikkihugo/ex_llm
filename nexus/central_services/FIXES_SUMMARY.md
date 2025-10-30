@@ -13,13 +13,13 @@
 - ✅ TODO comments replaced with actual implementation notes
 
 ## Engine Delegation
-- ✅ ParserEngine - Delegates via pgflow to Singularity
-- ✅ LintingEngine - Already fixed (pgflow delegation)
+- ✅ ParserEngine - Delegates via QuantumFlow to Singularity
+- ✅ LintingEngine - Already fixed (QuantumFlow delegation)
 - ⚠️ CodeEngine - Has syntax error (missing `end`)
 
 ## Models
 - ✅ `fetch_models_from_dev` - Uses `Req` HTTP client with graceful degradation
 - ✅ `load_yaml_model` - Uses `YamlElixir` if available, graceful fallback
 
-## Pgflow Notifications
+## QuantumFlow Notifications
 - ✅ IntelligenceHub - Proper GenServer `handle_info/2` callback for notifications

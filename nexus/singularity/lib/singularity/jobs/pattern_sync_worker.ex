@@ -8,7 +8,7 @@ defmodule Singularity.Jobs.PatternSyncWorker do
   - pgmq (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
-  Fires real-time notifications via Pgflow on completion.
+  Fires real-time notifications via QuantumFlow on completion.
 
   Uses Oban's persistent job queue for reliable scheduling.
   """

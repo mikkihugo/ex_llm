@@ -2,7 +2,7 @@ defmodule CentralCloud.LLMTeamOrchestrator do
   @moduledoc """
   High-level façade for running the CentralCloud multi-agent LLM workflow.
 
-  Instead of manually chaining model calls, we enqueue a PGFlow workflow
+  Instead of manually chaining model calls, we enqueue a QuantumFlow workflow
   (`CentralCloud.Workflows.LLMTeamWorkflow`) that models the entire discussion.
   The workflow automatically picks the right crew (fast/default/thorough), runs
   the required specialists, and returns a consensus payload with trace data.
@@ -10,10 +10,10 @@ defmodule CentralCloud.LLMTeamOrchestrator do
 
   require Logger
   alias CentralCloud.Workflows.LLMTeamWorkflow
-  alias PGFlow.Workflow
+  alias QuantumFlow.Workflow
 
   @doc """
-  Validate a codebase pattern by delegating to the PGFlow crew workflow.
+  Validate a codebase pattern by delegating to the QuantumFlow crew workflow.
 
   Options:
   * `:mode` – force a crew (`:fast | :default | :thorough`)
@@ -41,12 +41,12 @@ defmodule CentralCloud.LLMTeamOrchestrator do
       request_id: request_id
     }
 
-    Logger.info("[LLMTeam] Enqueuing PGFlow workflow", codebase: codebase_id, mode: mode || :auto)
+    Logger.info("[LLMTeam] Enqueuing QuantumFlow workflow", codebase: codebase_id, mode: mode || :auto)
 
     timeout = Keyword.get(opts, :timeout, 180_000)
 
-    with {:ok, run_id} <- PGFlow.Workflow.execute(LLMTeamWorkflow, payload),
-         {:ok, result} <- PGFlow.Workflow.await(run_id, timeout: timeout) do
+    with {:ok, run_id} <- QuantumFlow.WorkflowAPI.execute(LLMTeamWorkflow, payload),
+         {:ok, result} <- QuantumFlow.WorkflowAPI.await(run_id, timeout: timeout) do
       store_validation_results(codebase_id, result)
       {:ok, result}
     else

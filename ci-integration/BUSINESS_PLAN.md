@@ -54,7 +54,7 @@
 ### Service Components
 1. **Analysis Engine** (Your Rust code) - Core analysis logic
 2. **API Gateway** - Request routing, authentication, rate limiting
-3. **Queue System** - Async analysis processing (pgmq/ex_pgflow)
+3. **Queue System** - Async analysis processing (pgmq/ex_quantum_flow)
 4. **Intelligence Pipeline** - Data collection and processing
 5. **Web Dashboard** - User interface and reporting
 

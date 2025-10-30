@@ -4,8 +4,8 @@ This checklist tracks the outstanding work needed to take the queue-based
 pipeline and Observer HITL stack to production quality.
 
 ## Queue & Workflow Hardening
-- [x] pgmq + ex_pgflow messaging implemented correctly (misleading function names exist but use correct implementation)
-- [ ] Provision a repeatable PostgreSQL (pgmq + ex_pgflow enabled) instance for tests and CI
+- [x] pgmq + ex_quantum_flow messaging implemented correctly (misleading function names exist but use correct implementation)
+- [ ] Provision a repeatable PostgreSQL (pgmq + ex_quantum_flow enabled) instance for tests and CI
       so `Singularity.Repo` and `Singularity.Jobs.LlmResultPoller.await_responses_result/2`
       run without connection errors.
 - [ ] Add integration tests that cover `ai_requests → Nexus → ai_results` end-to-end
@@ -20,10 +20,10 @@ pipeline and Observer HITL stack to production quality.
 - [ ] Expand LiveView coverage with fixtures for approval decisions and polling
 
 ## Documentation & Runtime
-- [ ] Update top-level docs (`CLAUDE.md`, README files) to reflect pgmq + ex_pgflow architecture
+- [ ] Update top-level docs (`CLAUDE.md`, README files) to reflect pgmq + ex_quantum_flow architecture
       (remove NATS references, document queue-first workflows)
-- [ ] Add pgmq/ex_pgflow configuration to `.env.example` (PGFLOW_*_ENABLED variables)
-- [ ] Audit Rust packages for lingering NATS assumptions and update to pgmq/ex_pgflow
+- [ ] Add pgmq/ex_quantum_flow configuration to `.env.example` (PGFLOW_*_ENABLED variables)
+- [ ] Audit Rust packages for lingering NATS assumptions and update to pgmq/ex_quantum_flow
 
 ## Follow-up Enhancements
 - [ ] Monitor `genesis_rule_updates` queue consumption and backfill logic once Genesis

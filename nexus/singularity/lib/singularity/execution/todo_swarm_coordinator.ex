@@ -928,7 +928,7 @@ defmodule Singularity.Execution.TodoSwarmCoordinator do
   """
   def subscribe_to_offers do
     # Listen for NOTIFY events on todo_ready channel
-    case Pgflow.Notifications.listen("todo_ready", Singularity.Repo) do
+    case QuantumFlow.Notifications.listen("todo_ready", Singularity.Repo) do
       {:ok, pid} ->
         Logger.info("Subscribed to todo_ready notifications", listener_pid: inspect(pid))
         {:ok, pid}

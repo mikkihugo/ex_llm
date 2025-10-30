@@ -99,7 +99,7 @@ end
 
 ```elixir
 # Which linters are most effective?
-workflows = Singularity.RCA.PgflowIntegration.compare_workflows()
+workflows = Singularity.RCA.QuantumFlowIntegration.compare_workflows()
 |> Enum.filter(&String.contains?(&1.workflow, "Linting"))
 
 Enum.each(workflows, fn w ->
@@ -120,11 +120,11 @@ end)
 
 ```elixir
 defmodule LintingAgent do
-  alias Singularity.RCA.PgflowIntegration
+  alias Singularity.RCA.QuantumFlowIntegration
 
   def lint_codebase(codebase_id) do
     # Get best linting approach
-    workflows = PgflowIntegration.compare_workflows()
+    workflows = QuantumFlowIntegration.compare_workflows()
     linting_workflows = Enum.filter(workflows, &linting?/1)
     best = hd(linting_workflows)
 
@@ -134,7 +134,7 @@ defmodule LintingAgent do
     })
 
     # Execute with automatic RCA tracking
-    Pgflow.Executor.execute(
+    QuantumFlow.Executor.execute(
       String.to_atom(best.workflow),
       %{codebase_id: codebase_id},
       timeout: 60000
@@ -171,7 +171,7 @@ Find best combination of linting tools:
 
 ```elixir
 # Analyze which tool combinations work best
-step_analysis = Singularity.RCA.PgflowIntegration.analyze_workflow_steps()
+step_analysis = Singularity.RCA.QuantumFlowIntegration.analyze_workflow_steps()
 
 step_analysis
 |> Enum.filter(&linting_step?/1)
@@ -228,7 +228,7 @@ Singularity.RCA.LearningQueries.pareto_frontier()
 ```elixir
 defmodule IntelligentLintingAgent do
   alias Singularity.RCA.{
-    PgflowIntegration,
+    QuantumFlowIntegration,
     FailureAnalysis,
     LearningQueries
   }
@@ -260,7 +260,7 @@ defmodule IntelligentLintingAgent do
       template_id: best_strategy.template_id
     })
 
-    result = Pgflow.Executor.execute(
+    result = QuantumFlow.Executor.execute(
       get_linting_workflow(best_strategy),
       %{codebase: codebase_info, session_id: session.id},
       timeout: 120000
@@ -389,7 +389,7 @@ end
 
 ```elixir
 # Get all linting workflows
-linting_workflows = PgflowIntegration.compare_workflows(limit: 50)
+linting_workflows = QuantumFlowIntegration.compare_workflows(limit: 50)
   |> Enum.filter(&linting?/1)
 
 # Analyze performance
@@ -411,7 +411,7 @@ Enum.each(performance_summary, &IO.inspect/1)
 
 ```elixir
 # 1. Slow linting tools
-slow_tools = PgflowIntegration.compare_workflows()
+slow_tools = QuantumFlowIntegration.compare_workflows()
   |> Enum.filter(&(&1.avg_cost_tokens > 2000))
   |> Enum.filter(&linting?/1)
 
@@ -419,7 +419,7 @@ IO.puts("Slow linting tools that could be optimized:")
 Enum.each(slow_tools, &IO.inspect/1)
 
 # 2. Unreliable tools (low success rate)
-unreliable = PgflowIntegration.compare_workflows()
+unreliable = QuantumFlowIntegration.compare_workflows()
   |> Enum.filter(&(&1.success_rate < 85))
   |> Enum.filter(&linting?/1)
 
@@ -427,7 +427,7 @@ IO.puts("Unreliable linting tools:")
 Enum.each(unreliable, &IO.inspect/1)
 
 # 3. Tools that find most issues per cost
-efficient = PgflowIntegration.compare_workflows()
+efficient = QuantumFlowIntegration.compare_workflows()
   |> Enum.filter(&linting?/1)
   |> Enum.map(&calculate_efficiency/1)
   |> Enum.sort_by(&Map.get(&1, :efficiency), :desc)
@@ -455,21 +455,21 @@ Enum.each(efficient, &IO.inspect/1)
 
 3. **Query Learnings Before Tool Selection**
    ```elixir
-   best_tools = PgflowIntegration.compare_workflows(limit: 5)
+   best_tools = QuantumFlowIntegration.compare_workflows(limit: 5)
    selected = hd(best_tools)
    ```
 
 4. **Monitor Tool Performance Trends**
    ```elixir
    # Monthly
-   performance = PgflowIntegration.compare_workflows()
+   performance = QuantumFlowIntegration.compare_workflows()
    # Compare with last month's data
    ```
 
 5. **Optimize High-Usage Tools**
    ```elixir
    # Tools run > 1000 times should be optimized
-   high_volume = PgflowIntegration.compare_workflows()
+   high_volume = QuantumFlowIntegration.compare_workflows()
      |> Enum.filter(&(&1.total_sessions > 1000))
    ```
 

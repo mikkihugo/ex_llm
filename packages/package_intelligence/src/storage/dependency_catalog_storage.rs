@@ -3,7 +3,7 @@
 //! **Product:** Dependency Catalog - Your searchable library index
 //! **Table:** dependency_catalog (in singularity database)
 //! **Cache:** PostgreSQL only (NATS JetStream disabled in Phase 4)
-//! **Note:** For persistent message queue, use pgmq or ex_pgflow via Elixir
+//! **Note:** For persistent message queue, use pgmq or ex_quantum_flow via Elixir
 
 use super::{PackageKey, PackageMetadata, PackageStorage, StorageStats};
 use anyhow::Result;
@@ -28,7 +28,7 @@ impl DependencyCatalogStorage {
   ///
   /// Connects directly to dependency_catalog table
   /// NOTE: NATS JetStream caching disabled - Phase 4 NATS removal
-  /// Use pgmq or ex_pgflow via Elixir for message queue functionality
+  /// Use pgmq or ex_quantum_flow via Elixir for message queue functionality
   pub async fn new(db_url: &str, _nats_url: Option<&str>) -> Result<Self> {
     let (pg_client, connection) =
       tokio_postgres::connect(db_url, NoTls).await?;

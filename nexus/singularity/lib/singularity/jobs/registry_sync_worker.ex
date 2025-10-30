@@ -3,22 +3,22 @@ defmodule Singularity.Jobs.RegistrySyncWorker do
   Run analyzers and persist results to codebase registry (Oban scheduled job)
 
   Scheduled: Daily at 4:00 AM UTC.
-  Fires real-time notifications via Pgflow on completion.
+  Fires real-time notifications via QuantumFlow on completion.
   Previously manual: `mix registry.sync`.
   """
 
-  use Oban.Worker, queue: :maintenance
+  use Singularity.JobQueue.Worker, queue: :maintenance
 
   require Logger
 
-  alias Pgflow.Executor
+  alias QuantumFlow.Executor
   alias Singularity.Workflows.CodebaseRegistrySyncWorkflow
 
   @impl Oban.Worker
   def perform(_job) do
     codebase_id = Application.get_env(:singularity, :codebase_id, "singularity")
 
-    Logger.info("Running registry sync for #{codebase_id} via PGFlow")
+    Logger.info("Running registry sync for #{codebase_id} via QuantumFlow")
 
     case Executor.execute(
            CodebaseRegistrySyncWorkflow,

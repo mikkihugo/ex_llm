@@ -49,7 +49,7 @@
 | Rust Syntax Errors | 1 | Dockerfile parser | CRITICAL |
 | Undefined Functions | 6 | Agent, AstExtractor, ParserEngine | HIGH |
 | Type Mismatches | 3 | Health check comparisons | HIGH |
-| API Changes | 1 | pgflow Workflow module | HIGH |
+| API Changes | 1 | QuantumFlow Workflow module | HIGH |
 | Type Inference Issues | 1 | BaseWorkflow execute_steps | HIGH |
 | Unused Functions | 14+ | parser_engine, beam_analysis | MEDIUM |
 | Unused Variables | 20+ | consolidation_engine, etc | MEDIUM |
@@ -107,8 +107,8 @@
 **Impact:** Incorrect behavior, logic failures
 
 #### Sub-phase 2C: API Changes (1.5 hours)
-- pgflow.Workflow.create_workflow/2 → ? (4 locations)
-- pgflow.Workflow.subscribe/2 → ? (4 locations)
+- QuantumFlow.Workflow.create_workflow/2 → ? (4 locations)
+- QuantumFlow.Workflow.subscribe/2 → ? (4 locations)
 
 **Impact:** Workflow execution broken
 

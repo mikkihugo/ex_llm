@@ -276,13 +276,13 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
     repo = Keyword.get(opts, :repo, Singularity.Repo)
     executor_opts = Keyword.take(opts, [:timeout, :poll_interval, :worker_id])
 
-    Logger.info("RuleEvolutionSystem: Delegating confident rule publication to Pgflow workflow",
+    Logger.info("RuleEvolutionSystem: Delegating confident rule publication to QuantumFlow workflow",
       options: workflow_input,
       executor_opts: executor_opts
     )
 
     try do
-      case Pgflow.Executor.execute(
+      case QuantumFlow.Executor.execute(
              Singularity.Workflows.RulePublish,
              %{"options" => workflow_input},
              repo,
@@ -292,11 +292,11 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
           {:ok, result}
 
         {:error, reason} ->
-          handle_pgflow_error(reason, workflow_input)
+          handle_quantum_flow_error(reason, workflow_input)
       end
     rescue
       error ->
-        handle_pgflow_error(error, workflow_input)
+        handle_quantum_flow_error(error, workflow_input)
     end
   end
 
@@ -475,9 +475,9 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
       default
   end
 
-  defp handle_pgflow_error(error, options) do
-    if pgflow_missing?(error) do
-      Logger.warning("RuleEvolutionSystem: Pgflow workflow unavailable, returning empty summary",
+  defp handle_quantum_flow_error(error, options) do
+    if quantum_flow_missing?(error) do
+      Logger.warning("RuleEvolutionSystem: QuantumFlow workflow unavailable, returning empty summary",
         error: inspect(error)
       )
 
@@ -487,12 +487,12 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
     end
   end
 
-  defp pgflow_missing?(%Postgrex.Error{postgres: %{code: code}})
+  defp quantum_flow_missing?(%Postgrex.Error{postgres: %{code: code}})
        when code in [:undefined_table, :invalid_schema_name, :invalid_catalog_name],
        do: true
 
-  defp pgflow_missing?({:error, inner}), do: pgflow_missing?(inner)
-  defp pgflow_missing?(_), do: false
+  defp quantum_flow_missing?({:error, inner}), do: quantum_flow_missing?(inner)
+  defp quantum_flow_missing?(_), do: false
 
   defp default_publication_summary(options) do
     namespace = Map.get(options, "namespace", "validation_rules")
@@ -701,7 +701,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
 
       case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_rule_updates", payload) do
         {:ok, :sent} ->
-          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via pgflow",
+          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via QuantumFlow",
             pattern: inspect(rule.pattern),
             confidence: rule.confidence
           )
@@ -709,7 +709,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
           {:ok, :sent}
 
         {:ok, msg_id} when is_integer(msg_id) ->
-          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via pgflow",
+          Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via QuantumFlow",
             pattern: inspect(rule.pattern),
             confidence: rule.confidence,
             message_id: msg_id

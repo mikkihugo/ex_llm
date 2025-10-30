@@ -1,9 +1,9 @@
 defmodule Singularity.Workflows.RulePublish do
   @moduledoc """
-  Pgflow workflow for publishing confident rules to Genesis.
+  QuantumFlow workflow for publishing confident rules to Genesis.
 
   Replaces the direct in-process publication path and ensures all rule
-  publishing runs through the durable ex_pgflow executor.
+  publishing runs through the durable ex_quantum_flow executor.
   """
 
   require Logger

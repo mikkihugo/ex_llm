@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Genesis Experiment Requests
+  QuantumFlow Workflow Definition for Genesis Experiment Requests
 
-  Replaces pgmq-based Genesis experiment request publishing with PGFlow workflow orchestration.
+  Replaces pgmq-based Genesis experiment request publishing with QuantumFlow workflow orchestration.
   Provides durable, observable experiment request processing.
 
   Workflow Stages:
@@ -12,7 +12,7 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   4. Track Request - Store request tracking information
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
 
@@ -126,7 +126,7 @@ defmodule Singularity.Workflows.GenesisExperimentRequestWorkflow do
   def route_to_genesis(%{"enriched_request" => request, "agent_id" => agent_id} = context) do
     experiment_id = request["experiment_id"]
 
-    # Send experiment request to Genesis via pgflow queue (Genesis consumes from job_requests queue)
+    # Send experiment request to Genesis via QuantumFlow queue (Genesis consumes from job_requests queue)
     message_payload = %{
       "experiment_request" => request,
       "agent_id" => agent_id,

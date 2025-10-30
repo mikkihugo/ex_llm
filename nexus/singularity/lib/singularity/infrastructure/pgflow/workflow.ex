@@ -8,11 +8,11 @@ defmodule Singularity.Infrastructure.PgFlow.Workflow do
 
   alias Singularity.Infrastructure.PgFlow.Queue
 
-  @subscriptions_table :pgflow_workflow_subscriptions
+  @subscriptions_table :quantum_flow_workflow_subscriptions
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  schema "pgflow_workflows" do
+  schema "quantum_flow_workflows" do
     field :workflow_id, :string
     field :type, :string
     field :payload, :map
@@ -63,7 +63,7 @@ defmodule Singularity.Infrastructure.PgFlow.Workflow do
     end
   rescue
     exception ->
-      Logger.error("Failed to create PGFlow workflow",
+      Logger.error("Failed to create QuantumFlow workflow",
         workflow_module: workflow_module,
         error: Exception.message(exception)
       )
@@ -84,11 +84,11 @@ defmodule Singularity.Infrastructure.PgFlow.Workflow do
     ensure_subscription_table()
 
     subscription_id =
-      {:pgflow_subscription, workflow_name, System.unique_integer([:positive, :monotonic])}
+      {:quantum_flow_subscription, workflow_name, System.unique_integer([:positive, :monotonic])}
 
     :ets.insert(@subscriptions_table, {subscription_id, workflow_name, callback})
 
-    Logger.debug("Registered PGFlow workflow subscription",
+    Logger.debug("Registered QuantumFlow workflow subscription",
       workflow: workflow_name,
       subscription_id: subscription_id,
       mode: Keyword.get(opts, :mode, :in_memory)
@@ -153,7 +153,7 @@ defmodule Singularity.Infrastructure.PgFlow.Workflow do
     callback.(event)
   rescue
     exception ->
-      Logger.error("PGFlow workflow subscription callback failed",
+      Logger.error("QuantumFlow workflow subscription callback failed",
         error: Exception.message(exception),
         event: event
       )

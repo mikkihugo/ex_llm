@@ -4,7 +4,7 @@ defmodule Singularity.Tools.Runner do
 
   Provider selection uses models and complexity from:
   1. Database (via sync from CentralCloud/Nexus)
-  2. Pgflow (if not in database)
+  2. QuantumFlow (if not in database)
   """
 
   alias Singularity.Schemas.Tools.{Tool, ToolCall, ToolResult}

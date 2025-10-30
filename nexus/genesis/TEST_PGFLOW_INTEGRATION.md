@@ -8,7 +8,7 @@
 **File:** `config/config.exs`
 
 ```elixir
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,                        # ✅ ENABLED
   poll_interval_ms: 1000,               # Poll every 1 second
   batch_size: 10,                       # Process 10 workflows per batch
@@ -32,7 +32,7 @@ config :genesis, :shared_queue,
 **Impact:** Legacy SharedQueueConsumer will not start when Genesis launches.
 
 ### ✅ 3. Parallel Processing Added
-**File:** `lib/genesis/pgflow_workflow_consumer.ex`
+**File:** `lib/genesis/quantum_flow_workflow_consumer.ex`
 
 Added `process_workflows_parallel/2` function that:
 - Uses `Task.async_stream/3` for concurrent workflow processing
@@ -50,7 +50,7 @@ Added `process_workflows_parallel/2` function that:
 ### Rule Evolution Flow
 ```
 Singularity.Evolution.GenesisPublisher.publish_rules()
-    ↓ (call Pgflow.Executor or PgFlow.send_with_notify)
+    ↓ (call QuantumFlow.Executor or PgFlow.send_with_notify)
 genesis_rule_updates queue (PgFlow)
     ↓
 Genesis.PgFlowWorkflowConsumer.consume_workflows()
@@ -136,7 +136,7 @@ config :genesis, :shared_queue,
 ### After (Current)
 ```elixir
 # config/config.exs
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,                        # ✅ PgFlow-based
   poll_interval_ms: 1000,
   batch_size: 10,                       # Smaller, faster batches
@@ -288,7 +288,7 @@ If issues occur, revert to sequential processing:
 
 ```elixir
 # config/config.exs
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   enable_parallel_processing: false,  # Disable parallel
   # ... rest stays the same
@@ -298,7 +298,7 @@ Or revert to legacy consumer:
 
 ```elixir
 # config/config.exs
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: false,  # Disable new consumer
 
 config :genesis, :shared_queue,

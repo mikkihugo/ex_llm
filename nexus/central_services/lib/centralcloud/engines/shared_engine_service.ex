@@ -36,7 +36,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   """
 
   require Logger
-  alias Pgflow
+  alias QuantumFlow
 
   @doc """
   Call the Architecture Engine via NATS.
@@ -50,7 +50,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_architecture_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.architecture.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.architecture.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Architecture engine call successful", operation: operation)
         {:ok, response}
@@ -73,7 +73,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_code_quality_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.code.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.code.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Code engine call successful", operation: operation)
         {:ok, response}
@@ -96,7 +96,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_linting_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.linting.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.linting.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Linting engine call successful", operation: operation)
         {:ok, response}
@@ -119,7 +119,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_embedding_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.embedding.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.embedding.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Embedding engine call successful", operation: operation)
         {:ok, response}
@@ -142,7 +142,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_parser_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.parser.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.parser.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Parser engine call successful", operation: operation)
         {:ok, response}
@@ -165,7 +165,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
   def call_prompt_engine(operation, request, opts \\ []) do
     _timeout = Keyword.get(opts, :timeout, 30_000)
     
-    case Pgflow.send_with_notify("engines.prompt.#{operation}", request, CentralCloud.Repo) do
+    case QuantumFlow.send_with_notify("engines.prompt.#{operation}", request, CentralCloud.Repo) do
       {:ok, response} ->
         Logger.debug("Prompt engine call successful", operation: operation)
         {:ok, response}
@@ -216,7 +216,7 @@ defmodule CentralCloud.Engines.SharedEngineService do
     engines = [:architecture, :code, :linting, :embedding, :parser, :prompt]
     
     health_checks = Enum.map(engines, fn engine ->
-      case Pgflow.send_with_notify("engines.#{engine}.health", %{}, CentralCloud.Repo) do
+      case QuantumFlow.send_with_notify("engines.#{engine}.health", %{}, CentralCloud.Repo) do
         {:ok, _} -> {engine, :healthy, %{status: "ok"}}
         {:error, reason} -> {engine, :unhealthy, reason}
       end

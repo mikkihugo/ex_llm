@@ -3,7 +3,7 @@ defmodule Observer.HITL.QueuePoller do
   Background process that ingests approval requests from pgmq
   and stores them in the Observer database.
 
-  Uses Pgflow notifications for real-time message processing instead of polling.
+  Uses QuantumFlow notifications for real-time message processing instead of polling.
   """
 
   use GenServer
@@ -24,7 +24,7 @@ defmodule Observer.HITL.QueuePoller do
     Pgmq.ensure_queue(@request_queue)
 
     # Start listening for notifications
-    case Pgflow.Notifications.listen(@request_queue, Repo) do
+    case QuantumFlow.Notifications.listen(@request_queue, Repo) do
       {:ok, listener_pid} ->
         Logger.info("HITL QueuePoller: Started listening for notifications",
           queue: @request_queue,
@@ -59,7 +59,7 @@ defmodule Observer.HITL.QueuePoller do
 
   @impl true
   def terminate(_reason, %{listener_pid: pid} = _state) do
-    Pgflow.Notifications.unlisten(pid, Repo)
+    QuantumFlow.Notifications.unlisten(pid, Repo)
   end
 
   @impl true

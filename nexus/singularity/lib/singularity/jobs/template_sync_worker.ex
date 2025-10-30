@@ -3,12 +3,12 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   Sync templates from /templates_data to PostgreSQL (Oban scheduled job)
 
   Scheduled: Daily at 2:00 AM UTC
-  Fires real-time notifications via Pgflow on completion.
+  Fires real-time notifications via QuantumFlow on completion.
 
   Previously manual: `mix templates.sync --force`
   """
 
-  use Oban.Worker, queue: :maintenance
+  use Singularity.JobQueue.Worker, queue: :maintenance
 
   require Logger
 

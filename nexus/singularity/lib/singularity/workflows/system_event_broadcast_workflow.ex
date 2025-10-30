@@ -1,12 +1,12 @@
 defmodule Singularity.Workflows.SystemEventBroadcastWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for System Event Broadcasting
+  QuantumFlow Workflow Definition for System Event Broadcasting
 
   Broadcasts system-wide events (agent started/stopped, system changes, etc.)
-  via PGFlow workflow orchestration with proper notification handling.
+  via QuantumFlow workflow orchestration with proper notification handling.
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
 

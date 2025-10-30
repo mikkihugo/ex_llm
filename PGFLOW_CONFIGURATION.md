@@ -12,7 +12,7 @@ defp deps do
     # ... existing deps ...
 
     # PgFlow for durable message queues
-    {:ex_pgflow, "~> 0.1"},  # Add this line
+    {:ex_quantum_flow, "~> 0.1"},  # Add this line
   ]
 end
 ```
@@ -30,7 +30,7 @@ Add at the end of the file:
 # ============================================================================
 # Asynchronous, durable messaging to CentralCloud
 
-config :singularity, :pgflow_queues,
+config :singularity, :quantum_flow_queues,
   database_url: System.get_env("PGFLOW_DATABASE_URL") || "postgresql://localhost/singularity",
   producers: [
     # Queue for sending proposals to CentralCloud consensus
@@ -71,7 +71,7 @@ config :singularity, :pgflow_queues,
       %{
         queue_name: "consensus_results_queue",
         workers: System.get_env("PGFLOW_CONSENSUS_WORKERS", "2") |> String.to_integer(),
-        handler: Singularity.Evolution.Pgflow.Consumers,
+        handler: Singularity.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_consensus_result,
         max_retries: 3,
         retry_delay_ms: 1000
@@ -83,7 +83,7 @@ config :singularity, :pgflow_queues,
       %{
         queue_name: "rollback_triggers_queue",
         workers: System.get_env("PGFLOW_ROLLBACK_WORKERS", "1") |> String.to_integer(),
-        handler: Singularity.Evolution.Pgflow.Consumers,
+        handler: Singularity.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_rollback_trigger,
         max_retries: 3,
         retry_delay_ms: 1000,
@@ -96,7 +96,7 @@ config :singularity, :pgflow_queues,
       %{
         queue_name: "guardian_safety_profiles_queue",
         workers: System.get_env("PGFLOW_SAFETY_WORKERS", "1") |> String.to_integer(),
-        handler: Singularity.Evolution.Pgflow.Consumers,
+        handler: Singularity.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_safety_profile_update,
         max_retries: 3,
         retry_delay_ms: 1000
@@ -107,14 +107,14 @@ config :singularity, :pgflow_queues,
 # Telemetry for PgFlow events
 config :telemetry, :events,
   [
-    [:evolution, :pgflow, :proposal_published],
-    [:evolution, :pgflow, :metrics_published],
-    [:evolution, :pgflow, :pattern_published],
-    [:evolution, :pgflow, :publish_failed],
-    [:evolution, :pgflow, :consensus_approved],
-    [:evolution, :pgflow, :consensus_rejected],
-    [:evolution, :pgflow, :rollback_completed],
-    [:evolution, :pgflow, :profile_updated]
+    [:evolution, :QuantumFlow, :proposal_published],
+    [:evolution, :QuantumFlow, :metrics_published],
+    [:evolution, :QuantumFlow, :pattern_published],
+    [:evolution, :QuantumFlow, :publish_failed],
+    [:evolution, :QuantumFlow, :consensus_approved],
+    [:evolution, :QuantumFlow, :consensus_rejected],
+    [:evolution, :QuantumFlow, :rollback_completed],
+    [:evolution, :QuantumFlow, :profile_updated]
   ]
 ```
 
@@ -129,7 +129,7 @@ Add at the end:
 # ============================================================================
 # Asynchronous, durable messaging from Singularity instances
 
-config :centralcloud, :pgflow_queues,
+config :centralcloud, :quantum_flow_queues,
   database_url: System.get_env("PGFLOW_DATABASE_URL") || "postgresql://localhost/central_services",
   producers: [
     # Queue for sending consensus results to instances
@@ -171,7 +171,7 @@ config :centralcloud, :pgflow_queues,
       %{
         queue_name: "proposals_for_consensus_queue",
         workers: System.get_env("PGFLOW_PROPOSALS_WORKERS", "3") |> String.to_integer(),
-        handler: CentralCloud.Evolution.Pgflow.Consumers,
+        handler: CentralCloud.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_proposal_for_consensus,
         max_retries: 3,
         retry_delay_ms: 1000
@@ -183,7 +183,7 @@ config :centralcloud, :pgflow_queues,
       %{
         queue_name: "metrics_to_guardian_queue",
         workers: System.get_env("PGFLOW_METRICS_WORKERS", "2") |> String.to_integer(),
-        handler: CentralCloud.Evolution.Pgflow.Consumers,
+        handler: CentralCloud.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_execution_metrics,
         max_retries: 3,
         retry_delay_ms: 1000
@@ -195,7 +195,7 @@ config :centralcloud, :pgflow_queues,
       %{
         queue_name: "patterns_for_aggregator_queue",
         workers: System.get_env("PGFLOW_PATTERNS_WORKERS", "1") |> String.to_integer(),
-        handler: CentralCloud.Evolution.Pgflow.Consumers,
+        handler: CentralCloud.Evolution.QuantumFlow.Consumers,
         handler_method: :handle_pattern_discovered,
         max_retries: 3,
         retry_delay_ms: 1000
@@ -206,12 +206,12 @@ config :centralcloud, :pgflow_queues,
 # Telemetry for PgFlow events
 config :telemetry, :events,
   [
-    [:evolution, :pgflow, :proposal_received],
-    [:evolution, :pgflow, :metrics_received],
-    [:evolution, :pgflow, :pattern_received],
-    [:evolution, :pgflow, :consensus_result_published],
-    [:evolution, :pgflow, :rollback_trigger_published],
-    [:evolution, :pgflow, :profile_update_published]
+    [:evolution, :QuantumFlow, :proposal_received],
+    [:evolution, :QuantumFlow, :metrics_received],
+    [:evolution, :QuantumFlow, :pattern_received],
+    [:evolution, :QuantumFlow, :consensus_result_published],
+    [:evolution, :QuantumFlow, :rollback_trigger_published],
+    [:evolution, :QuantumFlow, :profile_update_published]
   ]
 ```
 
@@ -242,16 +242,16 @@ Create PgFlow tables in your PostgreSQL database:
 
 ```bash
 cd nexus/singularity
-mix pgflow.init  # Create pgflow tables in database
+mix QuantumFlow.init  # Create QuantumFlow tables in database
 
 cd ../central_services
-mix pgflow.init  # Same for CentralCloud
+mix QuantumFlow.init  # Same for CentralCloud
 ```
 
 This creates:
-- `pgflow_queues` - Queue definitions
-- `pgflow_messages` - Message storage
-- `pgflow_dlq` - Dead-letter queue for failed messages
+- `quantum_flow_queues` - Queue definitions
+- `quantum_flow_messages` - Message storage
+- `quantum_flow_dlq` - Dead-letter queue for failed messages
 
 ### 5. Supervision Tree Integration
 
@@ -263,7 +263,7 @@ def start(_type, _args) do
     # ... existing services ...
 
     # PgFlow consumers for incoming messages from CentralCloud
-    {ExPgflow.Consumer, Application.get_env(:singularity, :pgflow_consumers)},
+    {ExQuantumFlow.Consumer, Application.get_env(:singularity, :quantum_flow_consumers)},
 
     # ... rest of supervision tree ...
   ]
@@ -281,7 +281,7 @@ def start(_type, _args) do
     # ... existing services ...
 
     # PgFlow consumers for incoming messages from instances
-    {ExPgflow.Consumer, Application.get_env(:centralcloud, :pgflow_consumers)},
+    {ExQuantumFlow.Consumer, Application.get_env(:centralcloud, :quantum_flow_consumers)},
 
     # ... rest of supervision tree ...
   ]
@@ -339,19 +339,19 @@ export PGFLOW_ROLLBACK_WORKERS=2
 
 ```elixir
 # In iex console
-alias ExPgflow
+alias ExQuantumFlow
 
 # List all queues
-ExPgflow.list_queues()
+ExQuantumFlow.list_queues()
 
 # Get queue stats
-ExPgflow.get_queue_stats("proposals_for_consensus_queue")
+ExQuantumFlow.get_queue_stats("proposals_for_consensus_queue")
 
 # Check pending messages
-ExPgflow.list_pending_messages("proposals_for_consensus_queue")
+ExQuantumFlow.list_pending_messages("proposals_for_consensus_queue")
 
 # Check dead-letter queue
-ExPgflow.list_dlq_messages()
+ExQuantumFlow.list_dlq_messages()
 ```
 
 ### Telemetry Monitoring
@@ -359,20 +359,20 @@ ExPgflow.list_dlq_messages()
 ```elixir
 # Listen to PgFlow events
 :telemetry.attach(
-  "pgflow_monitor",
-  [:evolution, :pgflow, :*],
-  &log_pgflow_event/4,
+  "quantum_flow_monitor",
+  [:evolution, :QuantumFlow, :*],
+  &log_quantum_flow_event/4,
   nil
 )
 
-defp log_pgflow_event(event, measurements, metadata, _) do
+defp log_quantum_flow_event(event, measurements, metadata, _) do
   IO.inspect({event, measurements, metadata}, label: "PgFlow Event")
 end
 
 # Events emitted:
-# - [:evolution, :pgflow, :proposal_published]
-# - [:evolution, :pgflow, :consensus_approved]
-# - [:evolution, :pgflow, :rollback_completed]
+# - [:evolution, :QuantumFlow, :proposal_published]
+# - [:evolution, :QuantumFlow, :consensus_approved]
+# - [:evolution, :QuantumFlow, :rollback_completed]
 # - ... and more
 ```
 
@@ -381,18 +381,18 @@ end
 ```sql
 -- View pending messages
 SELECT id, queue_name, payload, created_at, retry_count
-FROM pgflow_messages
+FROM quantum_flow_messages
 WHERE status = 'pending'
 ORDER BY priority DESC, created_at ASC;
 
 -- View failed messages
 SELECT id, queue_name, error, created_at
-FROM pgflow_dlq
+FROM quantum_flow_dlq
 ORDER BY created_at DESC;
 
 -- Queue stats
 SELECT queue_name, COUNT(*) as pending_count, MAX(created_at) as oldest
-FROM pgflow_messages
+FROM quantum_flow_messages
 WHERE status = 'pending'
 GROUP BY queue_name;
 ```
@@ -406,10 +406,10 @@ GROUP BY queue_name;
 Supervisor.which_children(Singularity.Supervisor)
 
 # Check pending messages
-ExPgflow.list_pending_messages("consensus_results_queue")
+ExQuantumFlow.list_pending_messages("consensus_results_queue")
 
 # Check for errors in consumer
-ExPgflow.list_dlq_messages()
+ExQuantumFlow.list_dlq_messages()
 ```
 
 ### High Latency
@@ -422,21 +422,21 @@ ExPgflow.list_dlq_messages()
 
 ```elixir
 # List DLQ messages
-dlq_messages = ExPgflow.list_dlq_messages()
+dlq_messages = ExQuantumFlow.list_dlq_messages()
 
 # Inspect error
 Enum.each(dlq_messages, &IO.inspect(&1))
 
 # Retry a message
-ExPgflow.retry_dlq_message(message_id)
+ExQuantumFlow.retry_dlq_message(message_id)
 
 # Clear DLQ (after fixing issue)
-ExPgflow.purge_dlq()
+ExQuantumFlow.purge_dlq()
 ```
 
 ## Performance Tips
 
-1. **Database:** Use a dedicated PostgreSQL instance for pgflow (can share with app DB)
+1. **Database:** Use a dedicated PostgreSQL instance for QuantumFlow (can share with app DB)
 2. **Workers:** Start with 2 per queue, scale based on latency
 3. **Batching:** Messages are processed in batches automatically
 4. **Retry:** Exponential backoff prevents queue storms
@@ -450,7 +450,7 @@ ExPgflow.purge_dlq()
 - [ ] Configuration tested locally
 - [ ] Monitoring dashboard set up
 - [ ] Alerting configured (DLQ > 100 messages)
-- [ ] Backup strategy for pgflow tables
+- [ ] Backup strategy for QuantumFlow tables
 - [ ] Performance tested with expected load
 
 ## See Also

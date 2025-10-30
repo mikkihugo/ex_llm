@@ -1,8 +1,8 @@
-defmodule Singularity.Evolution.Pgflow.Consumers do
+defmodule Singularity.Evolution.QuantumFlow.Consumers do
   @moduledoc """
   PgFlow Consumers - Handle messages from CentralCloud queues.
 
-  Processes incoming messages from CentralCloud services via ex_pgflow queues.
+  Processes incoming messages from CentralCloud services via ex_quantum_flow queues.
   Each message is processed atomically - either succeeds or retries automatically.
 
   ## AI Navigation Metadata
@@ -10,7 +10,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
   ### Module Identity
   ```json
   {
-    "module": "Singularity.Evolution.Pgflow.Consumers",
+    "module": "Singularity.Evolution.QuantumFlow.Consumers",
     "purpose": "Process incoming messages from CentralCloud",
     "role": "service",
     "layer": "integration",
@@ -26,7 +26,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
   - ✅ DO return {:error, reason} to trigger retry
 
   ### Search Keywords
-  pgflow consumers, message processing, consensus results, rollback triggers,
+  QuantumFlow consumers, message processing, consensus results, rollback triggers,
   safety profiles, workflow patterns, consensus patterns, idempotent processing, error recovery
 
   ## Message Types Handled
@@ -176,7 +176,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
       Logger.debug("Safety profile updated for #{agent_type}")
 
       :telemetry.execute(
-        [:evolution, :pgflow, :profile_updated],
+        [:evolution, :quantum_flow, :profile_updated],
         %{},
         %{agent_type: agent_type, source: message["source"]}
       )
@@ -233,7 +233,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         Logger.debug("Registered #{registered_count} workflow consensus patterns")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :workflow_patterns_registered],
+          [:evolution, :quantum_flow, :workflow_patterns_registered],
           %{pattern_count: registered_count, total_patterns: length(patterns)},
           %{source: message["instance_id"]}
         )
@@ -268,7 +268,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         Logger.debug("Proposal marked as consensus_reached: #{updated_proposal.id}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :consensus_approved],
+          [:evolution, :quantum_flow, :consensus_approved],
           %{confidence: message["confidence"] || 0.0},
           %{proposal_id: proposal.id}
         )
@@ -300,7 +300,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         Logger.debug("Proposal marked as consensus_failed: #{proposal.id}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :consensus_rejected],
+          [:evolution, :quantum_flow, :consensus_rejected],
           %{},
           %{proposal_id: proposal.id}
         )
@@ -331,7 +331,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         Logger.warning("Proposal rolled back: #{rolled_back_proposal.id}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :rollback_completed],
+          [:evolution, :quantum_flow, :rollback_completed],
           %{},
           %{proposal_id: proposal.id, reason: reason, threshold: threshold}
         )
@@ -368,7 +368,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
                 Logger.debug("Proposal marked as applied: #{applied_proposal.id}")
 
                 :telemetry.execute(
-                  [:evolution, :pgflow, :execution_success],
+                  [:evolution, :quantum_flow, :execution_success],
                   %{
                     execution_time_ms: Map.get(result, :execution_time_ms, 0),
                     proposal_id: proposal.id
@@ -397,7 +397,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
                 Logger.warning("Proposal marked as failed: #{failed_proposal.id}")
 
                 :telemetry.execute(
-                  [:evolution, :pgflow, :execution_failed],
+                  [:evolution, :quantum_flow, :execution_failed],
                   %{},
                   %{proposal_id: proposal.id, reason: inspect(execution_error)}
                 )
@@ -414,7 +414,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
         Logger.error("Failed to mark proposal as executing: #{inspect(executing_error)}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :execution_mark_failed],
+          [:evolution, :quantum_flow, :execution_mark_failed],
           %{},
           %{proposal_id: proposal.id, reason: inspect(executing_error)}
         )

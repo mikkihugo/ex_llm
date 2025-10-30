@@ -136,17 +136,17 @@ defmodule CentralCloud.Consumers.UpdateBroadcaster do
     try do
       # Templates are synced via:
       # 1. Logical replication (read-only copies in Singularity DB)
-      # 2. pgflow notifications for real-time updates
+      # 2. QuantumFlow notifications for real-time updates
       
-      # Broadcast via pgflow for immediate updates
+      # Broadcast via QuantumFlow for immediate updates
       Enum.each(templates, fn template ->
         subject = "template.sync.#{template["category"]}.#{template["id"]}"
-        Pgflow.send_with_notify(subject, template, CentralCloud.Repo, expect_reply: false)
+        QuantumFlow.send_with_notify(subject, template, CentralCloud.Repo, expect_reply: false)
       end)
 
       Logger.info("[UpdateBroadcaster] ✓ Templates queued for replication",
         template_count: length(templates),
-        replication_method: "Logical replication + pgflow notifications"
+        replication_method: "Logical replication + QuantumFlow notifications"
       )
 
       :ok

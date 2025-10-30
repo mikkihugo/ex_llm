@@ -1,8 +1,8 @@
-# Complexity Training Pipeline PGFlow Migration
+# Complexity Training Pipeline QuantumFlow Migration
 
 ## Overview
 
-This document describes the migration of the CentralCloud Complexity Training Pipeline from Broadway + BroadwayPGMQ to PGFlow workflow orchestration. This is a pilot migration to demonstrate PGFlow capabilities for ML training pipelines.
+This document describes the migration of the CentralCloud Complexity Training Pipeline from Broadway + BroadwayPGMQ to QuantumFlow workflow orchestration. This is a pilot migration to demonstrate QuantumFlow capabilities for ML training pipelines.
 
 ## Migration Status
 
@@ -18,33 +18,33 @@ This document describes the migration of the CentralCloud Complexity Training Pi
 PGMQ Queue → BroadwayPGMQ.Producer → Broadway Pipeline → Processors → Success/Failure
 ```
 
-### After (PGFlow Mode)
+### After (QuantumFlow Mode)
 ```
-PGMQ Queue → PGFlow.WorkflowSupervisor → Workflow Steps → Observability → Success/Failure
+PGMQ Queue → QuantumFlow.WorkflowSupervisor → Workflow Steps → Observability → Success/Failure
 ```
 
 ## Files Changed
 
 ### Core Implementation
 - `nexus/central_services/lib/central_cloud/ml/pipelines/complexity_training_pipeline.ex` - Updated to support both modes
-- `nexus/central_services/lib/central_cloud/workflows/complexity_training_workflow.ex` - New PGFlow workflow definition
+- `nexus/central_services/lib/central_cloud/workflows/complexity_training_workflow.ex` - New QuantumFlow workflow definition
 
 ### Configuration
-- `nexus/singularity/config/config.exs` - Added PGFlow configuration entries
+- `nexus/singularity/config/config.exs` - Added QuantumFlow configuration entries
 
 ### Application Integration
 - `nexus/central_services/lib/centralcloud/application.ex` - Added workflow supervisor
 
 ### Tests
 - `nexus/central_services/test/central_cloud/workflows/complexity_training_workflow_test.exs` - Unit tests
-- `nexus/central_services/test/central_cloud/ml/pipelines/complexity_training_pipeline_pgflow_integration_test.exs` - Integration tests
+- `nexus/central_services/test/central_cloud/ml/pipelines/complexity_training_pipeline_quantum_flow_integration_test.exs` - Integration tests
 
 ## Configuration
 
 ### Environment Variables
 
 ```bash
-# Enable PGFlow mode (canary rollout)
+# Enable QuantumFlow mode (canary rollout)
 PGFLOW_COMPLEXITY_TRAINING_ENABLED=true
 
 # Canary rollout percentage (0-100)
@@ -69,7 +69,7 @@ COMPLEXITY_MODEL_DEPLOYMENT_TIMEOUT_MS=60000
 ```elixir
 # In config/config.exs
 config :centralcloud, :complexity_training_pipeline,
-  pgflow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
+  quantum_flow_enabled: System.get_env("PGFLOW_COMPLEXITY_TRAINING_ENABLED", "false") == "true",
   canary_percentage: String.to_integer(System.get_env("COMPLEXITY_TRAINING_CANARY_PERCENT", "10"))
 
 config :centralcloud, :complexity_training_workflow,
@@ -91,7 +91,7 @@ config :centralcloud, :complexity_training_workflow,
 
 ## Workflow Definition
 
-The PGFlow workflow consists of 5 sequential steps:
+The QuantumFlow workflow consists of 5 sequential steps:
 
 1. **Data Collection** - Gather task execution data (5 concurrent workers)
 2. **Feature Engineering** - Prepare ML features (3 concurrent workers)
@@ -126,7 +126,7 @@ COMPLEXITY_TRAINING_CANARY_PERCENT=10
 COMPLEXITY_TRAINING_CANARY_PERCENT=50
 ```
 
-- Increase traffic to PGFlow mode
+- Increase traffic to QuantumFlow mode
 - Monitor for performance regressions
 - Validate resource utilization
 
@@ -135,13 +135,13 @@ COMPLEXITY_TRAINING_CANARY_PERCENT=50
 COMPLEXITY_TRAINING_CANARY_PERCENT=100
 ```
 
-- Complete migration to PGFlow
+- Complete migration to QuantumFlow
 - Deprecate Broadway mode
 - Remove legacy code in future release
 
 ## Monitoring and Observability
 
-### PGFlow Metrics
+### QuantumFlow Metrics
 - **Execution Time**: Per-workflow and per-step timing
 - **Success Rate**: Workflow completion percentage
 - **Error Rate**: Step failure tracking
@@ -170,7 +170,7 @@ mix test test/central_cloud/workflows/complexity_training_workflow_test.exs
 
 ### Integration Tests
 ```bash
-mix test test/central_cloud/ml/pipelines/complexity_training_pipeline_pgflow_integration_test.exs
+mix test test/central_cloud/ml/pipelines/complexity_training_pipeline_quantum_flow_integration_test.exs
 ```
 
 - End-to-end workflow execution
@@ -182,7 +182,7 @@ mix test test/central_cloud/ml/pipelines/complexity_training_pipeline_pgflow_int
 mix run scripts/benchmark_complexity_training_pipeline.exs
 ```
 
-- Compare Broadway vs PGFlow performance
+- Compare Broadway vs QuantumFlow performance
 - Load testing with multiple workflows
 - Resource utilization analysis
 
@@ -190,7 +190,7 @@ mix run scripts/benchmark_complexity_training_pipeline.exs
 
 ### Emergency Rollback
 ```bash
-# Disable PGFlow mode
+# Disable QuantumFlow mode
 PGFLOW_COMPLEXITY_TRAINING_ENABLED=false
 
 # Restart CentralCloud application
@@ -207,7 +207,7 @@ COMPLEXITY_TRAINING_CANARY_PERCENT=0
 PGFLOW_COMPLEXITY_TRAINING_ENABLED=false
 ```
 
-## Benefits of PGFlow Migration
+## Benefits of QuantumFlow Migration
 
 ### Observability
 - **Step-level tracking**: Monitor each pipeline stage independently
@@ -254,7 +254,7 @@ Based on this pilot's success, consider migrating:
 #### Workflow Not Starting
 - Check `PGFLOW_COMPLEXITY_TRAINING_ENABLED=true`
 - Verify workflow supervisor is registered in application.ex
-- Check PGFlow database connectivity
+- Check QuantumFlow database connectivity
 
 #### Step Timeouts
 - Increase step-specific timeouts in config
@@ -269,17 +269,17 @@ Based on this pilot's success, consider migrating:
 ### Debug Commands
 ```bash
 # Check workflow status
-PGFlow.Workflow.status(workflow_execution_id)
+QuantumFlow.Workflow.status(workflow_execution_id)
 
 # View workflow metrics
-PGFlow.Workflow.metrics(workflow_execution_id)
+QuantumFlow.Workflow.metrics(workflow_execution_id)
 
 # List active workflows
-PGFlow.WorkflowSupervisor.list_workflows()
+QuantumFlow.WorkflowSupervisor.list_workflows()
 ```
 
 ## Conclusion
 
-This PGFlow migration demonstrates significant improvements in observability, reliability, and maintainability for ML training pipelines. The canary rollout approach ensures safe deployment with minimal risk, and the backwards-compatible design allows for easy rollback if needed.
+This QuantumFlow migration demonstrates significant improvements in observability, reliability, and maintainability for ML training pipelines. The canary rollout approach ensures safe deployment with minimal risk, and the backwards-compatible design allows for easy rollback if needed.
 
-The pilot successfully validates PGFlow as a replacement for Broadway-based pipelines, paving the way for broader adoption across the CentralCloud ML infrastructure.
+The pilot successfully validates QuantumFlow as a replacement for Broadway-based pipelines, paving the way for broader adoption across the CentralCloud ML infrastructure.

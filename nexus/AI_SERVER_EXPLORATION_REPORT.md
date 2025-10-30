@@ -11,7 +11,7 @@
 The singularity-incubation repository has a sophisticated multi-tier AI infrastructure:
 
 1. **ExLLM Package** (`/packages/ex_llm`) - Comprehensive Elixir LLM client library
-2. **AI Server** (`/ai-server`) - TypeScript server using pgflow for PostgreSQL-native workflow orchestration  
+2. **AI Server** (`/ai-server`) - TypeScript server using QuantumFlow for PostgreSQL-native workflow orchestration  
 3. **Singularity LLM Service** (`/singularity/lib/singularity/llm/`) - High-level Elixir orchestration wrapper
 4. **Provider Infrastructure** - Unified provider architecture with 13+ supported AI providers
 
@@ -173,7 +173,7 @@ Singularity (Elixir)
   provider: "auto"
 }
     ↓
-AI Server (TypeScript/pgflow)
+AI Server (TypeScript/QuantumFlow)
     ↓ analyze complexity, select model
 Selected: { model: "claude-opus", provider: "anthropic" }
     ↓
@@ -518,7 +518,7 @@ end
 
 ---
 
-## 4. AI Server Architecture (pgflow-based)
+## 4. AI Server Architecture (quantum_flow-based)
 
 ### 4.1 Request/Response Flow
 
@@ -526,7 +526,7 @@ end
 Singularity (Elixir)
   └─ enqueue to pgmq:ai_requests
        ↓
-AI Server (TypeScript/pgflow)
+AI Server (TypeScript/QuantumFlow)
   ├─ Step 1: Receive request
   ├─ Step 2: Select model (complexity → model mapping)
   ├─ Step 3: Call LLM provider API
@@ -541,10 +541,10 @@ Singularity (Elixir)
 **Workflow Definition** (`/ai-server/src/workflows.ts`):
 
 ```typescript
-export const llmRequestWorkflow = pgflow.define({
+export const llmRequestWorkflow = QuantumFlow.define({
   name: "llm_request",
   steps: [
-    pgflow.step("receive_request", async (input) => {
+    QuantumFlow.step("receive_request", async (input) => {
       // Input: { request_id, messages, task_type, model, provider }
       return {
         ...input,
@@ -552,7 +552,7 @@ export const llmRequestWorkflow = pgflow.define({
       };
     }),
     
-    pgflow.step("select_model", async (prev) => {
+    QuantumFlow.step("select_model", async (prev) => {
       if (prev.model === "auto") {
         const complexity = getComplexityForTask(prev.task_type);
         const selected = selectBestModel(complexity);
@@ -561,7 +561,7 @@ export const llmRequestWorkflow = pgflow.define({
       return prev;
     }),
     
-    pgflow.step("call_llm_provider", async (prev) => {
+    QuantumFlow.step("call_llm_provider", async (prev) => {
       // Call actual LLM API with selected model
       const response = await callProvider(
         prev.selected_provider,
@@ -571,7 +571,7 @@ export const llmRequestWorkflow = pgflow.define({
       return { ...prev, response };
     }),
     
-    pgflow.step("publish_result", async (prev) => {
+    QuantumFlow.step("publish_result", async (prev) => {
       // Publish to pgmq:ai_results for Singularity
       return { request_id: prev.request_id, response: prev.response };
     })
@@ -666,9 +666,9 @@ function selectBestModel(complexity: string) {
 - `/singularity/lib/singularity/llm/rate_limiter.ex` - Rate limiting for LLM calls
 - `/singularity/lib/singularity/llm/supervisor.ex` - LLM service supervision
 
-### AI Server (pgflow)
+### AI Server (QuantumFlow)
 - `/ai-server/src/index.ts` - Main server setup
-- `/ai-server/src/workflows.ts` - pgflow workflow definitions
+- `/ai-server/src/workflows.ts` - QuantumFlow workflow definitions
 - `/ai-server/package.json` - Node.js dependencies
 
 ### Configuration

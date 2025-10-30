@@ -1,10 +1,10 @@
 # RCA + PgFlow Integration Guide
 
-Complete guide to integrating Singularity's **pgflow workflow orchestration** with the **RCA (Root Cause Analysis) system** for comprehensive workflow execution tracking and learning.
+Complete guide to integrating Singularity's **QuantumFlow workflow orchestration** with the **RCA (Root Cause Analysis) system** for comprehensive workflow execution tracking and learning.
 
 ## Overview
 
-pgflow workflows (CodeQualityImprovement, AgentImprovement, etc.) can now be tracked as part of RCA sessions, enabling the system to learn which workflows are most effective and how to optimize them.
+QuantumFlow workflows (CodeQualityImprovement, AgentImprovement, etc.) can now be tracked as part of RCA sessions, enabling the system to learn which workflows are most effective and how to optimize them.
 
 ## Architecture
 
@@ -44,12 +44,12 @@ pgflow workflows (CodeQualityImprovement, AgentImprovement, etc.) can now be tra
 
 ## Core API
 
-The RCA + pgflow integration provides these key functions:
+The RCA + QuantumFlow integration provides these key functions:
 
 ### Session Lifecycle
 
 ```elixir
-alias Singularity.RCA.{SessionManager, PgflowIntegration}
+alias Singularity.RCA.{SessionManager, QuantumFlowIntegration}
 
 # 1. Start RCA session (before workflow)
 {:ok, session} = SessionManager.start_session(%{
@@ -58,13 +58,13 @@ alias Singularity.RCA.{SessionManager, PgflowIntegration}
 })
 
 # 2. Track workflow start
-{:ok, session} = PgflowIntegration.track_workflow_start(
+{:ok, session} = QuantumFlowIntegration.track_workflow_start(
   session.id,
   "Singularity.Workflows.CodeQualityImprovement"
 )
 
 # 3. For each workflow step
-{:ok, step1} = PgflowIntegration.record_workflow_step(
+{:ok, step1} = QuantumFlowIntegration.record_workflow_step(
   session.id,
   1,
   "analyze_metrics",
@@ -72,7 +72,7 @@ alias Singularity.RCA.{SessionManager, PgflowIntegration}
   tokens_used: 450
 )
 
-{:ok, step2} = PgflowIntegration.record_workflow_step(
+{:ok, step2} = QuantumFlowIntegration.record_workflow_step(
   session.id,
   2,
   "generate_fixes",
@@ -81,7 +81,7 @@ alias Singularity.RCA.{SessionManager, PgflowIntegration}
   metrics: %{"issues_fixed" => 23}
 )
 
-{:ok, step3} = PgflowIntegration.record_workflow_step(
+{:ok, step3} = QuantumFlowIntegration.record_workflow_step(
   session.id,
   3,
   "validate",
@@ -91,7 +91,7 @@ alias Singularity.RCA.{SessionManager, PgflowIntegration}
 )
 
 # 4. Complete session with results
-{:ok, final_session} = PgflowIntegration.record_workflow_completion(
+{:ok, final_session} = QuantumFlowIntegration.record_workflow_completion(
   session.id,
   "success",
   %{
@@ -120,14 +120,14 @@ def run_code_quality_workflow(codebase_id) do
 
   try do
     # Track workflow start
-    PgflowIntegration.track_workflow_start(
+    QuantumFlowIntegration.track_workflow_start(
       session_id,
       "Singularity.Workflows.CodeQualityImprovement"
     )
 
     # Step 1: Analyze
     {:ok, metrics} = analyze_code_quality(codebase_id)
-    PgflowIntegration.record_workflow_step(
+    QuantumFlowIntegration.record_workflow_step(
       session_id,
       1,
       "analyze_metrics",
@@ -136,7 +136,7 @@ def run_code_quality_workflow(codebase_id) do
 
     # Step 2: Generate Fixes
     {:ok, fixes} = generate_quality_fixes(codebase_id, metrics)
-    PgflowIntegration.record_workflow_step(
+    QuantumFlowIntegration.record_workflow_step(
       session_id,
       2,
       "generate_fixes",
@@ -147,7 +147,7 @@ def run_code_quality_workflow(codebase_id) do
 
     # Step 3: Apply and Validate
     {:ok, results} = apply_and_validate_fixes(fixes)
-    PgflowIntegration.record_workflow_step(
+    QuantumFlowIntegration.record_workflow_step(
       session_id,
       3,
       "validate",
@@ -156,7 +156,7 @@ def run_code_quality_workflow(codebase_id) do
     )
 
     # Complete session
-    PgflowIntegration.record_workflow_completion(session_id, "success", %{
+    QuantumFlowIntegration.record_workflow_completion(session_id, "success", %{
       "improvements" => results.improvements,
       "tests_passing" => results.passed
     })
@@ -166,7 +166,7 @@ def run_code_quality_workflow(codebase_id) do
   rescue
     error ->
       # Record failure
-      PgflowIntegration.record_workflow_completion(session_id, "failure_execution", %{
+      QuantumFlowIntegration.record_workflow_completion(session_id, "failure_execution", %{
         "error" => inspect(error)
       })
 
@@ -177,12 +177,12 @@ end
 
 ### Pattern 2: Async Workflow with Callback Tracking
 
-For asynchronous pgflow workflows, track completion via callback:
+For asynchronous QuantumFlow workflows, track completion via callback:
 
 ```elixir
 def run_async_workflow(session_id, workflow_name) do
-  # pgflow workflow executes
-  {:ok, workflow_ref} = Pgflow.Executor.execute(
+  # QuantumFlow workflow executes
+  {:ok, workflow_ref} = QuantumFlow.Executor.execute(
     workflow_module(workflow_name),
     %{session_id: session_id},
     timeout: 60000
@@ -193,7 +193,7 @@ def run_async_workflow(session_id, workflow_name) do
     {:ok, result} ->
       # Track each step from workflow result
       Enum.each(result.steps, fn {step_num, step_name, metrics} ->
-        PgflowIntegration.record_workflow_step(
+        QuantumFlowIntegration.record_workflow_step(
           session_id,
           step_num,
           step_name,
@@ -204,7 +204,7 @@ def run_async_workflow(session_id, workflow_name) do
       end)
 
       # Complete session
-      PgflowIntegration.record_workflow_completion(
+      QuantumFlowIntegration.record_workflow_completion(
         session_id,
         "success",
         result.metrics
@@ -213,7 +213,7 @@ def run_async_workflow(session_id, workflow_name) do
       {:ok, result}
 
     {:error, reason} ->
-      PgflowIntegration.record_workflow_completion(
+      QuantumFlowIntegration.record_workflow_completion(
         session_id,
         "failure_execution",
         %{"error" => inspect(reason)}
@@ -235,13 +235,13 @@ def run_complex_improvement_workflow(codebase_id) do
     agent_id: "improvement-orchestrator"
   })
 
-  PgflowIntegration.track_workflow_start(
+  QuantumFlowIntegration.track_workflow_start(
     main_session.id,
     "Singularity.Workflows.ComprehensiveImprovement"
   )
 
   # Step 1: Quality Improvement (sub-workflow)
-  PgflowIntegration.record_workflow_step(main_session.id, 1, "quality_improvement", "Running...")
+  QuantumFlowIntegration.record_workflow_step(main_session.id, 1, "quality_improvement", "Running...")
 
   {:ok, quality_session} = SessionManager.start_session(%{
     initial_prompt: "Improve code quality",
@@ -251,7 +251,7 @@ def run_complex_improvement_workflow(codebase_id) do
 
   run_code_quality_workflow_tracked(quality_session.id, codebase_id)
 
-  PgflowIntegration.record_workflow_step(
+  QuantumFlowIntegration.record_workflow_step(
     main_session.id,
     1,
     "quality_improvement",
@@ -260,7 +260,7 @@ def run_complex_improvement_workflow(codebase_id) do
   )
 
   # Step 2: Architecture Improvement (sub-workflow)
-  PgflowIntegration.record_workflow_step(main_session.id, 2, "architecture_improvement", "Running...")
+  QuantumFlowIntegration.record_workflow_step(main_session.id, 2, "architecture_improvement", "Running...")
 
   {:ok, arch_session} = SessionManager.start_session(%{
     initial_prompt: "Improve code architecture",
@@ -271,7 +271,7 @@ def run_complex_improvement_workflow(codebase_id) do
   run_architecture_improvement_tracked(arch_session.id, codebase_id)
 
   # Complete main session
-  PgflowIntegration.record_workflow_completion(main_session.id, "success", %{
+  QuantumFlowIntegration.record_workflow_completion(main_session.id, "success", %{
     "sub_workflows" => 2,
     "overall_improvements" => 45
   })
@@ -283,10 +283,10 @@ end
 ### Finding Most Effective Workflows
 
 ```elixir
-alias Singularity.RCA.PgflowIntegration
+alias Singularity.RCA.QuantumFlowIntegration
 
 # Compare all workflows by success rate
-workflows = PgflowIntegration.compare_workflows(limit: 10)
+workflows = QuantumFlowIntegration.compare_workflows(limit: 10)
 
 Enum.each(workflows, fn w ->
   IO.inspect(%{
@@ -307,7 +307,7 @@ end)
 
 ```elixir
 # Which workflow steps are most effective?
-steps = PgflowIntegration.analyze_workflow_steps()
+steps = QuantumFlowIntegration.analyze_workflow_steps()
 
 Enum.each(steps, fn {step_name, stats} ->
   IO.inspect(%{
@@ -328,7 +328,7 @@ end)
 
 ```elixir
 # What's the ideal number of workflow steps?
-patterns = PgflowIntegration.analyze_workflow_patterns()
+patterns = QuantumFlowIntegration.analyze_workflow_patterns()
 
 IO.inspect(%{
   success_patterns: patterns["success"],
@@ -356,13 +356,13 @@ IO.inspect(%{
 
 ```elixir
 # Get all sessions for a specific workflow
-sessions = PgflowIntegration.sessions_for_workflow(
+sessions = QuantumFlowIntegration.sessions_for_workflow(
   "Singularity.Workflows.CodeQualityImprovement"
 )
 
 # Analyze patterns
-successful = Enum.filter(sessions, &PgflowIntegration.workflow_successful?(&1.id))
-failed = Enum.filter(sessions, fn s -> not PgflowIntegration.workflow_successful?(s.id) end)
+successful = Enum.filter(sessions, &QuantumFlowIntegration.workflow_successful?(&1.id))
+failed = Enum.filter(sessions, fn s -> not QuantumFlowIntegration.workflow_successful?(s.id) end)
 
 IO.inspect(%{
   success_rate: length(successful) / length(sessions) * 100,
@@ -381,7 +381,7 @@ IO.inspect(%{
 ```elixir
 # Retrieve metrics from a completed workflow
 session_id = "..."
-metrics = PgflowIntegration.get_workflow_metrics(session_id)
+metrics = QuantumFlowIntegration.get_workflow_metrics(session_id)
 
 IO.inspect(%{
   workflow_module: metrics["workflow_module"],
@@ -401,18 +401,18 @@ IO.inspect(%{
 
 ## Agent Integration
 
-Agents can use pgflow + RCA integration to improve:
+Agents can use QuantumFlow + RCA integration to improve:
 
 ```elixir
 defmodule Singularity.Agents.QualityImprovement do
-  alias Singularity.RCA.{SessionManager, PgflowIntegration, LearningQueries}
+  alias Singularity.RCA.{SessionManager, QuantumFlowIntegration, LearningQueries}
 
   def improve_code_quality(codebase_id) do
     # 1. Get best-performing workflows from RCA analysis
-    best_workflows = PgflowIntegration.compare_workflows(limit: 3)
+    best_workflows = QuantumFlowIntegration.compare_workflows(limit: 3)
 
     # 2. Get recommended workflow patterns
-    patterns = PgflowIntegration.analyze_workflow_patterns()
+    patterns = QuantumFlowIntegration.analyze_workflow_patterns()
     optimal_steps = patterns["success"].avg_steps |> round()
 
     # 3. Start session and track workflow
@@ -426,7 +426,7 @@ defmodule Singularity.Agents.QualityImprovement do
     result = run_selected_workflow(best_workflows, session.id, codebase_id)
 
     # 5. Complete and learn
-    PgflowIntegration.record_workflow_completion(session.id, "success", result.metrics)
+    QuantumFlowIntegration.record_workflow_completion(session.id, "success", result.metrics)
 
     result
   end
@@ -486,7 +486,7 @@ end)
 
 1. **Always track workflow start**
    ```elixir
-   PgflowIntegration.track_workflow_start(session_id, workflow_module)
+   QuantumFlowIntegration.track_workflow_start(session_id, workflow_module)
    ```
 
 2. **Record each step**
@@ -496,7 +496,7 @@ end)
 
 3. **Complete with metrics**
    ```elixir
-   PgflowIntegration.record_workflow_completion(
+   QuantumFlowIntegration.record_workflow_completion(
      session_id,
      outcome,
      %{"key_metrics" => value}
@@ -544,7 +544,7 @@ end)
 
 ## See Also
 
-- `lib/singularity/rca/pgflow_integration.ex` - Implementation
+- `lib/singularity/rca/quantum_flow_integration.ex` - Implementation
 - `RCA_SYSTEM_GUIDE.md` - Complete RCA system guide
-- `lib/singularity/pgflow.ex` - pgflow core
+- `lib/singularity/QuantumFlow.ex` - QuantumFlow core
 - `lib/singularity/workflows/` - Available workflows

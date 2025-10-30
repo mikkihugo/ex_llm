@@ -10,7 +10,7 @@ defmodule Singularity.Workflows.DeduplicationWorkflow do
     "type": "workflow",
     "purpose": "Comprehensive deduplication and consolidation of code, patterns, and services",
     "layer": "workflows",
-    "uses_pgflow": true,
+    "uses_quantum_flow": true,
     "autonomous": true
   }
   ```

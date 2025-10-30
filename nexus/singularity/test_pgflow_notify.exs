@@ -1,21 +1,21 @@
 #!/usr/bin/env elixir
 
-# Test Pgflow.Notifications integration
-# Run with: elixir test_pgflow_notify.exs
+# Test QuantumFlow.Notifications integration
+# Run with: elixir test_quantum_flow_notify.exs
 
 # Start the application
 Application.ensure_all_started(:singularity)
 
-# Test Pgflow.Notifications
-alias Pgflow.Notifications
+# Test QuantumFlow.Notifications
+alias QuantumFlow.Notifications
 
-IO.puts("🧪 Testing Pgflow.Notifications integration...")
+IO.puts("🧪 Testing QuantumFlow.Notifications integration...")
 
 # Test 1: Send a notification with NOTIFY
-IO.puts("\n1. Sending notification via Pgflow.Notifications...")
+IO.puts("\n1. Sending notification via QuantumFlow.Notifications...")
 case Notifications.send_with_notify("observer_notifications", %{
   type: "notification",
-  message: "Test notification from Pgflow.Notifications!",
+  message: "Test notification from QuantumFlow.Notifications!",
   timestamp: DateTime.utc_now(),
   test: true
 }, Singularity.Repo) do
@@ -26,7 +26,7 @@ case Notifications.send_with_notify("observer_notifications", %{
 end
 
 # Test 2: Send an approval event
-IO.puts("\n2. Sending approval event via Pgflow.Notifications...")
+IO.puts("\n2. Sending approval event via QuantumFlow.Notifications...")
 case Notifications.send_with_notify("observer_approvals", %{
   type: "approval_created",
   approval: %{
@@ -43,6 +43,6 @@ case Notifications.send_with_notify("observer_approvals", %{
     IO.puts("❌ Failed to send approval event: #{inspect(reason)}")
 end
 
-IO.puts("\n🎉 Pgflow.Notifications test completed!")
+IO.puts("\n🎉 QuantumFlow.Notifications test completed!")
 IO.puts("\nCheck the logs for detailed NOTIFY event logging!")
 IO.puts("All NOTIFY events should be properly logged with structured data.")

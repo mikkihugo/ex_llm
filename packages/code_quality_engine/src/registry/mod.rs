@@ -53,7 +53,7 @@ impl MetaRegistry {
         // TODO: Implement CentralCloud sync via pgmq queues
         // Instead of direct HTTP calls:
         // 1. Send registry data to "centralcloud_sync" queue
-        // 2. ex_pgflow workflow consumes and forwards to CentralCloud
+        // 2. ex_quantum_flow workflow consumes and forwards to CentralCloud
         // 3. Receive consensus data back through response queues
         // 4. Update local registry with merged results
 

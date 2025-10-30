@@ -1,9 +1,9 @@
 defmodule Singularity.Infrastructure.PidManager do
   @moduledoc """
-  Smart PID Management for local services (PostgreSQL, Phoenix endpoint, PGFlow workers).
+  Smart PID Management for local services (PostgreSQL, Phoenix endpoint, QuantumFlow workers).
 
-  This is the PGFlow-era port of our legacy PID manager. The implementation keeps the
-  original adoption/kill pattern but updates the documentation to reflect that PGFlow
+  This is the QuantumFlow-era port of our legacy PID manager. The implementation keeps the
+  original adoption/kill pattern but updates the documentation to reflect that QuantumFlow
   orchestration now rides on top of PostgreSQL rather than NATS.
 
   ## Typical Workflow
@@ -27,7 +27,7 @@ defmodule Singularity.Infrastructure.PidManager do
 
   require Logger
 
-  @type service :: :postgres | :pgflow_notify | :phoenix
+  @type service :: :postgres | :quantum_flow_notify | :phoenix
   @type health_status :: {:healthy, integer()} | {:stale, integer()} | {:not_running}
 
   @doc """
@@ -62,13 +62,13 @@ defmodule Singularity.Infrastructure.PidManager do
   end
 
   @doc """
-  Health check dispatcher that understands PostgreSQL, Phoenix, and PGFlow NOTIFY listeners.
+  Health check dispatcher that understands PostgreSQL, Phoenix, and QuantumFlow NOTIFY listeners.
   """
   @spec process_healthy?(service(), integer(), integer()) :: boolean()
   def process_healthy?(service, port, timeout) do
     case service do
       :postgres -> postgres_healthy?(port, timeout)
-      :pgflow_notify -> pg_notify_healthy?(port, timeout)
+      :quantum_flow_notify -> pg_notify_healthy?(port, timeout)
       :phoenix -> phoenix_healthy?(port, timeout)
       _ -> tcp_healthy?(port, timeout)
     end

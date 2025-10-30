@@ -9,7 +9,7 @@ defmodule CentralCloud.IntelligenceHub do
   2. **Architectural Intelligence** - System design, component relationships
   3. **Data Intelligence** - Database schemas, data flows, data architecture
 
-  ## pgflow Queues
+  ## QuantumFlow Queues
 
   - `intelligence_code_patterns_learned` - Code patterns from instances
   - `intelligence_architecture_patterns_learned` - Architectural patterns
@@ -239,7 +239,7 @@ defmodule CentralCloud.IntelligenceHub do
     ]
 
     Enum.each(intelligence_queues, fn queue ->
-      case Pgflow.listen(queue, CentralCloud.Repo) do
+      case QuantumFlow.listen(queue, CentralCloud.Repo) do
         {:ok, _pid} ->
           Logger.info("Subscribed to intelligence queue: #{queue}")
         {:error, reason} ->
@@ -248,7 +248,7 @@ defmodule CentralCloud.IntelligenceHub do
     end)
 
     # PgFlow notifications are handled via handle_info/2 GenServer callback
-    # No separate process needed - GenServer receives {:pgflow_notification, notification} messages
+    # No separate process needed - GenServer receives {:quantum_flow_notification, notification} messages
 
     :ok
   end
@@ -314,7 +314,7 @@ defmodule CentralCloud.IntelligenceHub do
         # Query aggregated insights from templates and patterns
         insights = query_global_insights(query)
         reply = %{insights: insights, status: "ok"}
-        Pgflow.send_with_notify(msg.reply_to, reply, CentralCloud.Repo)
+        QuantumFlow.send_with_notify(msg.reply_to, reply, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode insights query: #{inspect(reason)}")
@@ -379,12 +379,12 @@ defmodule CentralCloud.IntelligenceHub do
       {:ok, query} ->
         # Process query and return enriched context
         response = process_intelligence_query(query)
-        Pgflow.send_with_notify(msg.reply_to, response, CentralCloud.Repo)
+        QuantumFlow.send_with_notify(msg.reply_to, response, CentralCloud.Repo)
 
       {:error, reason} ->
         Logger.error("Failed to decode intelligence query: #{inspect(reason)}")
         error_response = %{error: "invalid_query", reason: inspect(reason)}
-        Pgflow.send_with_notify(msg.reply_to, error_response, CentralCloud.Repo)
+        QuantumFlow.send_with_notify(msg.reply_to, error_response, CentralCloud.Repo)
     end
   end
 
@@ -1456,12 +1456,12 @@ defmodule CentralCloud.IntelligenceHub do
   # ===========================
 
   # Handle PgFlow notifications via GenServer handle_info
-  # Pgflow.listen calls will send {:pgflow_notification, notification} messages
+  # QuantumFlow.listen calls will send {:quantum_flow_notification, notification} messages
   # These are handled by handle_info/2 callback (not this function)
   
   @impl true
-  def handle_info({:pgflow_notification, notification}, state) do
-    handle_pgflow_notification(notification)
+  def handle_info({:quantum_flow_notification, notification}, state) do
+    handle_quantum_flow_notification(notification)
     {:noreply, state}
   end
   
@@ -1470,7 +1470,7 @@ defmodule CentralCloud.IntelligenceHub do
     {:noreply, state}
   end
   
-  defp handle_pgflow_notification(notification) do
+  defp handle_quantum_flow_notification(notification) do
     case Jason.decode(notification.payload) do
       {:ok, data} ->
         case data["type"] do
@@ -1497,7 +1497,7 @@ defmodule CentralCloud.IntelligenceHub do
         Logger.warning("No reply_to in message, cannot send response")
         :ok
       reply_to ->
-        Pgflow.send_with_notify(reply_to, response, CentralCloud.Repo)
+        QuantumFlow.send_with_notify(reply_to, response, CentralCloud.Repo)
         Logger.debug("Sent response to #{reply_to}")
     end
   end

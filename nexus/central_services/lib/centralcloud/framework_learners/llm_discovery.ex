@@ -37,7 +37,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
   @behaviour CentralCloud.FrameworkLearner
 
   require Logger
-  alias Pgflow
+  alias QuantumFlow
   alias CentralCloud.TemplateService
 
   # ETS table for prompt caching (shared across LLM discovery instances)
@@ -154,7 +154,7 @@ defmodule CentralCloud.FrameworkLearners.LLMDiscovery do
       samples_count: length(code_samples)
     )
 
-    case Pgflow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
+    case QuantumFlow.send_with_notify(CentralCloud.NatsRegistry.subject(:llm_request), %{
       request_id: request_id,
       complexity: "complex",
       type: "framework_discovery",

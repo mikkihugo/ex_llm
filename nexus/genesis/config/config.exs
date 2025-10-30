@@ -46,7 +46,7 @@ config :genesis, Oban,
 # - genesis_rule_updates: Rule evolution from Singularity instances
 # - genesis_llm_config_updates: LLM configuration changes
 # - code_execution_requests: Code analysis job requests
-config :genesis, :pgflow_consumer,
+config :genesis, :quantum_flow_consumer,
   enabled: true,
   poll_interval_ms: 1000,
   batch_size: 10,

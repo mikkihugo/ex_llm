@@ -8,7 +8,7 @@ defmodule Singularity.Workflows.LlmRequest do
   3. Enqueue request for Nexus to execute via OpenAI Responses API
   4. Emit acknowledgement
 
-  Replaces: pgmq llm.request topic + TypeScript pgflow workflow
+  Replaces: pgmq llm.request topic + TypeScript QuantumFlow workflow
 
   ## Input
 
@@ -79,12 +79,12 @@ defmodule Singularity.Workflows.LlmRequest do
   # ============================================================================
 
   def select_model(prev) do
-    # Get complexity from centralized config (database ? Pgflow fallback)
+    # Get complexity from centralized config (database ? QuantumFlow fallback)
     complexity =
       prev.requested_complexity ||
         get_complexity_for_task(prev.requested_provider || "auto", prev.task_type)
 
-    # Get models from centralized config (database ? Pgflow fallback)
+    # Get models from centralized config (database ? QuantumFlow fallback)
     {model, provider} =
       decide_model(
         prev.requested_model,
@@ -142,7 +142,7 @@ defmodule Singularity.Workflows.LlmRequest do
 
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("ai_requests", payload) do
       {:ok, :sent} ->
-        Logger.info("LLM Workflow: Request enqueued successfully via pgflow",
+        Logger.info("LLM Workflow: Request enqueued successfully via QuantumFlow",
           request_id: payload["request_id"]
         )
 
@@ -156,7 +156,7 @@ defmodule Singularity.Workflows.LlmRequest do
          |> Map.put(:success, true)}
 
       {:ok, message_id} when is_integer(message_id) ->
-        Logger.info("LLM Workflow: Request enqueued successfully via pgflow",
+        Logger.info("LLM Workflow: Request enqueued successfully via QuantumFlow",
           request_id: payload["request_id"],
           message_id: message_id
         )
@@ -208,7 +208,7 @@ defmodule Singularity.Workflows.LlmRequest do
   # ============================================================================
 
   defp get_complexity_for_task(provider, task_type) do
-    # Use centralized LLM.Config (database ? Pgflow fallback)
+    # Use centralized LLM.Config (database ? QuantumFlow fallback)
     context = %{task_type: task_type}
 
     case Config.get_task_complexity(provider, context) do
@@ -260,7 +260,7 @@ defmodule Singularity.Workflows.LlmRequest do
   end
 
   defp select_best_model(complexity, provider \\ "auto", task_type) do
-    # Use centralized LLM.Config to get models (database ? Pgflow fallback)
+    # Use centralized LLM.Config to get models (database ? QuantumFlow fallback)
     context = %{task_type: task_type}
     normalized_provider = provider || "auto"
 

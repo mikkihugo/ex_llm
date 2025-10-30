@@ -1,21 +1,21 @@
 defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   @moduledoc """
-  Code Quality Pipeline with PGFlow Migration Support
+  Code Quality Pipeline with QuantumFlow Migration Support
 
-  Supports both Broadway (legacy) and PGFlow (new) orchestration modes.
-  Use PGFLOW_CODE_QUALITY_ENABLED=true to enable PGFlow mode.
+  Supports both Broadway (legacy) and QuantumFlow (new) orchestration modes.
+  Use PGFLOW_CODE_QUALITY_ENABLED=true to enable QuantumFlow mode.
 
   ## Migration Notes
 
   - **Legacy Mode**: Uses Broadway + BroadwayPGMQ producer
-  - **PGFlow Mode**: Uses PGFlow workflow orchestration with better observability
+  - **QuantumFlow Mode**: Uses QuantumFlow workflow orchestration with better observability
   - **Canary Rollout**: Environment flag controls rollout percentage
 
   ## Configuration
 
   ```elixir
   config :singularity, :code_quality_pipeline,
-    pgflow_enabled: System.get_env("PGFLOW_CODE_QUALITY_ENABLED", "false") == "true",
+    quantum_flow_enabled: System.get_env("PGFLOW_CODE_QUALITY_ENABLED", "false") == "true",
     canary_percentage: String.to_integer(System.get_env("CODE_QUALITY_CANARY_PERCENT", "10"))
   ```
   """
@@ -28,28 +28,28 @@ defmodule Singularity.ML.Pipelines.CodeQualityPipeline do
   @doc """
   Start the code quality pipeline.
 
-  Supports both Broadway and PGFlow modes based on configuration.
+  Supports both Broadway and QuantumFlow modes based on configuration.
   """
   def start_link(opts \\ []) do
-    if pgflow_enabled?() do
-      start_pgflow_pipeline(opts)
+    if quantum_flow_enabled?() do
+      start_quantum_flow_pipeline(opts)
     else
       start_broadway_pipeline(opts)
     end
   end
 
-  # Check if PGFlow mode is enabled
-  defp pgflow_enabled? do
+  # Check if QuantumFlow mode is enabled
+  defp quantum_flow_enabled? do
     Application.get_env(:singularity, :code_quality_pipeline, %{})
-    |> Map.get(:pgflow_enabled, false)
+    |> Map.get(:quantum_flow_enabled, false)
   end
 
-  # Start PGFlow-based pipeline
-  defp start_pgflow_pipeline(_opts) do
-    Logger.info("🚀 Starting Code Quality Pipeline (PGFlow mode)")
+  # Start QuantumFlow-based pipeline
+  defp start_quantum_flow_pipeline(_opts) do
+    Logger.info("🚀 Starting Code Quality Pipeline (QuantumFlow mode)")
 
-    # Start PGFlow workflow supervisor
-    PGFlow.WorkflowSupervisor.start_workflow(
+    # Start QuantumFlow workflow supervisor
+    QuantumFlow.WorkflowSupervisor.start_workflow(
       Singularity.Workflows.CodeQualityTrainingWorkflow,
       name: CodeQualityTrainingWorkflowSupervisor
     )

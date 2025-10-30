@@ -164,7 +164,7 @@ If setup is still too slow, consider:
 1. **Use devcontainers**: Pre-built Docker images with everything installed
 2. **Binary cache on S3**: Faster than public cachix for large teams
 3. **Nix flake lock**: Pin exact versions to ensure reproducible builds
-4. **Lazy shell hooks**: Defer PostgreSQL/PGFlow services until first use
+4. **Lazy shell hooks**: Defer PostgreSQL/QuantumFlow services until first use
 
 ## Questions?
 

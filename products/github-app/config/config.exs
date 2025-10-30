@@ -47,7 +47,7 @@ config :singularity, SingularityWeb.Endpoint,
   ],
   secret_key_base: System.get_env("SECRET_KEY_BASE")
 
-# ex_pgflow Configuration
+# ex_quantum_flow Configuration
 config :singularity, :workflows,
   pgmq_host: System.get_env("PGMQ_HOST", "localhost"),
   pgmq_port: System.get_env("PGMQ_PORT", "5432") |> String.to_integer(),

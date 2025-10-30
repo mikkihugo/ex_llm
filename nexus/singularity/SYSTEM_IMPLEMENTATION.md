@@ -40,7 +40,7 @@ Coordinator          Worker              Agent
 **Location:** `lib/singularity/workflows.ex`
 
 - **Core function:** Unified interface for all workflow operations
-- **Storage:** ETS table `:pgflow_workflows` (in-memory, no DB dependency)
+- **Storage:** ETS table `:quantum_flow_workflows` (in-memory, no DB dependency)
 - **Workflow structure:**
   ```elixir
   %{
@@ -195,7 +195,7 @@ Coordinator          Worker              Agent
 [3. PERSIST]
     Workflows.create_workflow(workflow_plan)
          ↓
-    Stores in ETS table `:pgflow_workflows`
+    Stores in ETS table `:quantum_flow_workflows`
          ↓
     Returns: {:ok, "refactor_codebase_12345"}
 
@@ -331,12 +331,12 @@ workflow = %{
 - `lib/singularity/workflows.ex` - Unified system
 - `lib/singularity/execution/assimilate_worker.ex` - Learning worker
 - `lib/singularity/smoke_tests/end_to_end_workflow.ex` - Smoke test
-- `lib/singularity/pgflow/workflow.ex` - Ecto schema (unused for now, ETS-based)
-- `lib/singularity/pgflow/repo.ex` - Ecto repo (unused for now)
-- `lib/singularity/pgflow.ex` - PgFlow context (unused for now)
+- `lib/singularity/QuantumFlow/workflow.ex` - Ecto schema (unused for now, ETS-based)
+- `lib/singularity/QuantumFlow/repo.ex` - Ecto repo (unused for now)
+- `lib/singularity/QuantumFlow.ex` - PgFlow context (unused for now)
 
 **Modified:**
-- `lib/singularity/pgflow_adapter.ex` - Now delegates to Workflows
+- `lib/singularity/quantum_flow_adapter.ex` - Now delegates to Workflows
 - `lib/singularity/htdag/executor.ex` - Now delegates to Workflows
 - `lib/singularity/agents/arbiter.ex` - Uses Workflows for persistence
 - `lib/singularity/agents/self_improvement_agent.ex` - Uses Workflows

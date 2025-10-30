@@ -1,12 +1,12 @@
 defmodule Nexus.WorkflowWorker do
   @moduledoc """
-  Workflow Worker - Executes ex_pgflow workflows for LLM request processing.
+  Workflow Worker - Executes ex_quantum_flow workflows for LLM request processing.
 
-  Replaces the manual pgmq polling approach with ex_pgflow's DAG-based execution.
+  Replaces the manual pgmq polling approach with ex_quantum_flow's DAG-based execution.
 
   ## Benefits over Manual Queue Polling
 
-  - **Automatic Retry** - ex_pgflow handles retries with exponential backoff
+  - **Automatic Retry** - ex_quantum_flow handles retries with exponential backoff
   - **State Management** - Workflow state persisted in PostgreSQL
   - **Fault Isolation** - Failed steps retry independently
   - **Observability** - Every step, task, and attempt logged in DB
@@ -21,8 +21,8 @@ defmodule Nexus.WorkflowWorker do
   PostgreSQL pgmq:llm_requests
       ↓
   WorkflowWorker (this module)
-      ↓ Start ex_pgflow workflow
-  ex_pgflow Executor
+      ↓ Start ex_quantum_flow workflow
+  ex_quantum_flow Executor
       ↓ Execute DAG steps
   Nexus.Workflows.LLMRequestWorkflow
       ↓ Process request
@@ -44,7 +44,7 @@ defmodule Nexus.WorkflowWorker do
   require Logger
 
   alias Nexus.Workflows.LLMRequestWorkflow
-  alias Pgflow.Executor
+  alias QuantumFlow.Executor
 
   @queue_name "llm_requests"
   @poll_interval_ms 1000
@@ -135,7 +135,7 @@ defmodule Nexus.WorkflowWorker do
       workflow: LLMRequestWorkflow
     )
 
-    # Execute workflow via ex_pgflow
+    # Execute workflow via ex_quantum_flow
     # This starts the DAG execution in background
     case Executor.execute(LLMRequestWorkflow, request, Nexus.Repo) do
       {:ok, result} ->

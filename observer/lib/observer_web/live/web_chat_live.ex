@@ -3,12 +3,12 @@ defmodule ObserverWeb.WebChatLive do
   Real-time chat interface for Singularity agents.
 
   Displays messages and notifications from ChatConversationAgent in real-time
-  using Phoenix LiveView and pgflow notifications. Users can respond to approval requests
+  using Phoenix LiveView and QuantumFlow notifications. Users can respond to approval requests
   and answer agent questions directly in the web UI.
 
   ## Features
 
-  - Real-time message updates via pgflow
+  - Real-time message updates via QuantumFlow
   - Display notifications from agents
   - Show pending approvals and questions
   - Respond to approval/rejection requests
@@ -650,7 +650,7 @@ defmodule ObserverWeb.WebChatLive do
 
   defp start_pgmq_listener(socket) do
     # Start listening for notifications
-    case Pgflow.Notifications.listen(@notification_queue, Observer.Repo) do
+    case QuantumFlow.Notifications.listen(@notification_queue, Observer.Repo) do
       {:ok, pid} ->
         assign(socket, :pgmq_listener, pid)
       {:error, reason} ->
@@ -661,7 +661,7 @@ defmodule ObserverWeb.WebChatLive do
 
   @impl Phoenix.LiveView
   def terminate(_reason, %{assigns: %{pgmq_listener: pid}}) when is_pid(pid) do
-    Pgflow.Notifications.unlisten(pid, Observer.Repo)
+    QuantumFlow.Notifications.unlisten(pid, Observer.Repo)
     :ok
   end
 

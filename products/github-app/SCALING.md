@@ -127,7 +127,7 @@ spec:
 
 ### Application-Level Scaling
 - **Connection Pooling**: Ecto connection pools per instance
-- **Async Processing**: ex_pgflow for background analysis jobs
+- **Async Processing**: ex_quantum_flow for background analysis jobs
 - **Caching Strategy**: Redis for session/analysis result caching
 - **Rate Limiting**: Built-in protection against abuse
 

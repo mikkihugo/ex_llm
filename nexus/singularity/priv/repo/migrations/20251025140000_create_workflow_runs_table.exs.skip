@@ -28,7 +28,7 @@ defmodule Singularity.Repo.Migrations.CreateWorkflowRunsTable do
     create index(:workflow_runs, [:id], where: "status = 'started'", name: :workflow_runs_active_idx)
 
     execute """
-    COMMENT ON TABLE workflow_runs IS 'Tracks workflow execution instances (matches pgflow.runs)'
+    COMMENT ON TABLE workflow_runs IS 'Tracks workflow execution instances (matches QuantumFlow.runs)'
     """
 
     execute """

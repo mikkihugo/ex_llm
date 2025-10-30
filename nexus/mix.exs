@@ -50,7 +50,7 @@ defmodule Nexus.MixProject do
       # Code coverage reporting
       {:excoveralls, "~> 0.18", only: :test},
 
-      # ex_pgflow dependencies
+      # ex_quantum_flow dependencies
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.19.0 and < 2.0.0"},
       {:castore, "~> 1.0"}

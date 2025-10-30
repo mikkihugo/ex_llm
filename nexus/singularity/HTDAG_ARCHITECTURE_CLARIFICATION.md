@@ -12,7 +12,7 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 {:ok, _workflow} = Workflows.create_workflow(workflow)
 
 # 3. Execute via PgFlow WorkflowSupervisor (reliable execution)
-{:ok, _pid} = PGFlow.WorkflowSupervisor.start_workflow(workflow, [])
+{:ok, _pid} = QuantumFlow.WorkflowSupervisor.start_workflow(workflow, [])
 
 # 4. Update status via PgFlow (database persistence)
 {:ok, _} = PgFlow.update_workflow_status(workflow, status)
@@ -32,18 +32,18 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 - **Purpose**: Fast workflow storage and retrieval
 - **Location**: `lib/singularity/workflows.ex`
 - **Role**: In-memory workflow state management
-- **Storage**: ETS table `:pgflow_workflows`
+- **Storage**: ETS table `:quantum_flow_workflows`
 
 ### **3. PgFlow (Database + Messaging)**
 - **Purpose**: Database persistence and real-time messaging
-- **Location**: `lib/singularity/pgflow.ex`
+- **Location**: `lib/singularity/QuantumFlow.ex`
 - **Role**: 
   - Database persistence via `Singularity.PgFlow.Workflow` schema
   - Real-time messaging via PGMQ + PostgreSQL NOTIFY
 
-### **4. PGFlow.WorkflowSupervisor**
+### **4. QuantumFlow.WorkflowSupervisor**
 - **Purpose**: Workflow execution orchestration
-- **Location**: External PGFlow library
+- **Location**: External QuantumFlow library
 - **Role**: Manages workflow execution, retries, and monitoring
 
 ## **Data Flow**
@@ -52,7 +52,7 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 graph TD
     A[File Change Detected] --> B[HTDAG.build_htdag_workflow/4]
     B --> C[Workflows.create_workflow/1]
-    C --> D[PGFlow.WorkflowSupervisor.start_workflow/2]
+    C --> D[QuantumFlow.WorkflowSupervisor.start_workflow/2]
     D --> E[HTDAG Node Execution]
     E --> F[PgFlow.update_workflow_status/2]
     F --> G[PgFlow.send_with_notify/3]
@@ -95,7 +95,7 @@ workflow = build_htdag_workflow(dag_id, file_path, codebase_id, attrs)
 {:ok, _workflow} = Workflows.create_workflow(workflow)
 
 # Execute via PgFlow WorkflowSupervisor
-{:ok, _pid} = PGFlow.WorkflowSupervisor.start_workflow(workflow, [])
+{:ok, _pid} = QuantumFlow.WorkflowSupervisor.start_workflow(workflow, [])
 ```
 
 ### **Node Execution**
@@ -120,12 +120,12 @@ end
 
 ### **1. ETS (In-Memory)**
 - **Purpose**: Fast workflow state access
-- **Table**: `:pgflow_workflows`
+- **Table**: `:quantum_flow_workflows`
 - **Usage**: Active workflow state, node execution
 
 ### **2. PostgreSQL (Persistent)**
 - **Purpose**: Workflow persistence and durability
-- **Table**: `pgflow_workflows`
+- **Table**: `quantum_flow_workflows`
 - **Usage**: Workflow history, recovery, analytics
 
 ### **3. PGMQ (Message Queue)**

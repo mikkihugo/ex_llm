@@ -1,10 +1,10 @@
-# Evolution System + ex_pgflow Integration Guide
+# Evolution System + ex_quantum_flow Integration Guide
 
 **Purpose:** Replace direct function calls with durable message queues for distributed messaging
 
 ---
 
-## Why ex_pgflow?
+## Why ex_quantum_flow?
 
 Current implementation makes **direct function calls** between instances and CentralCloud:
 ```elixir
@@ -19,10 +19,10 @@ Problems:
 - ❌ Synchronous blocks execution
 - ❌ If CentralCloud is down, proposal hangs
 
-**Solution: Use ex_pgflow queues** for asynchronous, durable messaging:
+**Solution: Use ex_quantum_flow queues** for asynchronous, durable messaging:
 ```elixir
 # ✅ Asynchronous, durable, reliable
-PgflowQueues.propose_for_consensus(proposal_id, ...)
+QuantumFlowQueues.propose_for_consensus(proposal_id, ...)
 # Message persists in DB, retried automatically
 ```
 
@@ -222,7 +222,7 @@ CentralCloud
 
 ```elixir
 # Add to Singularity config
-config :singularity, :pgflow_queues,
+config :singularity, :quantum_flow_queues,
   producers: [
     {:proposals_for_consensus, "postgres://...", [workers: 2]},
     {:metrics_to_guardian, "postgres://...", [workers: 2]},
@@ -235,7 +235,7 @@ config :singularity, :pgflow_queues,
   ]
 
 # Add to CentralCloud config
-config :centralcloud, :pgflow_queues,
+config :centralcloud, :quantum_flow_queues,
   producers: [
     {:consensus_results, "postgres://...", [workers: 2]},
     {:rollback_triggers, "postgres://...", [workers: 1]},
@@ -250,12 +250,12 @@ config :centralcloud, :pgflow_queues,
 
 ### Step 2: Create Producer Modules
 
-**File:** `lib/singularity/evolution/pgflow_producers.ex`
+**File:** `lib/singularity/evolution/quantum_flow_producers.ex`
 
 ```elixir
-defmodule Singularity.Evolution.PgflowProducers do
+defmodule Singularity.Evolution.QuantumFlowProducers do
   @moduledoc """
-  Producers for sending messages to CentralCloud via pgflow queues.
+  Producers for sending messages to CentralCloud via QuantumFlow queues.
   """
 
   require Logger
@@ -274,7 +274,7 @@ defmodule Singularity.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :singularity,
       "proposals_for_consensus_queue",
       message
@@ -302,7 +302,7 @@ defmodule Singularity.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :singularity,
       "metrics_to_guardian_queue",
       message
@@ -330,7 +330,7 @@ defmodule Singularity.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :singularity,
       "patterns_for_aggregator_queue",
       message
@@ -353,12 +353,12 @@ end
 
 ### Step 3: Create Consumer Modules
 
-**File:** `lib/singularity/evolution/pgflow_consumers.ex`
+**File:** `lib/singularity/evolution/quantum_flow_consumers.ex`
 
 ```elixir
-defmodule Singularity.Evolution.PgflowConsumers do
+defmodule Singularity.Evolution.QuantumFlowConsumers do
   @moduledoc """
-  Consumers for handling messages from CentralCloud via pgflow queues.
+  Consumers for handling messages from CentralCloud via QuantumFlow queues.
   """
 
   require Logger
@@ -449,16 +449,16 @@ end
 
 # With this:
 defp broadcast_to_consensus(proposal) do
-  Logger.debug("Publishing proposal #{proposal.id} to consensus queue via pgflow")
+  Logger.debug("Publishing proposal #{proposal.id} to consensus queue via QuantumFlow")
 
-  case Singularity.Evolution.PgflowProducers.propose_for_consensus(proposal) do
+  case Singularity.Evolution.QuantumFlowProducers.propose_for_consensus(proposal) do
     {:ok, _message_id} ->
       Logger.info("Proposal published successfully")
       :ok
 
     {:error, reason} ->
       Logger.error("Failed to publish proposal: #{inspect(reason)}")
-      # Will retry via pgflow backoff
+      # Will retry via QuantumFlow backoff
       {:error, reason}
   end
 end
@@ -482,9 +482,9 @@ end
 
 # With this:
 defp report_to_guardian(proposal, metrics_before, metrics_after) do
-  Logger.debug("Publishing metrics to Guardian via pgflow")
+  Logger.debug("Publishing metrics to Guardian via QuantumFlow")
 
-  case Singularity.Evolution.PgflowProducers.report_metrics_to_guardian(
+  case Singularity.Evolution.QuantumFlowProducers.report_metrics_to_guardian(
     proposal,
     metrics_before,
     metrics_after
@@ -503,12 +503,12 @@ end
 
 ### Step 6: Create CentralCloud Consumers
 
-**File:** `lib/centralcloud/evolution/pgflow_consumers.ex`
+**File:** `lib/centralcloud/evolution/quantum_flow_consumers.ex`
 
 ```elixir
-defmodule CentralCloud.Evolution.PgflowConsumers do
+defmodule CentralCloud.Evolution.QuantumFlowConsumers do
   @moduledoc """
-  Consumers for handling messages from Singularity instances via pgflow.
+  Consumers for handling messages from Singularity instances via QuantumFlow.
   """
 
   require Logger
@@ -585,12 +585,12 @@ end
 
 ### Step 7: Create CentralCloud Producers
 
-**File:** `lib/centralcloud/evolution/pgflow_producers.ex`
+**File:** `lib/centralcloud/evolution/quantum_flow_producers.ex`
 
 ```elixir
-defmodule CentralCloud.Evolution.PgflowProducers do
+defmodule CentralCloud.Evolution.QuantumFlowProducers do
   @moduledoc """
-  Producers for sending messages to Singularity instances via pgflow.
+  Producers for sending messages to Singularity instances via QuantumFlow.
   """
 
   require Logger
@@ -608,7 +608,7 @@ defmodule CentralCloud.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :centralcloud,
       "consensus_results_queue",
       message
@@ -634,7 +634,7 @@ defmodule CentralCloud.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :centralcloud,
       "rollback_triggers_queue",
       message
@@ -660,7 +660,7 @@ defmodule CentralCloud.Evolution.PgflowProducers do
       timestamp: DateTime.utc_now()
     }
 
-    case ExPgflow.publish(
+    case ExQuantumFlow.publish(
       :centralcloud,
       "guardian_safety_profiles_queue",
       message
@@ -711,20 +711,20 @@ end
 
 ```elixir
 # Test publishing a proposal
-{:ok, msg_id} = PgflowProducers.propose_for_consensus(proposal)
+{:ok, msg_id} = QuantumFlowProducers.propose_for_consensus(proposal)
 assert msg_id
 
 # Verify message in queue
-messages = ExPgflow.list_messages("proposals_for_consensus_queue")
+messages = ExQuantumFlow.list_messages("proposals_for_consensus_queue")
 assert Enum.any?(messages, &(&1.proposal_id == proposal.id))
 
 # Manually consume and process
 message = Enum.find(messages, ...)
-{:ok, status} = PgflowConsumers.handle_proposal_for_consensus(message)
+{:ok, status} = QuantumFlowConsumers.handle_proposal_for_consensus(message)
 assert status == "proposal_recorded"
 
 # Verify instance received consensus result
-received_messages = ExPgflow.list_messages("consensus_results_queue")
+received_messages = ExQuantumFlow.list_messages("consensus_results_queue")
 assert Enum.any?(received_messages, &(&1.proposal_id == proposal.id))
 ```
 
@@ -734,7 +734,7 @@ assert Enum.any?(received_messages, &(&1.proposal_id == proposal.id))
 
 **Environment variables:**
 ```bash
-# Database for pgflow queues (can be same as app DB)
+# Database for QuantumFlow queues (can be same as app DB)
 export PGFLOW_DATABASE_URL=postgresql://user:pass@localhost/singularity
 
 # Queue configuration
@@ -748,17 +748,17 @@ export PGFLOW_MESSAGE_MAX_RETRIES=3
 ## Migration Path
 
 ### Phase 1: Add PgFlow Alongside (Backward Compatible)
-- [x] Define new PgflowProducers and PgflowConsumers
+- [x] Define new QuantumFlowProducers and QuantumFlowConsumers
 - [x] Keep old direct calls working
 - [x] Both work in parallel
 
 ### Phase 2: Migrate ProposalQueue
-- [ ] Update `broadcast_to_consensus` to use PgflowProducers
-- [ ] Update `check_consensus_from_centralcloud` to listen to PgflowConsumers
+- [ ] Update `broadcast_to_consensus` to use QuantumFlowProducers
+- [ ] Update `check_consensus_from_centralcloud` to listen to QuantumFlowConsumers
 - [ ] Keep fallback to direct calls if queue unavailable
 
 ### Phase 3: Migrate ExecutionFlow & Guardian
-- [ ] Update metrics reporting to use PgflowProducers
+- [ ] Update metrics reporting to use QuantumFlowProducers
 - [ ] Update Guardian to consume metrics via queue
 - [ ] Update rollback trigger handling
 
@@ -768,7 +768,7 @@ export PGFLOW_MESSAGE_MAX_RETRIES=3
 - [ ] Complete learning loop via queue
 
 ### Phase 5: Remove Direct Calls (Cleanup)
-- [ ] Verify all Pgflow flows working
+- [ ] Verify all QuantumFlow flows working
 - [ ] Remove old direct call code
 - [ ] Simplify service interfaces
 

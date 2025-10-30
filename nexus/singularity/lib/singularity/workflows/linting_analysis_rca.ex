@@ -38,8 +38,8 @@ defmodule Singularity.Workflows.LintingAnalysisRca do
     languages: ["elixir", "rust"]
   })
 
-  # Via pgflow
-  {:ok, result} = Pgflow.Executor.execute(
+  # Via QuantumFlow
+  {:ok, result} = QuantumFlow.Executor.execute(
     Singularity.Workflows.LintingAnalysisRca,
     %{codebase_path: "/app"},
     timeout: 120000

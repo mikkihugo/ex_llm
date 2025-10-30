@@ -1,6 +1,6 @@
 defmodule CentralCloud.IntelligenceHubSubscriber do
   @moduledoc """
-  pgflow subscriber for receiving intelligence data from Singularity engines.
+  QuantumFlow subscriber for receiving intelligence data from Singularity engines.
   
   Subscribes to all intelligence hub queues and stores data in PostgreSQL:
   - Analysis results from all 8 engines
@@ -12,7 +12,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   ## Architecture
   
   ```
-  Engine → pgflow → This Subscriber → PostgreSQL (centralcloud)
+  Engine → QuantumFlow → This Subscriber → PostgreSQL (centralcloud)
   ```
   
   ## Queues
@@ -51,7 +51,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
     ]
     
     Enum.each(queues, fn queue ->
-      case Pgflow.listen(queue, CentralCloud.Repo) do
+      case QuantumFlow.listen(queue, CentralCloud.Repo) do
         {:ok, _pid} ->
           Logger.info("Subscribed to: #{queue}")
         {:error, reason} ->
@@ -65,7 +65,7 @@ defmodule CentralCloud.IntelligenceHubSubscriber do
   ## Message Handlers
   
   @doc """
-  Handle incoming pgflow messages from engines.
+  Handle incoming QuantumFlow messages from engines.
   """
   def handle_message(%{queue: queue, data: data} = msg) do
     Logger.debug("Received message on #{queue}")

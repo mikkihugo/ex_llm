@@ -10,7 +10,7 @@ This document outlines the migration from NATS (JetStream) messaging to pgmq (Po
 
 **Current Status:**
 - ✅ NATS code removed from codebase
-- ✅ pgmq infrastructure deployed (in packages/ex_pgflow)
+- ✅ pgmq infrastructure deployed (in packages/ex_quantum_flow)
 - ✅ LLM request/response pipeline migrated to pgmq
 - ⏳ 7 test suites awaiting pgmq integration (see Phase breakdown below)
 
@@ -67,14 +67,14 @@ Job marked complete
 
 ### Phase 1: Foundation (COMPLETED)
 - [x] Remove NATS from codebase
-- [x] Verify pgmq infrastructure in ex_pgflow
+- [x] Verify pgmq infrastructure in ex_quantum_flow
 - [x] Document test dependencies
 - [x] Create test exclusion strategy
 
 **Deliverables:**
 - ✅ `.ci_test_excludes` - Configuration file listing all excluded tests
 - ✅ `mix test.ci` - Mix task for CI pipeline
-- ✅ `pgflow` package with complete pgmq implementation
+- ✅ `QuantumFlow` package with complete pgmq implementation
 
 ### Phase 2: Template Usage Events (HIGH PRIORITY)
 **Impact:** Core template system - affects template discovery and learning
@@ -452,7 +452,7 @@ If issues arise, we can temporarily:
 **Pgmq Documentation:**
 - [pgmq GitHub](https://github.com/tembo-io/pgmq)
 - [pgmq Elixir Client](https://github.com/zcm/pgmq-elixir)
-- [Examples in codebase](packages/ex_pgflow)
+- [Examples in codebase](packages/ex_quantum_flow)
 
 **Similar Implementations:**
 - `singularity/test/singularity/llm/service_pgmq_integration_test.exs`

@@ -57,15 +57,15 @@ config :singularity, :auto_ingestion,
 # =============================================================================
 # Broadway Embedding Pipeline Configuration
 # =============================================================================
-# High-performance concurrent embedding generation with PGFlow orchestration
+# High-performance concurrent embedding generation with QuantumFlow orchestration
 # See docs/EMBEDDING_PIPELINE_PGFLOW.md for detailed documentation
 
 # Embedding Pipeline Settings
 # Enable/disable the Broadway embedding pipeline
 config :singularity, :broadway_embedding_pipeline,
   enabled: System.get_env("EMBEDDING_PIPELINE_ENABLED", "true") == "true",
-  # PGFlow workflow orchestration settings
-  pgflow: %{
+  # QuantumFlow workflow orchestration settings
+  QuantumFlow: %{
     enabled: System.get_env("EMBEDDING_PGFLOW_ENABLED", "true") == "true",
     queue_name: System.get_env("EMBEDDING_QUEUE_NAME", "embedding_jobs"),
     timeout_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_TIMEOUT_MS", "300000")),
@@ -316,23 +316,23 @@ config :singularity, :claude,
     }
   }
 
-# Import broadway_pgflow package defaults for PGFlow configuration
-# import_config Path.expand("../../../packages/broadway_pgflow/config/config.exs", __DIR__)
+# Import broadway_quantum_flow package defaults for QuantumFlow configuration
+# import_config Path.expand("../../../packages/broadway_quantum_flow/config/config.exs", __DIR__)
 
 import_config "#{config_env()}.exs"
 
 # =============================================================================
 # Singularity Architecture Learning Pipeline Configuration
 # =============================================================================
-# PGFlow migration for architecture learning pipeline with canary rollout support
+# QuantumFlow migration for architecture learning pipeline with canary rollout support
 config :singularity, :architecture_learning_pipeline,
-  # Enable PGFlow mode (canary rollout)
-  pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
+  # Enable QuantumFlow mode (canary rollout)
+  quantum_flow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true",
   # Canary rollout percentage (0-100)
   canary_percentage:
     String.to_integer(System.get_env("ARCHITECTURE_LEARNING_CANARY_PERCENT", "10"))
 
-# PGFlow workflow configuration for architecture learning
+# QuantumFlow workflow configuration for architecture learning
 config :singularity, :architecture_learning_workflow,
   # Workflow-level timeouts and retries
   timeout_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_TIMEOUT_MS", "300000")),
@@ -362,14 +362,14 @@ config :singularity, :architecture_learning_workflow,
 # =============================================================================
 # Singularity Embedding Training Pipeline Configuration
 # =============================================================================
-# PGFlow migration for embedding training pipeline with canary rollout support
+# QuantumFlow migration for embedding training pipeline with canary rollout support
 config :singularity, :embedding_training_pipeline,
-  # Enable PGFlow mode (canary rollout)
-  pgflow_enabled: System.get_env("PGFLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
+  # Enable QuantumFlow mode (canary rollout)
+  quantum_flow_enabled: System.get_env("PGFLOW_EMBEDDING_TRAINING_ENABLED", "false") == "true",
   # Canary rollout percentage (0-100)
   canary_percentage: String.to_integer(System.get_env("EMBEDDING_TRAINING_CANARY_PERCENT", "10"))
 
-# PGFlow workflow configuration for embedding training
+# QuantumFlow workflow configuration for embedding training
 config :singularity, :embedding_training_workflow,
   # Workflow-level timeouts and retries
   timeout_ms: String.to_integer(System.get_env("EMBEDDING_WORKFLOW_TIMEOUT_MS", "300000")),
@@ -856,7 +856,7 @@ config :singularity, :task_adapters,
   }
 
 # Config-Driven Workflow Registry System
-# Centralized workflow definitions for pgflow and RCA integration
+# Centralized workflow definitions for QuantumFlow and RCA integration
 config :singularity, :workflows,
   registry: [
     # Pipeline workflows
@@ -887,7 +887,7 @@ config :singularity, :workflows,
 
 # PgFlow Queue Configuration - Listeners for messages from CentralCloud
 # Enables receiving workflow consensus patterns and other responses from CentralCloud
-config :singularity, :pgflow_queues,
+config :singularity, :quantum_flow_queues,
   enabled:
     System.get_env("PGFLOW_QUEUES_ENABLED", "true") == "true" &&
       System.get_env("CENTRALCLOUD_ENABLED", "true") == "true",

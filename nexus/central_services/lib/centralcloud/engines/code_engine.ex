@@ -1,13 +1,13 @@
 defmodule CentralCloud.Engines.CodeEngine do
   @moduledoc """
-  High-level façade for Singularity's code analysis engine accessed via PGFlow.
+  High-level façade for Singularity's code analysis engine accessed via QuantumFlow.
 
   CentralCloud forwards code understanding requests (business domain detection,
   pattern analysis, etc.) to Singularity, which hosts the compiled Rust NIFs.
   """
 
   require Logger
-  alias Pgflow
+  alias QuantumFlow
 
   @default_analysis_types ["business_domains", "patterns", "architecture"]
 
@@ -54,7 +54,7 @@ defmodule CentralCloud.Engines.CodeEngine do
   # ---------------------------------------------------------------------------
 
   defp code_quality_engine_call(operation, request) do
-    case Pgflow.send_with_notify("engine.code.#{operation}", request, CentralCloud.Repo,
+    case QuantumFlow.send_with_notify("engine.code.#{operation}", request, CentralCloud.Repo,
            timeout: 30_000
          ) do
       {:ok, response} ->

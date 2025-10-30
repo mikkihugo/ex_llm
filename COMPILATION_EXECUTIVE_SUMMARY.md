@@ -31,7 +31,7 @@ HIGH PRIORITY: Broken Functionality
 ├─ 6 undefined functions
 ├─ 3 type mismatches
 ├─ 1 deprecated API
-└─ 4 pgflow API changes
+└─ 4 QuantumFlow API changes
 
 MEDIUM PRIORITY: Code Quality
 ├─ 14+ unused functions
@@ -88,7 +88,7 @@ impl DockerfileDocument {
 |-------|------|-------|-------|----------|
 | Undefined functions | Missing API | workflow.ex, ingestion_service.ex | 6 | 2.5 hrs |
 | Type mismatches | Logic error | ast_grep, nif_loader | 3 | 1.5 hrs |
-| pgflow API changes | API migration | control.ex | 1 | 30 min |
+| QuantumFlow API changes | API migration | control.ex | 1 | 30 min |
 | BaseWorkflow issue | Type error | base_workflow.ex | 1 | 45 min |
 
 ### Issue Breakdown
@@ -109,11 +109,11 @@ impl DockerfileDocument {
 - **Status:** Logic will never work correctly
 - **Fix Strategy:** Fix pattern matching and type handling
 
-**3. pgflow API (1 issue)**
-- `Pgflow.Workflow.create_workflow/2` doesn't exist
-- `Pgflow.Workflow.subscribe/2` doesn't exist
+**3. QuantumFlow API (1 issue)**
+- `QuantumFlow.Workflow.create_workflow/2` doesn't exist
+- `QuantumFlow.Workflow.subscribe/2` doesn't exist
 - **Status:** Workflow execution completely broken
-- **Fix Strategy:** Research current ex_pgflow API and update calls
+- **Fix Strategy:** Research current ex_quantum_flow API and update calls
 
 ---
 
@@ -149,7 +149,7 @@ Impact →
   │  HIGH
   │  ├─ Undefined functions [2.5 hrs]
   │  ├─ Type mismatches [1.5 hrs]
-  │  ├─ pgflow API [30 min]
+  │  ├─ QuantumFlow API [30 min]
   │  └─ BaseWorkflow [45 min]
   │
   │  MEDIUM
@@ -190,7 +190,7 @@ Fix undefined functions, type mismatches, API changes.
 **Priority order:**
 1. Undefined functions (2.5 hrs) - Many depend on these
 2. Type mismatches (1.5 hrs) - Will cause incorrect behavior
-3. pgflow API (30 min) - Workflow execution blocked
+3. QuantumFlow API (30 min) - Workflow execution blocked
 4. BaseWorkflow (45 min) - Workflow infrastructure
 
 **Commands:**

@@ -246,26 +246,26 @@ end
 
 ---
 
-### 9. Missing pgflow functions
+### 9. Missing QuantumFlow functions
 **File:** `/home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/runners/control.ex`
 **Location:** Lines 49, 108, 139, 185
 **Priority:** HIGH
 
 **Warnings:**
 ```
-warning: Pgflow.Workflow.create_workflow/2 is undefined or private (lines 49, 185)
-warning: Pgflow.Workflow.subscribe/2 is undefined or private (lines 108, 139)
+warning: QuantumFlow.Workflow.create_workflow/2 is undefined or private (lines 49, 185)
+warning: QuantumFlow.Workflow.subscribe/2 is undefined or private (lines 108, 139)
 ```
 
 **Root Cause:**
-The `Pgflow.Workflow` module doesn't expose `create_workflow/2` or `subscribe/2` functions. These are likely renamed or need different API calls.
+The `QuantumFlow.Workflow` module doesn't expose `create_workflow/2` or `subscribe/2` functions. These are likely renamed or need different API calls.
 
 **Recommended Fix:**
-1. Check `Pgflow` package documentation for current API
-2. Replace with correct functions (possibly `Pgflow.Workflows.create/2` or similar)
-3. Check `ex_pgflow` for available workflow functions
+1. Check `QuantumFlow` package documentation for current API
+2. Replace with correct functions (possibly `QuantumFlow.Workflows.create/2` or similar)
+3. Check `ex_quantum_flow` for available workflow functions
 
-**Effort:** 30 minutes (requires reviewing ex_pgflow API)
+**Effort:** 30 minutes (requires reviewing ex_quantum_flow API)
 
 ---
 
@@ -424,7 +424,7 @@ Replace with correct Erlang API:
 | CRITICAL | Rust syntax error | 1 | dockerfile/src/lib.rs | 5 min | Unblocks cargo build |
 | HIGH | Undefined functions | 6 | workflow.ex, ingestion_service.ex, ast_grep.ex | 2.5 hrs | Fixes broken functionality |
 | HIGH | Type mismatches | 3 | control.ex, nif_loader.ex, ast_grep.ex | 1.5 hrs | Fixes logic errors |
-| HIGH | pgflow API | 1 | control.ex | 30 min | Restores workflow execution |
+| HIGH | QuantumFlow API | 1 | control.ex | 30 min | Restores workflow execution |
 | MEDIUM | Unused private functions | 14+ | parser_engine.ex, beam_analysis_engine.ex | 2 hrs | Code cleanup |
 | MEDIUM | Unused variables | 20+ | consolidation_engine.ex, control.ex | 1 hr | Code cleanup |
 | MEDIUM | @doc in private functions | 10+ | aggregated_data.ex, others | 30 min | Code quality |

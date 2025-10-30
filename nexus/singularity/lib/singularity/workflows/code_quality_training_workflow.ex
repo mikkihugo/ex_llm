@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Code Quality Training Pipeline
+  QuantumFlow Workflow Definition for Code Quality Training Pipeline
 
-  Replaces Broadway-based code quality training with PGFlow workflow orchestration.
+  Replaces Broadway-based code quality training with QuantumFlow workflow orchestration.
   Provides durable, observable ML training pipeline for code quality models.
 
   Workflow Stages:
@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.CodeQualityTrainingWorkflow do
   5. Model Deployment - Save and deploy trained quality models
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
 

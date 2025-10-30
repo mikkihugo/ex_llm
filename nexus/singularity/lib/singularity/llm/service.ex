@@ -4,11 +4,11 @@ defmodule Singularity.LLM.Service do
 
   @moduledoc """
   @moduledoc \"""
-  # LLM Service — Direct Pgflow orchestration for synchronous AI calls
+  # LLM Service — Direct QuantumFlow orchestration for synchronous AI calls
 
   **This is the ONLY way to call LLM providers in the Elixir app.**
 
-  Every request is executed synchronously via `Pgflow.Executor.execute/3` running the
+  Every request is executed synchronously via `QuantumFlow.Executor.execute/3` running the
   `LlmRequest` workflow, which handles model selection, provider calls, and result processing.
 
   ## Quick Start
@@ -93,12 +93,12 @@ defmodule Singularity.LLM.Service do
     "layer": "domain_services",
     "alternatives": {
       "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
-      "LlmRequestWorker": "Legacy Oban worker - replaced by direct pgflow execution",
-      "Pgflow.Executor": "Direct workflow execution engine"
+      "LlmRequestWorker": "Legacy Oban worker - replaced by direct QuantumFlow execution",
+      "QuantumFlow.Executor": "Direct workflow execution engine"
     },
     "dependencies": {
       "Singularity.Workflows.LlmRequest": "Workflow definition for LLM processing",
-      "Pgflow.Executor": "Workflow execution engine",
+      "QuantumFlow.Executor": "Workflow execution engine",
       "Singularity.LLM.Provider": "Provider abstraction layer"
     },
     "replaces": ["SharedQueuePublisher", "SharedQueueConsumer", "LlmResultPoller"]
@@ -170,12 +170,12 @@ defmodule Singularity.LLM.Service do
     "layer": "domain_services",
     "alternatives": {
       "LLM.Provider": "Low-level provider abstraction - DO NOT use directly (internal only)",
-      "LlmRequestWorker": "Legacy Oban worker - replaced by direct pgflow execution",
-      "Pgflow.Executor": "Direct workflow execution engine"
+      "LlmRequestWorker": "Legacy Oban worker - replaced by direct QuantumFlow execution",
+      "QuantumFlow.Executor": "Direct workflow execution engine"
     },
     "disambiguation": {
       "vs_provider": "Service = High-level, intelligent routing. Provider = Low-level, internal",
-      "vs_pgflow_executor": "Service = user API surface. Executor = synchronous workflow execution",
+      "vs_quantum_flow_executor": "Service = user API surface. Executor = synchronous workflow execution",
       "vs_llm_request_worker": "Service = synchronous calls. Worker = legacy async queuing"
     },
     "replaces": ["SharedQueuePublisher", "SharedQueueConsumer", "LlmResultPoller"],
@@ -189,7 +189,7 @@ defmodule Singularity.LLM.Service do
   graph TB
       Agent[Agent / tools]
       Service[LLM.Service]
-      Executor[Pgflow.Executor]
+      Executor[QuantumFlow.Executor]
       Workflow[LlmRequest Workflow]
       Provider[LLM.Provider]
 
@@ -241,7 +241,7 @@ defmodule Singularity.LLM.Service do
 
   ```yaml
   calls_out:
-    - module: Pgflow.Executor
+    - module: QuantumFlow.Executor
       function: execute/3
       purpose: Execute LlmRequest workflow synchronously
       critical: true
@@ -292,7 +292,7 @@ defmodule Singularity.LLM.Service do
       frequency: medium
 
   depends_on:
-    - Pgflow.Executor (synchronous workflow execution)
+    - QuantumFlow.Executor (synchronous workflow execution)
     - Singularity.Workflows.LlmRequest (workflow definition)
     - Singularity.LLM.Provider (provider abstraction layer)
     - Singularity.Engines.PromptEngine (optional - graceful degradation)
@@ -318,7 +318,7 @@ defmodule Singularity.LLM.Service do
       Service->>Service: build_request(messages, opts)
       Service-->>Agent: Telemetry [:llm_service, :call, :start]
 
-      Service->>Executor: Pgflow.Executor.execute(LlmRequest, args, timeout: 30000)
+      Service->>Executor: QuantumFlow.Executor.execute(LlmRequest, args, timeout: 30000)
       Executor->>Workflow: execute workflow steps
       Workflow->>Workflow: receive → select model → call provider
       Workflow->>Provider: execute LLM call
@@ -428,17 +428,17 @@ defmodule Singularity.LLM.Service do
 
   ## Relationships
 
-  - **Calls:** Pgflow.Executor.execute/3 - Synchronous workflow execution
+  - **Calls:** QuantumFlow.Executor.execute/3 - Synchronous workflow execution
   - **Calls:** Singularity.Engines.PromptEngine.optimize_prompt/2 - Prompt optimization
   - **Calls:** Logger.info/2, Logger.error/2 - Structured logging
   - **Calls:** :telemetry.execute/2 - Metrics collection
   - **Called by:** Singularity.Agents.Agent, Singularity.Engines.ArchitectureEngine - AI operations
-  - **Depends on:** Pgflow.Executor - Workflow execution engine
+  - **Depends on:** QuantumFlow.Executor - Workflow execution engine
   - **Depends on:** Singularity.Workflows.LlmRequest - Workflow definition
   - **Depends on:** Singularity.LLM.Provider - Provider abstraction
   - **Depends on:** Singularity.Engines.PromptEngine - Prompt optimization
   - **Used by:** All AI-powered features in the system
-  - **Integrates with:** Pgflow - Workflow orchestration system
+  - **Integrates with:** QuantumFlow - Workflow orchestration system
 
   ## Template Version
 
@@ -947,12 +947,12 @@ defmodule Singularity.LLM.Service do
     |> maybe_put_capabilities(capabilities)
   end
 
-  # LLM communication via pgflow workflow system
-  # @calls: Pgflow.Executor.execute/3 - Execute LlmRequest workflow synchronously
+  # LLM communication via QuantumFlow workflow system
+  # @calls: QuantumFlow.Executor.execute/3 - Execute LlmRequest workflow synchronously
   # @error_flow: :timeout -> Workflow execution exceeded timeout threshold
-  # @error_flow: :workflow_failed -> Pgflow workflow execution failed
+  # @error_flow: :workflow_failed -> QuantumFlow workflow execution failed
   defp dispatch_request(request, opts) do
-    # Execute LLM request via pgflow workflow synchronously
+    # Execute LLM request via QuantumFlow workflow synchronously
     # This replaces both pgmq publishing and polling with direct workflow execution
 
     task_type = Map.get(request, :task_type, :medium)
@@ -990,8 +990,8 @@ defmodule Singularity.LLM.Service do
       message_count: length(messages)
     )
 
-    # Execute the LLM workflow synchronously via Pgflow
-    case Pgflow.Executor.execute(Singularity.Workflows.LlmRequest, workflow_args, timeout: 30000) do
+    # Execute the LLM workflow synchronously via QuantumFlow
+    case QuantumFlow.Executor.execute(Singularity.Workflows.LlmRequest, workflow_args, timeout: 30000) do
       {:ok, result} ->
         Logger.info("LLM workflow completed synchronously",
           task_type: task_type,

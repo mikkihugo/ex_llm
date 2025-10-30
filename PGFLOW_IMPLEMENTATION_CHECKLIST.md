@@ -7,30 +7,30 @@
 ## Phase 1: Foundation (2-3 hours)
 
 ### ✅ Code Implementation
-- [x] Create `Singularity.Evolution.Pgflow.Producers` module
+- [x] Create `Singularity.Evolution.QuantumFlow.Producers` module
   - [x] `propose_for_consensus/1`
   - [x] `report_metrics_to_guardian/3`
   - [x] `report_pattern_to_aggregator/4`
 
-- [x] Create `Singularity.Evolution.Pgflow.Consumers` module
+- [x] Create `Singularity.Evolution.QuantumFlow.Consumers` module
   - [x] `handle_consensus_result/1`
   - [x] `handle_rollback_trigger/1`
   - [x] `handle_safety_profile_update/1`
 
-- [x] Create `CentralCloud.Evolution.Pgflow.Producers` module
+- [x] Create `CentralCloud.Evolution.QuantumFlow.Producers` module
   - [x] `send_consensus_result/5`
   - [x] `send_rollback_trigger/4`
   - [x] `send_safety_profile_update/3`
 
-- [x] Create `CentralCloud.Evolution.Pgflow.Consumers` module
+- [x] Create `CentralCloud.Evolution.QuantumFlow.Consumers` module
   - [x] `handle_proposal_for_consensus/1`
   - [x] `handle_execution_metrics/1`
   - [x] `handle_pattern_discovered/1`
 
 ### ⏳ Configuration
-- [ ] Add `ex_pgflow` to `mix.exs` (both projects)
+- [ ] Add `ex_quantum_flow` to `mix.exs` (both projects)
   ```elixir
-  {:ex_pgflow, "~> 0.1"}
+  {:ex_quantum_flow, "~> 0.1"}
   ```
 
 - [ ] Create PgFlow configuration in `config/config.exs` (Singularity)
@@ -53,22 +53,22 @@
 
 - [ ] Run PgFlow migrations
   ```bash
-  cd nexus/singularity && mix pgflow.init
-  cd ../central_services && mix pgflow.init
+  cd nexus/singularity && mix QuantumFlow.init
+  cd ../central_services && mix QuantumFlow.init
   ```
 
 ### ⏳ Supervision Tree
 - [ ] Update `Singularity.Application`
-  - [ ] Add ExPgflow.Consumer to supervision tree
+  - [ ] Add ExQuantumFlow.Consumer to supervision tree
   - [ ] Configure with consumers from config
 
 - [ ] Update `CentralCloud.Application`
-  - [ ] Add ExPgflow.Consumer to supervision tree
+  - [ ] Add ExQuantumFlow.Consumer to supervision tree
   - [ ] Configure with consumers from config
 
 ### ⏳ Testing
 - [ ] Unit test Singularity.Producers
-  - [ ] Mock ExPgflow.publish
+  - [ ] Mock ExQuantumFlow.publish
   - [ ] Verify message format
   - [ ] Test error handling
 
@@ -78,7 +78,7 @@
   - [ ] Test database updates
 
 - [ ] Unit test CentralCloud.Producers
-  - [ ] Mock ExPgflow.publish
+  - [ ] Mock ExQuantumFlow.publish
   - [ ] Test message formats
 
 - [ ] Unit test CentralCloud.Consumers
@@ -124,9 +124,9 @@ end
 **After:**
 ```elixir
 defp broadcast_to_consensus(proposal) do
-  Logger.debug("Publishing proposal #{proposal.id} to consensus queue via pgflow")
+  Logger.debug("Publishing proposal #{proposal.id} to consensus queue via QuantumFlow")
 
-  case Singularity.Evolution.Pgflow.Producers.propose_for_consensus(proposal) do
+  case Singularity.Evolution.QuantumFlow.Producers.propose_for_consensus(proposal) do
     {:ok, _message_id} ->
       Logger.info("Proposal published to consensus queue successfully")
       :ok
@@ -139,9 +139,9 @@ end
 ```
 
 **Steps to implement:**
-1. [ ] Update imports to use Pgflow.Producers instead of ConsensusEngine
+1. [ ] Update imports to use QuantumFlow.Producers instead of ConsensusEngine
 2. [ ] Change function call to use producers
-3. [ ] Remove try-rescue (handled by pgflow)
+3. [ ] Remove try-rescue (handled by QuantumFlow)
 4. [ ] Test locally with single instance
 
 #### Change 2: Update consensus checking
@@ -166,7 +166,7 @@ end
 
 **After:**
 ```elixir
-# Consumers now handle this automatically via pgflow!
+# Consumers now handle this automatically via QuantumFlow!
 # When CentralCloud sends consensus result, Consumers.handle_consensus_result
 # processes it and marks proposal as consensus_reached or consensus_failed.
 
@@ -181,7 +181,7 @@ end
 
 ### ⏳ Integration Testing
 
-- [ ] Test locally: submit proposal → receives consensus result via pgflow
+- [ ] Test locally: submit proposal → receives consensus result via QuantumFlow
 - [ ] Test with 2 instances: instance 1 proposes, instance 2 receives
 - [ ] Test message retry: stop service during consensus, verify retry works
 - [ ] Test queue monitoring: view pending messages in database
@@ -224,9 +224,9 @@ end
 **After:**
 ```elixir
 defp report_to_guardian(proposal, metrics_before, metrics_after) do
-  Logger.debug("Publishing execution metrics to Guardian via pgflow")
+  Logger.debug("Publishing execution metrics to Guardian via QuantumFlow")
 
-  case Singularity.Evolution.Pgflow.Producers.report_metrics_to_guardian(
+  case Singularity.Evolution.QuantumFlow.Producers.report_metrics_to_guardian(
     proposal,
     metrics_before,
     metrics_after
@@ -244,7 +244,7 @@ end
 ```
 
 **Steps:**
-1. [ ] Update import to use Pgflow.Producers
+1. [ ] Update import to use QuantumFlow.Producers
 2. [ ] Remove direct call to RollbackService
 3. [ ] Change to use producers
 4. [ ] Test metrics flow
@@ -266,7 +266,7 @@ Singularity.Evolution.ProposalQueue.trigger_rollback(proposal_id)
 **After:**
 ```elixir
 # Use PgFlow to send rollback trigger
-CentralCloud.Evolution.Pgflow.Producers.send_rollback_trigger(
+CentralCloud.Evolution.QuantumFlow.Producers.send_rollback_trigger(
   instance_id,
   proposal_id,
   "error_rate_breach",
@@ -276,7 +276,7 @@ CentralCloud.Evolution.Pgflow.Producers.send_rollback_trigger(
 
 **Steps:**
 1. [ ] Find all places in Guardian that trigger rollback
-2. [ ] Replace with Pgflow.Producers calls
+2. [ ] Replace with QuantumFlow.Producers calls
 3. [ ] Test rollback flow
 
 ### ⏳ Integration Testing
@@ -329,7 +329,7 @@ After verifying all PgFlow flows work:
 
 ### Unit Tests
 
-**Singularity.Evolution.Pgflow.Producers**
+**Singularity.Evolution.QuantumFlow.Producers**
 ```elixir
 # Test each producer method
 test "propose_for_consensus publishes message" do
@@ -339,13 +339,13 @@ test "propose_for_consensus publishes message" do
 end
 
 test "propose_for_consensus handles errors" do
-  # Mock ExPgflow.publish to return error
+  # Mock ExQuantumFlow.publish to return error
   {:error, reason} = Producers.propose_for_consensus(proposal)
   assert reason
 end
 ```
 
-**Singularity.Evolution.Pgflow.Consumers**
+**Singularity.Evolution.QuantumFlow.Consumers**
 ```elixir
 # Test each consumer method
 test "handle_consensus_result marks proposal approved" do
@@ -369,20 +369,20 @@ end
 
 **Proposal Flow**
 ```elixir
-test "proposal flows through pgflow from instance to consensus" do
+test "proposal flows through QuantumFlow from instance to consensus" do
   # 1. Submit proposal
   {:ok, proposal} = ProposalQueue.submit_proposal(...)
 
   # 2. Publish to consensus
-  {:ok, msg_id} = Pgflow.Producers.propose_for_consensus(proposal)
+  {:ok, msg_id} = QuantumFlow.Producers.propose_for_consensus(proposal)
 
   # 3. Verify message in queue
-  messages = ExPgflow.list_pending_messages("proposals_for_consensus_queue")
+  messages = ExQuantumFlow.list_pending_messages("proposals_for_consensus_queue")
   assert Enum.any?(messages, &(&1["proposal_id"] == proposal.id))
 
   # 4. Process message (simulates CentralCloud)
   [message] = messages
-  {:ok, status} = CentralCloud.Evolution.Pgflow.Consumers.handle_proposal_for_consensus(message)
+  {:ok, status} = CentralCloud.Evolution.QuantumFlow.Consumers.handle_proposal_for_consensus(message)
 
   # 5. Verify proposal recorded in CentralCloud
   assert Repo.exists?(CentralCloud.Consensus.Proposal, id: proposal.id)
@@ -407,7 +407,7 @@ end
 - [ ] Rollback plan documented
 
 ### Deployment
-1. [ ] Add `ex_pgflow` to mix.exs
+1. [ ] Add `ex_quantum_flow` to mix.exs
 2. [ ] Run `mix deps.get`
 3. [ ] Run PgFlow migrations
 4. [ ] Update config files
@@ -417,9 +417,9 @@ end
 
 ### Post-Deployment
 - [ ] Verify consumers are running: `Supervisor.which_children(Singularity.Supervisor)`
-- [ ] Check queue status: `ExPgflow.list_queues()`
+- [ ] Check queue status: `ExQuantumFlow.list_queues()`
 - [ ] Submit test proposal and verify flow
-- [ ] Monitor dead-letter queue: `ExPgflow.list_dlq_messages()`
+- [ ] Monitor dead-letter queue: `ExQuantumFlow.list_dlq_messages()`
 - [ ] Monitor metrics: check telemetry events
 
 ### Rollback Plan
@@ -440,7 +440,7 @@ If issues:
 - [ ] Telemetry events defined
 
 ### Phase 2: ProposalQueue Integration ✓
-- [ ] Proposals publish to pgflow queue
+- [ ] Proposals publish to QuantumFlow queue
 - [ ] CentralCloud receives and processes
 - [ ] Consensus results received via queue
 - [ ] End-to-end flow working
@@ -480,10 +480,10 @@ If issues:
 
 ### File Locations
 ```
-Singularity Producers:   nexus/singularity/lib/singularity/evolution/pgflow/producers.ex
-Singularity Consumers:   nexus/singularity/lib/singularity/evolution/pgflow/consumers.ex
-CentralCloud Producers: nexus/central_services/lib/centralcloud/evolution/pgflow/producers.ex
-CentralCloud Consumers: nexus/central_services/lib/centralcloud/evolution/pgflow/consumers.ex
+Singularity Producers:   nexus/singularity/lib/singularity/evolution/QuantumFlow/producers.ex
+Singularity Consumers:   nexus/singularity/lib/singularity/evolution/QuantumFlow/consumers.ex
+CentralCloud Producers: nexus/central_services/lib/centralcloud/evolution/QuantumFlow/producers.ex
+CentralCloud Consumers: nexus/central_services/lib/centralcloud/evolution/QuantumFlow/consumers.ex
 ```
 
 ### Key Methods to Implement
@@ -501,7 +501,7 @@ CentralCloud:
 ### Configuration Sections
 ```
 Both projects:
-  config :xxxx, :pgflow_queues
+  config :xxxx, :quantum_flow_queues
   - producers: list of producers with queue names
   - consumers: list of consumers with handlers
 ```

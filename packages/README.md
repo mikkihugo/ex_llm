@@ -15,8 +15,8 @@ Following [moonrepo best practices](https://moonrepo.dev/docs/concepts/project#o
 
 ### Elixir Libraries
 
-#### ex_pgflow
-- **Path**: `packages/ex_pgflow/`
+#### ex_quantum_flow
+- **Path**: `packages/ex_quantum_flow/`
 - **Language**: Elixir
 - **Purpose**: PostgreSQL-native workflow orchestration library
 - **Status**: Production-ready, publishable to Hex.pm
@@ -88,7 +88,7 @@ When adding a new external package:
 
 Packages in this directory are designed to be published independently:
 
-- **ex_pgflow**: Ready for Hex.pm publication
+- **ex_quantum_flow**: Ready for Hex.pm publication
 - Each package should have its own version management
 - CI pipelines should support independent releases
 
@@ -99,13 +99,13 @@ Packages in this directory are designed to be published independently:
 moon run :test
 
 # Test specific package
-moon run ex_pgflow:test
+moon run ex_quantum_flow:test
 
 # Build documentation
-moon run ex_pgflow:docs
+moon run ex_quantum_flow:docs
 
 # Run quality checks
-moon run ex_pgflow:quality
+moon run ex_quantum_flow:quality
 ```
 
 ## Not Submodules

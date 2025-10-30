@@ -80,7 +80,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
   ## Configuration
 
   ```elixir
-  config :genesis, :pgflow_consumer,
+  config :genesis, :quantum_flow_consumer,
     enabled: true,
     poll_interval_ms: 1000,
     batch_size: 10,
@@ -117,7 +117,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
     Logger.info("[Genesis.PgFlowWorkflowConsumer] Starting PgFlow workflow consumer")
 
     # Verify PgFlow integration
-    verify_pgflow_integration()
+    verify_quantum_flow_integration()
 
     # Start polling immediately
     schedule_poll()
@@ -672,7 +672,7 @@ defmodule Genesis.PgFlowWorkflowConsumer do
     Map.put(state, :metrics, new_metrics)
   end
 
-  defp verify_pgflow_integration do
+  defp verify_quantum_flow_integration do
     Logger.info("[Genesis.PgFlowWorkflowConsumer] Verifying PgFlow integration")
 
     # Check if required queues exist
@@ -695,11 +695,11 @@ defmodule Genesis.PgFlowWorkflowConsumer do
   end
 
   defp enabled? do
-    Application.get_env(:genesis, :pgflow_consumer, [])[:enabled] == true
+    Application.get_env(:genesis, :quantum_flow_consumer, [])[:enabled] == true
   end
 
   defp config do
-    Application.get_env(:genesis, :pgflow_consumer, [])
+    Application.get_env(:genesis, :quantum_flow_consumer, [])
   end
 
   # Helper to suggest recovery based on error type

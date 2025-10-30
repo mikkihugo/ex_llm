@@ -238,7 +238,7 @@ mix compile --all-warnings  # Should remove this warning
 
 ---
 
-### Issue 2.6: pgflow API Changes
+### Issue 2.6: QuantumFlow API Changes
 - **File:** `/home/mhugo/code/singularity/nexus/singularity/lib/singularity/execution/runners/control.ex`
 - **Lines:** 49, 108, 139, 185
 - **Status:** Needs research
@@ -246,35 +246,35 @@ mix compile --all-warnings  # Should remove this warning
 
 **Current Calls:**
 ```elixir
-Pgflow.Workflow.create_workflow(...)      # Line 49, 185
-Pgflow.Workflow.subscribe(...)            # Line 108, 139
+QuantumFlow.Workflow.create_workflow(...)      # Line 49, 185
+QuantumFlow.Workflow.subscribe(...)            # Line 108, 139
 ```
 
 **Research Steps:**
-1. Check ex_pgflow package for current API:
+1. Check ex_quantum_flow package for current API:
    ```bash
-   grep -r "def create" packages/ex_pgflow/lib/
-   grep -r "def subscribe" packages/ex_pgflow/lib/
+   grep -r "def create" packages/ex_quantum_flow/lib/
+   grep -r "def subscribe" packages/ex_quantum_flow/lib/
    ```
 
-2. Check what's actually exported from Pgflow module:
+2. Check what's actually exported from QuantumFlow module:
    ```bash
-   grep -r "^  def " packages/ex_pgflow/lib/pgflow/workflow.ex
+   grep -r "^  def " packages/ex_quantum_flow/lib/QuantumFlow/workflow.ex
    ```
 
 3. Look for examples in test files:
    ```bash
-   grep -r "create_workflow\|subscribe" packages/ex_pgflow/test/
+   grep -r "create_workflow\|subscribe" packages/ex_quantum_flow/test/
    ```
 
 **Possible Fixes:**
-- Replace with `Pgflow.Workflows.create/2` if API changed
-- Or use `ExPgflow.create_workflow/2` with correct namespace
+- Replace with `QuantumFlow.Workflows.create/2` if API changed
+- Or use `ExQuantumFlow.create_workflow/2` with correct namespace
 - Or implement wrapper functions
 
 **Validation:**
 ```bash
-grep -A 3 "def create\|def subscribe" packages/ex_pgflow/lib/pgflow/*.ex
+grep -A 3 "def create\|def subscribe" packages/ex_quantum_flow/lib/QuantumFlow/*.ex
 ```
 
 ---
@@ -473,7 +473,7 @@ mix compile --all-warnings
 - [ ] Fix ParserEngine.ast_grep_supported_languages/0 (find correct function)
 - [ ] Fix ast_grep health check type mismatch
 - [ ] Fix NIF loader type mismatch
-- [ ] Fix pgflow API calls (research Pgflow API first)
+- [ ] Fix QuantumFlow API calls (research QuantumFlow API first)
 - [ ] Fix BaseWorkflow execute_steps issue
 - [ ] Run `mix compile --all-warnings` - verify fewer warnings
 
@@ -508,7 +508,7 @@ mix compile --all-warnings
 
 ### High Risk Fixes (Need context/research)
 - Fixing undefined workflow functions (2.1)
-- Fixing pgflow API calls (2.6)
+- Fixing QuantumFlow API calls (2.6)
 - Fixing BaseWorkflow (2.7)
 - Fixing ParserEngine function (2.3)
 

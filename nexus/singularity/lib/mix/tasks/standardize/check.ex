@@ -56,7 +56,7 @@ defmodule Mix.Tasks.Standardize.Check do
     moduledoc_violations = check_moduledoc()
     violations = violations ++ moduledoc_violations
 
-    # NATS subjects check removed - using PGFlow workflows instead
+    # NATS subjects check removed - using QuantumFlow workflows instead
     violations = violations
 
     # Report results

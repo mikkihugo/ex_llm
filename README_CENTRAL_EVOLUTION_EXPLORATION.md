@@ -85,7 +85,7 @@ Singularity (Core)          Genesis (Autonomy)         CentralCloud (Intelligenc
 ├─ 77 schemas               ├─ 3 schemas                ├─ 8 schemas
 └─ 50+ migrations           └─ 8 migrations             └─ 20 migrations
 
-     ↕ pgmq/pgflow/NATS
+     ↕ pgmq/QuantumFlow/NATS
   (Durable inter-service communication)
 ```
 

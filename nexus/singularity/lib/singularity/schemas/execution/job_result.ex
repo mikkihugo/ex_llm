@@ -4,7 +4,7 @@ defmodule Singularity.Schemas.Execution.JobResult do
 
   ## Purpose
 
-  Tracks all workflow executions via Pgflow.Executor, enabling:
+  Tracks all workflow executions via QuantumFlow.Executor, enabling:
   - Result persistence and historical querying
   - Cost tracking (tokens, cents)
   - Result aggregation for CentralCloud learning
@@ -15,11 +15,11 @@ defmodule Singularity.Schemas.Execution.JobResult do
 
   Record a successful workflow result:
 
-      {:ok, result} = Pgflow.Executor.execute(MyWorkflow, input)
+      {:ok, result} = QuantumFlow.Executor.execute(MyWorkflow, input)
 
       Singularity.Schemas.Execution.JobResult.record_success(
         workflow: "Singularity.Workflows.LlmRequest",
-        instance_id: Pgflow.Instance.Registry.instance_id(),
+        instance_id: QuantumFlow.Instance.Registry.instance_id(),
         job_id: job.id,
         input: input,
         output: result,

@@ -1,20 +1,20 @@
 #!/usr/bin/env elixir
 
-# Complete Pgflow.Notifications Integration Test
+# Complete QuantumFlow.Notifications Integration Test
 # Tests the full PGMQ + NOTIFY integration with Singularity and Observer
-# Run with: elixir test_pgflow_complete.exs
+# Run with: elixir test_quantum_flow_complete.exs
 
 # This script tests the complete integration between:
-# - ex_pgflow (PGMQ + NOTIFY)
+# - ex_quantum_flow (PGMQ + NOTIFY)
 # - Singularity (WebChat integration)
 # - Observer (Web UI integration)
 
-defmodule PgflowCompleteTest do
+defmodule QuantumFlowCompleteTest do
   @moduledoc """
-  Complete integration test for Pgflow.Notifications with Singularity and Observer.
+  Complete integration test for QuantumFlow.Notifications with Singularity and Observer.
   
   This test verifies:
-  - Pgflow.Notifications functionality
+  - QuantumFlow.Notifications functionality
   - Singularity WebChat integration
   - Observer web UI integration
   - Real-time notification flow
@@ -25,12 +25,12 @@ defmodule PgflowCompleteTest do
   require Logger
 
   def run do
-    IO.puts("🧪 Pgflow Complete Integration Test")
+    IO.puts("🧪 QuantumFlow Complete Integration Test")
     IO.puts("=" |> String.duplicate(60))
     
     # Start the test
     setup_test()
-    |> test_pgflow_notifications()
+    |> test_quantum_flow_notifications()
     |> test_singularity_integration()
     |> test_observer_integration()
     |> test_error_handling()
@@ -50,8 +50,8 @@ defmodule PgflowCompleteTest do
     %{start_time: System.monotonic_time()}
   end
 
-  defp test_pgflow_notifications(context) do
-    IO.puts("\n📡 Testing Pgflow.Notifications...")
+  defp test_quantum_flow_notifications(context) do
+    IO.puts("\n📡 Testing QuantumFlow.Notifications...")
     
     # Test basic notification sending
     IO.puts("  📤 Testing basic notification sending...")
@@ -81,7 +81,7 @@ defmodule PgflowCompleteTest do
     ]
 
     for event <- test_events do
-      case Pgflow.Notifications.send_with_notify("workflow_events", event, TestRepo) do
+      case QuantumFlow.Notifications.send_with_notify("workflow_events", event, TestRepo) do
         {:ok, message_id} ->
           IO.puts("    ✅ Sent #{event.type} (ID: #{message_id})")
         {:error, reason} ->
@@ -92,12 +92,12 @@ defmodule PgflowCompleteTest do
     # Test listener functionality
     IO.puts("  👂 Testing NOTIFY listener...")
     
-    case Pgflow.Notifications.listen("workflow_events", TestRepo) do
+    case QuantumFlow.Notifications.listen("workflow_events", TestRepo) do
       {:ok, listener_pid} ->
         IO.puts("    ✅ Listener started (PID: #{inspect(listener_pid)})")
         
         # Clean up listener
-        Pgflow.Notifications.unlisten(listener_pid, TestRepo)
+        QuantumFlow.Notifications.unlisten(listener_pid, TestRepo)
         IO.puts("    🧹 Listener cleaned up")
         
       {:error, reason} ->
@@ -135,7 +135,7 @@ defmodule PgflowCompleteTest do
     ]
 
     for event <- webchat_events do
-      case Pgflow.Notifications.send_with_notify("observer_notifications", event, TestRepo) do
+      case QuantumFlow.Notifications.send_with_notify("observer_notifications", event, TestRepo) do
         {:ok, message_id} ->
           IO.puts("    ✅ WebChat event sent (ID: #{message_id})")
         {:error, reason} ->
@@ -173,7 +173,7 @@ defmodule PgflowCompleteTest do
     ]
 
     for event <- observer_events do
-      case Pgflow.Notifications.send_with_notify("observer_events", event, TestRepo) do
+      case QuantumFlow.Notifications.send_with_notify("observer_events", event, TestRepo) do
         {:ok, message_id} ->
           IO.puts("    ✅ Observer event sent (ID: #{message_id})")
         {:error, reason} ->
@@ -209,7 +209,7 @@ defmodule PgflowCompleteTest do
     ]
 
     for event <- error_events do
-      case Pgflow.Notifications.send_with_notify("workflow_events", event, TestRepo) do
+      case QuantumFlow.Notifications.send_with_notify("workflow_events", event, TestRepo) do
         {:ok, message_id} ->
           IO.puts("    ✅ Error event sent (ID: #{message_id})")
         {:error, reason} ->
@@ -230,7 +230,7 @@ defmodule PgflowCompleteTest do
     start_time = System.monotonic_time()
     
     results = for i <- 1..event_count do
-      Pgflow.Notifications.send_with_notify("test_queue", %{
+      QuantumFlow.Notifications.send_with_notify("test_queue", %{
         type: "test_event",
         id: i,
         timestamp: DateTime.utc_now()
@@ -270,5 +270,5 @@ end
 
 # Run the test
 if __FILE__ == Path.expand(__FILE__) do
-  PgflowCompleteTest.run()
+  QuantumFlowCompleteTest.run()
 end

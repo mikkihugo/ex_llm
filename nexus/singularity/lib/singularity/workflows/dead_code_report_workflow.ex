@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.DeadCodeReportWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Dead Code Monitoring Reports
+  QuantumFlow Workflow Definition for Dead Code Monitoring Reports
 
-  Replaces pgmq-based dead code report publishing with PGFlow workflow orchestration.
+  Replaces pgmq-based dead code report publishing with QuantumFlow workflow orchestration.
   Provides durable, observable dead code analysis reporting.
 
   Workflow Stages:

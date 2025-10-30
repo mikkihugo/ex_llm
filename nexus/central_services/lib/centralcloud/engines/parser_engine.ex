@@ -14,7 +14,7 @@ defmodule CentralCloud.Engines.ParserEngine do
   #   path: "../../../../rust/parser_engine"
 
   require Logger
-  alias Pgflow
+  alias QuantumFlow
 
   @doc """
   Parse a single file using the ParserEngine Rust engine.
@@ -69,10 +69,10 @@ defmodule CentralCloud.Engines.ParserEngine do
     end
   end
 
-  # Delegate to Singularity via pgflow (Rust NIFs compiled only in Singularity)
+  # Delegate to Singularity via QuantumFlow (Rust NIFs compiled only in Singularity)
   defp parser_engine_call(operation, request) do
-    # Route to Singularity via pgflow
-    case Pgflow.send_with_notify("engine.parser.#{operation}", request, CentralCloud.Repo, timeout: 30_000) do
+    # Route to Singularity via QuantumFlow
+    case QuantumFlow.send_with_notify("engine.parser.#{operation}", request, CentralCloud.Repo, timeout: 30_000) do
       {:ok, response} ->
         {:ok, response}
       

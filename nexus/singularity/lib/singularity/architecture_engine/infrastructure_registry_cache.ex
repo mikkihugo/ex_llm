@@ -189,17 +189,17 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
     }
 
     try do
-      # Send request via pgflow (pgmq + NOTIFY)
+      # Send request via QuantumFlow (pgmq + NOTIFY)
       case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("infrastructure_registry_requests", request) do
         {:ok, _} ->
           # Wait for response from CentralCloud
-          Logger.debug("Sent infrastructure registry request to CentralCloud via pgflow")
+          Logger.debug("Sent infrastructure registry request to CentralCloud via QuantumFlow")
           # 3 second timeout
           wait_for_response(3000)
 
         {:error, reason} ->
           Logger.debug(
-            "Failed to send infrastructure registry request via pgflow: #{inspect(reason)}"
+            "Failed to send infrastructure registry request via QuantumFlow: #{inspect(reason)}"
           )
 
           nil

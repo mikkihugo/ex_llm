@@ -7,7 +7,7 @@ Singularity is a multi-instance, multi-AI autonomous learning system with three 
 2. **Genesis** - Autonomous improvement hub in `nexus/genesis/` (rule evolution, experiment trials)
 3. **CentralCloud** - Pattern intelligence aggregator in `nexus/central_services/lib/centralcloud/`
 
-All three are **required** for full system functionality. Communication via pgmq, ex_pgflow, NATS.
+All three are **required** for full system functionality. Communication via pgmq, ex_quantum_flow, NATS.
 
 ---
 
@@ -32,7 +32,7 @@ All three are **required** for full system functionality. Communication via pgmq
 | `knowledge_cache.ex` | Cross-instance knowledge caching | Active |
 
 ### Key Consumers/Publishers
-- **pgflow Queues**: 
+- **QuantumFlow Queues**: 
   - `intelligence_code_patterns_learned`
   - `intelligence_architecture_patterns_learned`
   - `intelligence_data_schemas_learned`
@@ -69,7 +69,7 @@ All three are **required** for full system functionality. Communication via pgmq
 | `job_executor.ex` (9KB) | Executes evolution jobs in isolation |
 | `llm_config_manager.ex` (8KB) | LLM configuration for experiments |
 | `rule_engine.ex` (5KB) | Evaluates rules during trials |
-| `pgflow_workflow_consumer.ex` (18KB) | Consumes evolution workflows from pgflow |
+| `quantum_flow_workflow_consumer.ex` (18KB) | Consumes evolution workflows from QuantumFlow |
 | `shared_queue_consumer.ex` (9KB) | Processes shared queue messages |
 | `isolation_manager.ex` (4KB) | Sandbox isolation for trial runs |
 | `rollback_manager.ex` (7KB) | Handles rollback of failed evolutions |
@@ -300,7 +300,7 @@ Agent (state, metrics)
 ```
 SelfImprovingAgent (singularity)
   → generates rule proposals
-  → publishes to pgflow_workflow_consumer
+  → publishes to quantum_flow_workflow_consumer
   → Genesis.JobExecutor (isolated trial)
   → returns trial_results
   → Singularity applies or rejects
@@ -454,7 +454,7 @@ Concrete Types (FrameworkDetector, TechnologyDetector, etc.)
 └──────────────────┘ └──────────────────┘ └──────────────────┘
         ↑                      ↑                      ↑
         └──────────────────────┼──────────────────────┘
-                      pgmq/ex_pgflow/NATS
+                      pgmq/ex_quantum_flow/NATS
          (Durable inter-service communication)
 ```
 

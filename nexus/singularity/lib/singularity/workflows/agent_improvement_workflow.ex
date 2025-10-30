@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.AgentImprovementWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Agent Improvement Event Publishing
+  QuantumFlow Workflow Definition for Agent Improvement Event Publishing
 
-  Replaces pgmq-based agent improvement event publishing with PGFlow workflow orchestration.
+  Replaces pgmq-based agent improvement event publishing with QuantumFlow workflow orchestration.
   Provides durable, observable agent improvement event processing.
 
   Workflow Stages:
@@ -12,7 +12,7 @@ defmodule Singularity.Workflows.AgentImprovementWorkflow do
   4. Update Metrics - Update agent performance metrics
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   require Logger
 

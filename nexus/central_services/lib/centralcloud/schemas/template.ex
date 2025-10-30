@@ -9,7 +9,7 @@ defmodule CentralCloud.Schemas.Template do
   - Code: code_snippet
   
   All artifacts stored in CentralCloud PostgreSQL with pgvector embeddings,
-  distributed via pgflow, and mirrored to Singularity instances.
+  distributed via QuantumFlow, and mirrored to Singularity instances.
   """
 
   use Ecto.Schema

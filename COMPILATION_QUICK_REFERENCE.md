@@ -61,7 +61,7 @@ cargo build --workspace  # Should succeed
 ┌─ HIGH (4 hours) ──────────────────────────────────────────┐
 │ 1. Undefined functions (Agent, AstExtractor, etc) - 2.5h   │
 │ 2. Type mismatches (health checks) - 1.5h                  │
-│ 3. pgflow API changes - 30m                                │
+│ 3. QuantumFlow API changes - 30m                                │
 │ 4. BaseWorkflow issue - 45m                                │
 │ Impact: Breaks core workflows, ingestion, security         │
 └──────────────────────────────────────────────────────────┘

@@ -1,5 +1,5 @@
 {
-  "framework": "pgflow",
+  "framework": "QuantumFlow",
   "version": "1.0.0",
   "patterns": {
     "queues": [

@@ -27,7 +27,7 @@ defmodule Singularity.Infrastructure.Supervisor do
     Logger.info("Starting Singularity Infrastructure Supervisor")
 
     children = [
-      # Overseer keeps runtime visibility centralised (PGFlow edition)
+      # Overseer keeps runtime visibility centralised (QuantumFlow edition)
       Singularity.Infrastructure.Overseer,
 
       # Circuit breaker registry for unique circuit names

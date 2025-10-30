@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Embedding Training Pipeline
+  QuantumFlow Workflow Definition for Embedding Training Pipeline
 
-  Replaces Broadway-based embedding training with PGFlow workflow orchestration.
+  Replaces Broadway-based embedding training with QuantumFlow workflow orchestration.
   Provides better observability, error handling, and resource management.
 
   Workflow Stages:
@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.EmbeddingTrainingWorkflow do
   5. Model Deployment - Save and deploy trained models
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
 
   alias Singularity.Embedding.Trainer
   alias Singularity.CodeStore

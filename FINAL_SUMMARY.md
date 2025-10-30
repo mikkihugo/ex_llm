@@ -96,7 +96,7 @@ SelfImprovementAgent (final execution)
 8. **lib/singularity/execution/todo_swarm_coordinator.ex** - Workflows integration
 
 ### Backward Compatibility Shims (2 files)
-9. **lib/singularity/pgflow_adapter.ex** - Delegates to Workflows
+9. **lib/singularity/quantum_flow_adapter.ex** - Delegates to Workflows
 10. **lib/singularity/htdag/executor.ex** - Delegates to Workflows
 
 ### Documentation (7 files)

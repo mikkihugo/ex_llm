@@ -1,4 +1,4 @@
-# Nexus Workflow Architecture - ex_pgflow Integration
+# Nexus Workflow Architecture - ex_quantum_flow Integration
 
 **Date:** 2025-10-25
 **Status:** ✅ Implemented - Ready for Testing
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Nexus now uses **ex_pgflow** for LLM request orchestration, replacing manual pgmq polling with database-driven DAG workflows.
+Nexus now uses **ex_quantum_flow** for LLM request orchestration, replacing manual pgmq polling with database-driven DAG workflows.
 
 ## Architecture Comparison
 
@@ -35,7 +35,7 @@ Issues:
 - ❌ No observability
 ```
 
-### After (ex_pgflow Workflows)
+### After (ex_quantum_flow Workflows)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -45,7 +45,7 @@ Issues:
 │   ↓                                                          │
 │ Nexus.WorkflowWorker                                        │
 │   ↓ Start workflow                                          │
-│ ex_pgflow Executor                                          │
+│ ex_quantum_flow Executor                                          │
 │   ↓ Execute DAG                                             │
 │ Nexus.Workflows.LLMRequestWorkflow                          │
 │   ├─ validate → route_llm → publish_result → track_metrics │
@@ -141,7 +141,7 @@ end
 
 ## Database Tables
 
-ex_pgflow creates these tables for workflow state:
+ex_quantum_flow creates these tables for workflow state:
 
 | Table | Purpose |
 |-------|---------|
@@ -159,7 +159,7 @@ ex_pgflow creates these tables for workflow state:
 {:ok, pid} = Nexus.WorkflowWorker.start_link()
 
 # Or execute directly
-{:ok, result} = Pgflow.Executor.execute(
+{:ok, result} = QuantumFlow.Executor.execute(
   Nexus.Workflows.LLMRequestWorkflow,
   %{
     "request_id" => "uuid",
@@ -207,7 +207,7 @@ GROUP BY complexity;
 
 ## Benefits Over Manual Polling
 
-| Feature | Manual Polling | ex_pgflow Workflows |
+| Feature | Manual Polling | ex_quantum_flow Workflows |
 |---------|---------------|---------------------|
 | **Retry Logic** | Manual implementation | Automatic exponential backoff |
 | **State Management** | In-memory (lost on crash) | PostgreSQL (survives crashes) |
@@ -224,12 +224,12 @@ GROUP BY complexity;
 
 - [x] Create `Nexus.Workflows.LLMRequestWorkflow`
 - [x] Create `Nexus.WorkflowWorker`
-- [x] Add ex_pgflow dependency
+- [x] Add ex_quantum_flow dependency
 - [x] Write tests
 
 ### Phase 2: Test in Isolation (⏳ CURRENT)
 
-- [ ] Run ex_pgflow migrations
+- [ ] Run ex_quantum_flow migrations
 - [ ] Test workflow execution with mock LLM
 - [ ] Verify state persistence
 - [ ] Test failure scenarios
@@ -270,7 +270,7 @@ iex> LLMRequestWorkflow.validate(%{
 
 ## Next Steps
 
-1. **Run Migrations** - `mix ecto.migrate` to create ex_pgflow tables
+1. **Run Migrations** - `mix ecto.migrate` to create ex_quantum_flow tables
 2. **Test Workflow** - Execute with mock data
 3. **Connect to LLM** - Test with real providers
 4. **Remove Old Code** - Delete `QueueConsumer` after verification
@@ -278,7 +278,7 @@ iex> LLMRequestWorkflow.validate(%{
 
 ## Related Documentation
 
-- **ex_pgflow README:** `packages/ex_pgflow/README.md`
-- **Workflow Guide:** `packages/ex_pgflow/docs/DYNAMIC_WORKFLOWS_GUIDE.md`
-- **Architecture:** `packages/ex_pgflow/ARCHITECTURE.md`
+- **ex_quantum_flow README:** `packages/ex_quantum_flow/README.md`
+- **Workflow Guide:** `packages/ex_quantum_flow/docs/DYNAMIC_WORKFLOWS_GUIDE.md`
+- **Architecture:** `packages/ex_quantum_flow/ARCHITECTURE.md`
 - **Nexus README:** `nexus/README.md`

@@ -83,7 +83,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       purpose: "Task decomposition via LLM"
       critical: true
 
-    - module: Singularity.Messaging.Client (PGFlow-based)
+    - module: Singularity.Messaging.Client (QuantumFlow-based)
       function: publish/2, subscribe/1
       purpose: "Publish execution requests, subscribe to responses"
       critical: false

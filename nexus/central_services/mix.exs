@@ -27,9 +27,9 @@ defmodule CentralServices.MixProject do
 
       # Background Job Queue for aggregation, package sync, statistics
       {:oban, "~> 2.18"},
-      # Workflow orchestration via ex_pgflow macros
+      # Workflow orchestration via ex_quantum_flow macros
       # NOTE: override: true is necessary due to conflicting env specifications in dependencies
-      {:ex_quantum_flow, in_umbrella: true, env: Mix.env(), override: true},
+      {:quantum_flow, path: "../../packages/ex_quantum_flow", override: true},
       
       # Data Processing Pipeline for ML training
       {:broadway, "~> 1.0"},

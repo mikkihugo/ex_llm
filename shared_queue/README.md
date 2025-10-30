@@ -86,27 +86,27 @@ Agent processes result
 | **CentralCloud** | Analytics (read-only) | All queues | (none) |
 | **Genesis** | Code execution | job_requests | job_results |
 
-## PGFlow Integration
+## QuantumFlow Integration
 
-### Why PGFlow vs pgmq/pgmq
+### Why QuantumFlow vs pgmq/pgmq
 
-While pgmq provides excellent PostgreSQL-native queuing, PGFlow was chosen for the Broadway embedding pipeline because:
+While pgmq provides excellent PostgreSQL-native queuing, QuantumFlow was chosen for the Broadway embedding pipeline because:
 
-- **Workflow Orchestration**: PGFlow provides higher-level workflow management with job dependencies, retries, and state tracking
+- **Workflow Orchestration**: QuantumFlow provides higher-level workflow management with job dependencies, retries, and state tracking
 - **Complex Job Lifecycle**: Embedding pipelines require multi-step workflows (data prep → batch processing → result aggregation)
-- **Reliability Guarantees**: PGFlow's transactional semantics ensure embedding jobs complete or fail atomically
+- **Reliability Guarantees**: QuantumFlow's transactional semantics ensure embedding jobs complete or fail atomically
 - **Monitoring & Observability**: Built-in metrics and tracing for production embedding workloads
 - **Scalability**: Better suited for long-running, resource-intensive embedding jobs vs simple message passing
 
-pgmq remains the primary choice for simple message queuing (LLM requests, approvals), while PGFlow handles complex workflows like embedding generation.
+pgmq remains the primary choice for simple message queuing (LLM requests, approvals), while QuantumFlow handles complex workflows like embedding generation.
 
-### Operating PGFlow Workflows for Embeddings
+### Operating QuantumFlow Workflows for Embeddings
 
 #### Enqueueing Embedding Jobs
 
 ```elixir
 # Create embedding workflow job
-{:ok, job_id} = PGFlow.enqueue_job(%{
+{:ok, job_id} = QuantumFlow.enqueue_job(%{
   type: "embedding_pipeline",
   payload: %{
     artifacts: [
@@ -127,14 +127,14 @@ pgmq remains the primary choice for simple message queuing (LLM requests, approv
 
 ```elixir
 # Get job status
-{:ok, job} = PGFlow.get_job(job_id)
+{:ok, job} = QuantumFlow.get_job(job_id)
 # Returns: %{status: :pending|:running|:completed|:failed, progress: 0.0..1.0}
 
 # List active embedding jobs
-{:ok, jobs} = PGFlow.list_jobs(queue: "embedding_jobs", status: :running)
+{:ok, jobs} = QuantumFlow.list_jobs(queue: "embedding_jobs", status: :running)
 
 # Get job metrics
-{:ok, metrics} = PGFlow.get_queue_metrics("embedding_jobs")
+{:ok, metrics} = QuantumFlow.get_queue_metrics("embedding_jobs")
 # Returns: %{pending: 5, running: 2, completed: 100, failed: 1}
 ```
 
@@ -142,7 +142,7 @@ pgmq remains the primary choice for simple message queuing (LLM requests, approv
 
 ```elixir
 # Monitor workflow progress
-case PGFlow.get_job(job_id) do
+case QuantumFlow.get_job(job_id) do
   {:ok, %{status: :completed, result: result}} ->
     # Process completed embedding results
     process_embedding_results(result)
@@ -164,7 +164,7 @@ end
 artifacts_batches = Enum.chunk_every(all_artifacts, 100)
 
 jobs = Enum.map(artifacts_batches, fn batch ->
-  PGFlow.enqueue_job(%{
+  QuantumFlow.enqueue_job(%{
     type: "embedding_pipeline",
     payload: %{artifacts: batch, device: :cuda, workers: 8, batch_size: 12},
     queue: "embedding_jobs"
@@ -172,7 +172,7 @@ jobs = Enum.map(artifacts_batches, fn batch ->
 end)
 
 # Wait for all jobs to complete
-PGFlow.wait_for_jobs(jobs, timeout: :timer.minutes(30))
+QuantumFlow.wait_for_jobs(jobs, timeout: :timer.minutes(30))
 ```
 
 ## Configuration

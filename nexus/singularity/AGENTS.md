@@ -179,7 +179,7 @@ end
 
 ## Workflows Integration
 
-Agents are integrated via PGFlow workflows:
+Agents are integrated via QuantumFlow workflows:
 
 ```elixir
 # Workflow definition

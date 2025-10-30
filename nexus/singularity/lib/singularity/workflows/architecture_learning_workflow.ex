@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.ArchitectureLearningWorkflow do
   @moduledoc """
-  PGFlow Workflow Definition for Architecture Learning Pipeline
+  QuantumFlow Workflow Definition for Architecture Learning Pipeline
 
-  Replaces Broadway-based architecture learning with PGFlow workflow orchestration.
+  Replaces Broadway-based architecture learning with QuantumFlow workflow orchestration.
   Provides better observability, error handling, and resource management.
 
   Workflow Stages:

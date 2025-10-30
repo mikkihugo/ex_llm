@@ -9,6 +9,6 @@ config :centralcloud, Oban, testing: :inline
 
 # Test PgFlow Configuration
 # All messaging uses PgFlow with PGMQ + NOTIFY
-config :centralcloud, Pgflow,
+config :centralcloud, QuantumFlow,
   repo: CentralCloud.Repo,
   pgmq_extension: true

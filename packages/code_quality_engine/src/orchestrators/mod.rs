@@ -134,11 +134,11 @@ impl AnalysisOrchestrator {
     async fn send_learning_data(&self, _results: &AnalysisResults) -> Result<(), AnalysisError> {
         // TODO: Send aggregated learning data to CentralCloud via pgmq queues
         // Instead of HTTP calls, send messages to PostgreSQL queues that
-        // ex_pgflow workflows will consume and forward to CentralCloud
+        // ex_quantum_flow workflows will consume and forward to CentralCloud
         //
         // Flow:
         // 1. Rust NIF sends message to "centralcloud_learning" queue
-        // 2. Elixir ex_pgflow workflow consumes message
+        // 2. Elixir ex_quantum_flow workflow consumes message
         // 3. Workflow communicates with CentralCloud for consensus
         // 4. Results flow back through response queues if needed
 

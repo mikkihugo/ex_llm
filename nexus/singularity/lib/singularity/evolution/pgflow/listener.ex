@@ -1,8 +1,8 @@
-defmodule Singularity.Evolution.Pgflow.Listener do
+defmodule Singularity.Evolution.QuantumFlow.Listener do
   @moduledoc """
   PgFlow Listener - Starts queue listeners to receive messages from CentralCloud.
 
-  This GenServer starts listeners for each pgflow queue that Singularity receives
+  This GenServer starts listeners for each QuantumFlow queue that Singularity receives
   messages from (e.g., consensus results, workflow patterns, etc.).
 
   When the application starts, this supervisor starts listeners for:
@@ -17,8 +17,8 @@ defmodule Singularity.Evolution.Pgflow.Listener do
 
   ```json
   {
-    "module": "Singularity.Evolution.Pgflow.Listener",
-    "purpose": "Start pgflow message listeners for CentralCloud communication",
+    "module": "Singularity.Evolution.QuantumFlow.Listener",
+    "purpose": "Start QuantumFlow message listeners for CentralCloud communication",
     "role": "service",
     "layer": "integration",
     "introduced_in": "October 2025",
@@ -28,7 +28,7 @@ defmodule Singularity.Evolution.Pgflow.Listener do
 
   ### Anti-Patterns
 
-  - ❌ DO NOT start listeners without checking if pgflow is enabled
+  - ❌ DO NOT start listeners without checking if QuantumFlow is enabled
   - ❌ DO NOT fail silently if a listener fails to start
   - ✅ DO log listener startup and health
   - ✅ DO restart failed listeners
@@ -36,16 +36,16 @@ defmodule Singularity.Evolution.Pgflow.Listener do
 
   ### Search Keywords
 
-  pgflow listener, message listener, queue listener, supervisor startup
+  QuantumFlow listener, message listener, queue listener, supervisor startup
   """
 
   use GenServer
   require Logger
 
-  alias Singularity.Evolution.Pgflow.MessageRouter
+  alias Singularity.Evolution.QuantumFlow.MessageRouter
 
   @doc """
-  Start the pgflow listener supervisor.
+  Start the QuantumFlow listener supervisor.
 
   Starts listeners for all configured queues.
   """
@@ -58,7 +58,7 @@ defmodule Singularity.Evolution.Pgflow.Listener do
     Logger.info("Initializing PgFlow Listener supervisor")
 
     # Get configuration for enabled queues
-    config = Application.get_env(:singularity, :pgflow_queues, %{})
+    config = Application.get_env(:singularity, :quantum_flow_queues, %{})
     enabled_queues = Map.get(config, :enabled, [])
 
     # Start listeners for each enabled queue
@@ -86,13 +86,13 @@ defmodule Singularity.Evolution.Pgflow.Listener do
 
   defp queue_should_start?(queue_name) do
     # Check if this queue is enabled in config
-    config = Application.get_env(:singularity, :pgflow_queues, %{})
+    config = Application.get_env(:singularity, :quantum_flow_queues, %{})
     enabled = Map.get(config, :enabled, [])
     Enum.member?(enabled, queue_name)
   end
 
   defp start_listener(queue_name) do
-    Logger.info("Starting pgflow listener for queue: #{queue_name}")
+    Logger.info("Starting QuantumFlow listener for queue: #{queue_name}")
 
     Task.start_link(fn ->
       listen_loop(queue_name)

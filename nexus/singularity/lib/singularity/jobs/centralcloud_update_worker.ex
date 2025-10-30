@@ -15,7 +15,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
   - When new patterns or insights are discovered locally
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :maintenance,
     max_attempts: 5,
     priority: 5
@@ -23,7 +23,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
   require Logger
 
   @doc """
-  Enqueue knowledge update to send to CentralCloud via pgflow.
+  Enqueue knowledge update to send to CentralCloud via QuantumFlow.
 
   Args:
     - patterns: List of discovered patterns
@@ -42,7 +42,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
     |> new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @impl Oban.Worker
@@ -69,7 +69,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
 
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_updates", message) do
       {:ok, :sent} ->
-        Logger.info("Knowledge update sent to CentralCloud via pgflow",
+        Logger.info("Knowledge update sent to CentralCloud via QuantumFlow",
           instance_id: instance_id,
           patterns: length(patterns),
           insights: length(insights)
@@ -78,7 +78,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
         :ok
 
       {:ok, message_id} when is_integer(message_id) ->
-        Logger.info("Knowledge update sent to CentralCloud via pgflow",
+        Logger.info("Knowledge update sent to CentralCloud via QuantumFlow",
           instance_id: instance_id,
           message_id: message_id,
           patterns: length(patterns),

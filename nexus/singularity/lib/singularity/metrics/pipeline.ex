@@ -34,38 +34,38 @@ defmodule Singularity.Metrics.Pipeline do
   end
 
   defp execute(payload) do
-    Logger.info("Submitting code metrics workflow via PGFlow", payload: redact(payload))
-    PGFlow.Workflow.execute(CodeMetricsWorkflow, payload)
+    Logger.info("Submitting code metrics workflow via QuantumFlow", payload: redact(payload))
+    QuantumFlow.WorkflowAPI.execute(CodeMetricsWorkflow, payload)
   end
 
   # -- GenServer callbacks --------------------------------------------------------
 
   @impl true
   def init(opts) do
-    Logger.info("Starting Metrics Pipeline with PGFlow")
+    Logger.info("Starting Metrics Pipeline with QuantumFlow")
 
-    start_pgflow_supervisor(opts)
+    start_quantum_flow_supervisor(opts)
 
     {:ok, Map.merge(@default_opts, Map.new(opts))}
   end
 
   # -- Internal helpers -----------------------------------------------------------
 
-  defp start_pgflow_supervisor(opts) do
+  defp start_quantum_flow_supervisor(opts) do
     workflow_opts =
       [
         name: Keyword.get(opts, :workflow_name, CodeMetricsWorkflowSupervisor)
       ]
 
-    case PGFlow.WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
+    case QuantumFlow.WorkflowSupervisor.start_workflow(CodeMetricsWorkflow, workflow_opts) do
       {:ok, _pid} ->
-        Logger.info("Metrics PGFlow workflow supervisor started")
+        Logger.info("Metrics QuantumFlow workflow supervisor started")
 
       {:error, {:already_started, _pid}} ->
         :ok
 
       {:error, reason} ->
-        Logger.error("Failed to start metrics PGFlow supervisor: #{inspect(reason)}")
+        Logger.error("Failed to start metrics QuantumFlow supervisor: #{inspect(reason)}")
         {:error, reason}
     end
   end

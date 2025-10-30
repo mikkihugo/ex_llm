@@ -95,7 +95,7 @@ defmodule Singularity.ArchitectureEngine do
   ## Search Keywords (for AI/vector search)
 
   architecture engine, Elixir orchestrator, framework detection, technology detection, pattern matching,
-  database-driven detection, self-learning patterns, PGFlow integration,
+  database-driven detection, self-learning patterns, QuantumFlow integration,
   PostgreSQL patterns, confidence scoring, architectural suggestions, codebase analysis,
   technology identification, framework identification, pattern storage, success rate tracking,
   pure computation, I/O orchestration, Ecto queries

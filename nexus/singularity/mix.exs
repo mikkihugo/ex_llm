@@ -128,9 +128,9 @@ defmodule Singularity.MixProject do
       {:oban, "~> 2.18"},
 
       # Transactional message queue using PostgreSQL (replaces external brokers like NATS)
-      # NOTE: Must match broadway_pgflow's dependency - use env: Mix.env() to align
-      # NOTE: override: true is necessary due to broadway_pgflow's different env specification
-      {:ex_quantum_flow, in_umbrella: true, env: Mix.env(), override: true},
+      # NOTE: Must match broadway_quantum_flow's dependency - use env: Mix.env() to align
+      # NOTE: override: true is necessary due to broadway_quantum_flow's different env specification
+      {:quantum_flow, path: "../../packages/ex_quantum_flow", override: true},
 
       # LLM Orchestration (Nexus) - Removed: Singularity uses PGMQ, Nexus consumes separately
       # {:nexus, path: "../nexus"},
@@ -146,7 +146,7 @@ defmodule Singularity.MixProject do
       # Event Processing
       # Data pipelines
       {:broadway, "~> 1.0"},
-      {:broadway_pgflow, path: "../../packages/broadway_pgflow"},
+      {:broadway_quantum_flow, path: "../../packages/broadway_quantum_flow"},
       {:off_broadway_pgmq, "~> 0.2"},
       # Producer-consumer
       {:gen_stage, "~> 1.2"},

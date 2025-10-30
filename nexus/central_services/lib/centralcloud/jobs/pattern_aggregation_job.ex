@@ -298,7 +298,7 @@ defmodule CentralCloud.Jobs.PatternAggregationJob do
       }
     }
 
-    Pgflow.send_with_notify("intelligence.insights.aggregated", payload, CentralCloud.Repo)
+    QuantumFlow.send_with_notify("intelligence.insights.aggregated", payload, CentralCloud.Repo)
     Logger.debug("Published aggregated insights to intelligence.insights.aggregated via PgFlow")
   end
 

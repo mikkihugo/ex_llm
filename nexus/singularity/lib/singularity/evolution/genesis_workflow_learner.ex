@@ -456,7 +456,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   3. Detect patterns that work across instances
   4. Share consensus back for adoption
 
-  Uses pgflow for reliable delivery to CentralCloud services.
+  Uses QuantumFlow for reliable delivery to CentralCloud services.
 
   ## Parameters
   - `criteria` - Reporting criteria:
@@ -488,7 +488,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
         |> filter_by_workflow_type(workflow_types)
         |> Enum.take(limit)
 
-      # Prepare payload for CentralCloud (via pgflow)
+      # Prepare payload for CentralCloud (via QuantumFlow)
       payload = %{
         "instance_id" => get_instance_id(),
         "reported_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
@@ -497,7 +497,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
         "pattern_count" => length(reportable_patterns)
       }
 
-      # Send to CentralCloud via pgflow
+      # Send to CentralCloud via QuantumFlow
       case send_to_centralcloud(payload) do
         {:ok, _msg_id} ->
           Logger.info("Reported workflow patterns to CentralCloud", %{
@@ -526,15 +526,15 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   @doc """
   Request consensus workflow patterns from CentralCloud.
 
-  Sends a request to CentralCloud (via pgflow) asking for aggregated workflow
+  Sends a request to CentralCloud (via QuantumFlow) asking for aggregated workflow
   patterns that have achieved consensus across multiple instances.
 
   CentralCloud service analyzes patterns reported by all instances and
   returns high-confidence consensus patterns. This instance then registers
   them locally for adoption.
 
-  Note: This sends a request message via pgflow. CentralCloud service
-  processes it asynchronously and sends results back on pgflow topic.
+  Note: This sends a request message via QuantumFlow. CentralCloud service
+  processes it asynchronously and sends results back on QuantumFlow topic.
 
   ## Parameters
   - `criteria` - Request criteria:
@@ -548,7 +548,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
       )
 
       # CentralCloud processes asynchronously and sends results back
-      # via pgflow topic "singularity_workflow_patterns_consensus"
+      # via QuantumFlow topic "singularity_workflow_patterns_consensus"
   """
   @spec request_consensus_from_centralcloud(keyword()) :: :ok | {:error, term()}
   def request_consensus_from_centralcloud(criteria \\ []) do
@@ -586,7 +586,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   Register consensus patterns received from CentralCloud.
 
   Called when CentralCloud sends back consensus workflow patterns
-  (via pgflow message listener). Registers high-confidence patterns
+  (via QuantumFlow message listener). Registers high-confidence patterns
   from other instances for local use.
 
   ## Parameters
@@ -632,7 +632,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   # Private Helpers
 
   defp send_to_centralcloud(payload) do
-    # Uses pgflow to send to CentralCloud service (port 4001)
+    # Uses QuantumFlow to send to CentralCloud service (port 4001)
     # Topic: "centralcloud/workflow_patterns" for reliable delivery
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_workflow_patterns", payload) do
       {:ok, :sent} -> {:ok, :sent}
@@ -641,8 +641,8 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
     end
   rescue
     e ->
-      Logger.error("pgflow send to CentralCloud failed: #{inspect(e)}")
-      {:error, {:pgflow_failed, inspect(e)}}
+      Logger.error("QuantumFlow send to CentralCloud failed: #{inspect(e)}")
+      {:error, {:quantum_flow_failed, inspect(e)}}
   end
 
   defp pattern_to_payload(pattern) do

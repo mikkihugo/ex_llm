@@ -337,14 +337,14 @@ defmodule Singularity.SelfImprovingAgent do
   end
 
   defp subscribe_to_genesis_results(agent_id) do
-    # Subscribe to PGFlow workflow completion events for Genesis experiment results
+    # Subscribe to QuantumFlow workflow completion events for Genesis experiment results
     workflow_name = "genesis_experiment_#{agent_id}"
 
     case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_genesis_workflow_completion(agent_id, workflow_result)
          end) do
       {:ok, subscription_id} ->
-        Logger.debug("Subscribed to Genesis results via PGFlow workflow",
+        Logger.debug("Subscribed to Genesis results via QuantumFlow workflow",
           agent_id: agent_id,
           workflow: workflow_name,
           subscription_id: subscription_id
@@ -353,17 +353,17 @@ defmodule Singularity.SelfImprovingAgent do
         {:ok, subscription_id}
 
       {:error, reason} ->
-        Logger.warning("Failed to subscribe to Genesis results via PGFlow",
+        Logger.warning("Failed to subscribe to Genesis results via QuantumFlow",
           agent_id: agent_id,
           reason: reason
         )
 
         # Fallback: log migration status
-        Logger.debug("Genesis results subscription migrated to Pgflow workflow notifications",
+        Logger.debug("Genesis results subscription migrated to QuantumFlow workflow notifications",
           agent_id: agent_id
         )
 
-        {:ok, "pgflow_migrated"}
+        {:ok, "quantum_flow_migrated"}
     end
   end
 
@@ -694,7 +694,7 @@ defmodule Singularity.SelfImprovingAgent do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    # Publish request to Genesis via Pgflow workflow
+    # Publish request to Genesis via QuantumFlow workflow
     case Singularity.Infrastructure.PgFlow.Workflow.create_workflow(
            Singularity.Workflows.GenesisExperimentRequestWorkflow,
            %{

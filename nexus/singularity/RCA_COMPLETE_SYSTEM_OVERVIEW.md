@@ -1,6 +1,6 @@
 # RCA Complete System Overview - Executive Summary
 
-**Singularity now has a complete, production-ready Root Cause Analysis (RCA) system with full pgflow workflow integration.**
+**Singularity now has a complete, production-ready Root Cause Analysis (RCA) system with full QuantumFlow workflow integration.**
 
 This document provides a bird's-eye view of the entire RCA system and how everything works together.
 
@@ -30,7 +30,7 @@ A comprehensive system that tracks **every code generation attempt** from prompt
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ SESSION MANAGEMENT LAYER                                │  │
 │  │ ├─ SessionManager (session lifecycle)                   │  │
-│  │ ├─ PgflowIntegration (workflow tracking)                │  │
+│  │ ├─ QuantumFlowIntegration (workflow tracking)                │  │
 │  │ └─ RcaWorkflow (base class for workflows)               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                          ↓                                       │
@@ -39,7 +39,7 @@ A comprehensive system that tracks **every code generation attempt** from prompt
 │  │ ├─ SessionQueries (session analysis)                    │  │
 │  │ ├─ FailureAnalysis (failure patterns)                   │  │
 │  │ ├─ LearningQueries (self-improvement insights)          │  │
-│  │ └─ PgflowIntegration (workflow learnings)               │  │
+│  │ └─ QuantumFlowIntegration (workflow learnings)               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                          ↓                                       │
 │  ┌──────────────────────────────────────────────────────────┐  │
@@ -132,7 +132,7 @@ Execute with Confidence
 ```
 lib/singularity/rca/
 ├── session_manager.ex              (session lifecycle management)
-├── pgflow_integration.ex            (workflow tracking)
+├── quantum_flow_integration.ex            (workflow tracking)
 └── (query modules from Phase 5)
     ├── session_queries.ex           (session analysis)
     ├── failure_analysis.ex          (failure patterns)
@@ -202,13 +202,13 @@ def execute(input), do: execute_with_rca(input)
 
 ```elixir
 # Which workflows work best?
-best = PgflowIntegration.compare_workflows(limit: 10)
+best = QuantumFlowIntegration.compare_workflows(limit: 10)
 
 # Which steps are most effective?
-steps = PgflowIntegration.analyze_workflow_steps()
+steps = QuantumFlowIntegration.analyze_workflow_steps()
 
 # What's the optimal workflow pattern?
-patterns = PgflowIntegration.analyze_workflow_patterns()
+patterns = QuantumFlowIntegration.analyze_workflow_patterns()
 
 # Get actionable improvement recommendations
 recs = LearningQueries.improvement_recommendations()
@@ -220,13 +220,13 @@ recs = LearningQueries.improvement_recommendations()
 defmodule MyAgent do
   def execute_task(task) do
     # 1. Query what works
-    best_workflows = PgflowIntegration.compare_workflows(limit: 5)
+    best_workflows = QuantumFlowIntegration.compare_workflows(limit: 5)
 
     # 2. Select best
     selected = hd(best_workflows)
 
     # 3. Execute with tracking (automatic via RcaWorkflow)
-    Pgflow.Executor.execute(selected.workflow, task)
+    QuantumFlow.Executor.execute(selected.workflow, task)
 
     # 4. System learns automatically
   end
@@ -292,9 +292,9 @@ use Singularity.Workflows.RcaWorkflow  # Enable tracking
 Agents query RCA learnings to pick best workflows:
 
 ```elixir
-best = PgflowIntegration.compare_workflows(limit: 5)
+best = QuantumFlowIntegration.compare_workflows(limit: 5)
 selected = hd(best)  # Use best workflow
-Pgflow.Executor.execute(selected.workflow, task)
+QuantumFlow.Executor.execute(selected.workflow, task)
 ```
 
 **What it provides:**
@@ -333,7 +333,7 @@ update_learnings()                     # Learn
 ### Find Most Effective Workflows
 
 ```elixir
-Singularity.RCA.PgflowIntegration.compare_workflows(limit: 10)
+Singularity.RCA.QuantumFlowIntegration.compare_workflows(limit: 10)
 # => [
 #   %{workflow: "CodeQualityImprovement", success_rate: 96.7, ...},
 #   %{workflow: "ArchitectureAnalysis", success_rate: 92.5, ...},
@@ -492,7 +492,7 @@ Singularity.RCA.LearningQueries.improvement_recommendations()
 
 ## 🎯 Summary
 
-The **RCA system is complete, production-ready, and fully integrated** with Singularity's pgflow workflows.
+The **RCA system is complete, production-ready, and fully integrated** with Singularity's QuantumFlow workflows.
 
 ✅ **Tracks** every code generation attempt
 ✅ **Learns** from successes and failures

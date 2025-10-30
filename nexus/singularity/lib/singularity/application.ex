@@ -375,21 +375,21 @@ defmodule Singularity.Application do
       # HTDAG Auto Code Ingestion - Hierarchical task-based automatic code ingestion
       Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor,
 
-      # PGFlow Workflow Supervisors - New workflow orchestration
+      # QuantumFlow Workflow Supervisors - New workflow orchestration
       # Handles: Architecture learning workflows with better observability
-      {PGFlow.WorkflowSupervisor,
+      {QuantumFlow.WorkflowSupervisor,
        workflow: Singularity.Workflows.ArchitectureLearningWorkflow,
        name: ArchitectureLearningWorkflowSupervisor,
        enabled:
-         Application.get_env(:singularity, :architecture_learning_pipeline, %{})[:pgflow_enabled] ||
+         Application.get_env(:singularity, :architecture_learning_pipeline, %{})[:quantum_flow_enabled] ||
            false},
 
-      # Embedding Training Workflow - PGFlow orchestration for embedding model training
-      {PGFlow.WorkflowSupervisor,
+      # Embedding Training Workflow - QuantumFlow orchestration for embedding model training
+      {QuantumFlow.WorkflowSupervisor,
        workflow: Singularity.Workflows.EmbeddingTrainingWorkflow,
        name: EmbeddingTrainingWorkflowSupervisor,
        enabled:
-         Application.get_env(:singularity, :embedding_training_pipeline, %{})[:pgflow_enabled] ||
+         Application.get_env(:singularity, :embedding_training_pipeline, %{})[:quantum_flow_enabled] ||
            false}
     ]
   end

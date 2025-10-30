@@ -48,7 +48,7 @@ config :singularity, :broadway_embedding_pipeline,
   enabled: System.get_env("EMBEDDING_PIPELINE_ENABLED", "true") == "true",
 
   # PGFlow integration settings
-  pgflow: %{
+  quantum_flow: %{
     enabled: System.get_env("EMBEDDING_PGFLOW_ENABLED", "true") == "true",
     queue_name: System.get_env("EMBEDDING_QUEUE_NAME", "embedding_jobs"),
     timeout_ms: String.to_integer(System.get_env("EMBEDDING_PGFLOW_TIMEOUT_MS", "300000")),

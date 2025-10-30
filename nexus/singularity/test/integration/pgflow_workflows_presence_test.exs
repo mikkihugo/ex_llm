@@ -1,4 +1,4 @@
-defmodule Singularity.PgflowWorkflowsPresenceTest do
+defmodule Singularity.QuantumFlowWorkflowsPresenceTest do
   use ExUnit.Case, async: false
 
   alias Singularity.Workflows.{
@@ -22,7 +22,7 @@ defmodule Singularity.PgflowWorkflowsPresenceTest do
   end
 
   describe "EmbeddingTrainingWorkflow module" do
-    test "module exports steps (PGFlow integration)" do
+    test "module exports steps (QuantumFlow integration)" do
       assert function_exported?(EmbeddingTrainingWorkflow, :perform, 2)
       assert function_exported?(EmbeddingTrainingWorkflow, :handle_event, 3)
     end

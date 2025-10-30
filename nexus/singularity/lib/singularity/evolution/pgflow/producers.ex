@@ -1,8 +1,8 @@
-defmodule Singularity.Evolution.Pgflow.Producers do
+defmodule Singularity.Evolution.QuantumFlow.Producers do
   @moduledoc """
   PgFlow Producers - Send messages to CentralCloud queues.
 
-  Handles asynchronous, durable messaging to CentralCloud services via ex_pgflow.
+  Handles asynchronous, durable messaging to CentralCloud services via ex_quantum_flow.
   All messages are persisted in PostgreSQL and automatically retried on failure.
 
   ## AI Navigation Metadata
@@ -10,7 +10,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
   ### Module Identity
   ```json
   {
-    "module": "Singularity.Evolution.Pgflow.Producers",
+    "module": "Singularity.Evolution.QuantumFlow.Producers",
     "purpose": "Publish messages to CentralCloud via durable queues",
     "role": "service",
     "layer": "integration",
@@ -25,7 +25,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
   - ✅ DO handle {:error, reason} gracefully
 
   ### Search Keywords
-  pgflow producers, message publishing, asynchronous messaging, durable queues,
+  QuantumFlow producers, message publishing, asynchronous messaging, durable queues,
   centralcloud integration, proposal broadcasting, metrics reporting
 
   ## Usage
@@ -72,7 +72,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
         )
 
         :telemetry.execute(
-          [:evolution, :pgflow, :proposal_published],
+          [:evolution, :quantum_flow, :proposal_published],
           %{},
           %{proposal_id: proposal.id}
         )
@@ -83,7 +83,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
         Logger.error("Failed to publish proposal #{proposal.id}: #{inspect(reason)}")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :publish_failed],
+          [:evolution, :quantum_flow, :publish_failed],
           %{},
           %{proposal_id: proposal.id, reason: inspect(reason)}
         )
@@ -108,7 +108,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
         Logger.debug("Published metrics for proposal #{proposal.id} (msg_id: #{message_id})")
 
         :telemetry.execute(
-          [:evolution, :pgflow, :metrics_published],
+          [:evolution, :quantum_flow, :metrics_published],
           %{},
           %{proposal_id: proposal.id}
         )
@@ -140,7 +140,7 @@ defmodule Singularity.Evolution.Pgflow.Producers do
         )
 
         :telemetry.execute(
-          [:evolution, :pgflow, :pattern_published],
+          [:evolution, :quantum_flow, :pattern_published],
           %{},
           %{pattern_type: pattern_type, agent_type: agent_type}
         )
@@ -198,17 +198,13 @@ defmodule Singularity.Evolution.Pgflow.Producers do
 
   defp publish_message(queue_name, message) do
     try do
-      # Use ex_pgflow to publish message
-      # Queue will be created if it doesn't exist
-      {:ok, message_id} = ExPgflow.publish(
-        :singularity,
-        queue_name,
-        message,
-        [
+      # Publish via QuantumFlow notifications (PostgreSQL NOTIFY + persistence)
+      {:ok, message_id} =
+        QuantumFlow.Notifications.send_with_notify(queue_name, message, Singularity.Repo,
+          expect_reply: false,
           max_retries: 3,
           retry_delay_ms: 1000
-        ]
-      )
+        )
 
       {:ok, message_id}
     rescue

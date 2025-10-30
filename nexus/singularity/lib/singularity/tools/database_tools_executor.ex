@@ -98,7 +98,7 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
   uses:
     - Singularity.Repo: Database queries
     - Singularity.CodeSearch: Semantic search
-    - Singularity.Messaging.Client: PGFlow-based communication
+    - Singularity.Messaging.Client: QuantumFlow-based communication
     - Singularity.Tools.SecurityPolicy: Access control
 
   used_by:
@@ -156,8 +156,8 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     ]
 
     Enum.each(subjects, fn subject ->
-      # Subscribe to PGFlow workflow completion events for tool requests
-      subscribe_to_pgflow_tool_requests(subject)
+      # Subscribe to QuantumFlow workflow completion events for tool requests
+      subscribe_to_quantum_flow_tool_requests(subject)
     end)
 
     {:ok, %{}}
@@ -739,16 +739,16 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
     end)
   end
 
-  # Subscribe to PGFlow workflow completion events for tool requests
-  defp subscribe_to_pgflow_tool_requests(subject) do
-    # Create PGFlow workflow subscription for tool execution requests
+  # Subscribe to QuantumFlow workflow completion events for tool requests
+  defp subscribe_to_quantum_flow_tool_requests(subject) do
+    # Create QuantumFlow workflow subscription for tool execution requests
     workflow_name = "database_tool_execution_#{String.replace(subject, ".", "_")}"
 
     case Singularity.Infrastructure.PgFlow.Workflow.subscribe(workflow_name, fn workflow_result ->
            handle_tool_workflow_completion(workflow_result)
          end) do
       {:ok, subscription_id} ->
-        Logger.info("[DatabaseToolsExecutor] Subscribed to PGFlow workflow",
+        Logger.info("[DatabaseToolsExecutor] Subscribed to QuantumFlow workflow",
           subject: subject,
           workflow: workflow_name,
           subscription_id: subscription_id
@@ -757,14 +757,14 @@ defmodule Singularity.Tools.DatabaseToolsExecutor do
         :ok
 
       {:error, reason} ->
-        Logger.warning("[DatabaseToolsExecutor] Failed to subscribe to PGFlow workflow",
+        Logger.warning("[DatabaseToolsExecutor] Failed to subscribe to QuantumFlow workflow",
           subject: subject,
           reason: reason
         )
 
         # Fallback: log migration status
         Logger.info(
-          "[DatabaseToolsExecutor] Migrating subscription from pgmq to Pgflow: #{subject}"
+          "[DatabaseToolsExecutor] Migrating subscription from pgmq to QuantumFlow: #{subject}"
         )
 
         :ok

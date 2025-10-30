@@ -2,7 +2,7 @@ defmodule Singularity.Knowledge.Requests do
   @moduledoc """
   Orchestrates the lifecycle of generic knowledge requests.
 
-  - Enqueue new tickets when Singularity needs CentralCloud/PGFlow assistance.
+  - Enqueue new tickets when Singularity needs CentralCloud/QuantumFlow assistance.
   - Track status updates and publish NOTIFY events for real-time reactions.
   - Provide a polling API so supervisors can reconcile missed notifications.
   """

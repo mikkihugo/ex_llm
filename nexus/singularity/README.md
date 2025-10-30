@@ -1,12 +1,12 @@
 # Singularity Runtime
 
-Singularity is an Elixir 1.19+ runtime for building self-improving AI agents and autonomous code generation pipelines. It includes a complete agent system, PGFlow workflow orchestration, multi-instance learning (CentralCloud), and comprehensive debugging tools.
+Singularity is an Elixir 1.19+ runtime for building self-improving AI agents and autonomous code generation pipelines. It includes a complete agent system, QuantumFlow workflow orchestration, multi-instance learning (CentralCloud), and comprehensive debugging tools.
 
 ## Stack Overview
 
 - **Elixir 1.19 / Erlang OTP 28** – Production-ready BEAM runtime
 - **PostgreSQL 17** – Database with pgvector, timescaledb, postgis extensions
-- **PGFlow** – Workflow orchestration using PostgreSQL as message queue
+- **QuantumFlow** – Workflow orchestration using PostgreSQL as message queue
 - **Rust NIF Engines** – High-performance parsing, analysis, and quality tools
 - **Pure Elixir ML** – Embeddings via Nx (Qodo + Jina v3 multi-vector, 2560-dim)
 - **GPU-Accelerated Search** – RTX 4080 + pgvector for semantic code search
@@ -136,9 +136,9 @@ nix develop .#fly      # minimal Fly.io deployment shell
 ```
 lib/                    # Elixir application, supervision tree
 lib/singularity/agents/ # Autonomous agent system
-lib/singularity/workflows/ # PGFlow workflow definitions
+lib/singularity/workflows/ # QuantumFlow workflow definitions
 lib/singularity/debug.ex # BEAM debugging toolkit
-packages/               # Publishable packages (Rust NIF engines, ex_pgflow)
+packages/               # Publishable packages (Rust NIF engines, ex_quantum_flow)
 config/                 # Application configuration
 priv/repo/migrations/   # Database migrations
 docs/                   # Documentation (debugging guides, etc.)

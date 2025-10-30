@@ -16,13 +16,13 @@
 - **Autonomous Agents** - Self-improving agents with HTDAG task decomposition
 - **Multi-AI Orchestration** - Claude, Gemini, OpenAI, Copilot
 - **Code Quality** - Rust-powered parsing, linting, analysis for 30+ languages
-- **pgflow-based Messaging** - Transactional, ACID-compliant, exactly-once message bus using PostgreSQL (ex_pgflow/pgmq)
+- **quantum_flow-based Messaging** - Transactional, ACID-compliant, exactly-once message bus using PostgreSQL (ex_quantum_flow/pgmq)
 - **Nix Everywhere** - Single reproducible environment (dev/test/prod)
 - **Internal Only** - No scale/security constraints, maximum features & learning
 
-### Why ex_pgflow/pgmq is More Than a NATS Replacement
+### Why ex_quantum_flow/pgmq is More Than a NATS Replacement
 
-ex_pgflow (and pgmq) is not just a drop-in replacement for NATS:
+ex_quantum_flow (and pgmq) is not just a drop-in replacement for NATS:
 
 - **Transactional Messaging:** Enqueue messages and update business data atomically in a single DB transaction.
 - **ACID Guarantees:** Messages and state are always consistent—no risk of lost or duplicated events.
@@ -31,7 +31,7 @@ ex_pgflow (and pgmq) is not just a drop-in replacement for NATS:
 - **Native Elixir Integration:** Designed for BEAM/Elixir, fits OTP supervision and error handling.
 - **Advanced Patterns:** Enables sagas, outbox, and event sourcing natively.
 - **Auditable & Secure:** All messaging is fully auditable and protected by your DB’s security model.
-- **Notification Integration:** ex_pgflow workers can trigger notifications (email, webhooks, etc.) only after successful commit, ensuring reliable external signaling.
+- **Notification Integration:** ex_quantum_flow workers can trigger notifications (email, webhooks, etc.) only after successful commit, ensuring reliable external signaling.
 
 This approach reduces moving parts, simplifies deployment, and increases reliability compared to external brokers like NATS.
 

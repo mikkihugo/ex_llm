@@ -8,7 +8,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   - pgmq (distribute to SPARC fact system)
   - JSON Export (for Rust detector to read)
 
-  Fires real-time notifications via Pgflow on completion.
+  Fires real-time notifications via QuantumFlow on completion.
 
   ## Scheduling
 
@@ -28,7 +28,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   ```
   """
 
-  use Oban.Worker, queue: :default, max_attempts: 2
+  use Singularity.JobQueue.Worker, queue: :default, max_attempts: 2
 
   require Logger
   alias Singularity.ArchitectureEngine.FrameworkPatternSync
@@ -65,7 +65,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   def trigger_now do
     __MODULE__
     |> Oban.Job.new(%{})
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   defp notify_sync_complete(sync_type) do

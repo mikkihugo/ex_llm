@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.RuleImport do
   @moduledoc """
-  Pgflow workflow for importing Genesis rules via pgmq.
+  QuantumFlow workflow for importing Genesis rules via pgmq.
 
-  Ensures rule import runs through ex_pgflow so we get durable execution,
+  Ensures rule import runs through ex_quantum_flow so we get durable execution,
   retries, and consistent telemetry.
   """
 

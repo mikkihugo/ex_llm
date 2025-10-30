@@ -1,6 +1,6 @@
 defmodule CentralCloud.Infrastructure.IntelligenceEndpoint do
   @moduledoc """
-  Legacy NATS/PGFlow endpoint for infrastructure registry queries.
+  Legacy NATS/QuantumFlow endpoint for infrastructure registry queries.
 
   The asynchronous request handling is now done via pgmq consumers
   (`CentralCloud.Consumers.InfrastructureRegistryConsumer`).  This module

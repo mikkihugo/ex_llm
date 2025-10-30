@@ -1,4 +1,4 @@
-defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationTest do
+defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelineQuantumFlowIntegrationTest do
   use ExUnit.Case, async: false
   import Mox
 
@@ -7,12 +7,12 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
 
   setup :verify_on_exit!
 
-  describe "PGFlow mode integration" do
+  describe "QuantumFlow mode integration" do
     setup do
-      # Set up PGFlow mode in application config
+      # Set up QuantumFlow mode in application config
       original_config = Application.get_env(:centralcloud, :complexity_training_pipeline, %{})
       Application.put_env(:centralcloud, :complexity_training_pipeline,
-        Map.put(original_config, :pgflow_enabled, true))
+        Map.put(original_config, :quantum_flow_enabled, true))
 
       on_exit(fn ->
         Application.put_env(:centralcloud, :complexity_training_pipeline, original_config)
@@ -21,9 +21,9 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
       :ok
     end
 
-    test "starts PGFlow workflow supervisor when enabled" do
-      # Mock PGFlow.WorkflowSupervisor
-      expect(PGFlow.WorkflowSupervisor.Mock, :start_workflow, fn
+    test "starts QuantumFlow workflow supervisor when enabled" do
+      # Mock QuantumFlow.WorkflowSupervisor
+      expect(QuantumFlow.WorkflowSupervisor.Mock, :start_workflow, fn
         ^ComplexityTrainingWorkflow, [name: ComplexityTrainingWorkflowSupervisor] ->
           {:ok, self()}
       end)
@@ -46,13 +46,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
       # Execute workflow
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion (in real test, would poll for status)
       Process.sleep(100)
 
       # Verify workflow completed all steps
-      assert {:ok, status} = PGFlow.Workflow.status(execution_id)
+      assert {:ok, status} = QuantumFlow.WorkflowAPI.status(execution_id)
       assert status.state == :completed
 
       # Verify all steps executed
@@ -79,13 +79,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
 
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
 
       # Verify workflow failed at training step
-      assert {:ok, status} = PGFlow.Workflow.status(execution_id)
+      assert {:ok, status} = QuantumFlow.WorkflowAPI.status(execution_id)
       assert status.state == :failed
 
       # Check that training step failed
@@ -109,15 +109,15 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
       # Start multiple workflows
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id1} = PGFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
-      assert {:ok, execution_id2} = PGFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id1} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id2} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(200)
 
       # Both should complete successfully
-      assert {:ok, status1} = PGFlow.Workflow.status(execution_id1)
-      assert {:ok, status2} = PGFlow.Workflow.status(execution_id2)
+      assert {:ok, status1} = QuantumFlow.WorkflowAPI.status(execution_id1)
+      assert {:ok, status2} = QuantumFlow.WorkflowAPI.status(execution_id2)
 
       assert status1.state == :completed
       assert status2.state == :completed
@@ -137,13 +137,13 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
 
       workflow_input = %{days_back: 30}
 
-      assert {:ok, execution_id} = PGFlow.Workflow.execute(ComplexityTrainingWorkflow, workflow_input)
+      assert {:ok, execution_id} = QuantumFlow.WorkflowAPI.execute(ComplexityTrainingWorkflow, workflow_input)
 
       # Wait for completion
       Process.sleep(100)
 
       # Check metrics
-      assert {:ok, metrics} = PGFlow.Workflow.metrics(execution_id)
+      assert {:ok, metrics} = QuantumFlow.WorkflowAPI.metrics(execution_id)
 
       assert Map.has_key?(metrics, :execution_time)
       assert Map.has_key?(metrics, :success_rate)
@@ -160,7 +160,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
       # Ensure Broadway mode is enabled
       original_config = Application.get_env(:centralcloud, :complexity_training_pipeline, %{})
       Application.put_env(:centralcloud, :complexity_training_pipeline,
-        Map.put(original_config, :pgflow_enabled, false))
+        Map.put(original_config, :quantum_flow_enabled, false))
 
       on_exit(fn ->
         Application.put_env(:centralcloud, :complexity_training_pipeline, original_config)
@@ -169,7 +169,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
       :ok
     end
 
-    test "starts Broadway pipeline when PGFlow disabled" do
+    test "starts Broadway pipeline when QuantumFlow disabled" do
       # Mock Broadway.start_link
       expect(Broadway.Mock, :start_link, fn
         ComplexityTrainingPipeline,
@@ -206,7 +206,7 @@ defmodule CentralCloud.ML.Pipelines.ComplexityTrainingPipelinePGFlowIntegrationT
   describe "canary rollout support" do
     test "respects canary percentage configuration" do
       # Test canary rollout logic would go here
-      # This would verify that only X% of requests use PGFlow mode
+      # This would verify that only X% of requests use QuantumFlow mode
 
       config = Application.get_env(:centralcloud, :complexity_training_pipeline, %{})
       assert Map.has_key?(config, :canary_percentage)

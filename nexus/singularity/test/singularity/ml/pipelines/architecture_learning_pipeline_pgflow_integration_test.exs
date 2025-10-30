@@ -1,6 +1,6 @@
-defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegrationTest do
+defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelineQuantumFlowIntegrationTest do
   @moduledoc """
-  Integration tests for Architecture Learning Pipeline PGFlow orchestration
+  Integration tests for Architecture Learning Pipeline QuantumFlow orchestration
 
   Tests end-to-end workflow execution, supervisor integration, and concurrency.
   """
@@ -23,8 +23,8 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
   end
 
   describe "pipeline startup modes" do
-    test "starts PGFlow mode when enabled" do
-      # Set environment variable to enable PGFlow
+    test "starts QuantumFlow mode when enabled" do
+      # Set environment variable to enable QuantumFlow
       original_env = System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED")
       System.put_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "true")
 
@@ -37,14 +37,14 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
         end
       end)
 
-      # Test that pipeline starts in PGFlow mode
+      # Test that pipeline starts in QuantumFlow mode
       # Note: We can't easily test the actual supervisor start without mocking,
       # but we can test the mode detection logic
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == true
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == true
     end
 
     test "starts Broadway mode when disabled" do
-      # Ensure PGFlow is disabled
+      # Ensure QuantumFlow is disabled
       original_env = System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED")
       System.put_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false")
 
@@ -58,7 +58,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
       end)
 
       # Test that pipeline detects Broadway mode
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == false
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == false
     end
   end
 
@@ -184,16 +184,16 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
 
       # Test enabled
       System.put_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "true")
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == true
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == true
 
       # Test disabled
       System.put_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false")
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == false
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == false
 
       # Test default (not set)
       System.delete_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED")
       # Should default to false based on our implementation
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == false
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == false
 
       # Restore
       if original_env do
@@ -273,7 +273,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
 
   describe "backwards compatibility" do
     test "Broadway mode preserves existing behavior" do
-      # Ensure PGFlow is disabled
+      # Ensure QuantumFlow is disabled
       original_env = System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED")
       System.put_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false")
 
@@ -286,7 +286,7 @@ defmodule Singularity.ML.Pipelines.ArchitectureLearningPipelinePGFlowIntegration
       end)
 
       # Pipeline should start in Broadway mode
-      assert ArchitectureLearningPipeline.pgflow_enabled?() == false
+      assert ArchitectureLearningPipeline.quantum_flow_enabled?() == false
 
       # Broadway handlers should still exist
       assert function_exported?(ArchitectureLearningPipeline, :handle_message, 3)

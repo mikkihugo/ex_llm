@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.RcaWorkflow do
   @moduledoc """
-  RCA-Enhanced Workflow Base - Pgflow workflows with automatic RCA tracking
+  RCA-Enhanced Workflow Base - QuantumFlow workflows with automatic RCA tracking
 
   Extends BaseWorkflow to automatically track workflow execution via RCA system.
   Every workflow step is recorded as a RefinementStep for learning.
@@ -77,8 +77,8 @@ defmodule Singularity.Workflows.RcaWorkflow do
   ## Integration with Agents
 
   Agents can now:
-  - Select best workflows via `PgflowIntegration.compare_workflows()`
-  - Optimize step order via `PgflowIntegration.analyze_workflow_steps()`
+  - Select best workflows via `QuantumFlowIntegration.compare_workflows()`
+  - Optimize step order via `QuantumFlowIntegration.analyze_workflow_steps()`
   - Track improvement results over time
   - Automatically improve workflow decisions
 
@@ -87,17 +87,17 @@ defmodule Singularity.Workflows.RcaWorkflow do
   ```
   execute_with_rca/1
     ├─ SessionManager.start_session/1
-    ├─ PgflowIntegration.track_workflow_start/2
+    ├─ QuantumFlowIntegration.track_workflow_start/2
     ├─ execute_workflow_steps/2
     │  └─ for each step:
     │     ├─ with_rca_step/3
-    │     └─ PgflowIntegration.record_workflow_step/4
-    └─ PgflowIntegration.record_workflow_completion/3
+    │     └─ QuantumFlowIntegration.record_workflow_step/4
+    └─ QuantumFlowIntegration.record_workflow_completion/3
   ```
   """
 
   require Logger
-  alias Singularity.RCA.{SessionManager, PgflowIntegration}
+  alias Singularity.RCA.{SessionManager, QuantumFlowIntegration}
 
   @doc """
   Configure RCA tracking for this workflow.
@@ -123,7 +123,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
   @doc """
   Execute main workflow.
 
-  Called by pgflow executor.
+  Called by QuantumFlow executor.
   """
   @callback execute(map()) :: {:ok, map()} | {:error, term()}
 
@@ -176,7 +176,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
           result = fun.(session_id)
 
           # Record completion
-          PgflowIntegration.record_workflow_completion(
+          QuantumFlowIntegration.record_workflow_completion(
             session_id,
             "success",
             extract_metrics(result)
@@ -191,7 +191,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
         rescue
           error ->
             # Record failure
-            PgflowIntegration.record_workflow_completion(
+            QuantumFlowIntegration.record_workflow_completion(
               session_id,
               "failure_execution",
               %{"error" => inspect(error)}
@@ -247,7 +247,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
 
           # Record step in RCA
           {:ok, _step} =
-            PgflowIntegration.record_workflow_step(
+            QuantumFlowIntegration.record_workflow_step(
               session_id,
               step_num,
               step_name,
@@ -270,7 +270,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
 
             # Record failure step
             {:ok, _step} =
-              PgflowIntegration.record_workflow_step(
+              QuantumFlowIntegration.record_workflow_step(
                 session_id,
                 step_num,
                 step_name,
@@ -292,7 +292,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
 
       @doc false
       defp track_workflow_start(session_id, workflow_module) do
-        case PgflowIntegration.track_workflow_start(session_id, workflow_module) do
+        case QuantumFlowIntegration.track_workflow_start(session_id, workflow_module) do
           {:ok, _} ->
             :ok
 

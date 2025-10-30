@@ -472,7 +472,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("lapin")
                     || code.contains("redis")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
             "python" => {
                 code.contains("nats")
@@ -481,7 +481,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("redis.publish")
                     || code.contains("asyncio_nats")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
             "javascript" | "typescript" => {
                 code.contains("nats")
@@ -490,7 +490,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("redis")
                     || code.contains("message")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
             "java" => {
                 code.contains("NATS")
@@ -498,7 +498,7 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("RabbitMQ")
                     || code.contains("Redis")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
             "elixir" => {
                 code.contains("NATS")
@@ -506,14 +506,14 @@ impl CrossLanguageCodePatternsDetector {
                     || code.contains("publish")
                     || code.contains("subscribe")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
             _ => {
                 code.contains("nats")
                     || code.contains("kafka")
                     || code.contains("message")
                     || code.contains("pgmq")
-                    || code.contains("ex_pgflow")
+                    || code.contains("ex_quantum_flow")
             }
         }
     }

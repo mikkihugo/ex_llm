@@ -10,7 +10,7 @@ defmodule Singularity.Settings.Manager do
   alias Singularity.Repo
 
   @doc """
-  Enable a pipeline's PGFlow mode.
+  Enable a pipeline's QuantumFlow mode.
 
   Example: enable_pipeline("code_quality")
   """
@@ -20,14 +20,14 @@ defmodule Singularity.Settings.Manager do
     Settings.set(
       key,
       true,
-      "Enable PGFlow mode for #{pipeline_name} pipeline",
+      "Enable QuantumFlow mode for #{pipeline_name} pipeline",
       "pipelines",
       "manager"
     )
   end
 
   @doc """
-  Disable a pipeline's PGFlow mode.
+  Disable a pipeline's QuantumFlow mode.
 
   Example: disable_pipeline("code_quality")
   """
@@ -37,14 +37,14 @@ defmodule Singularity.Settings.Manager do
     Settings.set(
       key,
       false,
-      "Disable PGFlow mode for #{pipeline_name} pipeline",
+      "Disable QuantumFlow mode for #{pipeline_name} pipeline",
       "pipelines",
       "manager"
     )
   end
 
   @doc """
-  Check if a pipeline's PGFlow mode is enabled.
+  Check if a pipeline's QuantumFlow mode is enabled.
 
   Example: pipeline_enabled?("code_quality")
   """
@@ -117,7 +117,7 @@ defmodule Singularity.Settings.Manager do
 
     Enum.each(pipelines, fn pipeline ->
       key = "pipelines.#{pipeline}.enabled"
-      description = "Enable PGFlow mode for #{String.replace(pipeline, "_", " ")} pipeline"
+      description = "Enable QuantumFlow mode for #{String.replace(pipeline, "_", " ")} pipeline"
       Settings.set(key, false, description, "pipelines", "initializer")
     end)
 

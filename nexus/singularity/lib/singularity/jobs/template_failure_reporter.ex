@@ -11,7 +11,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
   - Agent detects regressions
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :maintenance,
     max_attempts: 3,
     priority: 8
@@ -36,7 +36,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
     |> new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @impl Oban.Worker
@@ -53,7 +53,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
       count: count
     )
 
-    # Send failure report via pgflow (pgmq + NOTIFY)
+    # Send failure report via QuantumFlow (pgmq + NOTIFY)
     message = %{
       "template_id" => template_id,
       "failure_type" => failure_type,
@@ -63,7 +63,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
 
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_failures", message) do
       {:ok, :sent} ->
-        Logger.info("Template failure reported to CentralCloud via pgflow",
+        Logger.info("Template failure reported to CentralCloud via QuantumFlow",
           template_id: template_id,
           failure_type: failure_type,
           count: count
@@ -72,7 +72,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
         :ok
 
       {:ok, message_id} when is_integer(message_id) ->
-        Logger.info("Template failure reported to CentralCloud via pgflow",
+        Logger.info("Template failure reported to CentralCloud via QuantumFlow",
           template_id: template_id,
           failure_type: failure_type,
           count: count,

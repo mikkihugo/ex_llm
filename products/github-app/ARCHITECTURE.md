@@ -18,7 +18,7 @@ All three share the same core analysis engine and contribute to the intelligence
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │  packages/code_quality_engine/ (Rust Analysis)     │    │
 │  ├─────────────────────────────────────────────────────┤    │
-│  │  packages/ex_pgflow/ (Workflow Orchestration)      │    │
+│  │  packages/ex_quantum_flow/ (Workflow Orchestration)      │    │
 │  ├─────────────────────────────────────────────────────┤    │
 │  │  nexus/singularity/ (Elixir Services)              │    │
 │  └─────────────────────────────────────────────────────┘    │
@@ -36,7 +36,7 @@ All three share the same core analysis engine and contribute to the intelligence
 
 #### 1. GitHub App (products/github-app/)
 - **Webhook Handler**: Receives GitHub events
-- **Analysis Orchestrator**: Uses ex_pgflow workflows
+- **Analysis Orchestrator**: Uses ex_quantum_flow workflows
 - **Results Poster**: Comments on PRs, creates check runs
 - **Intelligence Collector**: Anonymized data → main system
 
@@ -81,7 +81,7 @@ All three share the same core analysis engine and contribute to the intelligence
 
 ### ✅ Completed
 - GitHub App with webhook handling
-- Analysis workflows via ex_pgflow
+- Analysis workflows via ex_quantum_flow
 - Docker deployment and scaling
 - CLI tool with multiple formats
 - GitHub Action implementation

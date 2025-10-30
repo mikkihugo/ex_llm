@@ -1,6 +1,6 @@
 defmodule Singularity.Infrastructure.ErrorClassification do
   @moduledoc """
-  Structured error classification borrowed from the legacy branch and adapted for the PGFlow
+  Structured error classification borrowed from the legacy branch and adapted for the QuantumFlow
   architecture.
 
   The intent is to provide a consistent vocabulary (`:validation_error`, `:external_error`, etc.)

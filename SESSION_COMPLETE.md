@@ -87,7 +87,7 @@
 8. **`lib/singularity/execution/todo_swarm_coordinator.ex`** - Entry point
 
 ### Backward Compatibility Shims ✅
-9. **`lib/singularity/pgflow_adapter.ex`** - Delegates to Workflows
+9. **`lib/singularity/quantum_flow_adapter.ex`** - Delegates to Workflows
 10. **`lib/singularity/htdag/executor.ex`** - Delegates to Workflows
 
 ### Documentation ✅

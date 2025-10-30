@@ -29,8 +29,8 @@ defmodule Singularity.Workflows.CodeQualityImprovementRca do
     target_complexity: "medium"
   })
 
-  # Via pgflow
-  {:ok, result} = Pgflow.Executor.execute(
+  # Via QuantumFlow
+  {:ok, result} = QuantumFlow.Executor.execute(
     Singularity.Workflows.CodeQualityImprovementRca,
     %{codebase_id: "my-project"},
     timeout: 60000

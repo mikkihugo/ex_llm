@@ -14,7 +14,7 @@ defmodule Singularity.LLM.Supervisor do
   `Singularity.LLM.Service` is NOT supervised here because it's a stateless module
   that delegates to Singularity.Jobs.PgmqClient. All state is managed by:
   - RateLimiter (for rate limiting)
-  - Messaging.Client (for PGFlow communication)
+  - Messaging.Client (for QuantumFlow communication)
   - AI Server (TypeScript service via pgmq)
 
   ## Dependencies

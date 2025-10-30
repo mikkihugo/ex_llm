@@ -11,7 +11,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
   - Eventually sends to pgmq for CentralCloud aggregation
   """
 
-  use Oban.Worker,
+  use Singularity.JobQueue.Worker,
     queue: :metrics,
     max_attempts: 3,
     priority: 2
@@ -31,7 +31,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
     |> new()
-    |> Oban.insert()
+    |> Singularity.JobQueue.insert()
   end
 
   @impl Oban.Worker
@@ -49,7 +49,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
       results_count: results_count
     )
 
-    # Send analytics via pgflow (pgmq + NOTIFY)
+    # Send analytics via QuantumFlow (pgmq + NOTIFY)
     message = %{
       "event" => "search_performed",
       "query" => query,
@@ -61,14 +61,14 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
 
     case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("search_analytics", message) do
       {:ok, :sent} ->
-        Logger.debug("Search analytics sent via pgflow",
+        Logger.debug("Search analytics sent via QuantumFlow",
           query: query
         )
 
         :ok
 
       {:ok, message_id} when is_integer(message_id) ->
-        Logger.debug("Search analytics sent via pgflow",
+        Logger.debug("Search analytics sent via QuantumFlow",
           query: query,
           message_id: message_id
         )
@@ -76,7 +76,7 @@ defmodule Singularity.Jobs.SearchAnalyticsReporter do
         :ok
 
       {:error, reason} ->
-        Logger.warning("Failed to send search analytics via pgflow",
+        Logger.warning("Failed to send search analytics via QuantumFlow",
           query: query,
           error: inspect(reason)
         )

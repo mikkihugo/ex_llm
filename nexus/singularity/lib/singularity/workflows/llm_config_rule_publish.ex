@@ -1,8 +1,8 @@
 defmodule Singularity.Workflows.LlmConfigRulePublish do
   @moduledoc """
-  Pgflow workflow for publishing LLM configuration rules to Genesis.
+  QuantumFlow workflow for publishing LLM configuration rules to Genesis.
 
-  Ensures all LLM configuration rule publishing runs through the durable ex_pgflow executor,
+  Ensures all LLM configuration rule publishing runs through the durable ex_quantum_flow executor,
   enabling cross-instance sharing of optimal complexity/model mappings.
   """
 

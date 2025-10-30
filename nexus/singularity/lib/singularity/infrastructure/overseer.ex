@@ -1,15 +1,15 @@
 defmodule Singularity.Infrastructure.Overseer do
   @moduledoc """
-  Overseer for the PGFlow architecture.
+  Overseer for the QuantumFlow architecture.
 
   This GenServer periodically inspects the health of our critical runtime components:
 
     * PostgreSQL/PGMQ (backbone for queues and storage)
-    * PGFlow workflow supervisors (architecture + embedding pipelines)
+    * QuantumFlow workflow supervisors (architecture + embedding pipelines)
     * HTTP health server used by container orchestration
 
-  The original Overseer in the pre-PGFlow branch also managed NATS. Those hooks have been
-  replaced with PGFlow-oriented checks in this port. The goal is to preserve the pattern –
+  The original Overseer in the pre-QuantumFlow branch also managed NATS. Those hooks have been
+  replaced with QuantumFlow-oriented checks in this port. The goal is to preserve the pattern –
   a single module that centralises operational visibility – while aligning with the current
   topology.
   """
@@ -48,7 +48,7 @@ defmodule Singularity.Infrastructure.Overseer do
 
   @impl GenServer
   def init(_opts) do
-    Logger.info("Starting Overseer (PGFlow edition)")
+    Logger.info("Starting Overseer (QuantumFlow edition)")
 
     # Adopt healthy PostgreSQL if it is already running (keeps dev flows fast)
     PidManager.manage_service(:postgres, @postgres_port)
@@ -76,11 +76,11 @@ defmodule Singularity.Infrastructure.Overseer do
 
   defp compose_status(previous_state) do
     database = check_database()
-    pgflow = check_pgflow_workflows()
+    QuantumFlow = check_quantum_flow_workflows()
     health_server = check_health_server()
 
     overall =
-      case {database.status, pgflow.overall, health_server.status} do
+      case {database.status, QuantumFlow.overall, health_server.status} do
         {:ok, :ok, :ok} -> :ok
         {status, _, _} when status != :ok -> :critical
         {_, :degraded, _} -> :degraded
@@ -90,12 +90,12 @@ defmodule Singularity.Infrastructure.Overseer do
 
     %{
       database: database,
-      pgflow: pgflow,
+      QuantumFlow: QuantumFlow,
       health_server: health_server,
       adopted_postgres: PidManager.get_adopted(:postgres),
       overall: overall,
       last_check_at: DateTime.utc_now(),
-      previous: Map.take(previous_state, [:database, :pgflow, :health_server, :overall])
+      previous: Map.take(previous_state, [:database, :quantum_flow, :health_server, :overall])
     }
   end
 
@@ -115,8 +115,8 @@ defmodule Singularity.Infrastructure.Overseer do
     %{status: status, detail: result}
   end
 
-  defp check_pgflow_workflows do
-    loaded? = Code.ensure_loaded?(PGFlow.WorkflowSupervisor)
+  defp check_quantum_flow_workflows do
+    loaded? = Code.ensure_loaded?(QuantumFlow.WorkflowSupervisor)
 
     workflows =
       Enum.map(@workflow_supervisors, fn {key, name} ->

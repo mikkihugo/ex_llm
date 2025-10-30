@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.CodebaseRegistrySyncWorkflow do
   @moduledoc """
-  PGFlow workflow that runs a full codebase analysis and persists the snapshot
+  QuantumFlow workflow that runs a full codebase analysis and persists the snapshot
   via `Singularity.CodebaseRegistry`.
   """
 

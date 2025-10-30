@@ -1,8 +1,8 @@
-# Architecture Learning Pipeline PGFlow Migration
+# Architecture Learning Pipeline QuantumFlow Migration
 
 ## Overview
 
-This document describes the migration of the Singularity Architecture Learning Pipeline from Broadway + BroadwayPGMQ to PGFlow workflow orchestration. This follows the successful pilot migration of the Complexity Training Pipeline.
+This document describes the migration of the Singularity Architecture Learning Pipeline from Broadway + BroadwayPGMQ to QuantumFlow workflow orchestration. This follows the successful pilot migration of the Complexity Training Pipeline.
 
 ## Migration Status
 
@@ -18,33 +18,33 @@ This document describes the migration of the Singularity Architecture Learning P
 PGMQ Queue → BroadwayPGMQ.Producer → Broadway Pipeline → Processors → Success/Failure
 ```
 
-### After (PGFlow Mode)
+### After (QuantumFlow Mode)
 ```
-PGMQ Queue → PGFlow.WorkflowSupervisor → Workflow Steps → Observability → Success/Failure
+PGMQ Queue → QuantumFlow.WorkflowSupervisor → Workflow Steps → Observability → Success/Failure
 ```
 
 ## Files Changed
 
 ### Core Implementation
 - `nexus/singularity/lib/singularity/ml/pipelines/architecture_learning_pipeline.ex` - Updated to support both modes
-- `nexus/singularity/lib/singularity/workflows/architecture_learning_workflow.ex` - New PGFlow workflow definition
+- `nexus/singularity/lib/singularity/workflows/architecture_learning_workflow.ex` - New QuantumFlow workflow definition
 
 ### Configuration
-- `nexus/singularity/config/config.exs` - Added PGFlow configuration entries
+- `nexus/singularity/config/config.exs` - Added QuantumFlow configuration entries
 
 ### Application Integration
 - `nexus/singularity/lib/singularity/application.ex` - Added workflow supervisor
 
 ### Tests
 - `nexus/singularity/test/singularity/workflows/architecture_learning_workflow_test.exs` - Unit tests
-- `nexus/singularity/test/singularity/ml/pipelines/architecture_learning_pipeline_pgflow_integration_test.exs` - Integration tests
+- `nexus/singularity/test/singularity/ml/pipelines/architecture_learning_pipeline_quantum_flow_integration_test.exs` - Integration tests
 
 ## Configuration
 
 ### Environment Variables
 
 ```bash
-# Enable PGFlow mode
+# Enable QuantumFlow mode
 PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true
 
 # Workflow timeouts and retries
@@ -66,7 +66,7 @@ ARCHITECTURE_MODEL_DEPLOYMENT_TIMEOUT_MS=60000
 ```elixir
 # In config/config.exs
 config :singularity, :architecture_learning_pipeline,
-  pgflow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true"
+  quantum_flow_enabled: System.get_env("PGFLOW_ARCHITECTURE_LEARNING_ENABLED", "false") == "true"
 
 config :singularity, :architecture_learning_workflow,
   timeout_ms: String.to_integer(System.get_env("ARCHITECTURE_WORKFLOW_TIMEOUT_MS", "300000")),
@@ -87,7 +87,7 @@ config :singularity, :architecture_learning_workflow,
 
 ## Workflow Definition
 
-The PGFlow workflow consists of 5 sequential steps:
+The QuantumFlow workflow consists of 5 sequential steps:
 
 1. **Pattern Discovery** - Extract architectural patterns from codebases (2 concurrent workers)
 2. **Pattern Analysis** - Analyze pattern characteristics and relationships (3 concurrent workers)
@@ -109,16 +109,16 @@ Pattern Discovery → Pattern Analysis → Model Training → Model Validation �
 
 ### Direct Migration
 ```bash
-# Enable PGFlow mode
+# Enable QuantumFlow mode
 PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true
 
 # Restart Singularity application
-# PGFlow mode will be used automatically
+# QuantumFlow mode will be used automatically
 ```
 
 ### Rollback
 ```bash
-# Disable PGFlow mode
+# Disable QuantumFlow mode
 PGFLOW_ARCHITECTURE_LEARNING_ENABLED=false
 
 # Restart Singularity application
@@ -127,7 +127,7 @@ PGFLOW_ARCHITECTURE_LEARNING_ENABLED=false
 
 ## Monitoring and Observability
 
-### PGFlow Metrics
+### QuantumFlow Metrics
 - **Execution Time**: Per-workflow and per-step timing
 - **Success Rate**: Workflow completion percentage
 - **Error Rate**: Step failure tracking
@@ -156,7 +156,7 @@ mix test test/singularity/workflows/architecture_learning_workflow_test.exs
 
 ### Integration Tests
 ```bash
-mix test test/singularity/ml/pipelines/architecture_learning_pipeline_pgflow_integration_test.exs
+mix test test/singularity/ml/pipelines/architecture_learning_pipeline_quantum_flow_integration_test.exs
 ```
 
 - End-to-end workflow execution
@@ -168,11 +168,11 @@ mix test test/singularity/ml/pipelines/architecture_learning_pipeline_pgflow_int
 mix run scripts/benchmark_architecture_learning_pipeline.exs
 ```
 
-- Compare Broadway vs PGFlow performance
+- Compare Broadway vs QuantumFlow performance
 - Load testing with multiple workflows
 - Resource utilization analysis
 
-## Benefits of PGFlow Migration
+## Benefits of QuantumFlow Migration
 
 ### Observability
 - **Step-level tracking**: Monitor each pipeline stage independently
@@ -219,7 +219,7 @@ Based on this migration's success, consider migrating:
 #### Workflow Not Starting
 - Check `PGFLOW_ARCHITECTURE_LEARNING_ENABLED=true`
 - Verify workflow supervisor is registered in application.ex
-- Check PGFlow database connectivity
+- Check QuantumFlow database connectivity
 
 #### Step Timeouts
 - Increase step-specific timeouts in config
@@ -234,17 +234,17 @@ Based on this migration's success, consider migrating:
 ### Debug Commands
 ```bash
 # Check workflow status
-PGFlow.Workflow.status(workflow_execution_id)
+QuantumFlow.Workflow.status(workflow_execution_id)
 
 # View workflow metrics
-PGFlow.Workflow.metrics(workflow_execution_id)
+QuantumFlow.Workflow.metrics(workflow_execution_id)
 
 # List active workflows
-PGFlow.WorkflowSupervisor.list_workflows()
+QuantumFlow.WorkflowSupervisor.list_workflows()
 ```
 
 ## Conclusion
 
-This PGFlow migration demonstrates significant improvements in observability, reliability, and maintainability for ML training pipelines. The backwards-compatible design allows for easy rollback if needed, while providing a clear path forward for modern workflow orchestration.
+This QuantumFlow migration demonstrates significant improvements in observability, reliability, and maintainability for ML training pipelines. The backwards-compatible design allows for easy rollback if needed, while providing a clear path forward for modern workflow orchestration.
 
-The migration successfully validates PGFlow as a replacement for Broadway-based pipelines, paving the way for broader adoption across the Singularity ML infrastructure.
+The migration successfully validates QuantumFlow as a replacement for Broadway-based pipelines, paving the way for broader adoption across the Singularity ML infrastructure.

@@ -1,14 +1,14 @@
-# Broadway Embedding Pipeline with PGFlow Integration
+# Broadway Embedding Pipeline with QuantumFlow Integration
 
 ## Overview
 
-The Broadway Embedding Pipeline is a high-performance, concurrent embedding generation system built on Broadway for processing artifacts in parallel. It integrates with PGFlow for workflow orchestration, enabling scalable and reliable embedding generation as part of larger data processing workflows.
+The Broadway Embedding Pipeline is a high-performance, concurrent embedding generation system built on Broadway for processing artifacts in parallel. It integrates with QuantumFlow for workflow orchestration, enabling scalable and reliable embedding generation as part of larger data processing workflows.
 
-## Migration to PGFlow
+## Migration to QuantumFlow
 
 ### Background
 
-The embedding training pipeline has been migrated from Broadway + PGMQ producer to PGFlow workflow orchestration for improved observability, error handling, and resource management.
+The embedding training pipeline has been migrated from Broadway + PGMQ producer to QuantumFlow workflow orchestration for improved observability, error handling, and resource management.
 
 ### Migration Details
 
@@ -17,15 +17,15 @@ The embedding training pipeline has been migrated from Broadway + PGMQ producer 
 - Message-based processing through processors/batchers
 - Limited workflow visibility and error recovery
 
-**After (PGFlow Mode):**
-- Uses PGFlow workflow orchestration
+**After (QuantumFlow Mode):**
+- Uses QuantumFlow workflow orchestration
 - Declarative workflow definition with step dependencies
 - Better observability, retry logic, and resource allocation
 - Single-worker concurrency for GPU training stage
 
 ### Configuration
 
-Enable PGFlow mode with environment variable:
+Enable QuantumFlow mode with environment variable:
 ```bash
 PGFLOW_EMBEDDING_TRAINING_ENABLED=true
 ```
@@ -54,7 +54,7 @@ Writer: Update database with embeddings
 - **Backpressure**: Automatically throttles based on system load
 - **Progress tracking**: Real-time progress updates with metrics
 - **Error recovery**: Failed embeddings retried or skipped gracefully
-- **PGFlow integration**: Workflow orchestration with job queuing and status tracking
+- **QuantumFlow integration**: Workflow orchestration with job queuing and status tracking
 - **Metrics**: Track speed, success rate, memory usage
 
 ## Startup Instructions
@@ -101,7 +101,7 @@ config :singularity, Singularity.Execution.Planning.HTDAGAutoBootstrap,
 ### Environment Variables
 
 ```bash
-# PGFlow Configuration
+# QuantumFlow Configuration
 PGFLOW_ENABLED=true
 PGFLOW_QUEUE_NAME=embedding_jobs
 PGFLOW_TIMEOUT_MS=300000
@@ -127,11 +127,11 @@ EMBEDDING_TIMEOUT_MS=300000
 | `timeout` | `300_000` | Pipeline timeout in milliseconds |
 | `verbose` | `false` | Enable progress logging |
 
-### PGFlow Integration Settings
+### QuantumFlow Integration Settings
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `queue_name` | `"embedding_jobs"` | PGFlow queue name |
+| `queue_name` | `"embedding_jobs"` | QuantumFlow queue name |
 | `concurrency` | `5` | Max concurrent workflow jobs |
 | `retries` | `3` | Max retry attempts per job |
 | `retry_delay_ms` | `5000` | Delay between retries |
@@ -182,7 +182,7 @@ mix test --cover test/singularity/embedding/broadway_embedding_pipeline_test.exs
 ### Integration Tests
 
 ```bash
-# Run PGFlow integration tests
+# Run QuantumFlow integration tests
 mix test test/singularity/embedding/broadway_embedding_pipeline_integration_test.exs
 
 # Run with database setup
@@ -195,8 +195,8 @@ MIX_ENV=test mix test --include integration
 # Test pipeline startup and shutdown
 mix test test/singularity/embedding/ -k "startup"
 
-# Test PGFlow workflow integration
-mix test test/singularity/embedding/ -k "PGFlow"
+# Test QuantumFlow workflow integration
+mix test test/singularity/embedding/ -k "QuantumFlow"
 ```
 
 ### Performance Tests
@@ -218,7 +218,7 @@ The pipeline exposes these metrics:
 - **Throughput**: Embeddings per second
 - **Success Rate**: Percentage of successful embeddings
 - **Memory Usage**: Peak GPU/CPU memory during processing
-- **Queue Depth**: Pending artifacts in PGFlow queue
+- **Queue Depth**: Pending artifacts in QuantumFlow queue
 - **Error Rate**: Failed embedding attempts
 
 ### Failure Handling
@@ -233,7 +233,7 @@ The pipeline exposes these metrics:
 #### Production Deployment
 
 1. **Resource allocation**: Ensure adequate GPU memory for batch_size × workers
-2. **Queue monitoring**: Monitor PGFlow queue depth and processing rates
+2. **Queue monitoring**: Monitor QuantumFlow queue depth and processing rates
 3. **Health checks**: Implement pipeline health checks for load balancers
 4. **Scaling**: Increase workers for higher throughput, adjust batch_size for memory
 
@@ -249,18 +249,18 @@ The pipeline exposes these metrics:
 - **Low throughput**: Check GPU utilization, increase workers or batch_size
 - **Memory errors**: Reduce batch_size or switch to CPU mode
 - **Timeout errors**: Increase timeout or reduce concurrent load
-- **DB connection issues**: Verify PGFlow database connectivity
+- **DB connection issues**: Verify QuantumFlow database connectivity
 
 ### Performance Optimization
 
 - **GPU utilization**: Target 80-90% GPU utilization for optimal performance
 - **Batch efficiency**: Larger batches improve GPU efficiency but increase memory usage
 - **Worker scaling**: More workers improve concurrency but may cause contention
-- **Queue tuning**: Adjust PGFlow concurrency based on system capacity
+- **Queue tuning**: Adjust QuantumFlow concurrency based on system capacity
 
 ### Maintenance
 
-- **Regular cleanup**: Monitor and clean old workflow jobs in PGFlow
+- **Regular cleanup**: Monitor and clean old workflow jobs in QuantumFlow
 - **Model updates**: Update embedding models and retrain as needed
 - **Performance monitoring**: Track metrics trends and adjust configuration
 - **Log rotation**: Ensure embedding logs are rotated to prevent disk space issues

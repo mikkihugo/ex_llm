@@ -67,7 +67,7 @@ end
 ## Operational Checklist
 
 - Ensure pgmq queues exist (`Singularity.Jobs.PgmqClient.ensure_all_queues/0`).
-- Keep Oban + ex_pgflow workers running (`LlmRequestWorker`, `LlmResultPoller`).
+- Keep Oban + ex_quantum_flow workers running (`LlmRequestWorker`, `LlmResultPoller`).
 - Verify Nexus `LLMRequestWorkflow` consumers are connected to `ai_requests` and
   publishing to `ai_results`.
 - Update new callers to depend on `Singularity.LLM.Service`; never publish to

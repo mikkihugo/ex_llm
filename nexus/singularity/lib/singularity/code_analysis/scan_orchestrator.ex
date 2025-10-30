@@ -3,7 +3,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
   Unified scanning orchestrator that coordinates multiple scanners (Quality, Security, Linting).
 
   Provides a single entry point for comprehensive code scanning with results aggregation.
-  Supports both synchronous scanning and asynchronous workflows via Pgflow.
+  Supports both synchronous scanning and asynchronous workflows via QuantumFlow.
 
   ## Module Identity (JSON)
 
@@ -163,9 +163,9 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
   end
 
   @doc """
-  Scan asynchronously via Pgflow workflow for long-running scans.
+  Scan asynchronously via QuantumFlow workflow for long-running scans.
 
-  Submits a scan request to Pgflow and returns immediately with workflow ID.
+  Submits a scan request to QuantumFlow and returns immediately with workflow ID.
   Results are persisted to database and published via notifications.
 
   ## Parameters

@@ -1,6 +1,6 @@
 defmodule CentralCloud.Workflows.LLMTeamWorkflow do
   @moduledoc """
-  PGFlow workflow that orchestrates the CentralCloud multi-agent LLM review.
+  QuantumFlow workflow that orchestrates the CentralCloud multi-agent LLM review.
 
   The workflow runs three logical stages:
     1. Prepare context and choose the execution mode.
@@ -13,7 +13,7 @@ defmodule CentralCloud.Workflows.LLMTeamWorkflow do
   analyse.
   """
 
-  use Pgflow.Workflow
+  use QuantumFlow.Workflow
   require Logger
 
   @type mode :: :fast | :default | :thorough

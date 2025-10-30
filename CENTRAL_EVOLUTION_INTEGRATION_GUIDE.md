@@ -250,7 +250,7 @@ alias CentralCloud.Evolution.Consensus.Engine, as: ConsensusEngine
   }
 )
 
-# Broadcast via ex_pgflow: "evolution_voting_requests"
+# Broadcast via ex_quantum_flow: "evolution_voting_requests"
 # All instances receive voting request
 
 # Step 2: Vote on proposal (from other instances)
@@ -278,14 +278,14 @@ case ConsensusEngine.vote_on_change("dev-2", change_id, vote, reason) do
 
   {:ok, :consensus_reached} ->
     Logger.info("Consensus reached! Change will be executed")
-    # Change is broadcast to all instances via ex_pgflow
+    # Change is broadcast to all instances via ex_quantum_flow
 
   {:error, reason} ->
     Logger.error("Vote failed: #{inspect(reason)}")
 end
 
 # Step 3: Receive and apply approved change (all instances)
-# Listen to ex_pgflow queue: "evolution_approved_changes"
+# Listen to ex_quantum_flow queue: "evolution_approved_changes"
 
 def handle_approved_change(%{change_id: change_id, code_change: code_change}) do
   Logger.info("Applying consensus-approved change", change_id: change_id)
@@ -472,7 +472,7 @@ defmodule Singularity.Agents.Evolution.CentralizedFlow do
 end
 ```
 
-## ex_pgflow Queue Integration
+## ex_quantum_flow Queue Integration
 
 ### Required Queues
 
@@ -491,17 +491,17 @@ end
 
 children = [
   # Listen for voting requests
-  {PGFlow.Consumer,
+  {QuantumFlow.Consumer,
    queue: "evolution_voting_requests",
    handler: Singularity.Evolution.VotingHandler},
 
   # Listen for approved changes
-  {PGFlow.Consumer,
+  {QuantumFlow.Consumer,
    queue: "evolution_approved_changes",
    handler: Singularity.Evolution.ApprovedChangeHandler},
 
   # Listen for rollback commands
-  {PGFlow.Consumer,
+  {QuantumFlow.Consumer,
    queue: "guardian_rollback_commands",
    handler: Singularity.Evolution.RollbackHandler}
 ]
@@ -619,6 +619,6 @@ config :singularity, Oban,
 
 1. **Run migration**: `cd nexus/central_services && mix ecto.migrate`
 2. **Add to supervision tree**: Update `CentralCloud.Application`
-3. **Configure ex_pgflow queues**: Set up queue listeners
+3. **Configure ex_quantum_flow queues**: Set up queue listeners
 4. **Test integration**: Use example code to evolve an agent
 5. **Monitor dashboards**: Check Observer for real-time evolution metrics
