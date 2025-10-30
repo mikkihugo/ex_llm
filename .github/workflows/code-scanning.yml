@@ -4,9 +4,6 @@ on:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'packages/quantum_flow/**'
-      - 'packages/ex_quantum_flow/**'
 
 permissions:
   contents: read
@@ -20,7 +17,7 @@ jobs:
   scan:
     name: Run Singularity Scanner and upload SARIF
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.repository == 'mikkihugo/quantum_flow'
+    if: github.event.pull_request.draft == false
 
     steps:
       - name: Checkout
@@ -43,9 +40,7 @@ jobs:
 
       - name: Run scanner (SARIF)
         run: |
-          if [ -d packages/quantum_flow ]; then TARGET="packages/quantum_flow";
-          elif [ -d packages/ex_quantum_flow ]; then TARGET="packages/ex_quantum_flow";
-          else TARGET="packages/ex_quantum_flow"; fi
+          TARGET="."
           echo "Scanning path: $TARGET"
           ./target/release/singularity-scanner analyze --path "$TARGET" --format sarif > singularity.sarif
 
