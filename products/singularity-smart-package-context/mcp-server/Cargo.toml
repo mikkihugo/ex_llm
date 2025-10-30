@@ -1,0 +1,32 @@
+[package]
+name = "singularity-smart-package-context-mcp"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+
+[dependencies]
+tokio = { workspace = true, features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+
+# MCP (Model Context Protocol)
+# Using stdio transport for Claude Code integration
+serde_with = "3.4"
+uuid = { workspace = true, features = ["v4", "serde"] }
+
+# Backend library
+singularity-smart-package-context-backend = { path = "../backend" }
+
+[[bin]]
+name = "singularity-smart-package-context-mcp"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

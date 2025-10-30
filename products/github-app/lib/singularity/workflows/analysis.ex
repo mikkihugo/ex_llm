@@ -1,6 +1,6 @@
 defmodule Singularity.Workflows.Analysis do
   @moduledoc """
-  Analysis workflows using ex_pgflow for orchestration.
+  Analysis workflows using ex_quantum_flow for orchestration.
   """
 
   alias Singularity.Analysis
@@ -64,7 +64,7 @@ defmodule Singularity.Workflows.Analysis do
   end
 
   defp wait_for_completion(workflow_id) do
-    # Simple polling - in production use ex_pgflow webhooks
+    # Simple polling - in production use ex_quantum_flow webhooks
     Enum.reduce_while(1..60, nil, fn _attempt, _acc ->
       case check_workflow_status(workflow_id) do
         {:completed, results} -> {:halt, {:completed, results}}
@@ -78,7 +78,7 @@ defmodule Singularity.Workflows.Analysis do
   end
 
   defp check_workflow_status(workflow_id) do
-    # Check ex_pgflow workflow status
+    # Check ex_quantum_flow workflow status
     case Singularity.Workflows.get_status(workflow_id) do
       {:ok, %{status: "completed", results: results}} ->
         {:completed, results}
