@@ -13,7 +13,6 @@ defmodule Singularity.Jobs.RegistrySyncWorker do
 
   alias Pgflow.Executor
   alias Singularity.Workflows.CodebaseRegistrySyncWorkflow
-  alias Singularity.PgFlow
 
   @impl Oban.Worker
   def perform(_job) do
@@ -59,7 +58,7 @@ defmodule Singularity.Jobs.RegistrySyncWorker do
   end
 
   defp notify_sync_complete(sync_type, codebase_id, snapshot_id) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_completed",
@@ -79,7 +78,7 @@ defmodule Singularity.Jobs.RegistrySyncWorker do
   end
 
   defp notify_sync_failed(sync_type, codebase_id, error) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_failed",

@@ -1,4 +1,4 @@
-defmodule Singularity.PgFlow.Workflow do
+defmodule Singularity.Infrastructure.PgFlow.Workflow do
   @moduledoc """
   Ecto schema for a PgFlow workflow.
   """

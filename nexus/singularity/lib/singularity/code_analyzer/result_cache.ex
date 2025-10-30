@@ -1,4 +1,4 @@
-defmodule Singularity.CodeAnalyzer.Cache do
+defmodule Singularity.CodeAnalyzer.ResultCache do
   @moduledoc """
   Analysis Result Caching Layer for Singularity.CodeAnalyzer
 
@@ -9,7 +9,7 @@ defmodule Singularity.CodeAnalyzer.Cache do
 
   ```json
   {
-    "module_name": "Singularity.CodeAnalyzer.Cache",
+    "module_name": "Singularity.CodeAnalyzer.ResultCache",
     "purpose": "Cache code analysis results to avoid redundant computation",
     "type": "GenServer with ETS-backed cache",
     "operates_on": "Analysis results keyed by content hash",

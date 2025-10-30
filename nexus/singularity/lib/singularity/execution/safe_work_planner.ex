@@ -473,7 +473,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       }
     }
 
-    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created work item workflow", workflow_id: workflow_id)
 
@@ -527,7 +527,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           confidence: validation_result |> elem(1) |> Map.get(:confidence)
         }
 
-        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:ok, analysis}, new_state}
 
@@ -552,7 +552,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           reasoning: result.reasoning
         }
 
-        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:needs_approval, result}, state}
 
@@ -577,7 +577,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
           reasoning: result.reasoning
         }
 
-        Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+        Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
 
         {:reply, {:escalated, result}, state}
     end
@@ -630,7 +630,7 @@ defmodule Singularity.Execution.SafeWorkPlanner do
       completed_at: :erlang.system_time(:millisecond)
     }
 
-    Singularity.PgFlow.send_with_notify("work_item_notifications", notification)
+    Singularity.Infrastructure.PgFlow.Queue.send_with_notify("work_item_notifications", notification)
 
     {:reply, :ok, new_state}
   end

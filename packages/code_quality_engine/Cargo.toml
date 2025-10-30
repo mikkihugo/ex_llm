@@ -18,6 +18,22 @@ crate-type = ["cdylib", "rlib"]  # cdylib for NIF + rlib for internal tests/benc
 [[bin]]
 name = "singularity-scanner"
 path = "src/bin/singularity_scanner.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "scanner"
+path = "src/bin/scanner.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "formatter"
+path = "src/bin/formatter.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "api_client"
+path = "src/bin/api_client.rs"
+required-features = ["cli"]
 
 [dependencies]
 # Serialization
@@ -36,8 +52,8 @@ ignore = { workspace = true }
 glob = { workspace = true }
 toml = { workspace = true }
 
-# UUID generation
-uuid = { workspace = true, features = ["v4", "serde"] }
+# UUID generation (v7 enabled at workspace level)
+uuid = { workspace = true, features = ["v4", "v7", "serde"] }
 
 # Time handling
 chrono = { workspace = true, features = ["serde"] }
@@ -97,6 +113,7 @@ quality = { path = "../linting_engine", package = "linting_engine" }
 # Parser dependencies - use parser_core library (shared types, no NIF conflicts)
 # Individual language parsers are accessed via parser_engine NIF, not directly by code_engine
 parser_core = { path = "../parser_engine/core" }  # Core parser library (no NIF, shared types)
+patterns_store = { path = "../patterns_store" }
 
 # Language-specific parsers
 rust_parser = { path = "../parser_engine/languages/rust" }
@@ -122,6 +139,7 @@ dependency_parser = { path = "../parser_engine/formats/dependency" }
 # NIF support for Elixir integration (enabled by default for cdylib)
 default = ["nif"]
 nif = ["rustler"]
+cli = []
 
 [dev-dependencies]
 tokio-test = { workspace = true }

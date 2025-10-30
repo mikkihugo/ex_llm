@@ -1,4 +1,4 @@
-defmodule Singularity.Jobs.CodeIngestWorker do
+defmodule Singularity.Ingestion.Jobs.ProcessCodeIngestionJob do
   @moduledoc """
   Ingest codebase into PostgreSQL for semantic code search (one-time setup)
 

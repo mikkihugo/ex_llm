@@ -30,8 +30,8 @@ defmodule Singularity.ML.PipelineSupervisor do
       {Singularity.ML.Pipelines.ArchitectureLearningPipeline, []},
 
       # ML Services
-      {Singularity.ML.Services.EmbeddingService, []},
-      {Singularity.ML.Services.CodeQualityService, []},
+      {Singularity.ML.Services.EmbeddingInference, []},
+      {Singularity.ML.Services.CodeQualityAnalyzer, []},
       {Singularity.ML.Services.ArchitectureLearningService, []}
     ]
 

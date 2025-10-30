@@ -4,7 +4,26 @@ use std::io::{self, Write};
 use anyhow::Result;
 use serde_json::json;
 
-use super::AnalysisResult;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnalysisResult {
+    pub quality_score: f64,
+    pub issues_count: usize,
+    pub recommendations: Vec<Recommendation>,
+    pub metrics: std::collections::HashMap<String, f64>,
+    pub patterns_detected: Vec<String>,
+    pub intelligence_collected: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Recommendation {
+    pub r#type: String,
+    pub severity: String,
+    pub message: String,
+    pub file: Option<String>,
+    pub line: Option<usize>,
+}
 
 pub struct OutputFormatter {
     format: String,
@@ -116,4 +135,9 @@ impl OutputFormatter {
         writeln!(handle)?;
         Ok(())
     }
+}
+
+fn main() -> anyhow::Result<()> {
+    // Minimal entrypoint; real CLI uses singularity_scanner
+    Ok(())
 }

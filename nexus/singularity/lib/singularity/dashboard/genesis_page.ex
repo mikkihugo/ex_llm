@@ -24,7 +24,7 @@ defmodule Singularity.Dashboard.GenesisPage do
   end
 
   @impl true
-  def render_page(_assigns) do
+  def render(assigns) do
     # Fetch all Genesis data
     validation_rules = fetch_validation_rules()
     llm_config = fetch_llm_config()

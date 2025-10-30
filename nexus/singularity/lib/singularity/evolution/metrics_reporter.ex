@@ -158,8 +158,6 @@ defmodule Singularity.Evolution.MetricsReporter do
   use GenServer
   require Logger
 
-  alias Singularity.Database.MessageQueue
-  alias Singularity.PgFlow
 
   @centralcloud_metrics_queue "agent_metrics"
   @flush_interval_ms 60_000
@@ -436,7 +434,7 @@ defmodule Singularity.Evolution.MetricsReporter do
       "metrics" => serialize_buffer(buffer)
     }
 
-    case PgFlow.send_with_notify(@centralcloud_metrics_queue, message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_metrics_queue, message) do
       {:ok, _} ->
         Logger.debug("[MetricsReporter] Batched metrics sent to CentralCloud",
           agent_count: map_size(buffer),

@@ -25,7 +25,7 @@ defmodule Singularity.Tools.FileSystem do
 
   alias Singularity.Tools.Catalog
   alias Singularity.Schemas.Tools.Tool
-  alias Singularity.HITL.ApprovalService
+  alias Singularity.HITL.ApprovalOrchestrator
   require Logger
 
   # 10MB max file size
@@ -242,7 +242,7 @@ defmodule Singularity.Tools.FileSystem do
 
       # Request approval (blocks until user clicks Google Chat button)
       {:ok, approval_id} =
-        ApprovalService.request_approval(
+        ApprovalOrchestrator.request_approval(
           file_path: path,
           diff: diff,
           description: description,
@@ -250,7 +250,7 @@ defmodule Singularity.Tools.FileSystem do
         )
 
       # Wait for decision (BLOCKS HERE until approved/rejected)
-      case ApprovalService.wait_for_decision(approval_id) do
+      case ApprovalOrchestrator.wait_for_decision(approval_id) do
         {:ok, :approved} ->
           # User approved, proceed with write
           with :ok <- maybe_backup_file(safe_path, mode),

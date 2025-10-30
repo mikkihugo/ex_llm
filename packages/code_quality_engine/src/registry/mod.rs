@@ -3,9 +3,9 @@
 //! Central registry for package knowledge, meta information, and cross-instance learning.
 //! Integrates with CentralCloud for consensus and pattern aggregation.
 
+
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use async_trait::async_trait;
 
 /// Meta registry for storing and retrieving package and pattern metadata
 pub struct MetaRegistry {
@@ -59,6 +59,12 @@ impl MetaRegistry {
     }
 }
 
+impl Default for MetaRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Package registry for storing package information
 pub struct PackageRegistry {
     packages: HashMap<String, HashMap<String, PackageInfo>>, // ecosystem -> name -> info
@@ -72,9 +78,10 @@ impl PackageRegistry {
     }
 
     pub async fn register_package(&mut self, package: PackageInfo) -> Result<(), RegistryError> {
-        let ecosystem_packages = self.packages
+        let ecosystem_packages = self
+            .packages
             .entry(package.ecosystem.clone())
-            .or_insert_with(HashMap::new);
+            .or_default();
 
         ecosystem_packages.insert(package.name.clone(), package);
         Ok(())
@@ -124,6 +131,12 @@ impl PackageRegistry {
     }
 }
 
+impl Default for PackageRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Pattern registry for storing pattern metadata
 pub struct PatternRegistry {
     patterns: HashMap<String, PatternMetadata>,
@@ -143,6 +156,12 @@ impl PatternRegistry {
 
     pub async fn get_pattern(&self, pattern_id: &str) -> Result<Option<PatternMetadata>, RegistryError> {
         Ok(self.patterns.get(pattern_id).cloned())
+    }
+}
+
+impl Default for PatternRegistry {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -218,7 +237,7 @@ pub enum RegistryError {
 /// Register package via NIF
 #[no_mangle]
 pub extern "C" fn register_package_nif(
-    package_json: *const std::os::raw::c_char,
+    _package_json: *const std::os::raw::c_char,
 ) -> *mut std::os::raw::c_char {
     // TODO: Implement NIF interface
     // This would parse JSON package info and register it
@@ -230,7 +249,7 @@ pub extern "C" fn register_package_nif(
 /// Search packages via NIF
 #[no_mangle]
 pub extern "C" fn search_packages_nif(
-    query_json: *const std::os::raw::c_char,
+    _query_json: *const std::os::raw::c_char,
 ) -> *mut std::os::raw::c_char {
     // TODO: Implement NIF interface
     // This would parse query JSON and return matching packages

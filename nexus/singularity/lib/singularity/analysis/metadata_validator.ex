@@ -328,7 +328,7 @@ defmodule Singularity.Analysis.MetadataValidator do
 
   defp reingest_file(file_path) do
     # Trigger re-ingestion via CodeFileWatcher or StartupCodeIngestion
-    alias Singularity.Code.StartupCodeIngestion
+    alias Singularity.Ingestion.RunStartupCodeIngestion
 
     # Create a minimal module structure for re-ingestion
     module = %{

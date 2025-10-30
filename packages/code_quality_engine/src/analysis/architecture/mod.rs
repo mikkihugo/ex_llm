@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
+use std::sync::Arc;
 
 /// Pattern detection result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,12 +36,29 @@ pub trait PatternDetector: Send + Sync {
 }
 
 /// Detection options
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct DetectionOptions {
     pub min_confidence: f64,
     pub max_results: Option<usize>,
     pub use_learned_patterns: bool,
     pub max_depth: usize,
+    /// Optional centralized pattern store (hydrated from CentralCloud)
+    pub pattern_store: Option<Arc<patterns_store::PatternStore>>,
+}
+
+impl std::fmt::Debug for DetectionOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DetectionOptions")
+            .field("min_confidence", &self.min_confidence)
+            .field("max_results", &self.max_results)
+            .field("use_learned_patterns", &self.use_learned_patterns)
+            .field("max_depth", &self.max_depth)
+            .field(
+                "pattern_store",
+                &self.pattern_store.as_ref().map(|_| "<pattern_store>")
+            )
+            .finish()
+    }
 }
 
 /// Pattern types supported by the system
@@ -105,6 +123,18 @@ pub struct PatternDetectorOrchestrator {
 impl PatternDetectorOrchestrator {
     pub fn new(registry: PatternDetectorRegistry) -> Self {
         Self { registry }
+    }
+
+    /// TODO(minimal): Hydrate detectors from CentralCloud via MetaRegistry.
+    /// In production, detectors should pull versioned patterns here and cache them.
+    pub async fn hydrate_from_central(
+        &self,
+        meta: &mut crate::registry::MetaRegistry,
+    ) -> Result<(), PatternError> {
+        meta
+            .sync_with_centralcloud()
+            .await
+            .map_err(|e| PatternError::CentralCloudError(e.to_string()))
     }
 
     /// Detect patterns using all enabled detectors

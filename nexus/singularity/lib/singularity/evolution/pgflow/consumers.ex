@@ -27,13 +27,14 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
 
   ### Search Keywords
   pgflow consumers, message processing, consensus results, rollback triggers,
-  safety profiles, idempotent processing, error recovery
+  safety profiles, workflow patterns, consensus patterns, idempotent processing, error recovery
 
   ## Message Types Handled
 
   1. `consensus_result` - Consensus voting result from CentralCloud
   2. `rollback_trigger` - Auto-rollback signal from Guardian
   3. `safety_profile_update` - Updated safety thresholds from Genesis
+  4. `workflow_consensus_patterns` - Workflow patterns from CentralCloud aggregation
 
   ## Usage
 
@@ -52,7 +53,6 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
 
   alias Singularity.Repo
   alias Singularity.Schemas.Evolution.Proposal
-  alias Singularity.Evolution.{ProposalQueue, SafetyProfiles}
 
   @doc """
   Handle consensus result from CentralCloud.
@@ -123,7 +123,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
   Returns `{:ok, "rolled_back"}` or `{:error, reason}`.
   """
   def handle_rollback_trigger(%{"proposal_id" => proposal_id, "reason" => reason} = message) do
-    Logger.warn("Processing rollback trigger for proposal #{proposal_id}: #{reason}")
+    Logger.warning("Processing rollback trigger for proposal #{proposal_id}: #{reason}")
 
     case Repo.get(Proposal, proposal_id) do
       %Proposal{status: current_status} = proposal ->
@@ -194,6 +194,63 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
     {:error, :invalid_message}
   end
 
+  @doc """
+  Handle workflow consensus patterns from CentralCloud.
+
+  Receives aggregated workflow patterns from CentralCloud and registers them
+  locally for adoption. Patterns are scored by consensus confidence.
+
+  Message format:
+  ```
+  %{
+    "type" => "workflow_consensus_patterns",
+    "instance_id" => "...",
+    "workflow_patterns" => [
+      %{
+        "workflow_type" => "code_quality_training",
+        "config" => {...},
+        "success_rate" => 0.95,
+        "frequency" => 42,
+        "quality_improvements" => 8.5,
+        "confidence" => 0.92,
+        "genesis_id" => "...",
+        "timestamp" => "..."
+      },
+      ...
+    ],
+    "pattern_count" => N,
+    "timestamp" => "..."
+  }
+  ```
+
+  Returns `{:ok, "registered"}` or `{:error, reason}` to trigger retry.
+  """
+  def handle_workflow_consensus_patterns(%{"workflow_patterns" => patterns} = message) when is_list(patterns) do
+    Logger.info("Processing workflow consensus patterns: #{length(patterns)} patterns from CentralCloud")
+
+    case register_consensus_workflow_patterns(patterns) do
+      {:ok, registered_count} ->
+        Logger.debug("Registered #{registered_count} workflow consensus patterns")
+
+        :telemetry.execute(
+          [:evolution, :pgflow, :workflow_patterns_registered],
+          %{pattern_count: registered_count, total_patterns: length(patterns)},
+          %{source: message["instance_id"]}
+        )
+
+        {:ok, "registered"}
+
+      {:error, reason} ->
+        Logger.warning("Failed to register workflow consensus patterns: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  def handle_workflow_consensus_patterns(message) do
+    Logger.error("Invalid workflow_consensus_patterns message: #{inspect(message)}")
+    {:error, :invalid_message}
+  end
+
   # ============================================================================
   # Private Helpers
   # ============================================================================
@@ -231,7 +288,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
   end
 
   defp handle_consensus_rejected(proposal, message) do
-    Logger.warn("Consensus rejected for proposal #{proposal.id}")
+    Logger.warning("Consensus rejected for proposal #{proposal.id}")
 
     votes = message["votes"] || %{}
 
@@ -260,7 +317,7 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
     reason = message["reason"]
     threshold = message["threshold"] || %{}
 
-    Logger.warn("Initiating rollback for proposal #{proposal.id}: #{reason}")
+    Logger.warning("Initiating rollback for proposal #{proposal.id}: #{reason}")
 
     # In real implementation, this would:
     # 1. Revert code changes
@@ -364,5 +421,59 @@ defmodule Singularity.Evolution.Pgflow.Consumers do
 
         {:error, {:execution_mark_failed, executing_error}}
     end
+  end
+
+  defp register_consensus_workflow_patterns(patterns) do
+    alias Singularity.Evolution.GenesisWorkflowLearner
+
+    try do
+      # Filter patterns by minimum confidence (0.80+)
+      min_confidence = 0.80
+
+      valid_patterns =
+        patterns
+        |> Enum.filter(fn p ->
+          is_map(p) && Map.get(p, "confidence", 0.0) >= min_confidence
+        end)
+
+      if Enum.empty?(valid_patterns) do
+        Logger.info("No patterns met confidence threshold (#{min_confidence})")
+        {:ok, 0}
+      else
+        # Register all valid patterns locally
+        registered_count =
+          Enum.reduce(valid_patterns, 0, fn pattern_data, count ->
+            pattern = convert_payload_to_pattern(pattern_data)
+
+            case GenesisWorkflowLearner.register_consensus_patterns([pattern]) do
+              {:ok, _} ->
+                count + 1
+
+              {:error, reason} ->
+                Logger.warning("Failed to register consensus pattern: #{inspect(reason)}")
+                count
+            end
+          end)
+
+        {:ok, registered_count}
+      end
+    rescue
+      e ->
+        Logger.error("Exception during workflow pattern registration: #{inspect(e)}")
+        {:error, {:exception, e}}
+    end
+  end
+
+  defp convert_payload_to_pattern(payload) when is_map(payload) do
+    %{
+      workflow_type: payload["workflow_type"] || :unknown,
+      config: payload["config"] || %{},
+      success_rate: payload["success_rate"] || 0.0,
+      frequency: payload["frequency"] || 0,
+      quality_improvements: payload["quality_improvements"] || 0.0,
+      confidence: payload["confidence"] || 0.0,
+      genesis_id: payload["genesis_id"],
+      timestamp: payload["timestamp"] || DateTime.utc_now() |> DateTime.to_iso8601()
+    }
   end
 end

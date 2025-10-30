@@ -1,4 +1,4 @@
-defmodule Singularity.PgFlow.Repo do
+defmodule Singularity.Infrastructure.PgFlow.Repo do
   @moduledoc """
   Ecto repo for PgFlow.
   """

@@ -353,7 +353,7 @@ impl PackageFileWatcher {
 
   /// Discover repositories from local git information (fastest approach)
   async fn discover_local_git_repositories(&mut self) -> Result<()> {
-    info!("🔍 Discovering repositories from local git information");
+    info!("?? Discovering repositories from local git information");
 
     // Clone scan directories to avoid borrowing issues
     let scan_dirs = self.config.scan_directories.clone();
@@ -429,14 +429,14 @@ impl PackageFileWatcher {
       .and_then(|n| n.to_str())
       .unwrap_or("unknown");
 
-    info!("📦 Processing git repository: {}", repo_name);
+    info!("?? Processing git repository: {}", repo_name);
 
     // Extract dependencies from package files
     self.extract_dependencies_from_repo(repo_path);
 
     // Get git remote information for context
     if let Ok(remote_url) = Self::get_git_remote_url(repo_path) {
-      info!("🔗 Repository remote: {}", remote_url);
+      info!("?? Repository remote: {}", remote_url);
     }
 
     Ok(())
@@ -494,7 +494,7 @@ impl PackageFileWatcher {
           for dep in dependencies {
             self.register_dependency(&dep.name, &dep.version, &dep.ecosystem);
             info!(
-              "📊 Registered: {}@{} ({}) from {}",
+              "?? Registered: {}@{} ({}) from {}",
               dep.name,
               dep.version,
               dep.ecosystem,
@@ -916,7 +916,7 @@ impl PackageFileWatcher {
     }
 
     info!(
-      "🤖 Starting fully automatic FACT orchestration with local git discovery"
+      "?? Starting fully automatic FACT orchestration with local git discovery"
     );
     self.is_running = true;
 
@@ -925,7 +925,7 @@ impl PackageFileWatcher {
 
     // Start real-time package file watcher (filtered to only package files)
     if self.config.watch_package_files {
-      self.start_package_file_watcher();
+      self.start_package_file_watcher()?;
     }
 
     // Initial discovery and population
@@ -935,16 +935,16 @@ impl PackageFileWatcher {
     // Start background tasks
     self.start_background_tasks()?;
 
-    info!("✅ Automatic FACT orchestration started successfully");
+    info!("? Automatic FACT orchestration started successfully");
     Ok(())
   }
 
   /// Start real-time package file watcher (ONLY package manager files)
   #[cfg(feature = "orchestration")]
-  fn start_package_file_watcher(&self) {
+  fn start_package_file_watcher(&self) -> Result<(), Box<dyn std::error::Error>> {
     use tokio::sync::mpsc;
 
-    info!("🔍 Starting real-time package file watcher (filtered)");
+    info!("?? Starting real-time package file watcher (filtered)");
 
     let (tx, mut rx) = mpsc::channel(1000);
 
@@ -985,7 +985,7 @@ impl PackageFileWatcher {
             if let Some(filename) = path.file_name() {
               if let Some(filename_str) = filename.to_str() {
                 if package_files.contains(&filename_str) {
-                  info!("📦 Package file changed: {}", path.display());
+                  info!("?? Package file changed: {}", path.display());
                   let _ = tx.try_send(event);
                 }
               }
@@ -999,7 +999,7 @@ impl PackageFileWatcher {
     // Watch scan directories for package file changes only
     for dir in &self.config.scan_directories {
       if dir.exists() {
-        info!("👀 Watching {} for package file changes", dir.display());
+        info!("?? Watching {} for package file changes", dir.display());
         watcher.watch(dir, RecursiveMode::Recursive)?;
       }
     }
@@ -1010,7 +1010,7 @@ impl PackageFileWatcher {
         match event.kind {
           EventKind::Create(_) | EventKind::Modify(_) => {
             for path in event.paths {
-              info!("⚡ Real-time: Package file updated: {}", path.display());
+              info!("? Real-time: Package file updated: {}", path.display());
               // TODO: Trigger immediate dependency re-parsing for this project
               // This would call parse_project_dependencies(&path) immediately
             }
@@ -1019,14 +1019,17 @@ impl PackageFileWatcher {
         }
       }
     });
+
+    Ok(())
   }
 
   #[cfg(not(feature = "orchestration"))]
   #[allow(clippy::unused_self)]
-  fn start_package_file_watcher(&self) {
+  fn start_package_file_watcher(&self) -> Result<(), Box<dyn std::error::Error>> {
     info!(
-      "📦 Package file watching not available (orchestration feature disabled)"
+      "?? Package file watching not available (orchestration feature disabled)"
     );
+    Ok(())
   }
 
   /// Three-tier cleanup: 30 days no hits (unless 4+ recent hits) OR 130 days maximum age
@@ -1051,7 +1054,7 @@ impl PackageFileWatcher {
     let mut recent_hits_saved = 0;
 
     info!(
-      "🧹 Three-tier cleanup: no hits since {} (unless {}+ recent hits) OR created before {}",
+      "?? Three-tier cleanup: no hits since {} (unless {}+ recent hits) OR created before {}",
       no_hits_cutoff.format("%Y-%m-%d"),
       self.version_registry.min_recent_hits_threshold,
       max_age_cutoff.format("%Y-%m-%d")
@@ -1076,7 +1079,7 @@ impl PackageFileWatcher {
                 let should_remove = should_remove_for_no_hits || too_old;
                 if should_remove {
                     if too_old {
-                        info!("🗑️  Removing old version: {}@{} (age: {} days, {} total hits, {} recent hits)", 
+                        info!("???  Removing old version: {}@{} (age: {} days, {} total hits, {} recent hits)", 
                             tool_name, version.version,
                             (Utc::now() - version.first_seen).num_days(),
                             version.hit_count,
@@ -1084,7 +1087,7 @@ impl PackageFileWatcher {
                         );
                         max_age_count += 1;
                     } else {
-                        info!("🗑️  Removing unused version: {}@{} (last hit: {}, {} recent hits < {})",
+                        info!("???  Removing unused version: {}@{} (last hit: {}, {} recent hits < {})",
                             tool_name, version.version,
                             version.last_hit.format("%Y-%m-%d"),
                             recent_hits_count,
@@ -1094,7 +1097,7 @@ impl PackageFileWatcher {
                     }
                 } else if no_hits_old && has_enough_recent_hits {
                     // This version was saved by recent hits
-                    info!("💾 Keeping version due to recent activity: {}@{} (last hit: {}, {} recent hits)",
+                    info!("?? Keeping version due to recent activity: {}@{} (last hit: {}, {} recent hits)",
                         tool_name, version.version,
                         version.last_hit.format("%Y-%m-%d"),
                         recent_hits_count
@@ -1115,12 +1118,12 @@ impl PackageFileWatcher {
     let total_cleaned = no_hits_count + max_age_count;
     if total_cleaned > 0 {
       info!(
-        "✅ Cleaned up {} versions ({} no-hits, {} max-age), saved {} with recent activity",
+        "? Cleaned up {} versions ({} no-hits, {} max-age), saved {} with recent activity",
         total_cleaned, no_hits_count, max_age_count, recent_hits_saved
       );
     } else {
       info!(
-        "✅ No versions to clean up, {} saved by recent activity",
+        "? No versions to clean up, {} saved by recent activity",
         recent_hits_saved
       );
     }
@@ -1152,7 +1155,7 @@ impl PackageFileWatcher {
             .retain(|&hit_time| hit_time > cutoff);
 
           debug!(
-            "📊 Versioned hit: {}@{} (total: {}, recent: {})",
+            "?? Versioned hit: {}@{} (total: {}, recent: {})",
             tool_name,
             v,
             versioned_dep.hit_count,
@@ -1181,7 +1184,7 @@ impl PackageFileWatcher {
         main_entry.recent_hits.retain(|&hit_time| hit_time > cutoff);
 
         debug!(
-          "📊 Main hit: {} (total: {}, recent: {})",
+          "?? Main hit: {} (total: {}, recent: {})",
           tool_name,
           main_entry.hit_count,
           main_entry.recent_hits.len()
@@ -1200,7 +1203,7 @@ impl PackageFileWatcher {
           recent_hits: vec![now],
           used_by_projects: vec!["general".to_string()],
         });
-        debug!("📊 Main hit created: {} (first hit)", tool_name);
+        debug!("?? Main hit created: {} (first hit)", tool_name);
       }
     }
   }
@@ -1228,17 +1231,17 @@ impl PackageFileWatcher {
     // Check current status
     match self.version_registry.build_queue.get(&fact_query) {
       Some(FactBuildStatus::Ready) => {
-        debug!("✅ FACT ready for query: {}", fact_query);
+        debug!("? FACT ready for query: {}", fact_query);
         Ok(FactBuildResult::Ready)
       }
       Some(FactBuildStatus::Building) => {
-        info!("⏳ FACT already building, short wait: {}", fact_query);
+        info!("? FACT already building, short wait: {}", fact_query);
         // Already building, do short wait
         return self.short_wait_for_build(&fact_query).await;
       }
       Some(FactBuildStatus::Queued { position }) => {
         info!(
-          "⏳ FACT queued (position {}), short wait: {}",
+          "? FACT queued (position {}), short wait: {}",
           position, fact_query
         );
         return self.short_wait_for_build(&fact_query).await;
@@ -1246,7 +1249,7 @@ impl PackageFileWatcher {
       None => {
         // Not in queue, trigger build and short wait
         info!(
-          "🚀 FACT missing (timeout/new repo), triggering build: {}",
+          "?? FACT missing (timeout/new repo), triggering build: {}",
           fact_query
         );
         self
@@ -1273,7 +1276,7 @@ impl PackageFileWatcher {
     let mut wait_count = 0;
     let max_polls = max_quick_wait_seconds * 2; // 500ms intervals
 
-    info!("⏳ Quick wait (max 10s) for FACT: {}", fact_query);
+    info!("? Quick wait (max 10s) for FACT: {}", fact_query);
 
     while wait_count < max_polls {
       tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
@@ -1282,7 +1285,7 @@ impl PackageFileWatcher {
       match self.version_registry.build_queue.get(fact_query) {
         Some(FactBuildStatus::Ready) => {
           info!(
-            "✅ FACT quick build completed: {} ({}s)",
+            "? FACT quick build completed: {} ({}s)",
             fact_query,
             wait_count as f32 * 0.5
           );
@@ -1290,13 +1293,13 @@ impl PackageFileWatcher {
         }
         Some(FactBuildStatus::Building) => {
           debug!(
-            "🔄 Still building: {} ({}s)",
+            "?? Still building: {} ({}s)",
             fact_query,
             wait_count as f32 * 0.5
           );
         }
         _ => {
-          warn!("❌ FACT build failed during quick wait: {}", fact_query);
+          warn!("? FACT build failed during quick wait: {}", fact_query);
           return Ok(FactBuildResult::Failed);
         }
       }
@@ -1304,7 +1307,7 @@ impl PackageFileWatcher {
 
     // 10 seconds passed, still building - return "building" status
     info!(
-      "⏰ FACT still building after 10s, returning 'building' status: {}",
+      "? FACT still building after 10s, returning 'building' status: {}",
       fact_query
     );
     Ok(FactBuildResult::Building)
@@ -1318,7 +1321,7 @@ impl PackageFileWatcher {
     tool_name: &str,
     version: Option<&str>,
   ) -> Result<()> {
-    info!("🔨 Building FACT: {} (estimated 2-10 seconds)", fact_query);
+    info!("?? Building FACT: {} (estimated 2-10 seconds)", fact_query);
 
     let fact_query_owned = fact_query.to_string();
     let _tool_name_owned = tool_name.to_string();
@@ -1329,7 +1332,7 @@ impl PackageFileWatcher {
       // Simulate FACT building process (replace with actual FACT generation)
       tokio::time::sleep(tokio::time::Duration::from_secs(3)).await; // Typical build time
 
-      info!("✅ FACT build completed: {}", fact_query_owned);
+      info!("? FACT build completed: {}", fact_query_owned);
       // TODO: Update build_queue status to Ready
       // self.version_registry.build_queue.insert(fact_query_owned, FactBuildStatus::Ready);
     });
@@ -1357,7 +1360,7 @@ impl PackageFileWatcher {
           |v| format!("{tool_name}@{v}"),
         );
 
-        info!("📖 Serving FACT: {}", fact_query);
+        info!("?? Serving FACT: {}", fact_query);
         // TODO: Fetch actual FACT content from storage
         Ok(format!("FACT content for {fact_query}"))
       }
@@ -1370,7 +1373,7 @@ impl PackageFileWatcher {
             |v| format!("{tool_name}@{v}")
           )
         );
-        info!("🔄 {}", retry_msg);
+        info!("?? {}", retry_msg);
         Ok(retry_msg)
       }
       FactBuildResult::Failed => {
@@ -1381,7 +1384,7 @@ impl PackageFileWatcher {
             |v| format!("{tool_name}@{v}")
           )
         );
-        warn!("❌ {}", error_msg);
+        warn!("? {}", error_msg);
         Ok(error_msg)
       }
     }
@@ -1389,13 +1392,13 @@ impl PackageFileWatcher {
 
   /// Stop automatic orchestration
   pub fn stop(&mut self) {
-    info!("🛑 Stopping automatic FACT orchestration");
+    info!("?? Stopping automatic FACT orchestration");
     self.is_running = false;
   }
 
   /// Initial discovery of all projects and dependencies
   async fn initial_discovery(&mut self) -> Result<()> {
-    info!("🔍 Starting initial project discovery");
+    info!("?? Starting initial project discovery");
 
     for scan_dir in &self.config.scan_directories.clone() {
       if scan_dir.exists() {
@@ -1405,7 +1408,7 @@ impl PackageFileWatcher {
       }
     }
 
-    info!("📊 Discovered {} projects", self.discovered_projects.len());
+    info!("?? Discovered {} projects", self.discovered_projects.len());
     Ok(())
   }
 
@@ -2968,7 +2971,7 @@ impl PackageFileWatcher {
   /// Populate initial knowledge base automatically
   #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
   async fn populate_initial_knowledge(&mut self) -> Result<()> {
-    info!("📚 Populating initial FACT knowledge base");
+    info!("?? Populating initial FACT knowledge base");
 
     // Collect all unique dependencies across all projects
     let mut all_dependencies: HashMap<String, String> = HashMap::new();
@@ -3012,7 +3015,7 @@ impl PackageFileWatcher {
       }
     }
 
-    info!("✅ Initial knowledge base population completed");
+    info!("? Initial knowledge base population completed");
     Ok(())
   }
 
@@ -3024,7 +3027,7 @@ impl PackageFileWatcher {
     dep_name: &str,
     version: &str,
   ) -> Result<()> {
-    info!("📖 Populating knowledge for {}@{}", dep_name, version);
+    info!("?? Populating knowledge for {}@{}", dep_name, version);
 
     #[cfg(feature = "github")]
     if self.github.is_some() {
@@ -3158,7 +3161,7 @@ impl PackageFileWatcher {
         };
 
         info!(
-          "✅ Knowledge analyzed for {}@{}: {} snippets, {} examples",
+          "? Knowledge analyzed for {}@{}: {} snippets, {} examples",
           dep_name,
           version,
           fact_entries.snippets.len(),
@@ -3180,7 +3183,7 @@ impl PackageFileWatcher {
   /// Start background tasks for continuous updates
   #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
   fn start_background_tasks(&self) -> Result<()> {
-    info!("🔄 Starting background update tasks");
+    info!("?? Starting background update tasks");
 
     // File system watcher for project changes
     tokio::spawn(async move {

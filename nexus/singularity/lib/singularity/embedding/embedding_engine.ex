@@ -1,41 +1,34 @@
-defmodule Singularity.EmbeddingEngine do
+defmodule Singularity.Embedding.EmbeddingEngine do
   @moduledoc """
-  EmbeddingEngine - Unified interface for local embedding inference.
+  Embedding Service - Generates embeddings for Singularity and CentralCloud.
 
-  This module provides a unified interface to Singularity's embedding infrastructure,
-  delegating to Embedding.NxService for actual inference.
+  This service generates 2560-dim multi-vector embeddings
+  (Qodo 1536-dim + Jina v3 1024-dim concatenated) via direct function calls.
 
-  ## Key Features
+  ## Message Flow (Removed pgmq)
 
-  - **Multi-Vector Embeddings**: Qodo (1536-dim) + Jina v3 (1024-dim) = 2560-dim vectors
-  - **GPU Auto-Detection**: Automatically uses CUDA/Metal/ROCm when available
-  - **Code-Optimized**: Qodo-Embed specializes in code semantics
-  - **Fine-Tunable**: Train Qodo on your specific codebase patterns
-  - **Batch Processing**: Embed entire codebases efficiently
+  ```
+  CentralCloud / Other Service
+      ↓ (direct call) process_request(query, model)
+  {query: "text", model: :qodo}
+      ↓
+  Embedding.Service.process_request/2
+      ↓ (calls) NxService.embed(query)
+  [1536-dim Qodo + 1024-dim Jina] = 2560-dim vector
+      ↓ (returns) {:ok, embedding}
+  {embedding: [2560-dim vector]}
+      ↓
+  Caller stores + searches pgvector
+  ```
 
   ## Usage
 
+  Direct function call - no pgmq needed:
   ```elixir
-  # Generate embedding for text
-  {:ok, embedding} = EmbeddingEngine.embed("some code or text")
-
-  # Generate embeddings for multiple texts
-  {:ok, embeddings} = EmbeddingEngine.embed_batch(["code1", "code2"])
-
-  # Compare similarity between two texts
-  {:ok, similarity} = EmbeddingEngine.similarity(text1, text2)
+  {:ok, embedding} = Embedding.Service.process_request("my text", :qodo)
   ```
 
-  ## Models
-
-  - **Qodo-Embed-1** (1536-dim): Code semantics, fine-tunable
-  - **Jina v3** (1024-dim): General text understanding, reference model
-  - **Combined** (2560-dim): Both models concatenated for RAG
-
-  ## Implementation Note
-
-  This module delegates to `Singularity.Embedding.NxService` which provides
-  the actual ONNX runtime inference using Nx for performance.
+  ---
 
   ## AI Navigation Metadata
 
@@ -43,24 +36,40 @@ defmodule Singularity.EmbeddingEngine do
 
   ```json
   {
-    "module": "Singularity.EmbeddingEngine",
-    "purpose": "Unified interface for local embedding inference (Qodo + Jina v3)",
+    "module": "Singularity.Embedding.EmbeddingEngine",
+    "purpose": "pgmq-based embedding service providing GPU-accelerated 2560-dim vectors via ONNX runtime",
     "role": "service",
     "layer": "infrastructure",
-    "key_responsibilities": [
-      "Provide unified embed/2, embed_batch/1, similarity/2 API",
-      "Delegate to Embedding.NxService for actual inference",
-      "Support GPU auto-detection and model selection",
-      "Enable batch processing and fine-tuning workflows"
-    ],
-    "prevents_duplicates": ["LocalEmbeddingService", "NxEmbedder", "LocalVectorService"],
-    "uses": ["Singularity.Embedding.NxService", "Pgvector", "Logger"],
     "alternatives": {
-      "Singularity.Embedding.NxService": "Direct inference (lower-level)",
-      "External APIs": "API-based embeddings (cost, latency, privacy concerns)",
-      "Embedding.Service": "pgmq-based distributed embedding service"
+      "Singularity.Embedding.NxService": "Use Embedding.Service for pgmq access; NxService for local inference",
+      "External Embedding APIs": "This provides local GPU/CPU inference with no API costs or rate limits",
+      "CentralCloud Embeddings": "This is the SOURCE - CentralCloud requests embeddings from here"
+    },
+    "disambiguation": {
+      "vs_nx_service": "Embedding.Service wraps NxService with pgmq interface for distributed access",
+      "vs_external_apis": "Pure local ONNX inference (Qodo + Jina) with GPU auto-detection",
+      "vs_centralcloud": "CentralCloud is a CLIENT - this service PROVIDES embeddings to it"
     }
   }
+  ```
+
+  ### Architecture (Mermaid)
+
+  ```mermaid
+  graph TB
+      Client[CentralCloud / Agent] -->|1. pgmq embedding.request| Service[Embedding.Service]
+      Service -->|2. embed/2| NxService[NxService ONNX Runtime]
+      NxService -->|3. GPU detect| GPU{GPU Available?}
+      GPU -->|Yes| Qodo[Qodo 1536-dim]
+      GPU -->|No| MiniLM[MiniLM 384-dim]
+      Qodo -->|4. concat| Jina[Jina v3 1024-dim]
+      Jina -->|5. 2560-dim vector| NxService
+      NxService -->|6. return| Service
+      Service -->|7. pgmq embedding.response| Client
+
+      style Service fill:#90EE90
+      style NxService fill:#FFD700
+      style GPU fill:#87CEEB
   ```
 
   ### Call Graph (YAML)
@@ -68,244 +77,125 @@ defmodule Singularity.EmbeddingEngine do
   ```yaml
   calls_out:
     - module: Singularity.Embedding.NxService
-      function: embed/1, embed_batch/1, similarity/2, finetune/2
-      purpose: Local embedding inference
+      function: embed/2
+      purpose: Generate embeddings using ONNX runtime with GPU acceleration
       critical: true
-      pattern: "Delegation to specialized inference service"
-
-    - module: Logger
-      function: debug/2, error/2
-      purpose: Log inference operations
-      critical: false
 
   called_by:
-    - module: Singularity.EmbeddingGenerator
-      function: embed/2
-      purpose: Generate embeddings for vector DB storage
-      frequency: per_embedding_request
+    - module: CentralCloud
+      purpose: Generate embeddings for knowledge artifacts and templates via direct call
+      frequency: high
+    - module: Singularity.Knowledge.ArtifactStore
+      purpose: Generate embeddings for artifact storage
+      frequency: high
 
-    - module: Singularity.Storage.PatternMiner
-      function: embed_pattern/1
-      purpose: Embed code patterns for clustering
-      frequency: per_pattern
+    - module: Singularity.Knowledge.ArtifactStore
+      purpose: Generate embeddings for semantic search
+      frequency: medium
 
-    - module: Mix.Tasks.Templates
-      function: search_templates/1
-      purpose: Embed template queries for semantic search
-      frequency: per_search
-
-  state_transitions:
-    - name: embed
-      from: idle
-      to: idle
-      trigger: embed/1 called
-      actions:
-        - Delegate to NxService.embed/1
-        - Return embedding vector
-        - Log debug info
-
-    - name: batch_embed
-      from: idle
-      to: idle
-      trigger: embed_batch/1 called
-      actions:
-        - Delegate to NxService.embed_batch/1
-        - Return list of embeddings
-        - Log performance metrics
+    - module: Rust Prompt Engine
+      purpose: Embed code snippets for similarity search
+      frequency: medium
 
   depends_on:
-    - Singularity.Embedding.NxService (MUST be available)
-    - Nx library for tensor operations (MUST be available)
-    - ONNX model files (MUST exist in models directory)
+    - Singularity.Messaging.Client (MUST start first - pgmq messaging)
+    - Singularity.Embedding.NxService (MUST load models first)
+    - ONNX Runtime (Qodo, Jina, MiniLM models)
+
+  supervision:
+    supervised: true
+    reason: "GenServer managing pgmq subscriptions and async tasks, must restart to re-subscribe"
+  ```
+
+  ### Data Flow (Mermaid Sequence)
+
+  ```mermaid
+  sequenceDiagram
+      participant Client as CentralCloud
+      participant Service as Embedding.Service
+      participant NxService
+      participant ONNX as ONNX Runtime (GPU)
+
+      Note over Client: Request Embedding
+      Client->>Service: pgmq embedding.request {"query": "code snippet", "model": "qodo"}
+      Service->>Service: parse_request(msg)
+      Service->>NxService: embed("code snippet", model: :qodo)
+      NxService->>ONNX: infer(qodo_model, input)
+      ONNX-->>NxService: 1536-dim tensor
+      NxService->>ONNX: infer(jina_model, input)
+      ONNX-->>NxService: 1024-dim tensor
+      NxService->>NxService: concat([qodo, jina]) = 2560-dim
+      NxService-->>Service: {:ok, embedding_tensor}
+      Service->>Service: Nx.to_list(embedding)
+      Service->>Client: pgmq embedding.response {embedding: [2560 floats], status: "success"}
   ```
 
   ### Anti-Patterns
 
-  #### ❌ DO NOT create LocalEmbeddingService or NxEmbedder duplicates
-  **Why:** EmbeddingEngine is the single unified interface for embedding operations.
+  #### ❌ DO NOT create "EmbeddingManager" or "EmbeddingOrchestrator"
+  **Why:** Embedding.Service already manages NxService and provides the interface.
+  **Use instead:** Call `Embedding.Service.process_request/2` directly.
 
+  #### ❌ DO NOT call NxService directly
   ```elixir
-  # ❌ WRONG - Duplicate embedding service
-  defmodule MyApp.LocalEmbeddingService do
-    def embed(text) do
-      # Re-implementing what EmbeddingEngine already does
-    end
-  end
+  # ❌ WRONG - Bypassing Embedding.Service
+  Singularity.Embedding.NxService.embed(query)
 
-  # ✅ CORRECT - Use EmbeddingEngine
-  {:ok, embedding} = EmbeddingEngine.embed(text)
+  # ✅ CORRECT - Embedding.Service provides the interface
+  {:ok, embedding} = Embedding.Service.process_request(query, :qodo)
   ```
 
-  #### ❌ DO NOT call Embedding.NxService directly from non-infrastructure code
-  **Why:** EmbeddingEngine provides the stable API; NxService is implementation detail.
+  #### ❌ DO NOT implement custom embedding models without GPU fallback
+  **Why:** NxService auto-detects GPU and selects appropriate model (Qodo/MiniLM).
+  **Use instead:** Extend NxService with new model + fallback strategy.
 
-  ```elixir
-  # ❌ WRONG - Direct dependency on NxService
-  {:ok, embedding} = Embedding.NxService.embed(text)
-
-  # ✅ CORRECT - Use public EmbeddingEngine interface
-  {:ok, embedding} = EmbeddingEngine.embed(text)
-  ```
-
-  #### ❌ DO NOT use external embedding APIs without strong justification
-  **Why:** EmbeddingEngine provides local inference with no cost/latency/privacy concerns.
-
-  ```elixir
-  # ❌ WRONG - External API call
-  {:ok, embedding} = OpenAI.Embeddings.embed("text")
-
-  # ✅ CORRECT - Local embedding inference
-  {:ok, embedding} = EmbeddingEngine.embed("text")
-  ```
+  #### ❌ DO NOT use external embedding APIs
+  **Why:** Pure local ONNX inference is faster, cheaper, and has no rate limits.
+  **When to use external APIs:** Never for internal tooling. This IS the embedding service.
 
   ### Search Keywords
 
-  embedding, Nx inference, Qodo-Embed, Jina v3, local inference, vector embeddings,
-  code embeddings, semantic search, multi-vector, concatenated embeddings, fine-tuning,
-  GPU acceleration, batch processing, pgvector, embeddings
+  embedding service, pgmq embeddings, onnx runtime, gpu embeddings, qodo embed,
+  jina v3, multi-vector embeddings, semantic search, local inference, no api costs,
+  cuda acceleration, metal acceleration, 2560 dimensions, code embeddings
   """
 
+  use GenServer
   require Logger
+
   alias Singularity.Embedding.NxService
 
-  @type embedding :: Pgvector.t()
-  @type similarity :: float()
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+
+  @impl GenServer
+  def init(opts) do
+    Logger.info("✅ Embedding Service started")
+    {:ok, %{}}
+  end
 
   @doc """
-  Generate embedding for a single text using local models.
+  Generate embedding for given query and model.
 
-  Returns a Pgvector of 2560 dimensions (Qodo 1536 + Jina v3 1024 concatenated).
-
-  ## Examples
-
-      iex> EmbeddingEngine.embed("def hello do :ok end")
-      {:ok, %Pgvector{}}
-
-      iex> EmbeddingEngine.embed("some text", model: :qodo)
-      {:ok, %Pgvector{}}
+  Returns `{:ok, embedding}` where embedding is a list of floats (2560-dimensional).
   """
-  @spec embed(String.t(), keyword()) :: {:ok, embedding()} | {:error, term()}
-  def embed(text, opts \\ []) do
-    case NxService.embed(text, opts) do
+  def process_request(query, model \\ :qodo) when is_binary(query) do
+    Logger.debug("Generating embedding for: #{query}")
+    generate_embedding(%{query: query, model: model})
+  end
+
+  # Private helpers
+
+  defp generate_embedding(request) do
+    case NxService.embed(request.query, model: request.model) do
       {:ok, embedding} ->
-        Logger.debug("Generated embedding", text_length: String.length(text))
-        {:ok, Pgvector.new(embedding)}
+        embedding_list = Nx.to_list(embedding)
+        {:ok, embedding_list}
 
       {:error, reason} ->
-        Logger.error("Embedding generation failed", reason: inspect(reason))
+        Logger.error("Embedding generation failed: #{inspect(reason)}")
         {:error, reason}
-    end
-  end
-
-  @doc """
-  Generate embeddings for multiple texts in batch.
-
-  More efficient than calling embed/1 multiple times.
-
-  ## Examples
-
-      iex> EmbeddingEngine.embed_batch(["code1", "code2"])
-      {:ok, [%Pgvector{}, %Pgvector{}]}
-  """
-  @spec embed_batch([String.t()], keyword()) :: {:ok, [embedding()]} | {:error, term()}
-  def embed_batch(texts, opts \\ []) do
-    case NxService.embed_batch(texts, opts) do
-      {:ok, embeddings} ->
-        Logger.debug("Generated batch embeddings", count: length(texts))
-        {:ok, Enum.map(embeddings, &Pgvector.new/1)}
-
-      {:error, reason} ->
-        Logger.error("Batch embedding generation failed", reason: inspect(reason))
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Calculate cosine similarity between two texts using their embeddings.
-
-  Returns a float between -1.0 and 1.0 (1.0 = identical, 0.0 = orthogonal, -1.0 = opposite).
-
-  ## Examples
-
-      iex> EmbeddingEngine.similarity("async fn", "async function")
-      {:ok, 0.92}
-  """
-  @spec similarity(String.t(), String.t(), keyword()) :: {:ok, similarity()} | {:error, term()}
-  def similarity(text1, text2, opts \\ []) do
-    case NxService.similarity(text1, text2, opts) do
-      {:ok, similarity} ->
-        Logger.debug("Calculated similarity", similarity: Float.round(similarity, 3))
-        {:ok, similarity}
-
-      {:error, reason} ->
-        Logger.error("Similarity calculation failed", reason: inspect(reason))
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Get dimension of the embedding vector.
-
-  Returns 2560 (Qodo 1536-dim + Jina v3 1024-dim concatenated).
-
-  All embeddings from EmbeddingEngine are 2560-dimensional concatenated vectors
-  combining code semantics (Qodo) with general text understanding (Jina v3).
-  """
-  @spec dimension() :: pos_integer()
-  def dimension, do: 2560
-
-  @doc """
-  Check if GPU is available for acceleration.
-
-  Returns true if CUDA, Metal, or ROCm environment is detected.
-  """
-  @spec gpu_available?() :: boolean()
-  def gpu_available? do
-    case {System.get_env("CUDA_VISIBLE_DEVICES"), System.get_env("HIP_VISIBLE_DEVICES")} do
-      {nil, nil} -> false
-      _ -> true
-    end
-  end
-
-  @doc """
-  Preload embedding models into memory for faster inference.
-
-  Models are cached in memory after first use. This function forces loading
-  them on startup for better performance.
-
-  ## Options
-
-  - `:qodo_embed` - Qodo-Embed-1 model (1536-dim)
-  - `:jina_v3` - Jina v3 model (1024-dim)
-
-  ## Examples
-
-      iex> EmbeddingEngine.preload_models([:qodo_embed, :jina_v3])
-      :ok
-  """
-  @spec preload_models([atom()]) :: :ok | {:error, term()}
-  def preload_models(models) do
-    NxService.preload_models(models)
-  end
-
-  @doc false
-  def id, do: "embedding_engine"
-
-  @doc false
-  def label, do: "EmbeddingEngine"
-
-  @doc false
-  def description, do: "Local embedding service (Qodo + Jina v3)"
-
-  @doc false
-  def capabilities, do: [:embed, :batch_embed, :similarity, :finetune]
-
-  @doc false
-  def health do
-    if gpu_available?() do
-      {:ok, %{status: "healthy", device: "gpu"}}
-    else
-      {:ok, %{status: "healthy", device: "cpu"}}
     end
   end
 end

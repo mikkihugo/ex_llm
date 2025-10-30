@@ -1,4 +1,4 @@
-defmodule Singularity.LLM.Prompt.Cache do
+defmodule Singularity.LLM.PromptCache do
   @moduledoc """
   Prompt caching for LLM responses using similarity matching.
 

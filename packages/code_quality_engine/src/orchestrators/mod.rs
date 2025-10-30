@@ -7,9 +7,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 
 use crate::analysis::architecture::{PatternDetectorRegistry, PatternDetectorOrchestrator, PatternDetection, PatternType};
+use crate::registry::MetaRegistry;
+use patterns_store::PatternStore;
 
 /// Analysis orchestrator for coordinating all analysis types
 pub struct AnalysisOrchestrator {
@@ -41,11 +42,25 @@ impl AnalysisOrchestrator {
 
         let mut results = AnalysisResults::default();
 
+        // Hydrate detectors from CentralCloud when requested
+        if input.detection_options.use_learned_patterns {
+            let mut meta = MetaRegistry::new();
+            let _ = self.pattern_orchestrator.hydrate_from_central(&mut meta).await;
+        }
+
+        // Attach centralized PatternStore to options if requested
+        let mut det_opts = input.detection_options.clone();
+        if det_opts.use_learned_patterns {
+            let store = PatternStore::new();
+            // TODO(minimal): Populate store from MetaRegistry (real data)
+            det_opts.pattern_store = Some(Arc::new(store));
+        }
+
         // Run pattern detection (always included)
         if let Ok(pattern_results) = self.pattern_orchestrator.detect_all(
             &input.path,
             input.pattern_types.clone(),
-            &input.detection_options,
+            &det_opts,
         ).await {
             results.pattern_results = Some(pattern_results);
         }
@@ -102,7 +117,7 @@ impl AnalysisOrchestrator {
         Ok(())
     }
 
-    async fn send_learning_data(&self, results: &AnalysisResults) -> Result<(), AnalysisError> {
+    async fn send_learning_data(&self, _results: &AnalysisResults) -> Result<(), AnalysisError> {
         // TODO: Send aggregated learning data to CentralCloud via pgmq queues
         // Instead of HTTP calls, send messages to PostgreSQL queues that
         // ex_pgflow workflows will consume and forward to CentralCloud
@@ -225,8 +240,8 @@ pub enum AnalysisError {
 /// Run full analysis orchestration (NIF function)
 #[no_mangle]
 pub extern "C" fn run_analysis_orchestration(
-    path: *const std::os::raw::c_char,
-    config_json: *const std::os::raw::c_char,
+    _path: *const std::os::raw::c_char,
+    _config_json: *const std::os::raw::c_char,
 ) -> *mut std::os::raw::c_char {
     // This would be the actual NIF implementation
     // In real implementation, this would:
@@ -241,6 +256,13 @@ pub extern "C" fn run_analysis_orchestration(
 }
 
 /// Free NIF result string
+///
+/// # Safety
+/// - `result` must be a valid pointer previously returned by this module
+///   via `CString::into_raw`.
+/// - It must not be freed elsewhere and must not be used after this call
+///   (use-after-free).
+/// - Passing an arbitrary or already-freed pointer is undefined behavior.
 #[no_mangle]
 pub unsafe extern "C" fn free_analysis_result(result: *mut std::os::raw::c_char) {
     if !result.is_null() {

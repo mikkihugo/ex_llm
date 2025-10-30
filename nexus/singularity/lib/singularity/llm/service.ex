@@ -279,7 +279,7 @@ defmodule Singularity.LLM.Service do
       purpose: Architecture analysis and design
       frequency: high
 
-    - module: Singularity.Execution.SPARC.Orchestrator
+    - module: Singularity.Execution.SPARC.SPARCOrchestrator
       purpose: SPARC workflow execution
       frequency: high
 

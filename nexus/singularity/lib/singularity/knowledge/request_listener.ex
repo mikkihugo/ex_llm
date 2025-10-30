@@ -8,7 +8,6 @@ defmodule Singularity.Knowledge.RequestListener do
   require Logger
 
   alias Singularity.Knowledge.Requests
-  alias Singularity.PgFlow
   alias Singularity.Repo
 
   @channel "knowledge_requests"

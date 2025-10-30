@@ -335,7 +335,7 @@ defmodule Singularity.Pipeline.Learning do
     end)
   end
 
-  defp track_execution_metrics(metrics, _success) do
+  defp track_execution_metrics(metrics, success) do
     run_id = UUID.generate()
 
     # Record cost, tokens, latency metrics
@@ -349,7 +349,7 @@ defmodule Singularity.Pipeline.Learning do
            prompt_tokens: metrics[:prompt_tokens] || 0,
            completion_tokens: metrics[:completion_tokens] || 0,
            latency_ms: metrics[:latency_ms] || 0,
-           success: _success
+           success: success
          }) do
       {:ok, _} ->
         Logger.debug("Pipeline.Learning: Execution metrics recorded")
@@ -372,7 +372,7 @@ defmodule Singularity.Pipeline.Learning do
         "timestamp" => DateTime.utc_now()
       }
 
-      case PgFlow.send_with_notify("patterns_learned_published", message) do
+      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("patterns_learned_published", message) do
         {:ok, _} ->
           Logger.debug("Execution learning published to CentralCloud")
 

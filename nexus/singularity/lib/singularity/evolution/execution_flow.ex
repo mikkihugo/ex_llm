@@ -69,7 +69,7 @@ defmodule Singularity.Evolution.ExecutionFlow do
   alias Singularity.Repo
   alias Singularity.Schemas.Evolution.Proposal
   alias CentralCloud.Guardian.RollbackService
-  alias Singularity.HotReload.ModuleReloader
+  alias Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange
 
   @doc """
   Execute an approved proposal end-to-end.

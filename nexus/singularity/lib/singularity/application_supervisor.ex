@@ -50,10 +50,10 @@ defmodule Singularity.ApplicationSupervisor do
 
     if auto_ingestion_config[:enabled] do
       # Singleton pattern: if not running, start it; otherwise skip (already running)
-      case Process.whereis(Singularity.Execution.Planning.CodeFileWatcher) do
+      case Process.whereis(Singularity.Ingestion.WatchFilesAndEnqueueIngestion) do
         nil ->
           Logger.info("CodeFileWatcher not running - starting it (auto ingestion enabled)")
-          children ++ [Singularity.Execution.Planning.CodeFileWatcher]
+          children ++ [Singularity.Ingestion.WatchFilesAndEnqueueIngestion]
 
         _pid ->
           Logger.debug("CodeFileWatcher already running - skipping (singleton: 1 is enough)")

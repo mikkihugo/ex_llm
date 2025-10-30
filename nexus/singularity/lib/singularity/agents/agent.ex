@@ -87,7 +87,6 @@ defmodule Singularity.Agents.Agent do
   alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter
-  alias Singularity.Control.QueueCrdt
   alias Singularity.DynamicCompiler
   alias MapSet
 

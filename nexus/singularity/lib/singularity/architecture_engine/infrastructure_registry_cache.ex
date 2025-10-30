@@ -69,8 +69,6 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
   use GenServer
   require Logger
 
-  alias Singularity.Database.MessageQueue
-  alias Singularity.PgFlow
 
   # Public API
 
@@ -191,7 +189,7 @@ defmodule Singularity.Architecture.InfrastructureRegistryCache do
 
     try do
       # Send request via pgflow (pgmq + NOTIFY)
-      case PgFlow.send_with_notify("infrastructure_registry_requests", request) do
+      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("infrastructure_registry_requests", request) do
         {:ok, _} ->
           # Wait for response from CentralCloud
           Logger.debug("Sent infrastructure registry request to CentralCloud via pgflow")

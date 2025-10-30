@@ -1,4 +1,4 @@
-defmodule Singularity.PgFlow do
+defmodule Singularity.Infrastructure.PgFlow.Queue do
   @moduledoc """
   Main context for PgFlow operations with integrated real-time messaging.
 
@@ -7,8 +7,8 @@ defmodule Singularity.PgFlow do
   """
 
   require Logger
-  alias Singularity.PgFlow.Repo
-  alias Singularity.PgFlow.Workflow
+  alias Singularity.Infrastructure.PgFlow.Repo
+  alias Singularity.Infrastructure.PgFlow.Workflow
   alias Pgflow
 
   defdelegate persist_workflow(attrs), to: __MODULE__, as: :create_workflow
@@ -47,7 +47,7 @@ defmodule Singularity.PgFlow do
   - `{:error, reason}` - Send failed
 
   ## Example
-      {:ok, :sent} = PgFlow.send_with_notify(
+      {:ok, :sent} = Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
         "chat_messages", 
         %{type: "notification", content: "Hello!"}
       )
@@ -74,7 +74,7 @@ defmodule Singularity.PgFlow do
   - `{:error, reason}` - Send failed
 
   ## Example
-      :ok = PgFlow.notify_only("knowledge_requests", "request_updated")
+      :ok = Singularity.Infrastructure.PgFlow.Queue.notify_only("knowledge_requests", "request_updated")
   """
   @spec notify_only(String.t(), String.t(), Ecto.Repo.t()) :: :ok | {:error, any()}
   def notify_only(channel, payload, repo \\ Singularity.Repo) do

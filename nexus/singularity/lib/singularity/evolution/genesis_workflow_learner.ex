@@ -377,7 +377,7 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
               count + 1
 
             {:error, reason} ->
-              Logger.warn("Failed to publish workflow: #{inspect(reason)}")
+              Logger.warning("Failed to publish workflow: #{inspect(reason)}")
               count
           end
         end)
@@ -434,18 +434,261 @@ defmodule Singularity.Evolution.GenesisWorkflowLearner do
   def get_learning_health do
     {:ok, patterns} = analyze_workflow_effectiveness()
 
+    count = max(length(patterns), 1)
+
     %{
       total_workflows_analyzed: length(patterns),
-      average_confidence: Enum.map(patterns, & &1.confidence) |> Enum.sum() / max(length(patterns), 1),
+      average_confidence: (Enum.map(patterns, & &1.confidence) |> Enum.sum()) / count,
       workflows_ready_to_publish: Enum.count(patterns, fn p -> p.confidence >= @confidence_quorum end),
       workflows_published: Enum.count(patterns, fn p -> p.status == :published end),
       total_executions: Enum.map(patterns, & &1.execution_count) |> Enum.sum(),
-      average_success_rate: Enum.map(patterns, & &1.success_rate) |> Enum.sum() / max(length(patterns), 1),
+      average_success_rate: (Enum.map(patterns, & &1.success_rate) |> Enum.sum()) / count,
       last_analysis_at: DateTime.utc_now()
     }
   end
 
+  @doc """
+  Report proven workflows to CentralCloud for global aggregation and consensus.
+
+  Sends workflow patterns to CentralCloud to:
+  1. Aggregate patterns from multiple instances
+  2. Calculate consensus on best workflow configurations
+  3. Detect patterns that work across instances
+  4. Share consensus back for adoption
+
+  Uses pgflow for reliable delivery to CentralCloud services.
+
+  ## Parameters
+  - `criteria` - Reporting criteria:
+    - `:min_confidence` - Minimum confidence to report (default: @confidence_quorum)
+    - `:workflow_types` - Specific types to report (default: all)
+    - `:limit` - Max patterns to report per call (default: 10)
+
+  ## Examples
+
+      {:ok, summary} = GenesisWorkflowLearner.report_to_centralcloud(
+        min_confidence: 0.85,
+        limit: 5
+      )
+  """
+  @spec report_to_centralcloud(keyword()) ::
+          {:ok, %{reported: integer(), skipped: integer()}} | {:error, term()}
+  def report_to_centralcloud(criteria \\ []) do
+    min_confidence = Keyword.get(criteria, :min_confidence, @confidence_quorum)
+    limit = Keyword.get(criteria, :limit, 10)
+    workflow_types = Keyword.get(criteria, :workflow_types, :all)
+
+    try do
+      # Get patterns ready to report
+      {:ok, patterns} = analyze_workflow_effectiveness()
+
+      reportable_patterns =
+        patterns
+        |> Enum.filter(fn p -> p.confidence >= min_confidence end)
+        |> filter_by_workflow_type(workflow_types)
+        |> Enum.take(limit)
+
+      # Prepare payload for CentralCloud (via pgflow)
+      payload = %{
+        "instance_id" => get_instance_id(),
+        "reported_at" => DateTime.utc_now() |> DateTime.to_iso8601(),
+        "workflow_patterns" => Enum.map(reportable_patterns, &pattern_to_payload/1),
+        "confidence_threshold" => min_confidence,
+        "pattern_count" => length(reportable_patterns)
+      }
+
+      # Send to CentralCloud via pgflow
+      case send_to_centralcloud(payload) do
+        {:ok, _msg_id} ->
+          Logger.info("Reported workflow patterns to CentralCloud", %{
+            pattern_count: length(reportable_patterns),
+            min_confidence: min_confidence
+          })
+
+          :telemetry.execute([:evolution, :workflow, :reported_to_centralcloud], %{
+            count: length(reportable_patterns),
+            min_confidence: min_confidence
+          })
+
+          {:ok, %{reported: length(reportable_patterns), skipped: 0}}
+
+        {:error, reason} ->
+          Logger.error("Failed to report workflows to CentralCloud: #{inspect(reason)}")
+          {:error, {:report_failed, reason}}
+      end
+    rescue
+      e ->
+        Logger.error("Workflow CentralCloud reporting error: #{inspect(e)}")
+        {:error, {:reporting_error, inspect(e)}}
+    end
+  end
+
+  @doc """
+  Request consensus workflow patterns from CentralCloud.
+
+  Sends a request to CentralCloud (via pgflow) asking for aggregated workflow
+  patterns that have achieved consensus across multiple instances.
+
+  CentralCloud service analyzes patterns reported by all instances and
+  returns high-confidence consensus patterns. This instance then registers
+  them locally for adoption.
+
+  Note: This sends a request message via pgflow. CentralCloud service
+  processes it asynchronously and sends results back on pgflow topic.
+
+  ## Parameters
+  - `criteria` - Request criteria:
+    - `:min_confidence` - Minimum consensus confidence (default: 0.85)
+    - `:workflow_type` - Specific type to request (optional)
+
+  ## Examples
+
+      :ok = GenesisWorkflowLearner.request_consensus_from_centralcloud(
+        min_confidence: 0.85
+      )
+
+      # CentralCloud processes asynchronously and sends results back
+      # via pgflow topic "singularity_workflow_patterns_consensus"
+  """
+  @spec request_consensus_from_centralcloud(keyword()) :: :ok | {:error, term()}
+  def request_consensus_from_centralcloud(criteria \\ []) do
+    min_confidence = Keyword.get(criteria, :min_confidence, 0.85)
+    workflow_type = Keyword.get(criteria, :workflow_type)
+
+    request_payload = %{
+      "instance_id" => get_instance_id(),
+      "request_type" => "workflow_patterns_consensus",
+      "min_confidence" => min_confidence,
+      "workflow_type" => workflow_type,
+      "requested_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    case send_to_centralcloud(request_payload) do
+      {:ok, _msg_id} ->
+        Logger.info("Requested workflow consensus from CentralCloud", %{
+          min_confidence: min_confidence,
+          workflow_type: workflow_type
+        })
+
+        :telemetry.execute([:evolution, :workflow, :consensus_requested], %{
+          min_confidence: min_confidence
+        })
+
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to request consensus from CentralCloud: #{inspect(reason)}")
+        {:error, {:request_failed, reason}}
+    end
+  end
+
+  @doc """
+  Register consensus patterns received from CentralCloud.
+
+  Called when CentralCloud sends back consensus workflow patterns
+  (via pgflow message listener). Registers high-confidence patterns
+  from other instances for local use.
+
+  ## Parameters
+  - `consensus_patterns` - List of pattern maps from CentralCloud
+
+  ## Examples
+
+      {:ok, count} = GenesisWorkflowLearner.register_consensus_patterns(
+        consensus_patterns_from_centralcloud
+      )
+  """
+  @spec register_consensus_patterns([map()]) :: {:ok, integer()} | {:error, term()}
+  def register_consensus_patterns(consensus_patterns) when is_list(consensus_patterns) do
+    try do
+      registered_count =
+        Enum.reduce(consensus_patterns, 0, fn pattern_data, count ->
+          pattern = payload_to_pattern(pattern_data)
+
+          case Dispatcher.record_workflow_pattern(pattern.workflow_type, pattern) do
+            :ok -> count + 1
+            {:error, reason} ->
+              Logger.warning("Failed to register consensus pattern: #{inspect(reason)}")
+              count
+          end
+        end)
+
+      Logger.info("Registered consensus patterns from CentralCloud", %{
+        pattern_count: registered_count
+      })
+
+      :telemetry.execute([:evolution, :workflow, :consensus_registered], %{
+        count: registered_count
+      })
+
+      {:ok, registered_count}
+    rescue
+      e ->
+        Logger.error("Error registering consensus patterns: #{inspect(e)}")
+        {:error, {:registration_error, inspect(e)}}
+    end
+  end
+
   # Private Helpers
+
+  defp send_to_centralcloud(payload) do
+    # Uses pgflow to send to CentralCloud service (port 4001)
+    # Topic: "centralcloud/workflow_patterns" for reliable delivery
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_workflow_patterns", payload) do
+      {:ok, :sent} -> {:ok, :sent}
+      {:ok, msg_id} when is_integer(msg_id) -> {:ok, msg_id}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    e ->
+      Logger.error("pgflow send to CentralCloud failed: #{inspect(e)}")
+      {:error, {:pgflow_failed, inspect(e)}}
+  end
+
+  defp pattern_to_payload(pattern) do
+    %{
+      "workflow_type" => Atom.to_string(pattern.workflow_type),
+      "config" => pattern.config,
+      "success_rate" => pattern.success_rate,
+      "confidence" => pattern.confidence,
+      "execution_count" => pattern.execution_count,
+      "quality_improvements" => pattern.quality_improvements || %{},
+      "avg_execution_ms" => pattern.avg_execution_ms,
+      "status" => Atom.to_string(pattern.status)
+    }
+  end
+
+  defp payload_to_pattern(payload) when is_map(payload) do
+    %{
+      workflow_type: String.to_atom(payload["workflow_type"]),
+      config: payload["config"] || %{},
+      success_rate: payload["success_rate"] || 0.0,
+      confidence: payload["confidence"] || 0.0,
+      execution_count: payload["execution_count"] || 0,
+      quality_improvements: payload["quality_improvements"] || %{},
+      avg_execution_ms: payload["avg_execution_ms"] || 0,
+      status: :published,
+      genesis_id: payload["genesis_id"],
+      last_executed_at: DateTime.utc_now(),
+      created_at: DateTime.utc_now()
+    }
+  end
+
+  defp filter_by_workflow_type(patterns, :all), do: patterns
+
+  defp filter_by_workflow_type(patterns, types) when is_list(types) do
+    Enum.filter(patterns, fn p -> p.workflow_type in types end)
+  end
+
+  defp filter_by_workflow_type(patterns, type) when is_atom(type) do
+    Enum.filter(patterns, fn p -> p.workflow_type == type end)
+  end
+
+  defp get_instance_id do
+    System.get_env("SINGULARITY_INSTANCE_ID") ||
+      Application.get_env(:singularity, :instance_id) ||
+      "singularity_default"
+  end
 
   defp get_workflow_type(session) do
     Map.get(session, :workflow_type) || :unknown

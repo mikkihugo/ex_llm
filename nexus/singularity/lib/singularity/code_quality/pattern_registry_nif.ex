@@ -235,7 +235,7 @@ defmodule Singularity.CodeQuality.PatternRegistryNIF do
 
   @doc false
   def nif_not_loaded(function_name) do
-    Logger.warn(
+    Logger.warning(
       "PatternRegistryNIF.#{function_name} not loaded - Rust NIF not compiled. " <>
         "Run: cd singularity && cargo build --release in packages/pattern_registry_nif"
     )

@@ -102,7 +102,7 @@ defmodule Singularity.Search.HybridCodeSearch do
   import Ecto.Query
   require Logger
   alias Singularity.Repo
-  # alias Singularity.Search.EmbeddingService  # Using Singularity.Embedding.Service instead
+  # alias Singularity.Search.EmbeddingService  # Using Singularity.Embedding.EmbeddingEngine instead
 
   @type search_mode :: :keyword | :semantic | :hybrid
   @type search_result :: %{
@@ -295,7 +295,7 @@ defmodule Singularity.Search.HybridCodeSearch do
     language = Keyword.get(opts, :language)
 
     # Generate embedding for query
-    with {:ok, embedding} <- Singularity.Embedding.Service.process_request(query, :qodo) do
+    with {:ok, embedding} <- Singularity.Embedding.EmbeddingEngine.process_request(query, :qodo) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =
@@ -344,7 +344,7 @@ defmodule Singularity.Search.HybridCodeSearch do
     semantic_weight = Map.get(weights, :semantic, 0.6)
 
     # Generate embedding for query
-    with {:ok, embedding} <- Singularity.Embedding.Service.process_request(query, :qodo) do
+    with {:ok, embedding} <- Singularity.Embedding.EmbeddingEngine.process_request(query, :qodo) do
       embedding_list = embedding_to_list(embedding)
 
       base_query =

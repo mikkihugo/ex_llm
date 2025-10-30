@@ -262,7 +262,7 @@ defmodule Singularity.CodeQuality.PatternRegistry do
     # 1. Generate embedding for query
     # 2. Use pgvector similarity search
     # For now, return empty list and log
-    Logger.warn("PatternRegistry: Semantic search not yet implemented")
+    Logger.warning("PatternRegistry: Semantic search not yet implemented")
     {:ok, []}
   end
 
@@ -376,7 +376,7 @@ defmodule Singularity.CodeQuality.PatternRegistry do
           acc ++ category_patterns
 
         {:error, reason} ->
-          Logger.warn("Failed to load category #{category}: #{inspect(reason)}")
+          Logger.warning("Failed to load category #{category}: #{inspect(reason)}")
           acc
       end
     end)
@@ -398,7 +398,7 @@ defmodule Singularity.CodeQuality.PatternRegistry do
         {:ok, patterns}
 
       {:error, :enoent} ->
-        Logger.warn("PatternRegistry: Category directory not found: #{dir}")
+        Logger.warning("PatternRegistry: Category directory not found: #{dir}")
         {:ok, []}
 
       {:error, reason} ->
@@ -423,22 +423,22 @@ defmodule Singularity.CodeQuality.PatternRegistry do
                   validated_pattern
 
                 {:error, reason} ->
-                  Logger.warn("Pattern validation failed for #{path}: #{inspect(reason)}")
+                  Logger.warning("Pattern validation failed for #{path}: #{inspect(reason)}")
                   nil
               end
 
             {:error, _reason} ->
-              Logger.warn("Failed to parse JSON: #{path}")
+              Logger.warning("Failed to parse JSON: #{path}")
               nil
           end
 
         {:error, reason} ->
-          Logger.warn("Failed to read pattern file #{path}: #{inspect(reason)}")
+          Logger.warning("Failed to read pattern file #{path}: #{inspect(reason)}")
           nil
       end
     rescue
       e ->
-        Logger.warn("Error loading pattern file #{path}: #{inspect(e)}")
+        Logger.warning("Error loading pattern file #{path}: #{inspect(e)}")
         nil
     end
   end
@@ -497,7 +497,7 @@ defmodule Singularity.CodeQuality.PatternRegistry do
             :ok
 
           {:error, reason} ->
-            Logger.warn("Failed to insert pattern #{pattern_id}: #{inspect(reason)}")
+            Logger.warning("Failed to insert pattern #{pattern_id}: #{inspect(reason)}")
             :error
         end
 
@@ -516,7 +516,7 @@ defmodule Singularity.CodeQuality.PatternRegistry do
               :ok
 
             {:error, reason} ->
-              Logger.warn("Failed to update pattern #{pattern_id}: #{inspect(reason)}")
+              Logger.warning("Failed to update pattern #{pattern_id}: #{inspect(reason)}")
               :error
           end
         else

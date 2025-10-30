@@ -32,7 +32,6 @@ defmodule Singularity.Jobs.PatternSyncJob do
 
   require Logger
   alias Singularity.ArchitectureEngine.FrameworkPatternSync
-  alias Singularity.PgFlow
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
@@ -70,7 +69,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   end
 
   defp notify_sync_complete(sync_type) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_completed",
@@ -91,7 +90,7 @@ defmodule Singularity.Jobs.PatternSyncJob do
   end
 
   defp notify_sync_failed(sync_type, error) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_failed",

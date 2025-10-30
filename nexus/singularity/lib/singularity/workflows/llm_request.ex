@@ -33,7 +33,6 @@ defmodule Singularity.Workflows.LlmRequest do
   """
 
   require Logger
-  alias Singularity.PgFlow
   alias Singularity.LLM.Config
 
   def __workflow_steps__ do
@@ -141,7 +140,7 @@ defmodule Singularity.Workflows.LlmRequest do
       api_version: payload["api_version"]
     )
 
-    case PgFlow.send_with_notify("ai_requests", payload) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("ai_requests", payload) do
       {:ok, :sent} ->
         Logger.info("LLM Workflow: Request enqueued successfully via pgflow",
           request_id: payload["request_id"]
@@ -244,8 +243,16 @@ defmodule Singularity.Workflows.LlmRequest do
         nil -> provider_for_model(model)
         value -> value
       end
+    # Prefer provider influenced by task_type when ambiguous
+    task_influence =
+      case to_string(task_type) do
+        "architect" -> "anthropic"
+        "code_generation" -> provider_for_model(model)
+        _ -> nil
+      end
 
-    {model, selected_provider || provider_for_complexity(complexity)}
+    final_provider = selected_provider || task_influence || provider_for_complexity(complexity)
+    {model, final_provider}
   end
 
   defp decide_model(model, provider, complexity, task_type) when is_atom(model) do
@@ -264,18 +271,18 @@ defmodule Singularity.Workflows.LlmRequest do
         {model, provider_name}
 
       {:error, _} ->
-        # Fallback to hardcoded selection
-        select_best_model_fallback(complexity, provider)
+        # Fallback to hardcoded selection with task influence
+        select_best_model_fallback("#{complexity}", provider || to_string(task_type))
     end
   end
 
-  defp select_best_model_fallback(complexity, provider) do
-    case {complexity, provider} do
+  defp select_best_model_fallback(complexity, provider_hint) do
+    case {complexity, provider_hint} do
       {"simple", _} -> {"gemini-1.5-flash", "gemini"}
       {"medium", _} -> {"claude-sonnet-4.5", "anthropic"}
       {"complex", _} -> {"claude-opus", "anthropic"}
-      {_, "anthropic"} -> {"claude-sonnet-4.5", "anthropic"}
-      {_, "gemini"} -> {"gemini-1.5-flash", "gemini"}
+      {_, hint} when hint in ["anthropic", "architect"] -> {"claude-sonnet-4.5", "anthropic"}
+      {_, hint} when hint in ["gemini", "parser", "classifier"] -> {"gemini-1.5-flash", "gemini"}
       _ -> {"claude-sonnet-4.5", "anthropic"}
     end
   end

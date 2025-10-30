@@ -21,7 +21,6 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
     priority: 5
 
   require Logger
-  alias Singularity.PgFlow
 
   @doc """
   Enqueue knowledge update to send to CentralCloud via pgflow.
@@ -68,7 +67,7 @@ defmodule Singularity.Jobs.CentralCloudUpdateWorker do
       insights: length(insights)
     )
 
-    case PgFlow.send_with_notify("centralcloud_updates", message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_updates", message) do
       {:ok, :sent} ->
         Logger.info("Knowledge update sent to CentralCloud via pgflow",
           instance_id: instance_id,

@@ -48,7 +48,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
 
   ```json
   {
-    "module": "Singularity.Execution.SPARC.Orchestrator",
+    "module": "Singularity.Execution.SPARC.SPARCOrchestrator",
     "purpose": "Dual-DAG orchestration of template selection and SPARC task execution",
     "role": "orchestrator",
     "layer": "domain_services",
@@ -249,7 +249,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
       }
     }
 
-    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created SPARC execution workflow", workflow_id: workflow_id)
 
@@ -337,7 +337,7 @@ defmodule Singularity.Execution.CodeGenerationWorkflow.Orchestrator do
       completed_at: :erlang.system_time(:millisecond)
     }
 
-    Singularity.PgFlow.send_with_notify("sparc_execution_notifications", notification)
+    Singularity.Infrastructure.PgFlow.Queue.send_with_notify("sparc_execution_notifications", notification)
 
     {:reply, {:ok, result, metrics}, new_state}
   end

@@ -25,6 +25,7 @@ pub mod feature;
 pub mod graph;
 #[cfg(feature = "nif")]
 pub mod nif;
+pub mod nif_bindings;
 pub mod orchestrators;
 pub mod parsing;
 pub mod registry;

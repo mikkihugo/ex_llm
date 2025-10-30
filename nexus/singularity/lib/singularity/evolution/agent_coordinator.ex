@@ -167,9 +167,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
   use GenServer
   require Logger
 
-  alias Singularity.Database.MessageQueue
   alias Singularity.Evolution.SafetyProfiles
-  alias Singularity.PgFlow
 
   @centralcloud_changes_queue "centralcloud_changes"
   @centralcloud_patterns_queue "centralcloud_patterns"
@@ -501,7 +499,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case PgFlow.send_with_notify(@centralcloud_changes_queue, message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_changes_queue, message) do
       {:ok, _} ->
         {:ok, :published}
 
@@ -557,7 +555,7 @@ defmodule Singularity.Evolution.AgentCoordinator do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case PgFlow.send_with_notify(@centralcloud_patterns_queue, message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_patterns_queue, message) do
       {:ok, _} ->
         {:ok, :published}
 

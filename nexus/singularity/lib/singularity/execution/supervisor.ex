@@ -8,8 +8,8 @@ defmodule Singularity.Execution.Supervisor do
   ## Managed Processes
 
   ### Planning Components
-  - `Singularity.Execution.TaskGraph.Orchestrator` - GenServer for dependency-aware task orchestration
-  - `Singularity.Code.StartupCodeIngestion` - GenServer for TaskGraph self-diagnosis/auto-fix
+  - `Singularity.Execution.TaskGraph.TaskGraphOrchestrator` - GenServer for dependency-aware task orchestration
+  - `Singularity.Ingestion.RunStartupCodeIngestion` - GenServer for TaskGraph self-diagnosis/auto-fix
   - `Singularity.Execution.SafeWorkPlanner` - GenServer for SAFe methodology planning
   - `Singularity.Execution.WorkPlanAPI` - GenServer providing work plan API
 
@@ -41,8 +41,8 @@ defmodule Singularity.Execution.Supervisor do
 
     children = [
       # Planning components
-      Singularity.Execution.TaskGraph.Orchestrator,
-      Singularity.Code.StartupCodeIngestion,
+      Singularity.Execution.TaskGraph.TaskGraphOrchestrator,
+      Singularity.Ingestion.RunStartupCodeIngestion,
       Singularity.Execution.SafeWorkPlanner,
       Singularity.Execution.WorkPlanAPI,
 

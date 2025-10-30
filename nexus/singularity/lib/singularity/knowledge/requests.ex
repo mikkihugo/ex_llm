@@ -12,7 +12,6 @@ defmodule Singularity.Knowledge.Requests do
 
   alias Singularity.Repo
   alias Singularity.Schemas.KnowledgeRequest
-  alias Singularity.PgFlow
 
   @notify_channel "knowledge_requests"
   @telemetry_prefix [:singularity, :knowledge_request]
@@ -361,7 +360,7 @@ defmodule Singularity.Knowledge.Requests do
       |> build_event()
       |> Jason.encode!()
 
-    case PgFlow.notify_only(@notify_channel, payload, Repo) do
+    case Singularity.Infrastructure.PgFlow.Queue.notify_only(@notify_channel, payload, Repo) do
       :ok ->
         :ok
 

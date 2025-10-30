@@ -297,7 +297,7 @@ defmodule Singularity.Workflows.RcaWorkflow do
             :ok
 
           {:error, reason} ->
-            Logger.warn("Failed to track workflow start", %{
+            Logger.warning("Failed to track workflow start", %{
               reason: inspect(reason)
             })
 

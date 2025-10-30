@@ -3,17 +3,40 @@
 //! Core scanning functionality for the CLI
 
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::path::Path;
 use anyhow::Result;
 use code_quality_engine::orchestrators::{AnalysisOrchestrator, AnalysisInput};
 use code_quality_engine::registry::MetaRegistry;
 use code_quality_engine::analysis::architecture::PatternDetectorRegistry;
 
-use super::{AnalysisResult, Recommendation};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnalysisResult {
+    pub quality_score: f64,
+    pub issues_count: usize,
+    pub recommendations: Vec<Recommendation>,
+    pub metrics: HashMap<String, f64>,
+    pub patterns_detected: Vec<String>,
+    pub intelligence_collected: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Recommendation {
+    pub r#type: String,
+    pub severity: String,
+    pub message: String,
+    pub file: Option<String>,
+    pub line: Option<usize>,
+}
 
 pub struct CodeScanner {
     orchestrator: AnalysisOrchestrator,
     registry: MetaRegistry,
+    // Minimal local?server run ID map for correlation; TODO(minimal): persist with redb
+    run_id_map: Mutex<HashMap<String, String>>, 
 }
 
 impl CodeScanner {
@@ -23,24 +46,37 @@ impl CodeScanner {
         Self {
             orchestrator,
             registry: MetaRegistry::new(),
+            run_id_map: Mutex::new(HashMap::new()),
         }
     }
 
     pub async fn scan(&self, path: &Path) -> Result<AnalysisResult> {
+        // Generate monotonic-ish run ID (UUIDv7)
+        let run_id = Uuid::now_v7().to_string();
+
+        // Ask CentralCloud to start a run and assign canonical server_run_id
+        let server_run_id = self.begin_remote_run(&run_id).await?;
+
         // Create analysis input
         let input = AnalysisInput {
             path: path.to_path_buf(),
             pattern_types: None, // Run all pattern types
             detection_options: Default::default(),
             analysis_options: Default::default(),
-            context: HashMap::new(),
+            context: {
+                let mut map: HashMap<String, serde_json::Value> = HashMap::new();
+                // Use server_run_id as canonical; keep local for correlation
+                map.insert("run_id".to_string(), serde_json::Value::String(server_run_id.clone()));
+                map.insert("local_run_id".to_string(), serde_json::Value::String(run_id));
+                map
+            },
         };
 
-        // Run comprehensive analysis
+        // Run comprehensive analysis (includes pattern detection internally)
         let analysis_results = self.orchestrator.analyze_all(&input, None).await?;
 
-        // Extract patterns
-        let patterns_detected = self.detect_patterns(path).await?;
+        // Extract detected patterns from analysis results (no extra scanning)
+        let patterns_detected = Self::extract_detected_patterns(&analysis_results);
 
         // Calculate quality score from analysis results
         let quality_score = self.calculate_quality_score(&analysis_results);
@@ -64,13 +100,32 @@ impl CodeScanner {
         })
     }
 
-    async fn detect_patterns(&self, _path: &Path) -> Result<Vec<String>> {
-        // TODO: Implement pattern detection using available modules
-        let patterns = vec![
-            "rust".to_string(),
-            "async".to_string(),
-        ];
-        Ok(patterns)
+    /// Begin a remote run and get canonical server_run_id.
+    /// TODO(minimal): Replace with real CentralCloud API/pgmq handshake and error mapping.
+    async fn begin_remote_run(&self, local_run_id: &str) -> Result<String> {
+        // Minimal placeholder: generate a distinct UUIDv7 to represent server-issued ID
+        let server_run_id = Uuid::now_v7().to_string();
+
+        // Record mapping for later lookups (e.g., on result upload)
+        if let Ok(mut guard) = self.run_id_map.lock() {
+            guard.insert(local_run_id.to_string(), server_run_id.clone());
+        }
+
+        Ok(server_run_id)
+    }
+
+    fn extract_detected_patterns(analysis_results: &code_quality_engine::orchestrators::AnalysisResults) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        if let Some(map) = &analysis_results.pattern_results {
+            for (ptype, detections) in map {
+                // Minimal: record one entry per detection using pattern type name
+                let name = format!("{:?}", ptype).to_lowercase();
+                for _d in detections {
+                    out.push(name.clone());
+                }
+            }
+        }
+        out
     }
 
     fn calculate_quality_score(&self, analysis_results: &code_quality_engine::orchestrators::AnalysisResults) -> f64 {
@@ -150,6 +205,8 @@ impl CodeScanner {
         metrics
     }
 }
+
+fn main() {}
 
 pub async fn analyze_local(path: &Path) -> Result<AnalysisResult> {
     let scanner = CodeScanner::new();

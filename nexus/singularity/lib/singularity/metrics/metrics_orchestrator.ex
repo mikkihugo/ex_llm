@@ -1,4 +1,4 @@
-defmodule Singularity.Metrics.Orchestrator do
+defmodule Singularity.Metrics.MetricsOrchestrator do
   @moduledoc """
   Metrics Orchestrator - Unified interface for code metrics analysis
 
@@ -29,7 +29,7 @@ defmodule Singularity.Metrics.Orchestrator do
 
   ## Example
 
-      iex> Singularity.Metrics.Orchestrator.analyze_file("lib/my_module.ex")
+      iex> Singularity.Metrics.MetricsOrchestrator.analyze_file("lib/my_module.ex")
       {:ok, %{
         file_path: "lib/my_module.ex",
         language: :elixir,

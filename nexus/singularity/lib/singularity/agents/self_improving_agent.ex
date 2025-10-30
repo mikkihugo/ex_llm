@@ -116,9 +116,8 @@ defmodule Singularity.SelfImprovingAgent do
   alias Singularity.Execution.Runners.Control
   alias Singularity.Execution.Autonomy.Decider
   alias Singularity.Execution.Autonomy.Limiter
-  alias Singularity.Control.QueueCrdt
   alias Singularity.DynamicCompiler
-  alias Singularity.HITL.ApprovalService
+  alias Singularity.HITL.ApprovalOrchestrator
   alias Singularity.Agents.TemplatePerformance
   alias MapSet
 
@@ -1670,9 +1669,9 @@ defmodule Singularity.SelfImprovingAgent do
   ## Phase 4: Template Performance Analysis & Improvement
 
   defp request_approvals_existing(fixes) do
-    # Use existing ApprovalService
+    # Use existing ApprovalOrchestrator
     Enum.each(fixes, fn fix ->
-      case ApprovalService.request_approval(
+      case ApprovalOrchestrator.request_approval(
              file_path: "system_wide",
              diff: generate_fix_diff(fix),
              description: fix.description,

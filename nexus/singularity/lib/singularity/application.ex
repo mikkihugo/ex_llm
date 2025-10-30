@@ -373,7 +373,7 @@ defmodule Singularity.Application do
       Singularity.Git.Supervisor,
 
       # HTDAG Auto Code Ingestion - Hierarchical task-based automatic code ingestion
-      Singularity.HTDAG.Supervisor,
+      Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor,
 
       # PGFlow Workflow Supervisors - New workflow orchestration
       # Handles: Architecture learning workflows with better observability

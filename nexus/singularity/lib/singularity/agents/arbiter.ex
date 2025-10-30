@@ -33,7 +33,7 @@ defmodule Singularity.Agents.Arbiter do
       payload: entry
     }
 
-    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         # Send approval notification via PgFlow
         notification = %{
@@ -44,7 +44,7 @@ defmodule Singularity.Agents.Arbiter do
           expires_at: now + @token_ttl_ms
         }
 
-        case Singularity.PgFlow.send_with_notify("approval_notifications", notification) do
+        case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("approval_notifications", notification) do
           {:ok, _} ->
             Logger.info("Approval issued and notification sent", token: token)
             token
@@ -86,7 +86,7 @@ defmodule Singularity.Agents.Arbiter do
       payload: entry
     }
 
-    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         # Send workflow approval notification via PgFlow
         notification = %{
@@ -97,7 +97,7 @@ defmodule Singularity.Agents.Arbiter do
           expires_at: now + @token_ttl_ms
         }
 
-        case Singularity.PgFlow.send_with_notify("workflow_approval_notifications", notification) do
+        case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("workflow_approval_notifications", notification) do
           {:ok, _} ->
             Logger.info("Workflow approval issued and notification sent", token: token)
             token
@@ -119,63 +119,7 @@ defmodule Singularity.Agents.Arbiter do
 
   @doc "Authorize a workflow execution using a token"
   def authorize_workflow(token) when is_binary(token) do
-    # Prefer PgFlow-backed check (visibility), fall back to local ETS
-    case Singularity.PgFlow.get_workflow(token) do
-      {:ok, workflow} when is_map(workflow) ->
-        entry = Map.get(workflow, :payload)
-        now = :erlang.system_time(:millisecond)
-
-        if entry && entry.expires_at > now do
-          :ets.delete(@table, token)
-          # remove persisted record for safety/consumption
-          case Singularity.PgFlow.update_workflow_status(workflow, "consumed") do
-            {:ok, _} ->
-              # Send consumption notification
-              notification = %{
-                type: "approval_consumed",
-                token: token,
-                consumed_at: now
-              }
-
-              Singularity.PgFlow.send_with_notify("approval_notifications", notification)
-
-            {:error, reason} ->
-              Logger.warning("Failed to update workflow status after consumption",
-                token: token,
-                reason: reason
-              )
-          end
-
-          :ok
-        else
-          # expired
-          :ets.delete(@table, token)
-          {:error, :expired}
-        end
-
-      :not_found ->
-        # fallback to local ETS lookup
-        case :ets.lookup(@table, token) do
-          [{^token, entry}] ->
-            now = :erlang.system_time(:millisecond)
-
-            if entry.expires_at > now do
-              :ets.delete(@table, token)
-              :ok
-            else
-              :ets.delete(@table, token)
-              {:error, :expired}
-            end
-
-          [] ->
-            {:error, :not_found}
-        end
-    end
-  end
-
-  @doc "Authorize a workflow execution using a token"
-  def authorize_workflow(token) when is_binary(token) do
-    case Singularity.PgFlowAdapter.fetch_workflow(token) do
+    case Singularity.Infrastructure.PgFlow.Adapter.fetch_workflow(token) do
       {:ok, workflow} when is_map(workflow) ->
         entry = Map.get(workflow, :payload)
         now = :erlang.system_time(:millisecond)
@@ -205,7 +149,7 @@ defmodule Singularity.Agents.Arbiter do
 
   def authorize_edit(token, _context) when is_binary(token) do
     # Prefer PgFlow-backed check (visibility), fall back to local ETS
-    case Singularity.PgFlowAdapter.fetch_workflow(token) do
+    case Singularity.Infrastructure.PgFlow.Adapter.fetch_workflow(token) do
       {:ok, workflow} when is_map(workflow) ->
         entry = Map.get(workflow, :payload) || Map.get(workflow, :payload)
         now = :erlang.system_time(:millisecond)

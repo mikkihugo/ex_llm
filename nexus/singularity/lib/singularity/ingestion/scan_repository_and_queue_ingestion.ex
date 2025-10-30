@@ -1,4 +1,4 @@
-defmodule Singularity.Code.FullRepoScanner do
+defmodule Singularity.Ingestion.ScanRepositoryAndQueueIngestion do
   @moduledoc """
   Incremental learning system for TaskGraph to understand and auto-repair the ENTIRE codebase.
 
@@ -1117,10 +1117,10 @@ defmodule Singularity.Code.FullRepoScanner do
 
   defp map_sparc_system(learning) do
     %{
-      module: "Singularity.Execution.SPARC.Orchestrator",
+      module: "Singularity.Execution.SPARC.SPARCOrchestrator",
       purpose: "SPARC methodology orchestration",
       current_state:
-        check_module_in_learning(learning, "Singularity.Execution.SPARC.Orchestrator"),
+        check_module_in_learning(learning, "Singularity.Execution.SPARC.SPARCOrchestrator"),
       integration_with_task_graph: "TaskGraph executor applies SPARC phases to tasks",
       what_it_does: """
       - Specification: Define requirements

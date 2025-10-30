@@ -1,4 +1,4 @@
-defmodule Singularity.HITL.ApprovalService do
+defmodule Singularity.HITL.ApprovalOrchestrator do
   @moduledoc """
   Queue-backed HITL approval service for Singularity.
 
@@ -8,8 +8,6 @@ defmodule Singularity.HITL.ApprovalService do
 
   require Logger
 
-  alias Singularity.Database.MessageQueue
-  alias Singularity.PgFlow
   alias Ecto.UUID
 
   @approval_timeout_ms 30_000
@@ -83,7 +81,7 @@ defmodule Singularity.HITL.ApprovalService do
   defp dispatch_and_wait(payload, response_queue) do
     with :ok <- ensure_queue(@request_queue),
          :ok <- ensure_queue(response_queue),
-         result <- PgFlow.send_with_notify(@request_queue, payload) do
+         result <- Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@request_queue, payload) do
       case result do
         {:ok, _} ->
           await_response(response_queue, @approval_timeout_ms)

@@ -87,9 +87,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
   alias Singularity.Storage.FailurePatternStore
   alias Singularity.Validation.EffectivenessTracker
   alias Singularity.Evolution.AdaptiveConfidenceGating
-  alias Singularity.PgFlow
   alias Singularity.LLM.Config
-  alias Singularity.Settings
 
   @type rule :: %{
           pattern: map(),
@@ -701,7 +699,7 @@ defmodule Singularity.Evolution.RuleEvolutionSystem do
         "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
       }
 
-      case PgFlow.send_with_notify("genesis_rule_updates", payload) do
+      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_rule_updates", payload) do
         {:ok, :sent} ->
           Logger.debug("RuleEvolutionSystem: Rule published to Genesis queue via pgflow",
             pattern: inspect(rule.pattern),

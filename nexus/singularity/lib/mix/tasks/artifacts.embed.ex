@@ -161,7 +161,7 @@ defmodule Mix.Tasks.Artifacts.Embed do
   end
 
   # Simple deterministic embedding based on text hash
-  # In production, would use actual Jina v3 via Singularity.Embedding.Service
+  # In production, would use actual Jina v3 via Singularity.Embedding.EmbeddingEngine
   defp generate_simple_embedding(text, dims) do
     # Use hash-based approach for deterministic embeddings
     text_hash = :erlang.phash2(text)

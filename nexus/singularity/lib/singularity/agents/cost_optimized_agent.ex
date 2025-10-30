@@ -417,7 +417,7 @@ defmodule Singularity.Agents.CostOptimizedAgent do
 
   defp check_prompt_cache(task) do
     # Check for similar past LLM calls using pgvector similarity
-    alias Singularity.LLM.Prompt.Cache
+    alias Singularity.LLM.PromptCache
 
     prompt_text = task.description || task.title || ""
 

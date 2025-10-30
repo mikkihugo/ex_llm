@@ -38,7 +38,7 @@ defmodule CentralServices.MixProject do
       # ML and Data Science dependencies (optional - only load if needed)
       {:axon, "~> 0.6", optional: true},                    # Deep Learning framework
       {:nx, "~> 0.6", optional: true},                      # Numerical computing (required by Axon)
-      {:exla, "~> 0.10", optional: true, app: false},                    # GPU acceleration (optional)
+      {:exla, "~> 0.10", optional: true, app: false, compile: false},                    # GPU acceleration (optional)
       {:yaml_elixir, "~> 2.9", optional: true},             # YAML parsing for static models
       {:yamerl, "~> 0.10", optional: true},                 # Alternative YAML parser
       {:timex, "~> 3.7", optional: true},                   # Time utilities for training data

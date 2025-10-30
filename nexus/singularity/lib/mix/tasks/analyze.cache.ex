@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Analyze.Cache do
   """
 
   use Mix.Task
-  alias Singularity.CodeAnalyzer.Cache
+  alias Singularity.CodeAnalyzer.ResultCache
 
   @requirements ["app.start"]
 

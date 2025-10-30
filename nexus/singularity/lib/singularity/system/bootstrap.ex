@@ -12,12 +12,12 @@ defmodule Singularity.System.Bootstrap do
   - `Singularity.Execution.Planning.TaskGraph` - DAG operations (TaskGraph.decompose/1)
   - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute/3)
   - `Singularity.Execution.Planning.TaskGraphEvolution` - Self-improvement (TaskGraphEvolution integration)
-  - `Singularity.Code.FullRepoScanner` - Learning (FullRepoScanner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.Ingestion.ScanRepositoryAndQueueIngestion` - Learning (ScanRepositoryAndQueueIngestion.learn_codebase/1, auto_fix_all/1)
   - `Singularity.Store` - Knowledge storage (Store.all_services/0, query_knowledge/1)
   - `Singularity.SelfImprovingAgent` - Self-improvement (SelfImprovingAgent integration)
   - `Singularity.RAGCodeGenerator` - Code generation (RAGCodeGenerator integration)
   - `Singularity.QualityCodeGenerator` - Quality enforcement (QualityCodeGenerator integration)
-  - `Singularity.Execution.SPARC.Orchestrator` - SPARC methodology integration
+  - `Singularity.Execution.SPARC.SPARCOrchestrator` - SPARC methodology integration
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
 
   ## Bootstrap Process
@@ -49,7 +49,7 @@ defmodule Singularity.System.Bootstrap do
   # INTEGRATION: Knowledge storage
   alias Singularity.Store
   # INTEGRATION: SPARC methodology and hierarchical planning
-  alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
+  alias Singularity.Execution.SPARC.SPARCOrchestrator, as: SparcOrchestrator
 
   @doc """
   Bootstrap TaskGraph with existing self-improvement infrastructure.

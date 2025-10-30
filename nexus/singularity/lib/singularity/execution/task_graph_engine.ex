@@ -10,7 +10,7 @@ defmodule Singularity.Execution.TaskGraphEngine do
 
   This module integrates with:
   - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute_task/2)
-  - `Singularity.Code.FullRepoScanner` - Learning integration (FullRepoScanner.learn_from_execution/2)
+  - `Singularity.Ingestion.ScanRepositoryAndQueueIngestion` - Learning integration (ScanRepositoryAndQueueIngestion.learn_from_execution/2)
   - `Singularity.Execution.Planning.ExecutionTracer` - Execution tracing (ExecutionTracer.trace_task_start/2)
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for decomposition)
   - PostgreSQL table: `task_graph_executions` (stores task execution history)

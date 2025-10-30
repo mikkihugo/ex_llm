@@ -1,4 +1,4 @@
-defmodule Singularity.HotReload.ModuleReloader do
+defmodule Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange do
   @moduledoc """
   Coordinates validation, staging, and activation of new code artifacts.
   """
@@ -7,8 +7,8 @@ defmodule Singularity.HotReload.ModuleReloader do
   require Logger
 
   alias Singularity.{CodeStore, DynamicCompiler}
-  alias Singularity.HTDAG.AutoCodeIngestionDAG
-  alias Singularity.Code.CodebaseDetector
+  alias Singularity.Ingestion.HTDAG.RunCodeIngestionDAG
+  alias Singularity.Ingestion.Core.DetectCurrentCodebase
 
   @type queue_entry :: %{
           id: reference(),
@@ -34,7 +34,7 @@ defmodule Singularity.HotReload.ModuleReloader do
   @spec enqueue_file_reload(String.t(), String.t(), map()) :: :ok | {:error, term()}
   def enqueue_file_reload(file_path, agent_id \\ "htdag-file-reload", metadata \\ %{}) do
     # Auto-detect codebase
-    codebase_id = CodebaseDetector.detect(format: :full)
+    codebase_id = DetectCurrentCodebase.detect(format: :full)
 
     # Create HTDAG payload
     htdag_payload = %{
@@ -96,7 +96,7 @@ defmodule Singularity.HotReload.ModuleReloader do
       {:reply, {:error, :queue_full}, state}
     else
       # Start HTDAG workflow immediately
-      case AutoCodeIngestionDAG.start_dag(htdag_payload) do
+      case RunCodeIngestionDAG.start_dag(htdag_payload) do
         {:ok, dag_id} ->
           Logger.info("HTDAG hot reload started",
             file_path: htdag_payload.file_path,

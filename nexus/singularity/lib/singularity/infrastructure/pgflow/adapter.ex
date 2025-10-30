@@ -1,11 +1,10 @@
-defmodule Singularity.PgFlowAdapter do
+defmodule Singularity.Infrastructure.PgFlow.Adapter do
   @moduledoc """
   PgFlow Adapter - Interface to workflow persistence and retrieval.
 
   Provides access to workflow data stored in PostgreSQL via pgmq/ex_pgflow.
   """
 
-  alias Singularity.PgFlow
 
   @doc """
   Fetch a workflow by token.

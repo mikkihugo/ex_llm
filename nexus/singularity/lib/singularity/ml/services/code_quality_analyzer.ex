@@ -1,4 +1,4 @@
-defmodule Singularity.ML.Services.CodeQualityService do
+defmodule Singularity.ML.Services.CodeQualityAnalyzer do
   @moduledoc """
   Code Quality Service - Manages code quality ML models and analysis.
 

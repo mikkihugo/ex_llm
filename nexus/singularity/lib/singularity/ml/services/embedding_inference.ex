@@ -1,4 +1,4 @@
-defmodule Singularity.ML.Services.EmbeddingService do
+defmodule Singularity.ML.Services.EmbeddingInference do
   @moduledoc """
   Embedding Service - Manages Qodo and Jina embedding models.
 

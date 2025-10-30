@@ -1,4 +1,4 @@
-defmodule Singularity.Workflows.AutoCodeIngestion do
+defmodule Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow do
   @moduledoc """
   PgFlow Workflow for Automatic Code Ingestion
 

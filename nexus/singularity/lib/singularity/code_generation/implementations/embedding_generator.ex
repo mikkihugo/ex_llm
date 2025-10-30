@@ -117,7 +117,7 @@ defmodule Singularity.CodeGeneration.Implementations.EmbeddingGenerator do
       purpose: Embed code chunks for semantic search
       frequency: per_index_operation
 
-    - module: Singularity.Embedding.Service
+    - module: Singularity.Embedding.EmbeddingEngine
       function: handle_request/1
       purpose: Process embedding requests from pgmq
       frequency: per_pgmq_request

@@ -4,7 +4,7 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
 
   Accepts either a list of file paths (`:file_paths`) or a `:codebase_id`
   registered with `Singularity.CodeStore`. For each target file it invokes
-  `Singularity.Metrics.Orchestrator` to compute metrics, enrichment and insights,
+  `Singularity.Metrics.MetricsOrchestrator` to compute metrics, enrichment and insights,
   then stores the results via `Singularity.Metrics.CodeMetrics`.
   """
 
@@ -13,7 +13,7 @@ defmodule Singularity.Workflows.CodeMetricsWorkflow do
 
   import Ecto.Query
 
-  alias Singularity.Metrics.Orchestrator
+  alias Singularity.Metrics.MetricsOrchestrator
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 

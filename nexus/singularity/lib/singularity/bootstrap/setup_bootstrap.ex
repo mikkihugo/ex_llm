@@ -90,7 +90,7 @@ defmodule Singularity.Bootstrap.SetupBootstrap do
 
       # 4. Ingest codebase for semantic search
       %{
-        module: Singularity.Jobs.CodeIngestWorker,
+        module: Singularity.Ingestion.Jobs.ProcessCodeIngestionJob,
         args: %{},
         unique_key: "setup:code_ingest",
         priority: 85

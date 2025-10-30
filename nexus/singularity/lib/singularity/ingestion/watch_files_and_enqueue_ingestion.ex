@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.Planning.CodeFileWatcher do
+defmodule Singularity.Ingestion.WatchFilesAndEnqueueIngestion do
   @moduledoc """
   Real-time Code File Watcher - Auto-ingestion when files change
 
@@ -24,7 +24,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
 
   ```json
   {
-    "module_name": "Singularity.Execution.Planning.CodeFileWatcher",
+    "module_name": "Singularity.Ingestion.WatchFilesAndEnqueueIngestion",
     "purpose": "Real-time code ingestion via file-watching",
     "type": "GenServer + FileSystem integration",
     "operates_on": "lib/**/*.ex files",
@@ -80,9 +80,10 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   use GenServer
   require Logger
 
-  alias Singularity.Code.{StartupCodeIngestion, UnifiedIngestionService}
+  alias Singularity.Ingestion.{RunStartupCodeIngestion}
+  alias Singularity.Ingestion.Core.IngestCodeArtifacts
   alias Singularity.Execution.TodoExtractor
-  alias Singularity.HotReload.ModuleReloader
+  alias Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange
 
   # Configuration - loaded from Application config
   @config Application.get_env(:singularity, :auto_ingestion, %{})
@@ -543,7 +544,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   defp do_reingest(file_path, _project_root) do
     # Auto-detect codebase_id from Git (e.g., "mikkihugo/singularity-incubation")
     # Uses default 5-minute cache (no extend_cache needed for single file hot reload)
-    codebase_id = Singularity.Code.CodebaseDetector.detect(format: :full)
+    codebase_id = Singularity.Ingestion.Core.DetectCurrentCodebase.detect(format: :full)
 
     # Check if HTDAG auto ingestion is enabled
     htdag_enabled =
@@ -551,7 +552,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
 
     if htdag_enabled do
       # Use existing hot reload system with HTDAG integration
-      case ModuleReloader.enqueue_file_reload(file_path, "code-file-watcher", %{
+          case TriggerHotReloadOnFileChange.enqueue_file_reload(file_path, "code-file-watcher", %{
              codebase_id: codebase_id,
              source: :file_watcher
            }) do
@@ -579,7 +580,7 @@ defmodule Singularity.Execution.Planning.CodeFileWatcher do
   end
 
   defp fallback_to_direct_ingestion(file_path, codebase_id) do
-    Singularity.Code.UnifiedIngestionService.ingest_file(file_path, codebase_id: codebase_id)
+    IngestCodeArtifacts.ingest_file(file_path, codebase_id: codebase_id)
   end
 
   # Check if a file is a source file we want to monitor

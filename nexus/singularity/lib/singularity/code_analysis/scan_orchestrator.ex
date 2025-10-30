@@ -197,7 +197,7 @@ defmodule Singularity.CodeAnalysis.ScanOrchestrator do
       submitted_at: DateTime.utc_now()
     }
 
-    case Singularity.PgFlow.send_with_notify("scan_requests", request) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("scan_requests", request) do
       {:ok, :sent} ->
         Logger.info("Scan workflow submitted", workflow_id: workflow_id, path: path)
         {:ok, workflow_id}

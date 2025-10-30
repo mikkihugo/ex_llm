@@ -1,4 +1,4 @@
-defmodule Singularity.Code.CodebaseDetector do
+defmodule Singularity.Ingestion.Core.DetectCurrentCodebase do
   @moduledoc """
   Codebase Detector - Auto-detect codebase ID from Git repository.
 
@@ -6,7 +6,7 @@ defmodule Singularity.Code.CodebaseDetector do
 
   ```json
   {
-    "module": "Singularity.Code.CodebaseDetector",
+    "module": "Singularity.Ingestion.Core.DetectCurrentCodebase",
     "purpose": "Auto-detect codebase_id from Git remote URL",
     "layer": "infrastructure",
     "used_by": ["StartupCodeIngestion", "CodeFileWatcher", "UnifiedIngestionService"]

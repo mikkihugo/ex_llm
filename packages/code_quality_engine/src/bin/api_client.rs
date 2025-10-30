@@ -5,12 +5,12 @@ use anyhow::Result;
 use reqwest::Client;
 use serde_json::json;
 
-use super::AnalysisResult;
+use crate::AnalysisResult;
 
 pub async fn analyze_cloud(
     endpoint: &str,
     api_key: &str,
-    path: &Path,
+    _path: &Path,
     enable_intelligence: bool,
 ) -> Result<AnalysisResult> {
     let client = Client::new();

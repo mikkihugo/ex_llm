@@ -104,21 +104,21 @@ fn demo_linting(code: &str) -> Result<(), Box<dyn std::error::Error>> {
             Pattern::new("console.log($$$ARGS)"),
         )
         .with_severity(Severity::Warning)
-        .with_fix(Pattern::new("logger.debug($$$ARGS)")),
+        .with_fix("logger.debug($$$ARGS)"),
         LintRule::new(
             "no-var",
             "Use 'let' or 'const' instead of 'var'",
             Pattern::new("var $VAR = $VALUE"),
         )
         .with_severity(Severity::Error)
-        .with_fix(Pattern::new("const $VAR = $VALUE")),
+        .with_fix("const $VAR = $VALUE"),
         LintRule::new(
             "prefer-for-of",
             "Use 'for...of' instead of traditional for loop",
             Pattern::new("for (let $I = 0; $I < $ARRAY.length; $I++)"),
         )
         .with_severity(Severity::Info)
-        .with_fix(Pattern::new("for (const $ITEM of $ARRAY)")),
+        .with_fix("for (const $ITEM of $ARRAY)"),
     ];
 
     println!("Checking {} lint rules...", rules.len());

@@ -148,7 +148,7 @@ defmodule Singularity.Evolution.ProposalScorer do
         case update_priority_score(proposal) do
           {:ok, _} -> acc + 1
           {:error, reason} ->
-            Logger.warn("Failed to rebalance proposal #{proposal.id}: #{inspect(reason)}")
+            Logger.warning("Failed to rebalance proposal #{proposal.id}: #{inspect(reason)}")
             acc
         end
       end)

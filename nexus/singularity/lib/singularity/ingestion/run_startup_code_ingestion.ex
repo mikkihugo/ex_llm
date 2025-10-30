@@ -1,4 +1,4 @@
-defmodule Singularity.Code.StartupCodeIngestion do
+defmodule Singularity.Ingestion.RunStartupCodeIngestion do
   @moduledoc """
   Startup Code Ingestion - Automatically ingest entire codebase on startup
 
@@ -29,7 +29,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
   ## Integration Points
 
   This module integrates with:
-  - `Singularity.Code.FullRepoScanner` - Codebase understanding (FullRepoScanner.learn_codebase/1, auto_fix_all/1)
+  - `Singularity.Ingestion.ScanRepositoryAndQueueIngestion` - Codebase understanding (ScanRepositoryAndQueueIngestion.learn_codebase/1, auto_fix_all/1)
   - `Singularity.System.Bootstrap` - System integration (SystemBootstrap.bootstrap/1)
   - `:telemetry` - Observability events (telemetry.execute/3 for monitoring)
   - PostgreSQL table: `startup_code_ingestion_logs` (stores bootstrap history)
@@ -119,7 +119,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
   require Logger
 
   # INTEGRATION: Learning and bootstrap (codebase understanding and system integration)
-  alias Singularity.Code.FullRepoScanner
+  alias Singularity.Ingestion.ScanRepositoryAndQueueIngestion
 
   @default_config [
     enabled: true,
@@ -496,7 +496,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
     # This is the UNIFIED ingestion path - no fragmentation!
 
     alias Singularity.{Repo, Schemas.CodeFile}
-    alias Singularity.Code.CodebaseDetector
+    alias Singularity.Ingestion.Core.DetectCurrentCodebase
 
     module_count =
       length(Map.get(learning, :knowledge, %{}) |> Map.get(:modules, %{}) |> Map.values())
@@ -517,7 +517,7 @@ defmodule Singularity.Code.StartupCodeIngestion do
           # Extract file path from module and use unified ingestion
           file_path = Map.get(module, :file_path) || Map.get(module, :file)
 
-          Singularity.Code.UnifiedIngestionService.ingest_file(file_path,
+          Singularity.Ingestion.Core.IngestCodeArtifacts.ingest_file(file_path,
             codebase_id: codebase_id
           )
         end,

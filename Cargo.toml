@@ -39,6 +39,7 @@ members = [
     "packages/parser_engine/languages/scala",
     "packages/prompt_engine",
     "packages/package_intelligence",
+    "packages/patterns_store",
 ]
 
 exclude = [
@@ -47,6 +48,7 @@ exclude = [
     "nexus/singularity/native/pattern_registry_nif",
 ]
 
+# Shared dependencies for all workspace members
 [workspace.dependencies]
 # From rust/Cargo.toml - consolidated workspace dependencies
 
@@ -136,8 +138,8 @@ rustler = "0.37.0"
 ast-grep-core = "0.39.6"
 chrono = { version = "0.4", features = ["serde"] }
 
-# UUID
-uuid = { version = "1.0", features = ["v4", "serde"] }
+# UUID (enable v7 across workspace)
+uuid = { version = "1.8", features = ["v4", "v7", "serde"] }
 
 # Config
 toml = "0.9.8"

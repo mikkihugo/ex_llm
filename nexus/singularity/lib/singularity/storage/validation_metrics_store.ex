@@ -68,7 +68,6 @@ defmodule Singularity.Storage.ValidationMetricsStore do
   alias Singularity.Repo
   alias Singularity.Schemas.ValidationMetric
   alias Singularity.Schemas.ExecutionMetric
-  alias Singularity.PgFlow
 
   @type time_range :: :last_hour | :last_day | :last_week
   @type kpi_result :: float() | nil
@@ -417,7 +416,7 @@ defmodule Singularity.Storage.ValidationMetricsStore do
       # Queue: execution_metrics_aggregated (consumed by CentralCloud.Consumers.PerformanceStatsConsumer)
       message = Map.put(sync_payload, "type", "execution_metrics")
 
-      case PgFlow.send_with_notify("execution_metrics_aggregated", message) do
+      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("execution_metrics_aggregated", message) do
         {:ok, _} ->
           Logger.debug("Validation metrics published to CentralCloud",
             metrics_count:

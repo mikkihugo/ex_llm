@@ -91,12 +91,28 @@ pub struct CrossLanguageCodePatternsDetector {
 static AST_CACHE: once_cell::sync::Lazy<Mutex<HashMap<(u64, String), AstExtraction>>> =
     once_cell::sync::Lazy::new(|| Mutex::new(HashMap::new()));
 
+/// Lightweight metadata types used internally to avoid coupling
+/// this module to Elixir-facing NIF structs.
+#[cfg(feature = "nif")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct FunctionInfo {
+    pub name: String,
+    pub parameters: Vec<String>,
+}
+
+#[cfg(feature = "nif")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct ClassInfo {
+    pub name: String,
+    pub methods: Vec<String>,
+}
+
 /// AST extraction result for a file/language
 #[cfg(feature = "nif")]
 #[derive(Clone, Debug)]
 pub struct AstExtraction {
-    pub functions: Option<Vec<crate::nif_bindings::FunctionMetadataResult>>,
-    pub classes: Option<Vec<crate::nif_bindings::ClassMetadataResult>>,
+    pub functions: Option<Vec<FunctionInfo>>,
+    pub classes: Option<Vec<ClassInfo>>,
 }
 
 impl std::fmt::Debug for CrossLanguageCodePatternsDetector {

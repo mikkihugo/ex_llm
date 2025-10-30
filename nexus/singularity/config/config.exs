@@ -884,3 +884,22 @@ config :singularity, :workflows,
     rca_base: :rca,
     sync: :centralcloud_sync
   ]
+
+# PgFlow Queue Configuration - Listeners for messages from CentralCloud
+# Enables receiving workflow consensus patterns and other responses from CentralCloud
+config :singularity, :pgflow_queues,
+  enabled:
+    System.get_env("PGFLOW_QUEUES_ENABLED", "true") == "true" &&
+      System.get_env("CENTRALCLOUD_ENABLED", "true") == "true",
+  # Queues to listen on for incoming messages from CentralCloud
+  # Messages on these queues are routed to appropriate consumer handlers
+  queue_listeners: [
+    # Workflow consensus patterns from CentralCloud aggregation
+    "singularity_workflow_consensus_patterns",
+    # Consensus voting results (approved/rejected proposals)
+    "singularity_consensus_results",
+    # Rollback triggers from Guardian safety system
+    "singularity_rollback_triggers",
+    # Safety profile updates from Genesis learning loop
+    "singularity_safety_profiles"
+  ]

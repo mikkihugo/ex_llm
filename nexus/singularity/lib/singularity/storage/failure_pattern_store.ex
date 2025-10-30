@@ -14,7 +14,6 @@ defmodule Singularity.Storage.FailurePatternStore do
 
   alias Singularity.Repo
   alias Singularity.Schemas.FailurePattern
-  alias Singularity.PgFlow
 
   @type filteropts ::
           %{
@@ -148,7 +147,7 @@ defmodule Singularity.Storage.FailurePatternStore do
       "timestamp" => DateTime.utc_now()
     }
 
-    case PgFlow.send_with_notify("patterns_learned_published", message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("patterns_learned_published", message) do
       {:ok, _} ->
         Logger.debug("Failure patterns published to CentralCloud",
           pattern_count: length(patterns)

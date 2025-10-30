@@ -320,4 +320,64 @@ defmodule Singularity.Workflows.Dispatcher do
     Logger.info("Created alias #{alias_name} => #{target_type}")
     :ok
   end
+
+  @doc """
+  Record workflow pattern result from GenesisWorkflowLearner feedback.
+
+  Used by Genesis to store proven workflow patterns for future use.
+  Allows cross-instance workflow optimization and learning.
+
+  ## Parameters
+  - `workflow_type` - Workflow type
+  - `pattern` - Workflow pattern result map from GenesisWorkflowLearner
+
+  ## Examples
+
+      :ok = Dispatcher.record_workflow_pattern(:code_quality_training, %{
+        config: config,
+        success_rate: 0.95,
+        confidence: 0.87
+      })
+  """
+  @spec record_workflow_pattern(atom(), map()) :: :ok | {:error, term()}
+  def record_workflow_pattern(workflow_type, pattern) when is_atom(workflow_type) and is_map(pattern) do
+    init()
+
+    # Store pattern key as reference for future lookup
+    pattern_key = {:workflow_pattern, workflow_type, pattern.genesis_id}
+    :ets.insert(@table, {pattern_key, pattern})
+
+    Logger.info("Recorded workflow pattern", %{
+      workflow_type: workflow_type,
+      genesis_id: pattern.genesis_id,
+      confidence: pattern.confidence
+    })
+
+    :ok
+  rescue
+    e ->
+      Logger.error("Failed to record workflow pattern: #{inspect(e)}")
+      {:error, :record_failed}
+  end
+
+  @doc """
+  Get all proven workflow patterns from Genesis.
+
+  Returns patterns published by other instances or synthesized locally
+  and proven through execution.
+
+  ## Examples
+
+      patterns = Dispatcher.get_proven_patterns(:code_quality_training)
+  """
+  @spec get_proven_patterns(atom()) :: [map()]
+  def get_proven_patterns(workflow_type) when is_atom(workflow_type) do
+    init()
+
+    @table
+    |> :ets.match_object({{:workflow_pattern, workflow_type, :_}, :_})
+    |> Enum.map(fn {_, pattern} -> pattern end)
+    |> Enum.sort_by(fn p -> p.confidence end)
+    |> Enum.reverse()
+  end
 end

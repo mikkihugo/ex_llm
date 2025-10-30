@@ -998,7 +998,7 @@ defmodule Singularity.Evolution.GenesisPublisher do
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case Singularity.PgFlow.send_with_notify("genesis_llm_config_updates", payload) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_llm_config_updates", payload) do
       {:ok, :sent} ->
         Logger.debug("GenesisPublisher: LLM config rule published to Genesis via pgflow",
           pattern: inspect(rule.pattern)
@@ -1057,5 +1057,101 @@ defmodule Singularity.Evolution.GenesisPublisher do
 
         {:error, error}
     end
+  end
+
+  @doc """
+  Publish a workflow pattern to Genesis for cross-instance distribution.
+
+  Allows GenesisWorkflowLearner to share proven workflow configurations
+  with other Singularity instances via Genesis Framework.
+
+  ## Parameters
+  - `workflow_pattern` - Workflow pattern map with:
+    - `:workflow_type` - Type of workflow
+    - `:config` - Workflow configuration
+    - `:success_rate` - Success rate (0.0-1.0)
+    - `:confidence` - Confidence score (0.0-1.0)
+    - `:execution_count` - Number of successful executions
+    - `:quality_improvements` - Map of improvements
+
+  Returns `{:ok, genesis_id}` or `{:error, reason}`.
+  """
+  @spec publish_workflow_pattern(map()) :: {:ok, String.t()} | {:error, term()}
+  def publish_workflow_pattern(workflow_pattern) do
+    Logger.info("GenesisPublisher: Publishing workflow pattern",
+      workflow_type: workflow_pattern.workflow_type,
+      confidence: workflow_pattern.confidence,
+      success_rate: workflow_pattern.success_rate
+    )
+
+    genesis_id = "workflow_#{UUID.uuid4()}"
+
+    payload = %{
+      "namespace" => "singularity/workflow_patterns",
+      "pattern_type" => "workflow_configuration",
+      "workflow_type" => Atom.to_string(workflow_pattern.workflow_type),
+      "config" => workflow_pattern.config,
+      "success_rate" => workflow_pattern.success_rate,
+      "confidence" => workflow_pattern.confidence,
+      "execution_count" => workflow_pattern.execution_count,
+      "quality_improvements" => workflow_pattern.quality_improvements || %{},
+      "genesis_id" => genesis_id,
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("genesis_workflow_patterns", payload) do
+      {:ok, :sent} ->
+        Logger.info("GenesisPublisher: Workflow pattern published to Genesis",
+          workflow_type: workflow_pattern.workflow_type,
+          genesis_id: genesis_id
+        )
+
+        {:ok, genesis_id}
+
+      {:ok, msg_id} when is_integer(msg_id) ->
+        Logger.info("GenesisPublisher: Workflow pattern published to Genesis",
+          workflow_type: workflow_pattern.workflow_type,
+          message_id: msg_id
+        )
+
+        {:ok, genesis_id}
+
+      {:error, reason} ->
+        Logger.error("GenesisPublisher: Failed to publish workflow pattern",
+          workflow_type: workflow_pattern.workflow_type,
+          reason: inspect(reason)
+        )
+
+        {:error, reason}
+    end
+  rescue
+    e ->
+      Logger.error("GenesisPublisher: Exception publishing workflow pattern",
+        error: inspect(e)
+      )
+
+      {:error, {:publish_failed, inspect(e)}}
+  end
+
+  @doc """
+  Import published workflow patterns from Genesis Framework.
+
+  Allows instances to discover and apply workflow patterns learned by other
+  Singularity instances through Genesis.
+
+  Returns `{:ok, imported_patterns}` or `{:error, reason}`.
+  """
+  @spec import_workflow_patterns_from_genesis :: {:ok, [map()]} | {:error, term()}
+  def import_workflow_patterns_from_genesis do
+    Logger.info("GenesisPublisher: Importing workflow patterns from Genesis")
+
+    # TODO: Implement Genesis subscription and pattern import
+    # This would:
+    # 1. Subscribe to genesis_workflow_patterns channel
+    # 2. Fetch recent high-confidence patterns
+    # 3. Register with Workflows.Dispatcher
+    # 4. Return imported patterns
+
+    {:ok, []}
   end
 end

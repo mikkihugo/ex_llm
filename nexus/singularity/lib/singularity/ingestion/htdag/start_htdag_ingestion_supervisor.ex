@@ -1,4 +1,4 @@
-defmodule Singularity.HTDAG.Supervisor do
+defmodule Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor do
   @moduledoc """
   HTDAG Supervisor - Manages HTDAG-based automatic code ingestion infrastructure.
 
@@ -7,8 +7,8 @@ defmodule Singularity.HTDAG.Supervisor do
 
   ## Managed Processes
 
-  - `Singularity.Execution.Planning.CodeFileWatcher` - Real-time file watching
-  - `Singularity.HTDAG.AutoCodeIngestionDAG` - HTDAG workflow management
+  - `Singularity.Ingestion.WatchFilesAndEnqueueIngestion` - Real-time file watching
+  - `Singularity.Ingestion.HTDAG.RunCodeIngestionDAG` - HTDAG workflow management
   - `Singularity.Workflows` - PgFlow workflow orchestration
 
   ## Dependencies
@@ -49,7 +49,7 @@ defmodule Singularity.HTDAG.Supervisor do
       if enabled do
         [
           # HTDAG workflow management
-          Singularity.HTDAG.AutoCodeIngestionDAG,
+          Singularity.Ingestion.HTDAG.RunCodeIngestionDAG,
 
           # Load balancer for gentle operation
           Singularity.HTDAG.LoadBalancer,

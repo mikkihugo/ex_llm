@@ -18,13 +18,13 @@ defmodule Singularity.Jobs.CacheClearWorker do
   def perform(_job) do
     Logger.info("Clearing Singularity.CodeAnalyzer cache...")
 
-    case Process.whereis(Singularity.CodeAnalyzer.Cache) do
+    case Process.whereis(Singularity.CodeAnalyzer.ResultCache) do
       nil ->
         Logger.warning("Cache not running - skipping clear")
         :ok
 
       _pid ->
-        :ok = Singularity.CodeAnalyzer.Cache.clear()
+        :ok = Singularity.CodeAnalyzer.ResultCache.clear()
         Logger.info("✅ Cache cleared successfully")
         :ok
     end

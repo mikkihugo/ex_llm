@@ -1,4 +1,4 @@
-defmodule Singularity.Execution.TaskGraph.Orchestrator do
+defmodule Singularity.Execution.TaskGraph.TaskGraphOrchestrator do
   @moduledoc """
   TaskGraph.Orchestrator - Dependency-aware task orchestration for self-improving agents.
 
@@ -43,7 +43,7 @@ defmodule Singularity.Execution.TaskGraph.Orchestrator do
   ## Usage
 
   ```elixir
-  alias Singularity.Execution.TaskGraph.Orchestrator
+  alias Singularity.Execution.TaskGraph.TaskGraphOrchestrator
 
   # Enqueue task with dependencies
   {:ok, task_id} = Orchestrator.enqueue(%{

@@ -48,7 +48,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
       }
     }
 
-    case Singularity.PgFlow.create_workflow(workflow_attrs) do
+    case Singularity.Infrastructure.PgFlow.Queue.create_workflow(workflow_attrs) do
       {:ok, _workflow} ->
         Logger.info("Created agent coordination workflow", execution_id: execution_id)
 
@@ -85,7 +85,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             completed_at: :erlang.system_time(:millisecond)
           }
 
-          Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
+          Singularity.Infrastructure.PgFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
 
           {:ok, final_results}
 
@@ -103,7 +103,7 @@ defmodule Singularity.Agents.Coordination.ExecutionCoordinator do
             failed_at: :erlang.system_time(:millisecond)
           }
 
-          Singularity.PgFlow.send_with_notify("agent_coordination_notifications", notification)
+          Singularity.Infrastructure.PgFlow.Queue.send_with_notify("agent_coordination_notifications", notification)
 
           {:error, reason}
       end

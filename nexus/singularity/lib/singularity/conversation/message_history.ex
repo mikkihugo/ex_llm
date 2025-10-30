@@ -32,7 +32,6 @@ defmodule Singularity.Conversation.MessageHistory do
 
   require Logger
   alias Singularity.Database.MessageQueue
-  alias Singularity.PgFlow
 
   @queue_prefix "conv_history_"
   @max_messages_per_query 100

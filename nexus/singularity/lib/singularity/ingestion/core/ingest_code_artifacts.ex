@@ -1,4 +1,4 @@
-defmodule Singularity.Code.UnifiedIngestionService do
+defmodule Singularity.Ingestion.Core.IngestCodeArtifacts do
   @moduledoc """
   Unified Code Ingestion Service - Single source of truth for code parsing and storage
 
@@ -50,7 +50,7 @@ defmodule Singularity.Code.UnifiedIngestionService do
   alias Singularity.{Repo, ParserEngine}
   alias Singularity.Schemas.CodeFile
   alias Singularity.Analysis.{AstExtractor, MetadataValidator}
-  alias Singularity.Code.CodebaseDetector
+  alias Singularity.Ingestion.Core.DetectCurrentCodebase
 
   @doc """
   Ingest a single file - parse once, populate both tables.

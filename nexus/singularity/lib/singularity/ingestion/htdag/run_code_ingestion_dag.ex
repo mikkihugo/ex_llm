@@ -1,4 +1,4 @@
-defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
+defmodule Singularity.Ingestion.HTDAG.RunCodeIngestionDAG do
   @moduledoc """
   HTDAG (Hierarchical Task Directed Acyclic Graph) for Automatic Code Ingestion
 
@@ -84,12 +84,11 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   """
 
   require Logger
-  alias Singularity.PgFlow
   alias PGFlow.WorkflowSupervisor
-  alias Singularity.Code.{UnifiedIngestionService, CodebaseDetector}
+  alias Singularity.Ingestion.Core.{IngestCodeArtifacts, DetectCurrentCodebase}
 
   @dag_type "htdag_auto_code_ingestion"
-  @config Application.get_env(:singularity, :htdag_auto_ingestion, %{})
+  @config Application.compile_env(:singularity, :htdag_auto_ingestion, %{})
 
   # HTDAG Node Definitions
   @nodes %{
@@ -218,7 +217,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     dag_id = generate_dag_id()
 
     # Auto-detect codebase if not provided
-    codebase_id = attrs[:codebase_id] || CodebaseDetector.detect(format: :full)
+    codebase_id = attrs[:codebase_id] || DetectCurrentCodebase.detect(format: :full)
 
     # Build HTDAG workflow payload
     workflow_payload = build_htdag_workflow(dag_id, attrs[:file_path], codebase_id, attrs)
@@ -284,6 +283,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     Logger.info("Starting bulk HTDAG code ingestion",
       file_count: length(file_paths),
       max_concurrent: max_concurrent,
+      batch_size: batch_size,
       dependency_aware: dependency_aware
     )
 
@@ -495,7 +495,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
     Logger.debug("Parsing AST", file_path: file_path, language: language)
 
-    case UnifiedIngestionService.ingest_file(file_path) do
+    case IngestCodeArtifacts.ingest_file(file_path) do
       {:ok, results} ->
         {:ok,
          %{
@@ -535,7 +535,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
 
     # This is already handled by UnifiedIngestionService in parse_ast
     # Just confirm storage was successful
-    {:ok, %{file_path: file_path, stored: true}}
+    {:ok, %{file_path: file_path, codebase_id: codebase_id, stored: true}}
   end
 
   def generate_embeddings(args, _opts) do
@@ -587,10 +587,10 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
     file_path = args[:file_path]
     relationships = args[:relationships]
 
-    Logger.debug("Updating graph", file_path: file_path)
+    Logger.debug("Updating graph", file_path: file_path, relationships_count: length(relationships || []))
 
     # Update code graph with relationships
-    {:ok, %{file_path: file_path, graph_updated: true}}
+    {:ok, %{file_path: file_path, relationships: relationships || [], graph_updated: true}}
   end
 
   def send_completion_notification(args, _opts) do
@@ -610,7 +610,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       timestamp: System.system_time(:millisecond)
     }
 
-    case PgFlow.send_with_notify("code_ingestion_notifications", notification) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("code_ingestion_notifications", notification) do
       {:ok, _message_id} ->
         {:ok, %{file_path: file_path, notification_sent: true}}
 
@@ -720,6 +720,7 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
       })
 
     # Execute the worker function
+    Logger.debug("Executing worker", node: node_name, timeout_ms: timeout)
     case apply(elem(worker, 0), elem(worker, 1), [args, []]) do
       {:ok, result} ->
         {:ok, result}
@@ -865,13 +866,17 @@ defmodule Singularity.HTDAG.AutoCodeIngestionDAG do
   defp extract_functions(parse_results) do
     # Extract function definitions from parse results
     # This would be implemented based on the actual parse results structure
+    count = parse_results |> Map.get(:functions, []) |> length()
+    Logger.debug("Functions extracted", count: count)
     []
   end
 
   defp extract_dependencies(parse_results) do
     # Extract dependencies from parse results
     # This would be implemented based on the actual parse results structure
-    []
+    deps = Map.get(parse_results, :dependencies, [])
+    Logger.debug("Dependencies extracted", count: length(deps))
+    deps
   end
 
   defp calculate_complexity(parse_results) when is_map(parse_results) do

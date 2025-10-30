@@ -146,7 +146,7 @@ defmodule Singularity.CodeAnalyzer do
   """
 
   alias Singularity.CodeAnalyzer.Native
-  alias Cache
+  alias Singularity.CodeAnalyzer.ResultCache
   alias Singularity.Repo
   alias Singularity.Schemas.CodeFile
 
@@ -165,7 +165,7 @@ defmodule Singularity.CodeAnalyzer do
   - `code`: Source code string
   - `language_hint`: Language ID, alias, or file extension (e.g., "elixir", "rs", "javascript")
   - `opts`: Options
-    - `:cache` - Use caching (default: true if Cache is running)
+    - `:cache` - Use caching (default: true if ResultCache is running)
 
   ## Returns
   - `{:ok, analysis}` - Language analysis result
@@ -176,7 +176,7 @@ defmodule Singularity.CodeAnalyzer do
     use_cache = Keyword.get(opts, :cache, cache_enabled?())
 
     if use_cache do
-      Cache.get_or_analyze(code, language_hint, fn ->
+      ResultCache.get_or_analyze(code, language_hint, fn ->
         do_analyze_language(code, language_hint)
       end)
     else
@@ -196,7 +196,7 @@ defmodule Singularity.CodeAnalyzer do
   end
 
   defp cache_enabled? do
-    Process.whereis(Cache) != nil
+    Process.whereis(Singularity.CodeAnalyzer.ResultCache) != nil
   end
 
   @doc """

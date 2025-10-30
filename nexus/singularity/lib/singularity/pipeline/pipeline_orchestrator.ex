@@ -1,4 +1,4 @@
-defmodule Singularity.Pipeline.Orchestrator do
+defmodule Singularity.Pipeline.PipelineOrchestrator do
   @moduledoc """
   Self-Evolving Pipeline Orchestrator - Complete Flow Orchestration
 
@@ -51,7 +51,7 @@ defmodule Singularity.Pipeline.Orchestrator do
 
   ```elixir
   {:ok, plan, validation, execution_result} =
-    Singularity.Pipeline.Orchestrator.execute_full_cycle(story, opts)
+    Singularity.Pipeline.PipelineOrchestrator.execute_full_cycle(story, opts)
   ```
 
   ## Step-by-Step Interface

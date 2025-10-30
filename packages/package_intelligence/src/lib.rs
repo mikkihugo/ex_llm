@@ -79,8 +79,8 @@ pub mod collector;
 // NEW: Code snippet extractor - temporary analysis for extraction
 pub mod extractor;
 
-// Detection now delegated to tech_detector library (no local module)
-// Re-export tech_detector for convenience
+// Detection is optional and gated behind the `detection` feature.
+// In builds without this feature, the module is not re-exported.
 #[cfg(feature = "detection")]
 pub use tech_detector;
 

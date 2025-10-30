@@ -13,7 +13,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   - `Singularity.Execution.Planning.TaskGraphExecutor` - Task execution (TaskGraphExecutor.execute/3)
   - `Singularity.Execution.Planning.TaskGraphEvolution` - Self-improvement (TaskGraphEvolution.critique_and_mutate/2)
   - `Singularity.Execution.Planning.SafeWorkPlanner` - Hierarchical planning (SafeWorkPlanner integration)
-  - `Singularity.Execution.SPARC.Orchestrator` - SPARC methodology integration
+  - `Singularity.Execution.SPARC.SPARCOrchestrator` - SPARC methodology integration
   - `Singularity.LLM.Service` - Task decomposition (Service.call/3 for LLM decomposition)
   - PostgreSQL table: `task_graph_executions` (stores execution history)
 
@@ -104,7 +104,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
       purpose: "SafeWorkPlanner creates TaskGraphs for features"
       frequency: per_feature
 
-    - module: Singularity.Execution.SPARC.Orchestrator
+    - module: Singularity.Execution.SPARC.SPARCOrchestrator
       function: (SPARC execution)
       purpose: "SPARC decomposes stories into TaskGraphs"
       frequency: per_story
@@ -222,7 +222,7 @@ defmodule Singularity.Execution.Planning.TaskGraph do
   alias Singularity.Execution.Planning.SafeWorkPlanner
 
   # INTEGRATION: SPARC methodology
-  alias Singularity.Execution.SPARC.Orchestrator, as: SparcOrchestrator
+  alias Singularity.Execution.SPARC.SPARCOrchestrator, as: SparcOrchestrator
 
   @max_depth 5
   @atomic_threshold 5.0

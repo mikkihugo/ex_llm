@@ -96,7 +96,7 @@ defmodule Singularity.Bootstrap.PatternRegistryBootstrap do
               :ok
 
             {:error, reason} ->
-              Logger.warn(
+              Logger.warning(
                 "PatternRegistryBootstrap: Failed to seed patterns (app will continue): #{inspect(reason)}"
               )
 

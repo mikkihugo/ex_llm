@@ -11,7 +11,6 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   use Oban.Worker, queue: :maintenance
 
   require Logger
-  alias Singularity.PgFlow
 
   @impl Oban.Worker
   def perform(_job) do
@@ -39,7 +38,7 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   end
 
   defp notify_sync_complete(sync_type, count) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_completed",
@@ -58,7 +57,7 @@ defmodule Singularity.Jobs.TemplateSyncWorker do
   end
 
   defp notify_sync_failed(sync_type, error) do
-    case PgFlow.send_with_notify(
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(
            "sync_notifications",
            %{
              type: "sync_failed",

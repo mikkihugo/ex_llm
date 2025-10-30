@@ -41,8 +41,6 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
 
   require Logger
   alias Singularity.Agents.Coordination.CapabilityRegistry
-  alias Singularity.Database.MessageQueue
-  alias Singularity.PgFlow
 
   @centralcloud_push_queue "centralcloud_updates"
   @centralcloud_poll_queue "centralcloud_responses"
@@ -197,7 +195,7 @@ defmodule Singularity.Agents.Coordination.CentralCloudSync do
       }
 
       # Publish to CentralCloud via pgflow (pgmq + NOTIFY)
-      case PgFlow.send_with_notify(@centralcloud_push_queue, message) do
+      case Singularity.Infrastructure.PgFlow.Queue.send_with_notify(@centralcloud_push_queue, message) do
         {:ok, :sent} ->
           Logger.info("[CentralCloudSync] Pushed capabilities to CentralCloud via pgflow",
             capability_count: length(capabilities),

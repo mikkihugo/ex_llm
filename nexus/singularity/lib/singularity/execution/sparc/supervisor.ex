@@ -7,7 +7,7 @@ defmodule Singularity.Execution.SPARC.Supervisor do
 
   ## Managed Processes
 
-  - `Singularity.Execution.SPARC.Orchestrator` - GenServer for template-driven SPARC execution with TaskGraph integration
+  - `Singularity.Execution.SPARC.SPARCOrchestrator` - GenServer for template-driven SPARC execution with TaskGraph integration
 
   ## SPARC Methodology
 
@@ -38,7 +38,7 @@ defmodule Singularity.Execution.SPARC.Supervisor do
     Logger.info("Starting SPARC Supervisor...")
 
     children = [
-      Singularity.Execution.SPARC.Orchestrator
+      Singularity.Execution.SPARC.SPARCOrchestrator
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

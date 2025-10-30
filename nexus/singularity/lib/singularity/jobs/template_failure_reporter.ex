@@ -17,7 +17,6 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
     priority: 8
 
   require Logger
-  alias Singularity.PgFlow
 
   @doc """
   Report template failure pattern to CentralCloud.
@@ -62,7 +61,7 @@ defmodule Singularity.Jobs.TemplateFailureReporter do
       "timestamp" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
-    case PgFlow.send_with_notify("centralcloud_failures", message) do
+    case Singularity.Infrastructure.PgFlow.Queue.send_with_notify("centralcloud_failures", message) do
       {:ok, :sent} ->
         Logger.info("Template failure reported to CentralCloud via pgflow",
           template_id: template_id,

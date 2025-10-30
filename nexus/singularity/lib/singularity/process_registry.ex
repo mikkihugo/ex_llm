@@ -29,7 +29,7 @@ defmodule Singularity.ProcessRegistry do
 
     # PGFlow orchestration
     "PGFlow.WorkflowSupervisor" => "PGFlow workflow orchestrator (demand, ack, retries)",
-    "Singularity.Workflows.AutoCodeIngestion" => "Auto code ingestion workflow (PGFlow)",
+    "Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow" => "Auto code ingestion workflow (PGFlow)",
     "Singularity.Workflows.EmbeddingTrainingWorkflow" => "Embedding training workflow (PGFlow)",
     "Singularity.Workflows.ArchitectureLearningWorkflow" =>
       "Architecture learning workflow (PGFlow)",
@@ -54,8 +54,8 @@ defmodule Singularity.ProcessRegistry do
     "Singularity.Agents.AgentSpawner" => "Dynamic agent supervisor/spawner",
 
     # Execution / HTDAG
-    "Singularity.HTDAG.Supervisor" => "Hierarchical DAG execution supervisor",
-    "Singularity.Execution.TaskGraph.Orchestrator" => "Task graph orchestration",
+    "Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor" => "Hierarchical DAG execution supervisor",
+    "Singularity.Execution.TaskGraph.TaskGraphOrchestrator" => "Task graph orchestration",
     "Singularity.Execution.SafeWorkPlanner" => "Work planning + safety rails",
 
     # Notifications / messaging
@@ -63,7 +63,7 @@ defmodule Singularity.ProcessRegistry do
     "Singularity.SharedQueueConsumer" => "Shared PostgreSQL queue consumer",
 
     # Hot reload
-    "Singularity.HotReload.ModuleReloader" => "Hot reload event processor",
+    "Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange" => "Hot reload event processor",
     "Singularity.HotReload.SafeCodeChangeDispatcher" => "Safe code change dispatcher",
 
     # Monitoring / metrics
@@ -86,7 +86,7 @@ defmodule Singularity.ProcessRegistry do
     ],
     pgflow: [
       "PGFlow.WorkflowSupervisor",
-      "Singularity.Workflows.AutoCodeIngestion",
+      "Singularity.Ingestion.Workflows.ExecuteAutoCodeIngestionWorkflow",
       "Singularity.Workflows.EmbeddingTrainingWorkflow",
       "Singularity.Workflows.ArchitectureLearningWorkflow",
       "Broadway.PgflowProducer"
@@ -108,8 +108,8 @@ defmodule Singularity.ProcessRegistry do
       "Singularity.Agents.AgentSpawner"
     ],
     execution: [
-      "Singularity.HTDAG.Supervisor",
-      "Singularity.Execution.TaskGraph.Orchestrator",
+      "Singularity.Ingestion.HTDAG.StartHtdagIngestionSupervisor",
+      "Singularity.Execution.TaskGraph.TaskGraphOrchestrator",
       "Singularity.Execution.SafeWorkPlanner"
     ],
     messaging: [
@@ -117,7 +117,7 @@ defmodule Singularity.ProcessRegistry do
       "Singularity.SharedQueueConsumer"
     ],
     hot_reload: [
-      "Singularity.HotReload.ModuleReloader",
+      "Singularity.Ingestion.HotReload.TriggerHotReloadOnFileChange",
       "Singularity.HotReload.SafeCodeChangeDispatcher"
     ],
     monitoring: [

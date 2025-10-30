@@ -127,7 +127,7 @@ defmodule Singularity.Metrics.Example do
     end
     """
 
-    Singularity.Metrics.Orchestrator.analyze_file(
+    Singularity.Metrics.MetricsOrchestrator.analyze_file(
       "lib/my_module.ex",
       code: example_code,
       language: :elixir,
@@ -178,7 +178,7 @@ defmodule Singularity.Metrics.Example do
   end
 
   defp get_and_print_language_report(language) do
-    case Singularity.Metrics.Orchestrator.language_report(language) do
+    case Singularity.Metrics.MetricsOrchestrator.language_report(language) do
       {:ok, report} ->
         Logger.info("""
         Language Report (#{language}):
@@ -197,7 +197,7 @@ defmodule Singularity.Metrics.Example do
   end
 
   defp find_and_print_opportunities(language) do
-    opportunities = Singularity.Metrics.Orchestrator.find_refactoring_opportunities(language)
+    opportunities = Singularity.Metrics.MetricsOrchestrator.find_refactoring_opportunities(language)
 
     if Enum.empty?(opportunities) do
       Logger.info("No refactoring opportunities found (or database is empty)")
@@ -244,7 +244,7 @@ defmodule Singularity.Metrics.Example do
     start_time = System.monotonic_time(:millisecond)
 
     {ok_count, err_count, _results} =
-      Singularity.Metrics.Orchestrator.analyze_batch(
+      Singularity.Metrics.MetricsOrchestrator.analyze_batch(
         test_files,
         enrich: true,
         store: true

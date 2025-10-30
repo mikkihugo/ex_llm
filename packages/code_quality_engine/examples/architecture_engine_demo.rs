@@ -4,6 +4,7 @@
 //! that replaces the Elixir architecture_engine.
 
 use std::path::Path;
+#[cfg(feature = "examples")]
 use code_quality_engine::{
     architecture::{
         PatternDetectorRegistry, PatternDetectorOrchestrator,
@@ -15,6 +16,7 @@ use code_quality_engine::{
     registry::MetaRegistry,
 };
 
+#[cfg(feature = "examples")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Starting Architecture Engine Consolidation Demo");
@@ -114,3 +116,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[cfg(not(feature = "examples"))]
+fn main() {}

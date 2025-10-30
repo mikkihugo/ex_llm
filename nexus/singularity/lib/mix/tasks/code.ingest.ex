@@ -123,7 +123,7 @@ defmodule Mix.Tasks.Code.Ingest do
 
       # Use unified ingestion service - parses once, populates both tables
       parse_results =
-        Singularity.Code.UnifiedIngestionService.ingest_tree(
+        Singularity.Ingestion.Core.IngestCodeArtifacts.ingest_tree(
           codebase_path,
           codebase_id: codebase_id,
           max_concurrency: 8

@@ -14,6 +14,33 @@ use serde::{Deserialize, Serialize};
 use crate::analysis::control_flow::{analyze_function_flow, ControlFlowAnalysis};
 use crate::graph::{CodeDependencyGraph, GraphType};
 
+/// Function metadata result for cross-language analysis
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.FunctionMetadata"]
+pub struct FunctionMetadataResult {
+    pub name: String,
+    pub line_start: u32,
+    pub line_end: u32,
+    pub parameters: Vec<String>,
+    pub return_type: Option<String>,
+    pub is_async: bool,
+    pub is_generator: bool,
+    pub docstring: Option<String>,
+}
+
+/// Class metadata result for cross-language analysis
+#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
+#[module = "Singularity.CodeAnalyzer.ClassMetadata"]
+pub struct ClassMetadataResult {
+    pub name: String,
+    pub line_start: u32,
+    pub line_end: u32,
+    pub methods: Vec<String>,
+    pub fields: Vec<String>,
+    pub inheritance: Vec<String>,
+    pub visibility: String,
+}
+
 /// Result returned to Elixir (maps to Elixir struct)
 #[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
 #[module = "Singularity.CodeAnalyzer.ControlFlowResult"]
@@ -243,31 +270,6 @@ pub struct RcaMetricsResult {
     pub blank_lines: u64,
 }
 
-/// Function metadata result
-#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
-#[module = "Singularity.CodeAnalyzer.FunctionMetadata"]
-pub struct FunctionMetadataResult {
-    pub name: String,
-    pub line_start: u32,
-    pub line_end: u32,
-    pub parameters: Vec<String>,
-    pub return_type: Option<String>,
-    pub is_async: bool,
-    pub is_generator: bool,
-    pub docstring: Option<String>,
-}
-
-/// Class metadata result
-#[derive(Debug, Clone, Serialize, Deserialize, NifStruct)]
-#[module = "Singularity.CodeAnalyzer.ClassMetadata"]
-pub struct ClassMetadataResult {
-    pub name: String,
-    pub line_start: u32,
-    pub line_end: u32,
-    pub methods: Vec<String>,
-    pub fields: Vec<String>,
-}
-
 /// Analyze a single language file
 ///
 /// Pure computation NIF - NO I/O!
@@ -432,6 +434,8 @@ pub fn extract_classes(
             line_end: c.line_end,
             methods: c.methods.into_iter().map(|m| m.name).collect(),
             fields: c.fields,
+                inheritance: Vec::new(),
+                visibility: "unknown".to_string(),
         })
         .collect())
 }
@@ -453,73 +457,8 @@ pub fn extract_imports_exports(
     analyzer.extract_imports_exports(&code, &language_hint)
 }
 
-/// Get supported languages
-///
-/// Pure computation NIF - NO I/O!
-/// Returns all 18+ supported languages
-#[rustler::nif]
-pub fn supported_languages() -> Vec<String> {
-    use crate::analyzer::CodebaseAnalyzer;
-
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.supported_languages(),
-        Err(_) => Vec::new(),
-    }
-}
-
-/// Get RCA-supported languages
-///
-/// Pure computation NIF - NO I/O!
-/// Returns languages where RCA metrics are available
-#[rustler::nif]
-pub fn rca_supported_languages() -> Vec<String> {
-    use crate::analyzer::CodebaseAnalyzer;
-
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.rca_supported_languages(),
-        Err(_) => Vec::new(),
-    }
-}
-
-/// Get AST-Grep supported languages
-///
-/// Pure computation NIF - NO I/O!
-/// Returns languages where AST-Grep pattern matching works
-#[rustler::nif]
-pub fn ast_grep_supported_languages() -> Vec<String> {
-    use crate::analyzer::CodebaseAnalyzer;
-
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.ast_grep_supported_languages(),
-        Err(_) => Vec::new(),
-    }
-}
-
-/// Check if language has RCA support
-///
-/// Pure computation NIF - NO I/O!
-#[rustler::nif]
-pub fn has_rca_support(language_id: String) -> bool {
-    use crate::analyzer::CodebaseAnalyzer;
-
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.has_rca_support(&language_id),
-        Err(_) => false,
-    }
-}
-
-/// Check if language has AST-Grep support
-///
-/// Pure computation NIF - NO I/O!
-#[rustler::nif]
-pub fn has_ast_grep_support(language_id: String) -> bool {
-    use crate::analyzer::CodebaseAnalyzer;
-
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.has_ast_grep_support(&language_id),
-        Err(_) => false,
-    }
-}
+// Note: supported_languages, rca_supported_languages, has_rca_support,
+// and has_ast_grep_support are exported from nif/mod.rs to avoid duplicates.
 
 // NOTE: rustler::init! moved to src/nif/mod.rs to avoid duplicate nif_init symbol
 // This file only exports the NIF function - initialization happens in nif/mod.rs

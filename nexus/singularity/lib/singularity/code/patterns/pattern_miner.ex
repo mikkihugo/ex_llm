@@ -112,7 +112,7 @@ defmodule Singularity.Code.Patterns.PatternMiner do
       pattern_features = extract_pattern_features(pattern)
 
       # Search for similar patterns
-      case EmbeddingService.search_similar(pattern_features, limit: 10) do
+      case Singularity.ML.Services.EmbeddingInference.find_similar(pattern_features, limit: 10) do
         {:ok, similar} ->
           filter_by_codebase(similar, codebase_path)
 

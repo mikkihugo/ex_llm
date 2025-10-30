@@ -67,7 +67,7 @@ defmodule Singularity.Cache do
   ## Migration from Old Modules
 
   ### Before (Scattered)
-      alias Singularity.LLM.Prompt.Cache
+      alias Singularity.LLM.PromptCache
       alias Singularity.Packages.MemoryCache
       # Rust GlobalPromptCache (separate)
       
@@ -286,7 +286,7 @@ defmodule Singularity.Cache do
     provider = Keyword.get(opts, :provider)
     model = Keyword.get(opts, :model)
 
-    Singularity.LLM.Prompt.Cache.find_similar(query,
+    Singularity.LLM.PromptCache.find_similar(query,
       threshold: threshold,
       provider: provider,
       model: model
@@ -298,7 +298,7 @@ defmodule Singularity.Cache do
     threshold = Keyword.get(opts, :threshold, 0.8)
     limit = Keyword.get(opts, :limit, 10)
 
-    case Singularity.EmbeddingService.generate_embedding(query) do
+    case Singularity.ML.Services.EmbeddingInference.generate_embeddings(query) do
       {:ok, query_embedding} ->
         # Search for similar embeddings in the database
         case Singularity.CodeStore.find_similar_embeddings(query_embedding,
@@ -361,7 +361,7 @@ defmodule Singularity.Cache do
   def clear(:llm) do
     try do
       # Clear LLM response cache
-      Singularity.LLM.Prompt.Cache.clear_all()
+      Singularity.LLM.PromptCache.clear_all()
       Logger.info("Cleared LLM cache")
       :ok
     rescue

@@ -471,52 +471,6 @@ pub fn parse_file_nif(file_path: String) -> NifResult<ParsedFileResult> {
     })
 }
 
-/// NIF: Get list of supported languages
-#[rustler::nif]
-pub fn supported_languages() -> NifResult<Vec<String>> {
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => Ok(analyzer.supported_languages()),
-        Err(e) => Err(Error::Term(Box::new(format!(
-            "Failed to create analyzer: {e}"
-        )))),
-    }
-}
-
-#[rustler::nif]
-pub fn rca_supported_languages() -> NifResult<Vec<String>> {
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => Ok(analyzer.rca_supported_languages()),
-        Err(e) => Err(Error::Term(Box::new(format!(
-            "Failed to create analyzer: {e}"
-        )))),
-    }
-}
-
-#[rustler::nif]
-pub fn ast_grep_supported_languages() -> NifResult<Vec<String>> {
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => Ok(analyzer.ast_grep_supported_languages()),
-        Err(e) => Err(Error::Term(Box::new(format!(
-            "Failed to create analyzer: {e}"
-        )))),
-    }
-}
-
-#[rustler::nif]
-pub fn has_rca_support(language_id: String) -> bool {
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.has_rca_support(&language_id),
-        Err(_) => false,
-    }
-}
-
-#[rustler::nif]
-pub fn has_ast_grep_support(language_id: String) -> bool {
-    match CodebaseAnalyzer::new() {
-        Ok(analyzer) => analyzer.has_ast_grep_support(&language_id),
-        Err(_) => false,
-    }
-}
 
 /// Language detection result
 #[derive(Debug, Clone, Serialize, Deserialize, rustler::NifStruct)]
