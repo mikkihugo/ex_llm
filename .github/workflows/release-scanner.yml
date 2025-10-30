@@ -1,0 +1,65 @@
+name: Release Scanner
+
+on:
+  push:
+    tags:
+      - 'scanner-v*.*.*'
+      - 'scanner-v*.*.*-beta*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Build scanner
+        shell: bash
+        run: |
+          cargo build --release -p code_quality_engine --features cli
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN=singularity-scanner
+          case "${{ runner.os }}" in
+            Windows)
+              SRC=target/release/${BIN}.exe
+              OUT=${BIN}-windows-amd64.exe
+              ;;
+            macOS)
+              SRC=target/release/${BIN}
+              OUT=${BIN}-macos-universal
+              ;;
+            Linux)
+              SRC=target/release/${BIN}
+              OUT=${BIN}-linux-amd64
+              ;;
+          esac
+          cp "$SRC" "$OUT"
+          echo "ARTIFACT=$OUT" >> $GITHUB_ENV
+
+      - name: Create GitHub Release (beta)
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARTIFACT }}
+          generate_release_notes: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
