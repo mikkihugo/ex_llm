@@ -1,10 +1,10 @@
 defmodule Singularity.Workflows.EmbeddingTrainingWorkflowTest do
   use ExUnit.Case, async: true
-  import Mox
+  # import Mox  # TODO: Set up Mox mocks
 
   alias Singularity.Workflows.EmbeddingTrainingWorkflow
 
-  setup :verify_on_exit!
+   # setup :verify_on_exit!  # TODO: Enable after Mox setup
 
   describe "workflow_definition/0" do
     test "returns valid workflow definition" do

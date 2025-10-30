@@ -134,7 +134,7 @@ defmodule Singularity.RCA.SessionManagerTest do
       # Add a test execution
       {:ok, test_exec} =
         Repo.insert(%TestExecution{
-          generation_session_id: session.id,
+          triggered_by_session_id: session.id,
           test_pass_rate: Decimal.new("95.0"),
           test_coverage_line: Decimal.new("85.0"),
           failed_test_count: 1
