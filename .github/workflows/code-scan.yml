@@ -15,13 +15,23 @@ jobs:
     runs-on: [self-hosted, rtx4080]
 
     steps:
-      - name: Clean workspace (self-hosted runner submodule fix)
+      - name: Clean workspace (self-hosted runner)
         run: |
+          # Remove corrupted git state from previous runs
           rm -rf .git/modules || true
+          rm -f .git/config.lock || true
+          rm -f .git/index.lock || true
           find . -maxdepth 2 -name ".gitmodules" -delete || true
+
+          # Clean working directory
+          git clean -fdx || true
+          git reset --hard HEAD || true
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: true
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
