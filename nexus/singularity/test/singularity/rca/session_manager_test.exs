@@ -125,7 +125,7 @@ defmodule Singularity.RCA.SessionManagerTest do
       # Add a refinement step
       {:ok, step} =
         Repo.insert(%RefinementStep{
-          generation_session_id: session.id,
+          triggered_by_session_id: session.id,
           step_number: 1,
           agent_action: "initial_gen",
           tokens_used: 1000
@@ -244,7 +244,7 @@ defmodule Singularity.RCA.SessionManagerTest do
       # Use get_or_create with existing ID
       {:ok, returned_id} =
         SessionManager.get_or_create_session(
-          [generation_session_id: existing_id],
+          [triggered_by_session_id: existing_id],
           %{initial_prompt: "Different prompt"}
         )
 
@@ -263,7 +263,7 @@ defmodule Singularity.RCA.SessionManagerTest do
       # First refinement step
       {:ok, step1} =
         Repo.insert(%RefinementStep{
-          generation_session_id: session.id,
+          triggered_by_session_id: session.id,
           step_number: 1,
           agent_action: "initial_gen",
           feedback_received: nil,
@@ -274,7 +274,7 @@ defmodule Singularity.RCA.SessionManagerTest do
       # Second refinement step (depends on first)
       {:ok, step2} =
         Repo.insert(%RefinementStep{
-          generation_session_id: session.id,
+          triggered_by_session_id: session.id,
           step_number: 2,
           agent_action: "re_gen_on_error",
           feedback_received: "Failed validation tests",
@@ -309,7 +309,7 @@ defmodule Singularity.RCA.SessionManagerTest do
 
       {:ok, test_exec} =
         Repo.insert(%TestExecution{
-          generation_session_id: session.id,
+          triggered_by_session_id: session.id,
           test_pass_rate: Decimal.new("97.5"),
           test_coverage_line: Decimal.new("92.0"),
           test_coverage_branch: Decimal.new("85.5"),

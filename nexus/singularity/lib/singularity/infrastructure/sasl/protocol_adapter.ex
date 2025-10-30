@@ -50,11 +50,9 @@ defmodule Singularity.Infrastructure.Sasl.ProtocolAdapter do
 
   ## Examples
 
-      iex> ProtocolAdapter.authenticate_diameter(%{username: "admin", password: "secret"}, diameter_message)
-      {:ok, %{user_id: "admin", mechanism: :diameter, session_id: "abc123"}}
-
-      iex> ProtocolAdapter.authenticate_radius(%{username: "user", password: "pass"}, radius_request)
-      {:ok, %{user_id: "user", mechanism: :radius, attributes: %{...}}}
+      # Requires actual SASL mechanism implementation
+      # iex> ProtocolAdapter.authenticate_protocol(%{username: "admin", password: "secret"}, :diameter, %{})
+      # {:ok, %{user_id: "admin", mechanism: :diameter}}
   """
   @spec authenticate_protocol(map(), protocol_type(), protocol_message(), keyword()) ::
           adapter_result()
