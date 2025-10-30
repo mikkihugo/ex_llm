@@ -368,17 +368,21 @@ defmodule CentralCloud.Evolution.Patterns.Aggregator do
   end
 
   defp generate_pattern_embedding(code_pattern) do
-    # In production: Use Nx/Ortex to generate embedding via Jina v3 + Qodo
-    # For now, return mock embedding
-    embedding = List.duplicate(0.1, 2560)  # 2560-dim concatenated embedding
-    {:ok, embedding}
+    # Use Singularity's embedding service (Nx/Ortex with Jina v3 + Qodo)
+    # Expects code_pattern to be a map with at least :description
+    text = code_pattern[:description] || inspect(code_pattern)
+    case Singularity.EmbeddingGenerator.embed(text) do
+      {:ok, embedding} -> {:ok, embedding}
+      {:error, _} = error -> error
+    end
   end
 
   defp generate_code_embedding(code) do
-    # In production: Use Nx/Ortex to generate embedding
-    # For now, return mock embedding
-    embedding = List.duplicate(0.1, 2560)
-    {:ok, embedding}
+    # Use Singularity's embedding service for code snippets
+    case Singularity.EmbeddingGenerator.embed(code) do
+      {:ok, embedding} -> {:ok, embedding}
+      {:error, _} = error -> error
+    end
   end
 
   defp persist_pattern(instance_id, pattern_type, code_pattern, success_rate, embedding) do
