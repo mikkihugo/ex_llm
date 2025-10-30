@@ -43,6 +43,7 @@ members = [
     # Singularity Products
     "products/singularity-smart-package-context/backend",
     "products/singularity-smart-package-context/mcp-server",
+    "products/singularity-smart-package-context/cli",
 ]
 
 exclude = [

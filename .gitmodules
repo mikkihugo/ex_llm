@@ -1,6 +1,6 @@
 [submodule "packages/ex_quantum_flow"]
 	path = packages/ex_quantum_flow
-	url = git@github.com:mikkihugo/ex_pgflow.git
+	url = git@github.com:mikkihugo/ex_quantum_flow.git
 [submodule "packages/ex_llm"]
 	path = packages/ex_llm
 	url = https://github.com/mikkihugo/ex_llm.git
