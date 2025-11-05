@@ -84,7 +84,7 @@ defmodule CentralCloud.ModelLearning.RoutingEventConsumer do
 
   def init(_opts) do
     # Ensure queue exists
-    Singularity.Database.MessageQueue.create_queue(@queue_name)
+    Singularity.Workflow.Notifications.create_queue(@queue_name)
 
     # Start polling
     schedule_poll()
@@ -93,11 +93,11 @@ defmodule CentralCloud.ModelLearning.RoutingEventConsumer do
   end
 
   def handle_info(:poll, state) do
-    case Singularity.Database.MessageQueue.receive_message(@queue_name) do
+    case Singularity.Workflow.Notifications.receive_message(@queue_name) do
       {:ok, {msg_id, event}} ->
         process_routing_event(event)
         # Mark as processed
-        Singularity.Database.MessageQueue.delete_message(@queue_name, msg_id)
+        Singularity.Workflow.Notifications.delete_message(@queue_name, msg_id)
         schedule_poll()
         {:noreply, %{state | processed_count: state.processed_count + 1}}
 
@@ -314,7 +314,7 @@ defmodule CentralCloud.ModelLearning.ComplexityScoreLearner do
     }
 
     # Publish to a broadcast queue that all instances listen to
-    Singularity.Database.MessageQueue.send("model_score_updates", event)
+    Singularity.Workflow.Notifications.send("model_score_updates", event)
   end
 end
 ```
@@ -396,13 +396,13 @@ defmodule Singularity.ModelRouter.ScoreUpdater do
 
   def init(_opts) do
     # Create queue if needed
-    Singularity.Database.MessageQueue.create_queue(@queue_name)
+    Singularity.Workflow.Notifications.create_queue(@queue_name)
     schedule_poll()
     {:ok, %{}}
   end
 
   def handle_info(:poll, state) do
-    case Singularity.Database.MessageQueue.receive_message(@queue_name) do
+    case Singularity.Workflow.Notifications.receive_message(@queue_name) do
       {:ok, {_msg_id, event}} ->
         apply_score_update(event)
         schedule_poll()

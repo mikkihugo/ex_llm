@@ -101,6 +101,8 @@ defmodule ExLLM.Routing.ModelRouter do
 
   require Logger
   alias ExLLM.Core.ModelCatalog
+  alias Singularity.Workflow.Notifications
+  alias Singularity.Repo
 
   # pgmq queue for routing events
   @routing_queue "model_routing_decisions"
@@ -422,7 +424,7 @@ defmodule ExLLM.Routing.ModelRouter do
           # This will fail gracefully if pgmq is not available
           case Code.ensure_compiled(Singularity.Database.MessageQueue) do
             {:module, _} ->
-              Singularity.Database.MessageQueue.send(@routing_queue, event)
+              Singularity.Notifications.send_with_notify(@routing_queue, event, Repo, expect_reply: false)
 
             {:error, _} ->
               :ok

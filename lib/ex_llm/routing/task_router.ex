@@ -77,6 +77,10 @@ defmodule ExLLM.Routing.TaskRouter do
 
   alias ExLLM.Core.ModelCatalog
 
+  alias Singularity.Workflow.Notifications
+
+  alias Singularity.Repo
+
   @instance_id System.get_env("SINGULARITY_INSTANCE_ID", "singularity-1")
   @preference_queue "task_preferences"
 
@@ -642,7 +646,7 @@ defmodule ExLLM.Routing.TaskRouter do
       _ ->
         # Part of larger Singularity system with pgmq
         try do
-          case Singularity.Database.MessageQueue.send(@preference_queue, event) do
+          case Singularity.Notifications.send_with_notify(@preference_queue, event, Repo, expect_reply: false) do
             :ok ->
               Logger.debug("Task preference published to pgmq")
               :ok
