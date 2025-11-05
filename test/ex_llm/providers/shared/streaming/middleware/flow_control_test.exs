@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Shared.Streaming.Middleware.FlowControlTest do
+defmodule SingularityLLM.Providers.Shared.Streaming.Middleware.FlowControlTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.Streaming.Middleware.FlowControl
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.Streaming.Middleware.FlowControl
+  alias SingularityLLM.Types.StreamChunk
 
   # Test client with FlowControl middleware
   defmodule TestClient do
@@ -428,11 +428,11 @@ defmodule ExLLM.Providers.Shared.Streaming.Middleware.FlowControlTest do
   describe "flow control not available" do
     test "gracefully handles missing flow control infrastructure" do
       # Test that the module loads and has the required Tesla middleware behavior
-      assert Code.ensure_loaded?(ExLLM.Providers.Shared.Streaming.Middleware.FlowControl)
+      assert Code.ensure_loaded?(SingularityLLM.Providers.Shared.Streaming.Middleware.FlowControl)
 
       # Verify it implements Tesla.Middleware behavior
       behaviours =
-        ExLLM.Providers.Shared.Streaming.Middleware.FlowControl.__info__(:attributes)
+        SingularityLLM.Providers.Shared.Streaming.Middleware.FlowControl.__info__(:attributes)
         |> Enum.filter(fn {key, _} -> key == :behaviour end)
         |> Enum.flat_map(fn {_, behaviours} -> behaviours end)
 

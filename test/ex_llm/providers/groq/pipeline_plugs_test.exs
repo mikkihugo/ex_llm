@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.Groq.PipelinePlugsTest do
+defmodule SingularityLLM.Providers.Groq.PipelinePlugsTest do
   use ExUnit.Case, async: false
 
   @moduletag provider: :groq
   @moduletag :unit
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Providers.Groq.{BuildRequest, ParseResponse}
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Providers.Groq.{BuildRequest, ParseResponse}
 
   setup do
     # Set API key for FetchConfiguration plug

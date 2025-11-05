@@ -1,20 +1,20 @@
-# ExLLM Architecture
+# SingularityLLM Architecture
 
-This document describes ExLLM's layered architecture and namespace organization, designed for clarity, maintainability, and scalability.
+This document describes SingularityLLM's layered architecture and namespace organization, designed for clarity, maintainability, and scalability.
 
 ## Overview
 
-ExLLM follows a **Clean Layered Architecture** pattern that separates concerns into distinct layers with clear dependency rules:
+SingularityLLM follows a **Clean Layered Architecture** pattern that separates concerns into distinct layers with clear dependency rules:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    Public API                       │
-│                   (lib/ex_llm.ex)                   │
+│                   (lib/singularity_llm.ex)                   │
 └─────────────────────────────────────────────────────┘
                            │
 ┌─────────────────────────────────────────────────────┐
 │                  Core Layer                         │
-│                (lib/ex_llm/core/)                   │
+│                (lib/singularity_llm/core/)                   │
 │          • Business Logic                           │
 │          • Domain Concepts                          │
 │          • Pure Functions                           │
@@ -22,7 +22,7 @@ ExLLM follows a **Clean Layered Architecture** pattern that separates concerns i
                            │
 ┌─────────────────────────────────────────────────────┐
 │              Infrastructure Layer                   │
-│            (lib/ex_llm/infrastructure/)             │
+│            (lib/singularity_llm/infrastructure/)             │
 │          • Technical Implementation                 │
 │          • Configuration                            │
 │          • Caching, Streaming, Telemetry           │
@@ -30,7 +30,7 @@ ExLLM follows a **Clean Layered Architecture** pattern that separates concerns i
                            │
 ┌─────────────────────────────────────────────────────┐
 │               Providers Layer                       │
-│              (lib/ex_llm/providers/)                │
+│              (lib/singularity_llm/providers/)                │
 │          • External Service Integrations           │
 │          • API Adapters                            │
 │          • Protocol Implementations                │
@@ -39,26 +39,26 @@ ExLLM follows a **Clean Layered Architecture** pattern that separates concerns i
 
 ## Namespace Organization
 
-### Core Layer (`lib/ex_llm/core/`)
+### Core Layer (`lib/singularity_llm/core/`)
 
-The core layer contains pure business logic and domain concepts. These modules represent the core value propositions of ExLLM.
+The core layer contains pure business logic and domain concepts. These modules represent the core value propositions of SingularityLLM.
 
 ```elixir
 # Business domain modules
-ExLLM.Core.Chat             # Primary chat functionality
-ExLLM.Session               # Conversation state management
-ExLLM.Context               # Message context management
-ExLLM.Core.Embeddings       # Text vectorization
-ExLLM.Core.FunctionCalling  # Tool/function calling
-ExLLM.Core.StructuredOutputs # Schema validation
-ExLLM.Core.Vision           # Multimodal support
-ExLLM.Core.Capabilities     # Model capability queries
-ExLLM.Core.Models           # Model discovery and management
+SingularityLLM.Core.Chat             # Primary chat functionality
+SingularityLLM.Session               # Conversation state management
+SingularityLLM.Context               # Message context management
+SingularityLLM.Core.Embeddings       # Text vectorization
+SingularityLLM.Core.FunctionCalling  # Tool/function calling
+SingularityLLM.Core.StructuredOutputs # Schema validation
+SingularityLLM.Core.Vision           # Multimodal support
+SingularityLLM.Core.Capabilities     # Model capability queries
+SingularityLLM.Core.Models           # Model discovery and management
 
 # Cost tracking (core business value)
-ExLLM.Core.Cost             # Cost calculation
-ExLLM.Core.Cost.Display     # Cost formatting
-ExLLM.Core.Cost.Session     # Session-level cost tracking
+SingularityLLM.Core.Cost             # Cost calculation
+SingularityLLM.Core.Cost.Display     # Cost formatting
+SingularityLLM.Core.Cost.Session     # Session-level cost tracking
 ```
 
 **Design Principles:**
@@ -67,27 +67,27 @@ ExLLM.Core.Cost.Session     # Session-level cost tracking
 - Domain-driven design
 - Business logic only
 
-### Infrastructure Layer (`lib/ex_llm/infrastructure/`)
+### Infrastructure Layer (`lib/singularity_llm/infrastructure/`)
 
 The infrastructure layer provides technical services that support the core business logic.
 
 ```elixir
 # Configuration management
-ExLLM.Infrastructure.Config.ModelConfig         # Model configuration
-ExLLM.Infrastructure.Config.ModelCapabilities   # Model capability metadata
-ExLLM.Infrastructure.Config.ProviderCapabilities # Provider capability metadata
+SingularityLLM.Infrastructure.Config.ModelConfig         # Model configuration
+SingularityLLM.Infrastructure.Config.ModelCapabilities   # Model capability metadata
+SingularityLLM.Infrastructure.Config.ProviderCapabilities # Provider capability metadata
 
 # Technical services
-ExLLM.Infrastructure.Cache               # Response caching
-ExLLM.Infrastructure.Logger             # Logging infrastructure
-ExLLM.Infrastructure.Retry              # Retry logic
-ExLLM.Infrastructure.Error              # Error handling
-ExLLM.Infrastructure.ConfigProvider     # Configuration providers
+SingularityLLM.Infrastructure.Cache               # Response caching
+SingularityLLM.Infrastructure.Logger             # Logging infrastructure
+SingularityLLM.Infrastructure.Retry              # Retry logic
+SingularityLLM.Infrastructure.Error              # Error handling
+SingularityLLM.Infrastructure.ConfigProvider     # Configuration providers
 
 # Advanced infrastructure
-ExLLM.Infrastructure.Streaming          # Streaming infrastructure
-ExLLM.Infrastructure.CircuitBreaker     # Circuit breaker patterns
-ExLLM.Infrastructure.Telemetry          # Observability and metrics
+SingularityLLM.Infrastructure.Streaming          # Streaming infrastructure
+SingularityLLM.Infrastructure.CircuitBreaker     # Circuit breaker patterns
+SingularityLLM.Infrastructure.Telemetry          # Observability and metrics
 ```
 
 **Design Principles:**
@@ -96,24 +96,24 @@ ExLLM.Infrastructure.Telemetry          # Observability and metrics
 - Reusable across different domains
 - Infrastructure concerns only
 
-### Providers Layer (`lib/ex_llm/providers/`)
+### Providers Layer (`lib/singularity_llm/providers/`)
 
 The providers layer handles all external service integrations and API communication.
 
 ```elixir
 # Provider implementations
-ExLLM.Providers.Anthropic     # Claude API integration
-ExLLM.Providers.OpenAI        # GPT API integration
-ExLLM.Providers.Gemini        # Google Gemini API
-ExLLM.Providers.Groq          # Groq API integration
-ExLLM.Providers.OpenRouter    # OpenRouter API
+SingularityLLM.Providers.Anthropic     # Claude API integration
+SingularityLLM.Providers.OpenAI        # GPT API integration
+SingularityLLM.Providers.Gemini        # Google Gemini API
+SingularityLLM.Providers.Groq          # Groq API integration
+SingularityLLM.Providers.OpenRouter    # OpenRouter API
 # ... and 9 more providers
 
 # Shared provider utilities
-ExLLM.Providers.Shared.HTTPClient           # HTTP communication
-ExLLM.Providers.Shared.MessageFormatter    # Message formatting
-ExLLM.Providers.Shared.StreamingCoordinator # Unified streaming
-ExLLM.Providers.Shared.ErrorHandler        # Provider error handling
+SingularityLLM.Providers.Shared.HTTPClient           # HTTP communication
+SingularityLLM.Providers.Shared.MessageFormatter    # Message formatting
+SingularityLLM.Providers.Shared.StreamingCoordinator # Unified streaming
+SingularityLLM.Providers.Shared.ErrorHandler        # Provider error handling
 ```
 
 **Design Principles:**
@@ -122,14 +122,14 @@ ExLLM.Providers.Shared.ErrorHandler        # Provider error handling
 - Uses infrastructure services
 - No direct business logic
 
-### Testing Layer (`lib/ex_llm/testing/`)
+### Testing Layer (`lib/singularity_llm/testing/`)
 
 Specialized testing utilities and infrastructure.
 
 ```elixir
-ExLLM.Testing.Cache         # Test response caching
-ExLLM.Testing.Helpers       # Test utilities
-ExLLM.Testing.Interceptor   # Request interception
+SingularityLLM.Testing.Cache         # Test response caching
+SingularityLLM.Testing.Helpers       # Test utilities
+SingularityLLM.Testing.Interceptor   # Request interception
 ```
 
 ## Dependency Rules
@@ -161,18 +161,18 @@ The new architecture enables clear, intuitive imports:
 
 ```elixir
 # Business logic imports
-alias ExLLM.Core.{Chat, Session, Cost, Context}
+alias SingularityLLM.Core.{Chat, Session, Cost, Context}
 
 # Infrastructure imports  
-alias ExLLM.Infrastructure.{Config, Cache, Logger}
-alias ExLLM.Infrastructure.Config.{ModelConfig, ProviderCapabilities}
+alias SingularityLLM.Infrastructure.{Config, Cache, Logger}
+alias SingularityLLM.Infrastructure.Config.{ModelConfig, ProviderCapabilities}
 
 # Provider imports
-alias ExLLM.Providers.{Anthropic, OpenAI, Gemini}
-alias ExLLM.Providers.Shared.{HTTPClient, MessageFormatter}
+alias SingularityLLM.Providers.{Anthropic, OpenAI, Gemini}
+alias SingularityLLM.Providers.Shared.{HTTPClient, MessageFormatter}
 
 # Testing imports
-alias ExLLM.Testing.{Helpers, Cache}
+alias SingularityLLM.Testing.{Helpers, Cache}
 ```
 
 ## Benefits
@@ -203,8 +203,8 @@ The reorganization moved modules to their logical homes:
 
 ```elixir
 # Before: Flat organization
-ExLLM.Cost.* → ExLLM.Core.Cost.*           # Cost is core business logic
-ExLLM.Config.* → ExLLM.Infrastructure.Config.* # Config is infrastructure
+SingularityLLM.Cost.* → SingularityLLM.Core.Cost.*           # Cost is core business logic
+SingularityLLM.Config.* → SingularityLLM.Infrastructure.Config.* # Config is infrastructure
 
 # Result: Clear layered architecture
 Core/          # Business domain
@@ -215,7 +215,7 @@ Testing/       # Test utilities
 
 ## Future Architecture Considerations
 
-As ExLLM grows, consider these architectural patterns:
+As SingularityLLM grows, consider these architectural patterns:
 
 ### 1. **Domain-Driven Design**
 - Group related core modules into subdomains
@@ -233,6 +233,6 @@ As ExLLM grows, consider these architectural patterns:
 
 ## Conclusion
 
-ExLLM's layered architecture provides a solid foundation for growth while maintaining clarity and simplicity. The clear separation of concerns, enforced dependency rules, and intuitive namespace organization make the codebase easier to understand, maintain, and extend.
+SingularityLLM's layered architecture provides a solid foundation for growth while maintaining clarity and simplicity. The clear separation of concerns, enforced dependency rules, and intuitive namespace organization make the codebase easier to understand, maintain, and extend.
 
-This architecture positions ExLLM to scale from a unified LLM client to a comprehensive AI development platform while maintaining architectural integrity.
+This architecture positions SingularityLLM to scale from a unified LLM client to a comprehensive AI development platform while maintaining architectural integrity.

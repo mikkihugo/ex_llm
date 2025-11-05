@@ -1,12 +1,12 @@
-defmodule ExLLM.Providers.GeminiSystemMessagesTest do
+defmodule SingularityLLM.Providers.GeminiSystemMessagesTest do
   @moduledoc """
   Tests for Gemini system message handling to ensure proper role-based filtering.
   """
 
   use ExUnit.Case
-  import ExLLM.Testing.TestCacheHelpers
+  import SingularityLLM.Testing.TestCacheHelpers
 
-  alias ExLLM.Providers.Gemini.Content.{Content, GenerateContentRequest, Part}
+  alias SingularityLLM.Providers.Gemini.Content.{Content, GenerateContentRequest, Part}
 
   @moduletag :unit
   @moduletag :system_messages
@@ -21,7 +21,7 @@ defmodule ExLLM.Providers.GeminiSystemMessagesTest do
     setup_test_cache(context)
 
     on_exit(fn ->
-      ExLLM.Testing.TestCacheDetector.clear_test_context()
+      SingularityLLM.Testing.TestCacheDetector.clear_test_context()
     end)
 
     :ok

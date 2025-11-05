@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.ExLlm.ModelsDev.Sync do
   @moduledoc """
-  Syncs model data from models.dev to ExLLM YAML configs.
+  Syncs model data from models.dev to SingularityLLM YAML configs.
 
   models.dev is a community-maintained database of 300+ LLM models across
   40+ providers with current pricing, capabilities, and specifications.
@@ -10,7 +10,7 @@ defmodule Mix.Tasks.ExLlm.ModelsDev.Sync do
 
   ## Usage
 
-      mix ex_llm.models_dev.sync
+      mix singularity_llm.models_dev.sync
 
   ## What It Does
 
@@ -74,14 +74,14 @@ defmodule Mix.Tasks.ExLlm.ModelsDev.Sync do
 
   ## See Also
 
-      mix ex_llm.models_dev.fetch  # Fetch without syncing
-      mix ex_llm.models_dev.cache  # Manage cache
+      mix singularity_llm.models_dev.fetch  # Fetch without syncing
+      mix singularity_llm.models_dev.cache  # Manage cache
   """
 
   use Mix.Task
   require Logger
 
-  alias ExLLM.ModelDiscovery.ModelsDevSyncer
+  alias SingularityLLM.ModelDiscovery.ModelsDevSyncer
 
   @impl Mix.Task
   def run(_args) do
@@ -101,7 +101,7 @@ defmodule Mix.Tasks.ExLlm.ModelsDev.Sync do
   end
 
   defp list_config_files do
-    config_dir = ExLLM.Infrastructure.Config.ModelConfig.config_dir()
+    config_dir = SingularityLLM.Infrastructure.Config.ModelConfig.config_dir()
 
     case File.ls(config_dir) do
       {:ok, files} ->

@@ -1,7 +1,7 @@
-defmodule ExLLM.ErrorBuilderTest do
+defmodule SingularityLLM.ErrorBuilderTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.ErrorBuilder
+  alias SingularityLLM.ErrorBuilder
 
   describe "http_error/3" do
     test "builds an unauthorized error for status 401" do

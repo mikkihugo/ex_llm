@@ -1,6 +1,6 @@
 # Provider Capability Matrix
 
-The Provider Capability Matrix is a comprehensive view of which features are supported by each LLM provider in ExLLM. It combines static capability configuration with runtime checks and test results to provide accurate information about feature availability.
+The Provider Capability Matrix is a comprehensive view of which features are supported by each LLM provider in SingularityLLM. It combines static capability configuration with runtime checks and test results to provide accurate information about feature availability.
 
 ## Overview
 
@@ -30,19 +30,19 @@ Generate and display the capability matrix using the Mix task:
 
 ```bash
 # Display in console
-mix ex_llm.capability_matrix
+mix singularity_llm.capability_matrix
 
 # Export to Markdown
-mix ex_llm.capability_matrix --format markdown
+mix singularity_llm.capability_matrix --format markdown
 
 # Export to HTML
-mix ex_llm.capability_matrix --format html
+mix singularity_llm.capability_matrix --format html
 
 # Show extended capabilities
-mix ex_llm.capability_matrix --extended
+mix singularity_llm.capability_matrix --extended
 
 # Include test results (if available)
-mix ex_llm.capability_matrix --with-tests
+mix singularity_llm.capability_matrix --with-tests
 ```
 
 ### Programmatic Access
@@ -51,7 +51,7 @@ Use the capability matrix in your code:
 
 ```elixir
 # Generate the full matrix
-{:ok, matrix} = ExLLM.CapabilityMatrix.generate()
+{:ok, matrix} = SingularityLLM.CapabilityMatrix.generate()
 
 # Check specific provider capabilities
 openai_caps = matrix.matrix[:openai]
@@ -64,11 +64,11 @@ vision_providers = for {provider, caps} <- matrix.matrix,
                       do: provider
 
 # Display the matrix
-ExLLM.CapabilityMatrix.display()
+SingularityLLM.CapabilityMatrix.display()
 
 # Export to file
-{:ok, "capability_matrix.md"} = ExLLM.CapabilityMatrix.export(:markdown)
-{:ok, "capability_matrix.html"} = ExLLM.CapabilityMatrix.export(:html)
+{:ok, "capability_matrix.md"} = SingularityLLM.CapabilityMatrix.export(:markdown)
+{:ok, "capability_matrix.html"} = SingularityLLM.CapabilityMatrix.export(:html)
 ```
 
 ### Integration with Tests
@@ -77,35 +77,35 @@ The capability matrix can aggregate test results to show real-world status:
 
 ```elixir
 # Get test status for a specific provider/capability
-status = ExLLM.TestResultAggregator.get_test_status(:openai, :streaming)
+status = SingularityLLM.TestResultAggregator.get_test_status(:openai, :streaming)
 # => :passed | :failed | :skipped | :not_tested
 
 # Generate test summary
-summary = ExLLM.TestResultAggregator.generate_summary()
+summary = SingularityLLM.TestResultAggregator.generate_summary()
 ```
 
 ## Architecture
 
 The capability matrix system consists of three main components:
 
-1. **ExLLM.CapabilityMatrix** - Main module for generating and displaying the matrix
-2. **ExLLM.TestResultAggregator** - Aggregates test results by provider and capability
+1. **SingularityLLM.CapabilityMatrix** - Main module for generating and displaying the matrix
+2. **SingularityLLM.TestResultAggregator** - Aggregates test results by provider and capability
 3. **Mix.Tasks.ExLlm.CapabilityMatrix** - Mix task for command-line usage
 
 ### Data Sources
 
 The matrix combines data from multiple sources:
 
-1. **Static Configuration** (`ExLLM.Capabilities`)
+1. **Static Configuration** (`SingularityLLM.Capabilities`)
    - Hardcoded capability definitions
    - Provider feature lists
    
-2. **Provider Capabilities** (`ExLLM.Infrastructure.Config.ProviderCapabilities`)
+2. **Provider Capabilities** (`SingularityLLM.Infrastructure.Config.ProviderCapabilities`)
    - Detailed provider information
    - Endpoint availability
    - Authentication methods
    
-3. **Model Capabilities** (`ExLLM.Infrastructure.Config.ModelCapabilities`)
+3. **Model Capabilities** (`SingularityLLM.Infrastructure.Config.ModelCapabilities`)
    - Model-specific features
    - Context windows and limits
    
@@ -158,29 +158,29 @@ Legend:
 
 To add new capabilities:
 
-1. Add the capability to `@core_capabilities` in `ExLLM.CapabilityMatrix`
+1. Add the capability to `@core_capabilities` in `SingularityLLM.CapabilityMatrix`
 2. Update the `map_capability/1` function if needed
-3. Add the capability to provider configurations in `ExLLM.Capabilities`
+3. Add the capability to provider configurations in `SingularityLLM.Capabilities`
 4. Update tests to include the new capability
 
 To add new providers:
 
-1. Add the provider to `get_providers/0` in `ExLLM.CapabilityMatrix`
-2. Configure capabilities in `ExLLM.Capabilities`
-3. Add provider configuration in `ExLLM.Infrastructure.Config.ProviderCapabilities`
+1. Add the provider to `get_providers/0` in `SingularityLLM.CapabilityMatrix`
+2. Configure capabilities in `SingularityLLM.Capabilities`
+3. Add provider configuration in `SingularityLLM.Infrastructure.Config.ProviderCapabilities`
 
 ## Best Practices
 
 1. **Use for Provider Selection**
    ```elixir
    # Find providers that support required features
-   providers = ExLLM.Capabilities.providers_with_capability(:vision)
-   configured = Enum.filter(providers, &ExLLM.configured?/1)
+   providers = SingularityLLM.Capabilities.providers_with_capability(:vision)
+   configured = Enum.filter(providers, &SingularityLLM.configured?/1)
    ```
 
 2. **Graceful Feature Degradation**
    ```elixir
-   if ExLLM.Capabilities.supports?(provider, :vision) do
+   if SingularityLLM.Capabilities.supports?(provider, :vision) do
      # Use vision features
    else
      # Fall back to text-only

@@ -1,11 +1,11 @@
-defmodule ExLLM.Integration.FileManagementTest do
+defmodule SingularityLLM.Integration.FileManagementTest do
   @moduledoc """
   Integration tests for file management functionality across providers.
 
   Tests file upload, retrieval, listing, and deletion operations
   for providers that support file management (OpenAI, Gemini).
   """
-  use ExLLM.Testing.IntegrationCase
+  use SingularityLLM.Testing.IntegrationCase
 
   describe "file lifecycle" do
     @describetag :file_management
@@ -17,7 +17,7 @@ defmodule ExLLM.Integration.FileManagementTest do
 
         # Upload file
         assert {:ok, file} =
-                 ExLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
+                 SingularityLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
 
         assert file["id"]
         assert file["filename"] == "sample.txt"
@@ -28,15 +28,15 @@ defmodule ExLLM.Integration.FileManagementTest do
         track_tokens(:openai, "gpt-3.5-turbo", 10, 10)
 
         # Retrieve file
-        assert {:ok, retrieved} = ExLLM.FileManager.get_file(:openai, file["id"])
+        assert {:ok, retrieved} = SingularityLLM.FileManager.get_file(:openai, file["id"])
         assert retrieved["id"] == file["id"]
         assert retrieved["filename"] == file["filename"]
 
         # Delete file
-        assert {:ok, _} = ExLLM.FileManager.delete_file(:openai, file["id"])
+        assert {:ok, _} = SingularityLLM.FileManager.delete_file(:openai, file["id"])
 
         # Verify deletion
-        assert {:error, error} = ExLLM.FileManager.get_file(:openai, file["id"])
+        assert {:error, error} = SingularityLLM.FileManager.get_file(:openai, file["id"])
         assert error.status_code == 404 or error.status == 404
       end)
     end
@@ -56,11 +56,11 @@ defmodule ExLLM.Integration.FileManagementTest do
         uploaded_files =
           Enum.map(formats, fn {path, _expected_type} ->
             assert {:ok, file} =
-                     ExLLM.FileManager.upload_file(:openai, path, purpose: "assistants")
+                     SingularityLLM.FileManager.upload_file(:openai, path, purpose: "assistants")
 
             # Cleanup on exit
             on_exit(fn ->
-              ExLLM.FileManager.delete_file(:openai, file["id"])
+              SingularityLLM.FileManager.delete_file(:openai, file["id"])
             end)
 
             file
@@ -79,7 +79,7 @@ defmodule ExLLM.Integration.FileManagementTest do
       with_provider(:openai, fn ->
         # Test with non-existent file
         assert {:error, error} =
-                 ExLLM.FileManager.upload_file(
+                 SingularityLLM.FileManager.upload_file(
                    :openai,
                    "/tmp/non_existent_file.txt",
                    purpose: "assistants"
@@ -96,14 +96,14 @@ defmodule ExLLM.Integration.FileManagementTest do
       with_provider(:openai, fn ->
         # Upload a test file first
         file_path = text_file_path()
-        {:ok, uploaded} = ExLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
+        {:ok, uploaded} = SingularityLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
 
         on_exit(fn ->
-          ExLLM.FileManager.delete_file(:openai, uploaded["id"])
+          SingularityLLM.FileManager.delete_file(:openai, uploaded["id"])
         end)
 
         # List files
-        assert {:ok, files} = ExLLM.FileManager.list_files(:openai)
+        assert {:ok, files} = SingularityLLM.FileManager.list_files(:openai)
         assert is_list(files["data"])
 
         # Our file should be in the list
@@ -118,14 +118,14 @@ defmodule ExLLM.Integration.FileManagementTest do
       with_provider(:openai, fn ->
         # Upload file
         {:ok, file} =
-          ExLLM.FileManager.upload_file(:openai, text_file_path(), purpose: "assistants")
+          SingularityLLM.FileManager.upload_file(:openai, text_file_path(), purpose: "assistants")
 
         on_exit(fn ->
-          ExLLM.FileManager.delete_file(:openai, file["id"])
+          SingularityLLM.FileManager.delete_file(:openai, file["id"])
         end)
 
         # Get metadata
-        assert {:ok, metadata} = ExLLM.FileManager.get_file(:openai, file["id"])
+        assert {:ok, metadata} = SingularityLLM.FileManager.get_file(:openai, file["id"])
 
         assert metadata["id"] == file["id"]
         assert metadata["object"] == "file"
@@ -143,15 +143,15 @@ defmodule ExLLM.Integration.FileManagementTest do
       with_provider(:openai, fn ->
         # Upload file
         {:ok, file} =
-          ExLLM.FileManager.upload_file(:openai, text_file_path(), purpose: "assistants")
+          SingularityLLM.FileManager.upload_file(:openai, text_file_path(), purpose: "assistants")
 
         # Delete it
-        assert {:ok, deleted} = ExLLM.FileManager.delete_file(:openai, file["id"])
+        assert {:ok, deleted} = SingularityLLM.FileManager.delete_file(:openai, file["id"])
         assert deleted["id"] == file["id"]
         assert deleted["deleted"] == true
 
         # Verify it's gone
-        assert {:error, error} = ExLLM.FileManager.get_file(:openai, file["id"])
+        assert {:error, error} = SingularityLLM.FileManager.get_file(:openai, file["id"])
         assert error.status_code == 404 or error.status == 404
 
         track_tokens(:openai, "gpt-3.5-turbo", 10, 10)
@@ -162,7 +162,7 @@ defmodule ExLLM.Integration.FileManagementTest do
       with_provider(:openai, fn ->
         fake_id = "file_#{unique_id()}"
 
-        assert {:error, error} = ExLLM.FileManager.delete_file(:openai, fake_id)
+        assert {:error, error} = SingularityLLM.FileManager.delete_file(:openai, fake_id)
         assert error.status == 404
       end)
     end
@@ -176,15 +176,15 @@ defmodule ExLLM.Integration.FileManagementTest do
           :file,
           # Create
           fn ->
-            ExLLM.FileManager.upload_file(:openai, json_file_path(), purpose: "assistants")
+            SingularityLLM.FileManager.upload_file(:openai, json_file_path(), purpose: "assistants")
           end,
           # Get
           fn id ->
-            ExLLM.FileManager.get_file(:openai, id)
+            SingularityLLM.FileManager.get_file(:openai, id)
           end,
           # Delete
           fn id ->
-            ExLLM.FileManager.delete_file(:openai, id)
+            SingularityLLM.FileManager.delete_file(:openai, id)
           end
         )
 
@@ -207,12 +207,12 @@ defmodule ExLLM.Integration.FileManagementTest do
               do: jsonl_file_path(),
               else: text_file_path()
 
-          assert {:ok, file} = ExLLM.FileManager.upload_file(:openai, file_path, purpose: purpose)
+          assert {:ok, file} = SingularityLLM.FileManager.upload_file(:openai, file_path, purpose: purpose)
 
           assert file["purpose"] == purpose
 
           # Cleanup
-          ExLLM.FileManager.delete_file(:openai, file["id"])
+          SingularityLLM.FileManager.delete_file(:openai, file["id"])
         end
 
         track_tokens(:openai, "gpt-3.5-turbo", 20, 20)
@@ -233,7 +233,7 @@ defmodule ExLLM.Integration.FileManagementTest do
         file_path = text_file_path()
 
         assert {:ok, file} =
-                 ExLLM.FileManager.upload_file(:gemini, file_path, display_name: "Test File")
+                 SingularityLLM.FileManager.upload_file(:gemini, file_path, display_name: "Test File")
 
         # Gemini returns name instead of id
         assert file["name"]
@@ -241,11 +241,11 @@ defmodule ExLLM.Integration.FileManagementTest do
 
         on_exit(fn ->
           # Gemini file cleanup
-          ExLLM.FileManager.delete_file(:gemini, file["name"])
+          SingularityLLM.FileManager.delete_file(:gemini, file["name"])
         end)
 
         # Verify file exists
-        assert {:ok, retrieved} = ExLLM.FileManager.get_file(:gemini, file["name"])
+        assert {:ok, retrieved} = SingularityLLM.FileManager.get_file(:gemini, file["name"])
         assert retrieved["name"] == file["name"]
 
         track_tokens(:gemini, "gemini-2.0-flash", 10, 10)
@@ -271,7 +271,7 @@ defmodule ExLLM.Integration.FileManagementTest do
         tasks =
           for path <- temp_files do
             Task.async(fn ->
-              result = ExLLM.FileManager.upload_file(:openai, path, purpose: "assistants")
+              result = SingularityLLM.FileManager.upload_file(:openai, path, purpose: "assistants")
 
               case result do
                 {:ok, file} ->
@@ -289,7 +289,7 @@ defmodule ExLLM.Integration.FileManagementTest do
         # Cleanup uploaded files
         for {:ok, file} <- results do
           on_exit(fn ->
-            ExLLM.FileManager.delete_file(:openai, file["id"])
+            SingularityLLM.FileManager.delete_file(:openai, file["id"])
           end)
         end
 

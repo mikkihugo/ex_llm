@@ -6,29 +6,29 @@ defmodule Mix.Tasks.ExLlm.Captures do
 
   ## Commands
 
-      mix ex_llm.captures list [--provider PROVIDER] [--today] [--limit N]
-      mix ex_llm.captures show TIMESTAMP
-      mix ex_llm.captures clear [--older-than DAYS]
-      mix ex_llm.captures stats
+      mix singularity_llm.captures list [--provider PROVIDER] [--today] [--limit N]
+      mix singularity_llm.captures show TIMESTAMP
+      mix singularity_llm.captures clear [--older-than DAYS]
+      mix singularity_llm.captures stats
 
   ## Examples
 
       # List recent captures
-      mix ex_llm.captures list --limit 10
+      mix singularity_llm.captures list --limit 10
       
       # Show specific capture
-      mix ex_llm.captures show 2024-01-15T10-30-45
+      mix singularity_llm.captures show 2024-01-15T10-30-45
       
       # Clear old captures
-      mix ex_llm.captures clear --older-than 7
+      mix singularity_llm.captures clear --older-than 7
   """
 
   use Mix.Task
-  alias ExLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.Testing.LiveApiCacheStorage
 
   @impl Mix.Task
   def run(args) do
-    Application.ensure_all_started(:ex_llm)
+    Application.ensure_all_started(:singularity_llm)
 
     case args do
       ["list" | opts] -> list_captures(opts)
@@ -233,7 +233,7 @@ defmodule Mix.Tasks.ExLlm.Captures do
 
   defp show_help do
     Mix.shell().info("""
-    Usage: mix ex_llm.captures COMMAND [OPTIONS]
+    Usage: mix singularity_llm.captures COMMAND [OPTIONS]
 
     Commands:
       list              List recent captures

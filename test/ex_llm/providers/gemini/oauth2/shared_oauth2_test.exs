@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.SharedOAuth2Test do
   @moduledoc """
   Shared OAuth2 test utilities and error handling tests.
 
@@ -6,14 +6,14 @@ defmodule ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test do
   tests that apply across all OAuth2 APIs.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.{
+  alias SingularityLLM.Providers.Gemini.{
     Corpus,
     Document
   }
 
-  alias ExLLM.Testing.GeminiOAuth2Helper
+  alias SingularityLLM.Testing.GeminiOAuth2Helper
 
   @moduletag :gemini_oauth2_apis
   @moduletag :oauth2_error_handling

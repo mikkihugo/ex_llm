@@ -18,8 +18,8 @@ Logger.configure(
 )
 
 # Ensure critical lib modules are available before loading support files
-Code.ensure_loaded(ExLLM.Testing.Config)
-Code.ensure_loaded(ExLLM.Environment)
+Code.ensure_loaded(SingularityLLM.Testing.Config)
+Code.ensure_loaded(SingularityLLM.Environment)
 
 # Compile test support files
 Code.require_file("support/env_helper.ex", __DIR__)
@@ -38,27 +38,27 @@ Code.require_file("support/shared/provider_integration_test.exs", __DIR__)
 # Start hackney for tests that use Bypass
 {:ok, _} = Application.ensure_all_started(:hackney)
 
-# Ensure ExLLM application is started (this initializes circuit breaker ETS table)
-{:ok, _} = Application.ensure_all_started(:ex_llm)
+# Ensure SingularityLLM application is started (this initializes circuit breaker ETS table)
+{:ok, _} = Application.ensure_all_started(:singularity_llm)
 
 # Start test support GenServers
-{:ok, _} = ExLLM.Testing.CostTracker.start_link()
+{:ok, _} = SingularityLLM.Testing.CostTracker.start_link()
 
 # Start Mock provider for tests
-{:ok, _} = ExLLM.Providers.Mock.start_link()
+{:ok, _} = SingularityLLM.Providers.Mock.start_link()
 
 # Apply centralized test configuration
-tesla_config = ExLLM.Testing.Config.tesla_config()
-app_config = ExLLM.Testing.Config.app_config()
-logger_config = ExLLM.Testing.Config.logger_config()
+tesla_config = SingularityLLM.Testing.Config.tesla_config()
+app_config = SingularityLLM.Testing.Config.app_config()
+logger_config = SingularityLLM.Testing.Config.logger_config()
 
 # Set up Tesla configuration
 Application.put_env(:tesla, :adapter, tesla_config[:adapter])
-Application.put_env(:ex_llm, :use_tesla_mock, tesla_config[:use_tesla_mock])
+Application.put_env(:singularity_llm, :use_tesla_mock, tesla_config[:use_tesla_mock])
 
-# Apply ExLLM configuration  
+# Apply SingularityLLM configuration  
 Enum.each(app_config, fn {key, value} ->
-  Application.put_env(:ex_llm, key, value)
+  Application.put_env(:singularity_llm, key, value)
 end)
 
 # Apply Logger configuration
@@ -67,7 +67,7 @@ Enum.each(logger_config, fn {key, value} ->
 end)
 
 # Add cost report callback for integration tests
-defmodule ExLLM.Testing.CostReportCallback do
+defmodule SingularityLLM.Testing.CostReportCallback do
   @moduledoc """
   ExUnit callback to display cost reports after test suite completion.
   """
@@ -86,7 +86,7 @@ defmodule ExLLM.Testing.CostReportCallback do
 
   defp generate_cost_report(%{failures: _failures}) do
     try do
-      report = ExLLM.Testing.CostTracker.generate_report()
+      report = SingularityLLM.Testing.CostTracker.generate_report()
 
       if report.total_cost > 0 do
         IO.puts("\n" <> String.duplicate("=", 60))
@@ -141,13 +141,13 @@ defmodule ExLLM.Testing.CostReportCallback do
 end
 
 # Start cost report callback
-{:ok, _} = ExLLM.Testing.CostReportCallback.start_link()
+{:ok, _} = SingularityLLM.Testing.CostReportCallback.start_link()
 
 # Load environment variables from .env file if available
 # Try loading from .env file
 env_result =
   try do
-    ExLLM.Testing.EnvHelper.load_env(warn_missing: false)
+    SingularityLLM.Testing.EnvHelper.load_env(warn_missing: false)
   rescue
     _ ->
       # Fallback: Try to load .env manually if helper fails
@@ -211,10 +211,10 @@ case env_result do
 end
 
 # Use centralized test configuration for exclusions
-default_exclusions = ExLLM.Testing.Config.default_exclusions()
+default_exclusions = SingularityLLM.Testing.Config.default_exclusions()
 
 # Check for OAuth2 tokens for backward compatibility
-oauth2_available = ExLLM.Testing.Config.oauth2_available?()
+oauth2_available = SingularityLLM.Testing.Config.oauth2_available?()
 
 if not oauth2_available do
   IO.puts("\n⚠️  OAuth2 tests excluded - no .gemini_tokens file found")

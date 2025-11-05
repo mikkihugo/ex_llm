@@ -6,7 +6,7 @@
 # Usage: elixir scripts/cleanup_oauth2_test_data.exs
 
 Mix.install([
-  {:ex_llm, path: "."},
+  {:singularity_llm, path: "."},
   {:req, "~> 0.5.0"},
   {:jason, "~> 1.4"}
 ])

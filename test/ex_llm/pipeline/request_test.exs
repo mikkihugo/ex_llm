@@ -1,7 +1,7 @@
-defmodule ExLLM.Pipeline.RequestTest do
+defmodule SingularityLLM.Pipeline.RequestTest do
   use ExUnit.Case, async: true
   @moduletag :unit
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
 
   describe "new/3" do
     test "accepts map as options" do

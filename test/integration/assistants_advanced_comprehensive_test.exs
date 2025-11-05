@@ -1,6 +1,6 @@
-defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
+defmodule SingularityLLM.Integration.AssistantsAdvancedComprehensiveTest do
   @moduledoc """
-  Comprehensive integration tests for ExLLM Advanced Assistants functionality.
+  Comprehensive integration tests for SingularityLLM Advanced Assistants functionality.
   Tests runs, tool usage, function calling, and complete workflows.
   """
   use ExUnit.Case
@@ -12,7 +12,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
   end
 
   defp cleanup_assistant(assistant_id) when is_binary(assistant_id) do
-    case ExLLM.Providers.OpenAI.delete_assistant(assistant_id) do
+    case SingularityLLM.Providers.OpenAI.delete_assistant(assistant_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -20,7 +20,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
   end
 
   defp cleanup_thread(thread_id) when is_binary(thread_id) do
-    case ExLLM.Providers.OpenAI.delete_thread(thread_id) do
+    case SingularityLLM.Providers.OpenAI.delete_thread(thread_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -28,7 +28,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
   end
 
   defp cleanup_file(file_id) when is_binary(file_id) do
-    case ExLLM.Providers.OpenAI.delete_file(file_id) do
+    case SingularityLLM.Providers.OpenAI.delete_file(file_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -39,7 +39,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
     start_time = :os.system_time(:millisecond)
 
     wait_loop = fn wait_loop_fn ->
-      case ExLLM.Providers.OpenAI.get_run(thread_id, run_id) do
+      case SingularityLLM.Providers.OpenAI.get_run(thread_id, run_id) do
         {:ok, run} ->
           handle_run_status(run, wait_loop_fn, start_time, timeout)
 
@@ -90,12 +90,12 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
           # Create a thread
-          case ExLLM.Providers.OpenAI.create_thread() do
+          case SingularityLLM.Providers.OpenAI.create_thread() do
             {:ok, thread} ->
               thread_id = thread["id"]
 
@@ -105,14 +105,14 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                 content: "What is 15 + 27?"
               }
 
-              case ExLLM.Providers.OpenAI.create_message(thread_id, message_params) do
+              case SingularityLLM.Providers.OpenAI.create_message(thread_id, message_params) do
                 {:ok, _message} ->
                   # Create a run
                   run_params = %{
                     assistant_id: assistant_id
                   }
 
-                  case ExLLM.Providers.OpenAI.create_run(thread_id, run_params) do
+                  case SingularityLLM.Providers.OpenAI.create_run(thread_id, run_params) do
                     {:ok, run} ->
                       assert run["id"] =~ ~r/^run_/
                       assert run["object"] == "thread.run"
@@ -166,7 +166,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -183,7 +183,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+          case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
             {:ok, run} ->
               thread_id = run["thread_id"]
 
@@ -191,7 +191,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
               case wait_for_run_completion(thread_id, run["id"]) do
                 {:ok, _completed_run} ->
                   # Get messages from the thread
-                  case ExLLM.Providers.OpenAI.list_messages(thread_id) do
+                  case SingularityLLM.Providers.OpenAI.list_messages(thread_id) do
                     {:ok, messages} ->
                       assert is_list(messages["data"])
                       # User message + assistant response
@@ -252,7 +252,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -269,7 +269,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+          case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
             {:ok, run} ->
               thread_id = run["thread_id"]
 
@@ -277,7 +277,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
               Process.sleep(2000)
 
               # List run steps
-              case ExLLM.Providers.OpenAI.list_run_steps(thread_id, run["id"]) do
+              case SingularityLLM.Providers.OpenAI.list_run_steps(thread_id, run["id"]) do
                 {:ok, steps} ->
                   assert is_list(steps["data"])
                   assert steps["object"] == "list"
@@ -329,7 +329,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         tools: [%{type: "code_interpreter"}]
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -346,7 +346,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+          case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
             {:ok, run} ->
               thread_id = run["thread_id"]
 
@@ -356,7 +356,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                   assert completed_run["status"] == "completed"
 
                   # Check if code interpreter was used
-                  case ExLLM.Providers.OpenAI.list_run_steps(thread_id, run["id"]) do
+                  case SingularityLLM.Providers.OpenAI.list_run_steps(thread_id, run["id"]) do
                     {:ok, steps} ->
                       # Look for tool calls
                       tool_steps =
@@ -440,7 +440,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         ]
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -457,7 +457,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+          case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
             {:ok, run} ->
               thread_id = run["thread_id"]
 
@@ -495,7 +495,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                     }
                   ]
 
-                  case ExLLM.Providers.OpenAI.submit_tool_outputs(
+                  case SingularityLLM.Providers.OpenAI.submit_tool_outputs(
                          thread_id,
                          run["id"],
                          tool_outputs
@@ -548,23 +548,23 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
     test "file search tool usage" do
       # First, create a test file
       file_content = """
-      ExLLM Documentation
+      SingularityLLM Documentation
 
-      ExLLM is a unified Elixir client for Large Language Models. It supports:
+      SingularityLLM is a unified Elixir client for Large Language Models. It supports:
       - Multiple providers (OpenAI, Anthropic, Gemini, etc.)
       - Streaming responses
       - Function calling
       - Embeddings
       - Cost tracking
 
-      The main module is ExLLM and the primary function is ExLLM.chat/3.
+      The main module is SingularityLLM and the primary function is SingularityLLM.chat/3.
       """
 
       file_path = Path.join(System.tmp_dir!(), "ex_llm_docs_#{:os.system_time(:millisecond)}.txt")
       File.write!(file_path, file_content)
 
       # Upload the file
-      case ExLLM.Providers.OpenAI.upload_file(file_path, "assistants") do
+      case SingularityLLM.Providers.OpenAI.upload_file(file_path, "assistants") do
         {:ok, file} ->
           file_id = file["id"]
 
@@ -586,7 +586,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+          case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
             {:ok, assistant} ->
               assistant_id = assistant["id"]
 
@@ -598,13 +598,13 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                     %{
                       role: "user",
                       content:
-                        "What is the primary function of ExLLM according to the documentation?"
+                        "What is the primary function of SingularityLLM according to the documentation?"
                     }
                   ]
                 }
               }
 
-              case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+              case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
                 {:ok, run} ->
                   thread_id = run["thread_id"]
 
@@ -614,7 +614,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                       assert completed_run["status"] == "completed"
 
                       # Get the response
-                      case ExLLM.Providers.OpenAI.list_messages(thread_id) do
+                      case SingularityLLM.Providers.OpenAI.list_messages(thread_id) do
                         {:ok, messages} ->
                           assistant_messages =
                             Enum.filter(messages["data"], fn msg ->
@@ -623,7 +623,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
 
                           assert length(assistant_messages) >= 1
 
-                          # Check if the response mentions ExLLM.chat/3
+                          # Check if the response mentions SingularityLLM.chat/3
                           latest_msg = List.first(assistant_messages)
 
                           text_content =
@@ -634,7 +634,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                           assert text_content != nil
                           response_text = text_content["text"]["value"]
 
-                          assert String.contains?(response_text, "ExLLM.chat") or
+                          assert String.contains?(response_text, "SingularityLLM.chat") or
                                    String.contains?(response_text, "chat/3") or
                                    String.contains?(response_text, "primary function")
 
@@ -691,7 +691,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -708,7 +708,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
+          case SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params) do
             {:ok, run} ->
               thread_id = run["thread_id"]
 
@@ -716,7 +716,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
               Process.sleep(2000)
 
               # Cancel the run
-              case ExLLM.Providers.OpenAI.cancel_run(thread_id, run["id"]) do
+              case SingularityLLM.Providers.OpenAI.cancel_run(thread_id, run["id"]) do
                 {:ok, cancelled_run} ->
                   assert cancelled_run["id"] == run["id"]
                   # Status might be cancelling or cancelled
@@ -768,7 +768,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
@@ -787,7 +787,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                 }
               }
 
-              result = ExLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params)
+              result = SingularityLLM.Providers.OpenAI.create_thread_and_run(create_and_run_params)
 
               # Clean up successful runs
               case result do
@@ -853,12 +853,12 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
         tools: [%{type: "code_interpreter"}]
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(assistant_params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(assistant_params) do
         {:ok, assistant} ->
           assistant_id = assistant["id"]
 
           # Create a thread
-          case ExLLM.Providers.OpenAI.create_thread() do
+          case SingularityLLM.Providers.OpenAI.create_thread() do
             {:ok, thread} ->
               thread_id = thread["id"]
 
@@ -868,12 +868,12 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                 content: "What is 15 * 23?"
               }
 
-              case ExLLM.Providers.OpenAI.create_message(thread_id, message1_params) do
+              case SingularityLLM.Providers.OpenAI.create_message(thread_id, message1_params) do
                 {:ok, _message1} ->
                   # Run for first message
                   run1_params = %{assistant_id: assistant_id}
 
-                  case ExLLM.Providers.OpenAI.create_run(thread_id, run1_params) do
+                  case SingularityLLM.Providers.OpenAI.create_run(thread_id, run1_params) do
                     {:ok, run1} ->
                       # Wait for completion
                       case wait_for_run_completion(thread_id, run1["id"]) do
@@ -884,12 +884,12 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                             content: "Now use Python to calculate the first 10 Fibonacci numbers."
                           }
 
-                          case ExLLM.Providers.OpenAI.create_message(thread_id, message2_params) do
+                          case SingularityLLM.Providers.OpenAI.create_message(thread_id, message2_params) do
                             {:ok, _message2} ->
                               # Run for second message
                               run2_params = %{assistant_id: assistant_id}
 
-                              case ExLLM.Providers.OpenAI.create_run(thread_id, run2_params) do
+                              case SingularityLLM.Providers.OpenAI.create_run(thread_id, run2_params) do
                                 {:ok, run2} ->
                                   # Wait for completion
                                   case wait_for_run_completion(thread_id, run2["id"], 60_000) do
@@ -897,7 +897,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                                       assert completed_run2["status"] == "completed"
 
                                       # Get all messages
-                                      case ExLLM.Providers.OpenAI.list_messages(thread_id) do
+                                      case SingularityLLM.Providers.OpenAI.list_messages(thread_id) do
                                         {:ok, messages} ->
                                           # 2 user + 2 assistant
                                           assert length(messages["data"]) >= 4
@@ -917,7 +917,7 @@ defmodule ExLLM.Integration.AssistantsAdvancedComprehensiveTest do
                                           assert length(assistant_messages) >= 2
 
                                           # Check run steps for second run (should use code interpreter)
-                                          case ExLLM.Providers.OpenAI.list_run_steps(
+                                          case SingularityLLM.Providers.OpenAI.list_run_steps(
                                                  thread_id,
                                                  run2["id"]
                                                ) do

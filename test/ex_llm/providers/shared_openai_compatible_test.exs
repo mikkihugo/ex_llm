@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
+defmodule SingularityLLM.Providers.SharedOpenAICompatibleTest do
   @moduledoc """
   Shared test suite for OpenAI-compatible providers.
 
@@ -24,7 +24,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
   defmacro with_env_var_removed(provider_atom, do: block) do
     quote do
       env_var_name =
-        ExLLM.Providers.SharedOpenAICompatibleTest.get_env_var_name(unquote(provider_atom))
+        SingularityLLM.Providers.SharedOpenAICompatibleTest.get_env_var_name(unquote(provider_atom))
 
       original_key = System.get_env(env_var_name)
 
@@ -43,7 +43,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
         @tag :unit
         test "implements required behaviors" do
           behaviors = unquote(provider_module).module_info(:attributes)[:behaviour] || []
-          assert ExLLM.Provider in behaviors
+          assert SingularityLLM.Provider in behaviors
         end
 
         @tag :unit
@@ -74,7 +74,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
           with_env_var_removed unquote(provider_atom) do
             # Create a static config provider with empty config
             {:ok, config_provider} =
-              ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{
+              SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{
                 unquote(provider_atom) => %{}
               })
 
@@ -99,7 +99,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
           with_env_var_removed unquote(provider_atom) do
             # Create a static config provider instance with no API key
             {:ok, config_provider} =
-              ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{
+              SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{
                 unquote(provider_atom) => %{}
               })
 
@@ -155,7 +155,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
           with_env_var_removed unquote(provider_atom) do
             # Create a static config provider instance with no API key
             {:ok, config_provider} =
-              ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{
+              SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{
                 unquote(provider_atom) => %{}
               })
 
@@ -171,7 +171,7 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
         test "handles empty API key" do
           # Create a static config provider instance with empty API key
           {:ok, config_provider} =
-            ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{
+            SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{
               unquote(provider_atom) => %{api_key: ""}
             })
 
@@ -187,31 +187,31 @@ defmodule ExLLM.Providers.SharedOpenAICompatibleTest do
 end
 
 # Now create individual test modules for each provider
-defmodule ExLLM.Providers.XAICompatibilityTest do
+defmodule SingularityLLM.Providers.XAICompatibilityTest do
   use ExUnit.Case, async: false
-  import ExLLM.Providers.SharedOpenAICompatibleTest
+  import SingularityLLM.Providers.SharedOpenAICompatibleTest
 
-  run_standard_tests(ExLLM.Providers.XAI, :xai)
-  run_parameter_tests(ExLLM.Providers.XAI, :xai)
-  run_error_handling_tests(ExLLM.Providers.XAI, :xai)
+  run_standard_tests(SingularityLLM.Providers.XAI, :xai)
+  run_parameter_tests(SingularityLLM.Providers.XAI, :xai)
+  run_error_handling_tests(SingularityLLM.Providers.XAI, :xai)
 end
 
-defmodule ExLLM.Providers.GroqCompatibilityTest do
+defmodule SingularityLLM.Providers.GroqCompatibilityTest do
   use ExUnit.Case, async: false
-  import ExLLM.Providers.SharedOpenAICompatibleTest
+  import SingularityLLM.Providers.SharedOpenAICompatibleTest
 
-  run_standard_tests(ExLLM.Providers.Groq, :groq)
-  run_parameter_tests(ExLLM.Providers.Groq, :groq)
-  run_error_handling_tests(ExLLM.Providers.Groq, :groq)
+  run_standard_tests(SingularityLLM.Providers.Groq, :groq)
+  run_parameter_tests(SingularityLLM.Providers.Groq, :groq)
+  run_error_handling_tests(SingularityLLM.Providers.Groq, :groq)
 end
 
-defmodule ExLLM.Providers.MistralCompatibilityTest do
+defmodule SingularityLLM.Providers.MistralCompatibilityTest do
   use ExUnit.Case, async: false
-  import ExLLM.Providers.SharedOpenAICompatibleTest
+  import SingularityLLM.Providers.SharedOpenAICompatibleTest
 
-  run_standard_tests(ExLLM.Providers.Mistral, :mistral)
-  run_parameter_tests(ExLLM.Providers.Mistral, :mistral, %{safe_prompt: true, random_seed: 42})
-  run_error_handling_tests(ExLLM.Providers.Mistral, :mistral)
+  run_standard_tests(SingularityLLM.Providers.Mistral, :mistral)
+  run_parameter_tests(SingularityLLM.Providers.Mistral, :mistral, %{safe_prompt: true, random_seed: 42})
+  run_error_handling_tests(SingularityLLM.Providers.Mistral, :mistral)
 
   # Removed Mistral-specific temperature validation test
   # The API itself will validate temperature ranges

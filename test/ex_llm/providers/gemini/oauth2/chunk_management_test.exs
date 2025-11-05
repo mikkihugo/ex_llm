@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.ChunkManagementTest do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.ChunkManagementTest do
   @moduledoc """
   Tests for Gemini Chunk Management API via OAuth2.
 
@@ -6,10 +6,10 @@ defmodule ExLLM.Providers.Gemini.OAuth2.ChunkManagementTest do
   retrieval, updating, deletion, and batch operations.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.{Chunk, Corpus, Document}
-  alias ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
+  alias SingularityLLM.Providers.Gemini.{Chunk, Corpus, Document}
+  alias SingularityLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
 
   @moduletag :gemini_oauth2_apis
   @moduletag :chunk_management
@@ -87,7 +87,7 @@ defmodule ExLLM.Providers.Gemini.OAuth2.ChunkManagementTest do
     test "chunk lifecycle", %{oauth_token: token, document_id: document_id} do
       # 1. Create chunks
       chunk_data =
-        "This is a test chunk for the ExLLM library. It contains sample content for testing semantic retrieval."
+        "This is a test chunk for the SingularityLLM library. It contains sample content for testing semantic retrieval."
 
       {:ok, chunk} =
         Chunk.create_chunk(

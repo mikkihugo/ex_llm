@@ -1,6 +1,6 @@
-defmodule ExLLM.Integration.FineTuningComprehensiveTest do
+defmodule SingularityLLM.Integration.FineTuningComprehensiveTest do
   @moduledoc """
-  Comprehensive integration tests for ExLLM Fine-Tuning functionality.
+  Comprehensive integration tests for SingularityLLM Fine-Tuning functionality.
   Tests training data preparation, job management, and model deployment.
   Note: Most tests use mocking/simulation since fine-tuning is expensive and time-consuming.
   """
@@ -32,7 +32,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
   end
 
   defp cleanup_openai_file(file_id) when is_binary(file_id) do
-    case ExLLM.Providers.OpenAI.delete_file(file_id) do
+    case SingularityLLM.Providers.OpenAI.delete_file(file_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -41,7 +41,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
   defp cleanup_fine_tune_job(job_id) when is_binary(job_id) do
     # Try to cancel if still running
-    case ExLLM.Providers.OpenAI.cancel_fine_tuning_job(job_id) do
+    case SingularityLLM.Providers.OpenAI.cancel_fine_tuning_job(job_id) do
       {:ok, _} -> :ok
       # Already completed/cancelled or other non-critical error
       {:error, _} -> :ok
@@ -221,7 +221,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
       jsonl_path = create_training_jsonl(training_examples)
 
       # Upload file for fine-tuning
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           assert file["id"] =~ ~r/^file-/
           assert file["object"] == "file"
@@ -257,12 +257,12 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
       jsonl_path = create_training_jsonl(training_examples)
 
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           file_id = file["id"]
 
           # Get file details to check status
-          case ExLLM.Providers.OpenAI.get_file(file_id) do
+          case SingularityLLM.Providers.OpenAI.get_file(file_id) do
             {:ok, file_details} ->
               assert file_details["id"] == file_id
               assert file_details["purpose"] == "fine-tune"
@@ -300,13 +300,13 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
       jsonl_path = create_training_jsonl(insufficient_examples)
 
       # This should succeed for upload but fail when creating fine-tune job
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           # File upload succeeds, but fine-tuning would fail
           assert file["id"] =~ ~r/^file-/
 
           # Try to create a fine-tune job (this should fail)
-          case ExLLM.Providers.OpenAI.create_fine_tuning_job(%{
+          case SingularityLLM.Providers.OpenAI.create_fine_tuning_job(%{
                  training_file: file["id"],
                  model: "gpt-3.5-turbo"
                }) do
@@ -316,7 +316,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
               # Wait for validation
               Process.sleep(2000)
 
-              case ExLLM.Providers.OpenAI.get_fine_tuning_job(job["id"]) do
+              case SingularityLLM.Providers.OpenAI.get_fine_tuning_job(job["id"]) do
                 {:ok, job_status} ->
                   # Job might fail during validation
                   if job_status["status"] in ["failed", "cancelled"] do
@@ -373,7 +373,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
       jsonl_path = create_training_jsonl(training_examples)
 
       # Upload file
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           file_id = file["id"]
 
@@ -389,7 +389,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.create_fine_tuning_job(job_params) do
+          case SingularityLLM.Providers.OpenAI.create_fine_tuning_job(job_params) do
             {:ok, job} ->
               assert job["id"] =~ ~r/^ftjob-/
               assert job["object"] == "fine_tuning.job"
@@ -397,7 +397,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
               assert job["status"] in ["validating_files", "queued", "running"]
 
               # Immediately cancel the job
-              case ExLLM.Providers.OpenAI.cancel_fine_tuning_job(job["id"]) do
+              case SingularityLLM.Providers.OpenAI.cancel_fine_tuning_job(job["id"]) do
                 {:ok, cancelled_job} ->
                   assert cancelled_job["id"] == job["id"]
                   assert cancelled_job["status"] in ["cancelled", "cancelling"]
@@ -428,7 +428,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
     test "list fine-tuning jobs" do
       # List existing fine-tuning jobs
-      case ExLLM.Providers.OpenAI.list_fine_tuning_jobs() do
+      case SingularityLLM.Providers.OpenAI.list_fine_tuning_jobs() do
         {:ok, response} ->
           assert Map.has_key?(response, "data")
           assert is_list(response["data"])
@@ -452,13 +452,13 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
     test "get fine-tune job status" do
       # First, list jobs to get an ID (if any exist)
-      case ExLLM.Providers.OpenAI.list_fine_tuning_jobs(limit: 1) do
+      case SingularityLLM.Providers.OpenAI.list_fine_tuning_jobs(limit: 1) do
         {:ok, %{"data" => data} = response} when is_list(data) and data != [] ->
           job = List.first(response["data"])
           job_id = job["id"]
 
           # Get specific job details
-          case ExLLM.Providers.OpenAI.get_fine_tuning_job(job_id) do
+          case SingularityLLM.Providers.OpenAI.get_fine_tuning_job(job_id) do
             {:ok, job_details} ->
               assert job_details["id"] == job_id
               assert job_details["object"] == "fine_tuning.job"
@@ -488,7 +488,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
       # with a fake job ID and expect an error
       fake_job_id = "ftjob-fake123"
 
-      case ExLLM.Providers.OpenAI.list_fine_tuning_events(fake_job_id) do
+      case SingularityLLM.Providers.OpenAI.list_fine_tuning_events(fake_job_id) do
         {:ok, events} ->
           # Unexpected success - verify structure anyway
           assert Map.has_key?(events, "data")
@@ -613,10 +613,10 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
       jsonl_path = create_training_jsonl(invalid_data)
 
       # Upload will succeed, but fine-tuning will fail
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           # Try to create fine-tune with invalid data
-          case ExLLM.Providers.OpenAI.create_fine_tuning_job(%{
+          case SingularityLLM.Providers.OpenAI.create_fine_tuning_job(%{
                  training_file: file["id"],
                  model: "gpt-3.5-turbo"
                }) do
@@ -625,7 +625,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
               # Wait for validation
               Process.sleep(2000)
 
-              case ExLLM.Providers.OpenAI.get_fine_tuning_job(job["id"]) do
+              case SingularityLLM.Providers.OpenAI.get_fine_tuning_job(job["id"]) do
                 {:ok, job_status} ->
                   # Job should fail during validation due to invalid format
                   if job_status["status"] in ["failed", "cancelled"] do
@@ -684,11 +684,11 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
       jsonl_path = create_training_jsonl(training_examples)
 
-      case ExLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
+      case SingularityLLM.Providers.OpenAI.upload_file(jsonl_path, "fine-tune") do
         {:ok, file} ->
           # Try each unsupported model
           Enum.each(unsupported_models, fn model ->
-            case ExLLM.Providers.OpenAI.create_fine_tuning_job(%{
+            case SingularityLLM.Providers.OpenAI.create_fine_tuning_job(%{
                    training_file: file["id"],
                    model: model
                  }) do
@@ -783,14 +783,14 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
     test "list fine-tuned models" do
       # We can actually test listing models to see if any fine-tuned ones exist
-      case ExLLM.Providers.OpenAI.list_models() do
+      case SingularityLLM.Providers.OpenAI.list_models() do
         {:ok, models} ->
           # Filter for fine-tuned models
           fine_tuned =
             Enum.filter(models, fn model ->
               model_id =
                 case model do
-                  %ExLLM.Types.Model{id: id} -> id
+                  %SingularityLLM.Types.Model{id: id} -> id
                   %{"id" => id} -> id
                   id when is_binary(id) -> id
                   _ -> ""
@@ -807,7 +807,7 @@ defmodule ExLLM.Integration.FineTuningComprehensiveTest do
 
             model_id =
               case model do
-                %ExLLM.Types.Model{id: id} -> id
+                %SingularityLLM.Types.Model{id: id} -> id
                 %{"id" => id} -> id
                 id when is_binary(id) -> id
                 _ -> ""

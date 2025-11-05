@@ -1,4 +1,4 @@
-# Test Reorganization Recommendations for ExLLM
+# Test Reorganization Recommendations for SingularityLLM
 
 ## Executive Summary
 
@@ -9,7 +9,7 @@ After analyzing the current test structure against the proposed structure in `te
 ### 1. Current Structure Strengths
 
 - **Module-aligned organization**: Tests are easy to find relative to the code they test
-- **Comprehensive tagging system**: Already implemented via `ExLLM.Testing.Config`
+- **Comprehensive tagging system**: Already implemented via `SingularityLLM.Testing.Config`
 - **Rich mix aliases**: 15+ aliases for targeted test execution
 - **Working categorization**: Clear separation via tags without physical movement
 
@@ -34,7 +34,7 @@ However, this physical separation is already achieved logically through:
 
 From the testing strategy document, these are **already implemented**:
 
-✅ **Tag Structure** - Complete implementation in `ExLLM.Testing.Config`
+✅ **Tag Structure** - Complete implementation in `SingularityLLM.Testing.Config`
 ✅ **Mix Aliases** - 15+ aliases covering all major use cases
 ✅ **Selective Execution** - Working via tags and aliases
 ✅ **CI Configuration** - `test.ci` alias with appropriate exclusions
@@ -73,7 +73,7 @@ Add these aliases to enhance coverage:
 
 ```elixir
 # Provider groups
-"test.providers": ["test test/ex_llm/providers"],
+"test.providers": ["test test/singularity_llm/providers"],
 "test.groq": ["test --only provider:groq"],
 
 # Capability testing
@@ -109,7 +109,7 @@ If any reorganization is desired, consider this minimal approach:
 ```
 test/
 ├── unit/           # Pure unit tests only (new)
-├── ex_llm/         # Keep existing structure
+├── singularity_llm/         # Keep existing structure
 ├── integration/    # Keep existing comprehensive tests
 └── support/        # Keep existing support
 ```
@@ -155,7 +155,7 @@ Move only pure unit tests with no dependencies to `test/unit/`. This provides:
 
 ## Conclusion
 
-ExLLM's current test structure, combined with its sophisticated tagging system, already provides all the benefits sought by the proposed reorganization. The effort to physically reorganize files would provide minimal benefit while causing significant disruption.
+SingularityLLM's current test structure, combined with its sophisticated tagging system, already provides all the benefits sought by the proposed reorganization. The effort to physically reorganize files would provide minimal benefit while causing significant disruption.
 
 Instead, focus on:
 1. Leveraging the existing tagging system more effectively

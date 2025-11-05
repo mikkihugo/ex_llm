@@ -1,6 +1,6 @@
-# Test Setup Guide for ExLLM
+# Test Setup Guide for SingularityLLM
 
-This guide provides comprehensive instructions for setting up and running the ExLLM test suite.
+This guide provides comprehensive instructions for setting up and running the SingularityLLM test suite.
 
 ## Quick Start
 

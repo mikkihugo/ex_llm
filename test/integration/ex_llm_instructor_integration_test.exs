@@ -1,6 +1,6 @@
-defmodule ExLLM.InstructorIntegrationTest do
+defmodule SingularityLLM.InstructorIntegrationTest do
   use ExUnit.Case
-  import ExLLM.Testing.CapabilityHelpers
+  import SingularityLLM.Testing.CapabilityHelpers
 
   @moduletag :integration
 
@@ -38,7 +38,7 @@ defmodule ExLLM.InstructorIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:anthropic, messages,
+      case SingularityLLM.chat(:anthropic, messages,
              response_model: Person,
              temperature: 0.1,
              max_tokens: 100
@@ -66,7 +66,7 @@ defmodule ExLLM.InstructorIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:openai, messages,
+      case SingularityLLM.chat(:openai, messages,
              response_model: Person,
              temperature: 0.1,
              max_tokens: 100
@@ -94,7 +94,7 @@ defmodule ExLLM.InstructorIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:anthropic, messages,
+      case SingularityLLM.chat(:anthropic, messages,
              response_model: MathResult,
              temperature: 0.1,
              max_tokens: 200,
@@ -135,7 +135,7 @@ defmodule ExLLM.InstructorIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:openai, messages,
+      case SingularityLLM.chat(:openai, messages,
              response_model: TodoList,
              temperature: 0.1,
              max_tokens: 100
@@ -167,7 +167,7 @@ defmodule ExLLM.InstructorIntegrationTest do
       ]
 
       # When response_model is not provided, should get raw JSON
-      case ExLLM.chat(:anthropic, messages, temperature: 0, max_tokens: 100) do
+      case SingularityLLM.chat(:anthropic, messages, temperature: 0, max_tokens: 100) do
         {:ok, response} ->
           # Try to parse the response as JSON
           case Jason.decode(response.content) do
@@ -220,7 +220,7 @@ defmodule ExLLM.InstructorIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:openai, messages,
+      case SingularityLLM.chat(:openai, messages,
              response_model: Company,
              temperature: 0.1,
              max_tokens: 300

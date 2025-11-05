@@ -9,7 +9,7 @@ defmodule Mix.Tasks.ExLlm.CapabilityMatrix do
 
   ## Usage
 
-      mix ex_llm.capability_matrix [options]
+      mix singularity_llm.capability_matrix [options]
 
   ## Options
 
@@ -23,28 +23,28 @@ defmodule Mix.Tasks.ExLlm.CapabilityMatrix do
   ## Examples
 
       # Show core capabilities for all providers
-      mix ex_llm.capability_matrix
+      mix singularity_llm.capability_matrix
       
       # Show specific providers
-      mix ex_llm.capability_matrix --providers openai,anthropic,gemini
+      mix singularity_llm.capability_matrix --providers openai,anthropic,gemini
       
       # Show all capabilities
-      mix ex_llm.capability_matrix --extended
+      mix singularity_llm.capability_matrix --extended
       
       # Export to markdown
-      mix ex_llm.capability_matrix --export markdown --output docs/capabilities.md
+      mix singularity_llm.capability_matrix --export markdown --output docs/capabilities.md
       
       # Include test results
-      mix ex_llm.capability_matrix --with-tests
+      mix singularity_llm.capability_matrix --with-tests
   """
 
   use Mix.Task
 
-  alias ExLLM.Testing.CapabilityMatrix
+  alias SingularityLLM.Testing.CapabilityMatrix
 
   @impl Mix.Task
   def run(args) do
-    Application.ensure_all_started(:ex_llm)
+    Application.ensure_all_started(:singularity_llm)
 
     {opts, _, _} =
       OptionParser.parse(args,

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.OpenAI.ChatTest do
+defmodule SingularityLLM.Providers.OpenAI.ChatTest do
   @moduledoc """
   Tests for OpenAI chat functionality.
 
@@ -8,9 +8,9 @@ defmodule ExLLM.Providers.OpenAI.ChatTest do
 
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.OpenAI
-  alias ExLLM.Testing.ConfigProviderHelper
-  alias ExLLM.Types
+  alias SingularityLLM.Providers.OpenAI
+  alias SingularityLLM.Testing.ConfigProviderHelper
+  alias SingularityLLM.Types
 
   @moduletag :openai_chat
   @moduletag :integration

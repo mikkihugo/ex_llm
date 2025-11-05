@@ -1,11 +1,11 @@
-defmodule ExLLM.Providers.LMStudioPublicAPITest do
+defmodule SingularityLLM.Providers.LMStudioPublicAPITest do
   @moduledoc """
-  LM Studio-specific integration tests using the public ExLLM API.
+  LM Studio-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :lmstudio
-  import ExLLM.Testing.ServiceHelpers
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :lmstudio
+  import SingularityLLM.Testing.ServiceHelpers
 
   @moduletag :requires_service
 
@@ -20,7 +20,7 @@ defmodule ExLLM.Providers.LMStudioPublicAPITest do
         %{role: "user", content: "What is 2+2? Answer with just the number."}
       ]
 
-      case ExLLM.chat(:lmstudio, messages, max_tokens: 10) do
+      case SingularityLLM.chat(:lmstudio, messages, max_tokens: 10) do
         {:ok, response} ->
           # Verify we got content (don't test specific answer)
           assert String.length(response.content) > 0
@@ -44,7 +44,7 @@ defmodule ExLLM.Providers.LMStudioPublicAPITest do
         %{role: "user", content: "Hello"}
       ]
 
-      case ExLLM.chat(:lmstudio, messages, temperature: 0.7, max_tokens: 50) do
+      case SingularityLLM.chat(:lmstudio, messages, temperature: 0.7, max_tokens: 50) do
         {:ok, response} ->
           assert is_binary(response.content)
           # Note: LMStudio uses OpenAI-compatible provider, so metadata.provider might be :openai
@@ -73,7 +73,7 @@ defmodule ExLLM.Providers.LMStudioPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:lmstudio, messages, collector, max_tokens: 50, timeout: 10_000) do
+      case SingularityLLM.stream(:lmstudio, messages, collector, max_tokens: 50, timeout: 10_000) do
         :ok ->
           chunks = collect_stream_chunks([], 1000)
 
@@ -100,11 +100,11 @@ defmodule ExLLM.Providers.LMStudioPublicAPITest do
     test "custom endpoint configuration" do
       # Test with custom LM Studio endpoint
       config = %{lmstudio: %{base_url: "http://localhost:1234/v1"}}
-      {:ok, provider} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+      {:ok, provider} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
       messages = [%{role: "user", content: "Hi"}]
 
-      case ExLLM.chat(:lmstudio, messages, config_provider: provider, max_tokens: 10) do
+      case SingularityLLM.chat(:lmstudio, messages, config_provider: provider, max_tokens: 10) do
         {:ok, response} ->
           # Note: LMStudio uses OpenAI-compatible provider, so metadata.provider might be :openai
           assert response.metadata.provider in [:lmstudio, :openai]
@@ -123,7 +123,7 @@ defmodule ExLLM.Providers.LMStudioPublicAPITest do
       messages = [%{role: "user", content: "Hello"}]
 
       # Try to specify a model (LM Studio will use whatever is loaded)
-      case ExLLM.chat(:lmstudio, messages, model: "local-model", max_tokens: 20) do
+      case SingularityLLM.chat(:lmstudio, messages, model: "local-model", max_tokens: 20) do
         {:ok, response} ->
           assert response.metadata.provider == :lmstudio
           assert is_binary(response.content)

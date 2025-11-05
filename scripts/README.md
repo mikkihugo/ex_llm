@@ -98,7 +98,7 @@ The `fetch_provider_capabilities.py` script:
 ### LiteLLM Sync
 - Reads from LiteLLM's comprehensive model database
 - Converts pricing to per-million tokens
-- Maps capabilities between LiteLLM and ExLLM formats
+- Maps capabilities between LiteLLM and SingularityLLM formats
 - Creates/updates YAML files for ALL providers (not just implemented ones)
 
 ## YAML Structure

@@ -1,4 +1,4 @@
-defmodule ExLLM.SessionStreamingCostTest do
+defmodule SingularityLLM.SessionStreamingCostTest do
   @moduledoc """
   Tests for cost tracking and aggregation in streaming sessions.
 
@@ -13,7 +13,7 @@ defmodule ExLLM.SessionStreamingCostTest do
 
   use ExUnit.Case, async: false
 
-  alias ExLLM.Core.Session
+  alias SingularityLLM.Core.Session
 
   @test_message "Test streaming cost tracking"
 
@@ -43,7 +43,7 @@ defmodule ExLLM.SessionStreamingCostTest do
       end
 
       # Perform streaming chat
-      result = ExLLM.stream(:mock, [%{role: "user", content: @test_message}], callback)
+      result = SingularityLLM.stream(:mock, [%{role: "user", content: @test_message}], callback)
       assert result == :ok
 
       # Check that cost tracking worked
@@ -78,7 +78,7 @@ defmodule ExLLM.SessionStreamingCostTest do
       end
 
       assert :ok =
-               ExLLM.stream(
+               SingularityLLM.stream(
                  :mock,
                  Session.get_messages(session),
                  first_callback
@@ -108,7 +108,7 @@ defmodule ExLLM.SessionStreamingCostTest do
       end
 
       assert :ok =
-               ExLLM.stream(
+               SingularityLLM.stream(
                  :mock,
                  Session.get_messages(session),
                  second_callback
@@ -155,7 +155,7 @@ defmodule ExLLM.SessionStreamingCostTest do
         end
       end
 
-      assert :ok = ExLLM.stream(:mock, Session.get_messages(session), callback)
+      assert :ok = SingularityLLM.stream(:mock, Session.get_messages(session), callback)
 
       # Verify session was updated
       final_session = Agent.get(session_state, & &1)
@@ -215,7 +215,7 @@ defmodule ExLLM.SessionStreamingCostTest do
           end
         end
 
-        :ok = ExLLM.stream(:mock, messages_with_new, callback)
+        :ok = SingularityLLM.stream(:mock, messages_with_new, callback)
 
         # Get final values
         cost = Agent.get(response_cost, & &1)
@@ -277,7 +277,7 @@ defmodule ExLLM.SessionStreamingCostTest do
       end
 
       # This should work with mock provider
-      result = ExLLM.stream(:mock, [%{role: "user", content: "Error test"}], callback)
+      result = SingularityLLM.stream(:mock, [%{role: "user", content: "Error test"}], callback)
 
       final_state = Agent.get(error_tracker, & &1)
       Agent.stop(error_tracker)
@@ -293,12 +293,12 @@ defmodule ExLLM.SessionStreamingCostTest do
   describe "cost calculation accuracy" do
     test "streaming cost matches non-streaming cost for same input" do
       # Ensure mock provider is in clean state
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
 
       messages = [%{role: "user", content: "Cost comparison test"}]
 
       # Get cost from regular chat
-      case ExLLM.chat(:mock, messages) do
+      case SingularityLLM.chat(:mock, messages) do
         {:ok, regular_response} ->
           regular_cost =
             case regular_response do
@@ -323,7 +323,7 @@ defmodule ExLLM.SessionStreamingCostTest do
             end
           end
 
-          assert :ok = ExLLM.stream(:mock, messages, streaming_callback)
+          assert :ok = SingularityLLM.stream(:mock, messages, streaming_callback)
 
           final_streaming_cost = Agent.get(streaming_cost, & &1)
           Agent.stop(streaming_cost)
@@ -370,7 +370,7 @@ defmodule ExLLM.SessionStreamingCostTest do
           end
         end
 
-        case ExLLM.stream(provider, [%{role: "user", content: "Provider test"}], callback) do
+        case SingularityLLM.stream(provider, [%{role: "user", content: "Provider test"}], callback) do
           :ok ->
             structure = Agent.get(cost_structure, & &1)
 
@@ -412,7 +412,7 @@ defmodule ExLLM.SessionStreamingCostTest do
         end
       end
 
-      assert :ok = ExLLM.stream(:mock, [%{role: "user", content: "Token usage test"}], callback)
+      assert :ok = SingularityLLM.stream(:mock, [%{role: "user", content: "Token usage test"}], callback)
 
       final_usage = Agent.get(usage_tracker, & &1)
       Agent.stop(usage_tracker)

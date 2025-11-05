@@ -6,7 +6,7 @@
 # and demonstrates the impact of optimization strategies.
 
 Mix.install([
-  {:ex_llm, path: "."},
+  {:singularity_llm, path: "."},
   {:jason, "~> 1.4"}
 ])
 

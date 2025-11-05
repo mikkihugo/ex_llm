@@ -1,6 +1,6 @@
-# ExLLM Pipeline Architecture Overview
+# SingularityLLM Pipeline Architecture Overview
 
-This document provides a comprehensive overview of ExLLM's Phoenix-style pipeline architecture, introduced in v1.0. The pipeline system offers a flexible, extensible, and composable approach to handling LLM operations while maintaining backward compatibility.
+This document provides a comprehensive overview of SingularityLLM's Phoenix-style pipeline architecture, introduced in v1.0. The pipeline system offers a flexible, extensible, and composable approach to handling LLM operations while maintaining backward compatibility.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This document provides a comprehensive overview of ExLLM's Phoenix-style pipelin
 
 ### Pipeline-First Design
 
-ExLLM v1.0 adopts a pipeline-first architecture where every LLM operation flows through a configurable series of plugs. This approach provides:
+SingularityLLM v1.0 adopts a pipeline-first architecture where every LLM operation flows through a configurable series of plugs. This approach provides:
 
 - **Composability**: Mix and match functionality through plug composition
 - **Extensibility**: Add custom behavior without modifying core code
@@ -28,10 +28,10 @@ ExLLM v1.0 adopts a pipeline-first architecture where every LLM operation flows 
 
 ### Request/Response Model
 
-All operations are modeled as transformations of an `ExLLM.Pipeline.Request` struct:
+All operations are modeled as transformations of an `SingularityLLM.Pipeline.Request` struct:
 
 ```elixir
-%ExLLM.Pipeline.Request{
+%SingularityLLM.Pipeline.Request{
   # Core data
   id: "unique-request-id",
   provider: :openai,
@@ -65,21 +65,21 @@ A pipeline is a list of plugs that process requests sequentially:
 
 ```elixir
 pipeline = [
-  ExLLM.Plugs.ValidateProvider,           # 1. Validate input
-  ExLLM.Plugs.FetchConfig,                # 2. Load configuration
-  {ExLLM.Plugs.Cache, ttl: 3600},         # 3. Check cache (with options)
-  ExLLM.Plugs.BuildTeslaClient,           # 4. Setup HTTP client
-  ExLLM.Plugs.Providers.OpenaiPrepareRequest,  # 5. Format for provider
-  ExLLM.Plugs.ExecuteRequest,             # 6. Make HTTP call
-  ExLLM.Plugs.Providers.OpenaiParseResponse,   # 7. Parse response
-  ExLLM.Plugs.TrackCost,                  # 8. Calculate costs
-  ExLLM.Plugs.Cache                       # 9. Store in cache
+  SingularityLLM.Plugs.ValidateProvider,           # 1. Validate input
+  SingularityLLM.Plugs.FetchConfig,                # 2. Load configuration
+  {SingularityLLM.Plugs.Cache, ttl: 3600},         # 3. Check cache (with options)
+  SingularityLLM.Plugs.BuildTeslaClient,           # 4. Setup HTTP client
+  SingularityLLM.Plugs.Providers.OpenaiPrepareRequest,  # 5. Format for provider
+  SingularityLLM.Plugs.ExecuteRequest,             # 6. Make HTTP call
+  SingularityLLM.Plugs.Providers.OpenaiParseResponse,   # 7. Parse response
+  SingularityLLM.Plugs.TrackCost,                  # 8. Calculate costs
+  SingularityLLM.Plugs.Cache                       # 9. Store in cache
 ]
 ```
 
 ### Pipeline Types
 
-ExLLM supports different pipeline types for different operations:
+SingularityLLM supports different pipeline types for different operations:
 
 - **`:chat`** - Standard chat completions
 - **`:stream`** - Streaming chat responses  
@@ -95,26 +95,26 @@ Each provider has customized pipelines optimized for their API characteristics:
 ```elixir
 # OpenAI pipeline - straightforward REST API
 openai_chat_pipeline = [
-  ExLLM.Plugs.ValidateProvider,
-  ExLLM.Plugs.FetchConfig,
-  ExLLM.Plugs.BuildTeslaClient,
-  ExLLM.Plugs.Providers.OpenaiPrepareRequest,
-  ExLLM.Plugs.ExecuteRequest,
-  ExLLM.Plugs.Providers.OpenaiParseResponse,
-  ExLLM.Plugs.TrackCost
+  SingularityLLM.Plugs.ValidateProvider,
+  SingularityLLM.Plugs.FetchConfig,
+  SingularityLLM.Plugs.BuildTeslaClient,
+  SingularityLLM.Plugs.Providers.OpenaiPrepareRequest,
+  SingularityLLM.Plugs.ExecuteRequest,
+  SingularityLLM.Plugs.Providers.OpenaiParseResponse,
+  SingularityLLM.Plugs.TrackCost
 ]
 
 # Gemini pipeline - includes OAuth2 and content filtering
 gemini_chat_pipeline = [
-  ExLLM.Plugs.ValidateProvider,
-  ExLLM.Plugs.FetchConfig,
-  ExLLM.Plugs.Providers.GeminiOauth2,     # OAuth2 authentication
-  ExLLM.Plugs.BuildTeslaClient,
-  ExLLM.Plugs.Providers.GeminiPrepareRequest,
-  ExLLM.Plugs.Providers.GeminiContentFilter,  # Safety filtering
-  ExLLM.Plugs.ExecuteRequest,
-  ExLLM.Plugs.Providers.GeminiParseResponse,
-  ExLLM.Plugs.TrackCost
+  SingularityLLM.Plugs.ValidateProvider,
+  SingularityLLM.Plugs.FetchConfig,
+  SingularityLLM.Plugs.Providers.GeminiOauth2,     # OAuth2 authentication
+  SingularityLLM.Plugs.BuildTeslaClient,
+  SingularityLLM.Plugs.Providers.GeminiPrepareRequest,
+  SingularityLLM.Plugs.Providers.GeminiContentFilter,  # Safety filtering
+  SingularityLLM.Plugs.ExecuteRequest,
+  SingularityLLM.Plugs.Providers.GeminiParseResponse,
+  SingularityLLM.Plugs.TrackCost
 ]
 ```
 
@@ -124,7 +124,7 @@ gemini_chat_pipeline = [
 
 ```elixir
 # Create request with provider, messages, and options
-request = ExLLM.Pipeline.Request.new(:openai, messages, %{
+request = SingularityLLM.Pipeline.Request.new(:openai, messages, %{
   model: "gpt-4-turbo",
   temperature: 0.7
 })
@@ -134,8 +134,8 @@ request = ExLLM.Pipeline.Request.new(:openai, messages, %{
 
 ```elixir
 # Get provider pipeline and execute
-pipeline = ExLLM.Providers.get_pipeline(:openai, :chat)
-result = ExLLM.Pipeline.run(request, pipeline)
+pipeline = SingularityLLM.Providers.get_pipeline(:openai, :chat)
+result = SingularityLLM.Pipeline.run(request, pipeline)
 ```
 
 ### 3. State Transitions
@@ -156,11 +156,11 @@ Errors are accumulated in the `errors` field and can be:
 
 ### Plug Behavior
 
-Every plug implements the `ExLLM.Plug` behavior:
+Every plug implements the `SingularityLLM.Plug` behavior:
 
 ```elixir
 defmodule MyApp.Plugs.CustomPlug do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def init(opts) do
@@ -169,18 +169,18 @@ defmodule MyApp.Plugs.CustomPlug do
   end
   
   @impl true
-  def call(%ExLLM.Pipeline.Request{} = request, opts) do
+  def call(%SingularityLLM.Pipeline.Request{} = request, opts) do
     # Runtime request transformation
     request
-    |> ExLLM.Pipeline.Request.assign(:custom_data, "value")
-    |> ExLLM.Pipeline.Request.put_metadata(:processed_at, DateTime.utc_now())
+    |> SingularityLLM.Pipeline.Request.assign(:custom_data, "value")
+    |> SingularityLLM.Pipeline.Request.put_metadata(:processed_at, DateTime.utc_now())
   end
 end
 ```
 
 ### Built-in Plugs
 
-ExLLM includes many built-in plugs for common functionality:
+SingularityLLM includes many built-in plugs for common functionality:
 
 #### Core Infrastructure Plugs
 - **`ValidateProvider`** - Ensures provider is supported
@@ -207,7 +207,7 @@ Create custom plugs for application-specific needs:
 
 ```elixir
 defmodule MyApp.Plugs.AuditLogger do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   def call(%Request{} = request, _opts) do
     # Log request for audit trail
@@ -221,7 +221,7 @@ defmodule MyApp.Plugs.AuditLogger do
       )
     end
     
-    ExLLM.Pipeline.Request.assign(request, :audit_callback, callback)
+    SingularityLLM.Pipeline.Request.assign(request, :audit_callback, callback)
   end
 end
 ```
@@ -233,24 +233,24 @@ end
 Each provider implements a consistent interface:
 
 ```elixir
-defmodule ExLLM.Providers.OpenAI do
-  @behaviour ExLLM.Providers.Provider
+defmodule SingularityLLM.Providers.OpenAI do
+  @behaviour SingularityLLM.Providers.Provider
   
   def get_pipeline(:chat), do: openai_chat_pipeline()
   def get_pipeline(:stream), do: openai_stream_pipeline()
   def get_pipeline(:embeddings), do: openai_embeddings_pipeline()
   
-  def get_config(), do: Application.get_env(:ex_llm, :openai, [])
+  def get_config(), do: Application.get_env(:singularity_llm, :openai, [])
   
   defp openai_chat_pipeline() do
     [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      ExLLM.Plugs.BuildTeslaClient,
-      ExLLM.Plugs.Providers.OpenaiPrepareRequest,
-      ExLLM.Plugs.ExecuteRequest,
-      ExLLM.Plugs.Providers.OpenaiParseResponse,
-      ExLLM.Plugs.TrackCost
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      SingularityLLM.Plugs.BuildTeslaClient,
+      SingularityLLM.Plugs.Providers.OpenaiPrepareRequest,
+      SingularityLLM.Plugs.ExecuteRequest,
+      SingularityLLM.Plugs.Providers.OpenaiParseResponse,
+      SingularityLLM.Plugs.TrackCost
     ]
   end
 end
@@ -258,11 +258,11 @@ end
 
 ### Adding New Providers
 
-1. Create provider module implementing `ExLLM.Providers.Provider`
+1. Create provider module implementing `SingularityLLM.Providers.Provider`
 2. Create provider-specific prepare/parse plugs
-3. Add provider to registry in `ExLLM.Providers`
+3. Add provider to registry in `SingularityLLM.Providers`
 4. Add configuration schema
-5. Add tests using `ExLLM.PlugTest`
+5. Add tests using `SingularityLLM.PlugTest`
 
 ## Builder Pattern
 
@@ -270,30 +270,30 @@ end
 
 ```elixir
 {:ok, response} = 
-  ExLLM.build(:openai, messages)
-  |> ExLLM.with_model("gpt-4-turbo")
-  |> ExLLM.with_temperature(0.7)
-  |> ExLLM.execute()
+  SingularityLLM.build(:openai, messages)
+  |> SingularityLLM.with_model("gpt-4-turbo")
+  |> SingularityLLM.with_temperature(0.7)
+  |> SingularityLLM.execute()
 ```
 
 ### Advanced Pipeline Customization
 
 ```elixir
 {:ok, response} = 
-  ExLLM.build(:openai, messages)
-  |> ExLLM.with_cache(ttl: 3600)
-  |> ExLLM.with_custom_plug(MyApp.Plugs.AuditLogger)
-  |> ExLLM.without_cost_tracking()
-  |> ExLLM.with_context_strategy(:truncate, max_tokens: 8000)
-  |> ExLLM.execute()
+  SingularityLLM.build(:openai, messages)
+  |> SingularityLLM.with_cache(ttl: 3600)
+  |> SingularityLLM.with_custom_plug(MyApp.Plugs.AuditLogger)
+  |> SingularityLLM.without_cost_tracking()
+  |> SingularityLLM.with_context_strategy(:truncate, max_tokens: 8000)
+  |> SingularityLLM.execute()
 ```
 
 ### Streaming with Builder
 
 ```elixir
-ExLLM.build(:openai, messages)
-|> ExLLM.with_model("gpt-4")
-|> ExLLM.stream(fn chunk ->
+SingularityLLM.build(:openai, messages)
+|> SingularityLLM.with_model("gpt-4")
+|> SingularityLLM.stream(fn chunk ->
   case chunk do
     %{done: true} -> IO.puts("\nDone!")
     %{content: content} -> IO.write(content)
@@ -305,16 +305,16 @@ end)
 
 ```elixir
 builder = 
-  ExLLM.build(:openai, messages)
-  |> ExLLM.with_cache()
-  |> ExLLM.with_custom_plug(MyApp.Plugs.Logger)
+  SingularityLLM.build(:openai, messages)
+  |> SingularityLLM.with_cache()
+  |> SingularityLLM.with_custom_plug(MyApp.Plugs.Logger)
 
 # Inspect the pipeline that would execute
-pipeline = ExLLM.inspect_pipeline(builder)
+pipeline = SingularityLLM.inspect_pipeline(builder)
 IO.inspect(pipeline, label: "Pipeline")
 
 # Get detailed builder state
-debug_info = ExLLM.debug_info(builder)
+debug_info = SingularityLLM.debug_info(builder)
 IO.inspect(debug_info, label: "Builder State")
 ```
 
@@ -322,20 +322,20 @@ IO.inspect(debug_info, label: "Builder State")
 
 ### Context Management
 
-ExLLM provides automatic context window management:
+SingularityLLM provides automatic context window management:
 
 ```elixir
 # Truncation strategy
-builder |> ExLLM.with_context_strategy(:truncate, max_tokens: 8000)
+builder |> SingularityLLM.with_context_strategy(:truncate, max_tokens: 8000)
 
 # Smart summarization (requires summary model)
-builder |> ExLLM.with_context_strategy(:summarize, 
+builder |> SingularityLLM.with_context_strategy(:summarize, 
   preserve_system: true,
   summary_model: "gpt-3.5-turbo"
 )
 
 # Sliding window
-builder |> ExLLM.with_context_strategy(:sliding_window, window_size: 10)
+builder |> SingularityLLM.with_context_strategy(:sliding_window, window_size: 10)
 ```
 
 ### Caching System
@@ -344,31 +344,31 @@ Multiple caching strategies available:
 
 ```elixir
 # Memory cache with TTL
-builder |> ExLLM.with_cache(ttl: 3600)
+builder |> SingularityLLM.with_cache(ttl: 3600)
 
 # Persistent cache
-builder |> ExLLM.with_cache(
+builder |> SingularityLLM.with_cache(
   store: :redis,
   ttl: :infinity,
   key_fn: &MyApp.Cache.custom_key/1
 )
 
 # Disable caching for sensitive requests
-builder |> ExLLM.without_cache()
+builder |> SingularityLLM.without_cache()
 ```
 
 ### Circuit Breakers and Resilience
 
 ```elixir
 # Configure circuit breaker
-builder |> ExLLM.with_custom_plug(ExLLM.Plugs.CircuitBreaker,
+builder |> SingularityLLM.with_custom_plug(SingularityLLM.Plugs.CircuitBreaker,
   failure_threshold: 5,
   recovery_time: 30_000,
   timeout: 10_000
 )
 
 # Add retry policy
-builder |> ExLLM.with_custom_plug(ExLLM.Plugs.RetryPolicy,
+builder |> SingularityLLM.with_custom_plug(SingularityLLM.Plugs.RetryPolicy,
   max_attempts: 3,
   backoff: :exponential,
   base_delay: 1000
@@ -392,11 +392,11 @@ post_processing = [
 # Compose custom pipeline
 custom_pipeline = 
   auth_pipeline ++
-  ExLLM.Providers.get_pipeline(:openai, :chat) ++
+  SingularityLLM.Providers.get_pipeline(:openai, :chat) ++
   post_processing
 
 # Use with builder
-builder |> ExLLM.with_pipeline(custom_pipeline)
+builder |> SingularityLLM.with_pipeline(custom_pipeline)
 ```
 
 ## Performance Characteristics
@@ -437,7 +437,7 @@ v1.0 maintains 100% backward compatibility with v0.8 APIs:
 
 ```elixir
 # v0.8 code continues to work unchanged
-{:ok, response} = ExLLM.chat(:openai, messages, model: "gpt-4")
+{:ok, response} = SingularityLLM.chat(:openai, messages, model: "gpt-4")
 ```
 
 ### Gradual Migration Path
@@ -458,4 +458,4 @@ v1.0 maintains 100% backward compatibility with v0.8 APIs:
 
 ---
 
-This architecture provides a solid foundation for building robust, scalable LLM applications while maintaining the simplicity that made ExLLM popular. The pipeline system offers the flexibility to handle everything from simple chat bots to complex AI agents with sophisticated prompt engineering and tool integration.
+This architecture provides a solid foundation for building robust, scalable LLM applications while maintaining the simplicity that made SingularityLLM popular. The pipeline system offers the flexibility to handle everything from simple chat bots to complex AI agents with sophisticated prompt engineering and tool integration.

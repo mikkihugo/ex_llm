@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.PermissionsTest do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.PermissionsTest do
   @moduledoc """
   Tests for Gemini Permissions API via OAuth2.
 
@@ -6,9 +6,9 @@ defmodule ExLLM.Providers.Gemini.OAuth2.PermissionsTest do
   creating, updating, and deleting permissions.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.Permissions
+  alias SingularityLLM.Providers.Gemini.Permissions
 
   @moduletag :gemini_oauth2_apis
   @moduletag :permissions_management

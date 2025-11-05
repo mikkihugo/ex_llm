@@ -1,4 +1,4 @@
-defmodule ExLLM.ModelDiscovery.SyncerE2ETest do
+defmodule SingularityLLM.ModelDiscovery.SyncerE2ETest do
   @moduledoc """
   End-to-end tests for models.dev and OpenRouter syncing.
 
@@ -13,11 +13,11 @@ defmodule ExLLM.ModelDiscovery.SyncerE2ETest do
   """
 
   use ExUnit.Case, async: false
-  doctest ExLLM.ModelDiscovery.ModelsDevSyncer
-  doctest ExLLM.ModelDiscovery.OpenRouterPriceSyncer
+  doctest SingularityLLM.ModelDiscovery.ModelsDevSyncer
+  doctest SingularityLLM.ModelDiscovery.OpenRouterPriceSyncer
 
-  alias ExLLM.ModelDiscovery.ModelsDevSyncer
-  alias ExLLM.ModelDiscovery.OpenRouterPriceSyncer
+  alias SingularityLLM.ModelDiscovery.ModelsDevSyncer
+  alias SingularityLLM.ModelDiscovery.OpenRouterPriceSyncer
 
   # ========== MODELS.DEV SYNCER TESTS ==========
 

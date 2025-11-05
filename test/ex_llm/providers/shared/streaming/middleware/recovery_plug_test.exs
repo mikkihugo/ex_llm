@@ -1,9 +1,9 @@
-defmodule ExLLM.Providers.Shared.Streaming.Middleware.RecoveryPlugTest do
+defmodule SingularityLLM.Providers.Shared.Streaming.Middleware.RecoveryPlugTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Core.Streaming.Recovery
-  alias ExLLM.Providers.Shared.Streaming.Middleware.RecoveryPlug
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Core.Streaming.Recovery
+  alias SingularityLLM.Providers.Shared.Streaming.Middleware.RecoveryPlug
+  alias SingularityLLM.Types.StreamChunk
 
   # Mock recovery process for testing
   defmodule MockRecovery do

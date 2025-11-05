@@ -20,10 +20,10 @@ The integration test suite is showing 153 failures despite API keys being proper
 
 **Action 1.1: HTTP Client Callback Investigation**
 - [x] Run targeted streaming coordinator test
-- [x] Analyze BadArityError: `#Function<2.76917370/1 in ExLLM.Providers.Shared.StreamingCoordinator.create_stream_collector/4> with arity 1 called with 2 arguments`
+- [x] Analyze BadArityError: `#Function<2.76917370/1 in SingularityLLM.Providers.Shared.StreamingCoordinator.create_stream_collector/4> with arity 1 called with 2 arguments`
 - [x] Fix callback signature mismatches from HTTP client migration
   - **ROOT CAUSE IDENTIFIED**: Test calls `collector.({:data, data}, nil)` with 2 arguments, but collector expects 1 argument
-  - **LOCATION**: `test/ex_llm/providers/shared/enhanced_streaming_coordinator_test.exs:70`
+  - **LOCATION**: `test/singularity_llm/providers/shared/enhanced_streaming_coordinator_test.exs:70`
   - **FIX**: Change to `collector.(data)` (remove second nil argument)
 
 **Action 1.2: Tesla.run Parameter Investigation**  
@@ -31,26 +31,26 @@ The integration test suite is showing 153 failures despite API keys being proper
 - [x] Verify middleware parameter formatting after HTTP.Core migration
 - [x] Fix parameter passing to Tesla middleware
   - **ROOT CAUSE IDENTIFIED**: Tesla.run called with invalid middleware format
-  - **LOCATION**: `test/ex_llm/providers/shared/streaming/middleware/metrics_plug_integration_test.exs:102`
+  - **LOCATION**: `test/singularity_llm/providers/shared/streaming/middleware/metrics_plug_integration_test.exs:102`
   - **FIX**: Change `[{fn env, next -> MockStreamingAdapter.call(env, next) end, nil}]` to proper Tesla middleware format
 
 **Action 1.3: Authentication Quick Test**
-- [x] Test minimal API call in iex: `ExLLM.chat(:openai, [%{role: "user", content: "test"}], max_tokens: 5)`
+- [x] Test minimal API call in iex: `SingularityLLM.chat(:openai, [%{role: "user", content: "test"}], max_tokens: 5)`
 - [x] Validate discrepancy between "keys loaded" message and 401 errors
 - [x] Document authentication flow in test environment
   - **ROOT CAUSE IDENTIFIED**: Tesla HTTP adapter misconfiguration
-  - **LOCATION**: `/Users/azmaveth/code/ex_llm/lib/ex_llm/testing/config.ex:171-173`
+  - **LOCATION**: `/Users/azmaveth/code/singularity_llm/lib/singularity_llm/testing/config.ex:171-173`
   - **ISSUE**: Tesla.Mock hardcoded for ALL tests, preventing integration tests from making real API calls
   - **EVIDENCE**: Test output shows `adapter: {Tesla.Mock, :call, [[]]}` and authorization headers correctly set
 
 **Commands:**
 ```bash
 # Test streaming coordinator issues
-mix test test/ex_llm/providers/shared/enhanced_streaming_coordinator_test.exs --include integration
+mix test test/singularity_llm/providers/shared/enhanced_streaming_coordinator_test.exs --include integration
 
 # Test authentication in iex
 iex -S mix
-ExLLM.chat(:openai, [%{role: "user", content: "test"}], max_tokens: 5)
+SingularityLLM.chat(:openai, [%{role: "user", content: "test"}], max_tokens: 5)
 
 # Check model configuration
 grep -r "google/gemini-flash-1.5" config/models/
@@ -91,11 +91,11 @@ grep -r "gemini-flash" test/
 
 #### File Investigation Priority
 
-1. [ ] `lib/ex_llm/providers/shared/enhanced_streaming_coordinator.ex` - Callback signatures
-2. [ ] `lib/ex_llm/providers/shared/streaming_coordinator.ex` - Collector function arity  
+1. [ ] `lib/singularity_llm/providers/shared/enhanced_streaming_coordinator.ex` - Callback signatures
+2. [ ] `lib/singularity_llm/providers/shared/streaming_coordinator.ex` - Collector function arity  
 3. [ ] `test/test_helper.exs` - API key loading logic
 4. [ ] `config/models/openrouter.yml` - Missing model definitions
-5. [ ] `lib/ex_llm/providers/shared/http/core.ex` - Tesla middleware setup
+5. [ ] `lib/singularity_llm/providers/shared/http/core.ex` - Tesla middleware setup
 
 #### Decision Matrix
 
@@ -189,9 +189,9 @@ The major authentication and HTTP client issues have been successfully identifie
 3. **Tesla HTTP Adapter Configuration** - **MAJOR FIX**: Changed Tesla config to use real HTTP adapter for integration tests instead of Tesla.Mock
 
 ### 🔧 Key Changes Made
-- `test/ex_llm/providers/shared/enhanced_streaming_coordinator_test.exs:70` - Fixed callback signature
-- `test/ex_llm/providers/shared/streaming/middleware/metrics_plug_integration_test.exs:102` - Fixed Tesla.run parameters
-- `lib/ex_llm/testing/config.ex:172-187` - **Fixed Tesla adapter configuration to use Hackney for integration tests**
+- `test/singularity_llm/providers/shared/enhanced_streaming_coordinator_test.exs:70` - Fixed callback signature
+- `test/singularity_llm/providers/shared/streaming/middleware/metrics_plug_integration_test.exs:102` - Fixed Tesla.run parameters
+- `lib/singularity_llm/testing/config.ex:172-187` - **Fixed Tesla adapter configuration to use Hackney for integration tests**
 
 ### 📊 Results
 - **Authentication**: Now working correctly - API keys loaded and authorization headers set properly

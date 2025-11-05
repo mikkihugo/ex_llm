@@ -1,7 +1,7 @@
-defmodule ExLLM.CapabilityMatrixTest do
+defmodule SingularityLLM.CapabilityMatrixTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.CapabilityMatrix
+  alias SingularityLLM.CapabilityMatrix
 
   describe "generate/0" do
     test "generates a complete capability matrix" do
@@ -67,7 +67,7 @@ defmodule ExLLM.CapabilityMatrixTest do
       # Find an unconfigured provider
       unconfigured =
         Enum.find(matrix.providers, fn provider ->
-          not ExLLM.configured?(provider)
+          not SingularityLLM.configured?(provider)
         end)
 
       if unconfigured do
@@ -76,7 +76,7 @@ defmodule ExLLM.CapabilityMatrixTest do
         # Supported capabilities should show as skip if not configured
         supported_cap =
           Enum.find(matrix.capabilities, fn cap ->
-            ExLLM.Capabilities.supports?(unconfigured, map_capability(cap))
+            SingularityLLM.Capabilities.supports?(unconfigured, map_capability(cap))
           end)
 
         if supported_cap do
@@ -124,7 +124,7 @@ defmodule ExLLM.CapabilityMatrixTest do
       content = File.read!(filename)
 
       # Check HTML structure
-      assert content =~ "<title>ExLLM Provider Capability Matrix</title>"
+      assert content =~ "<title>SingularityLLM Provider Capability Matrix</title>"
       assert content =~ "<table>"
       assert content =~ "<th>Provider</th>"
       assert content =~ "class=\"pass\""

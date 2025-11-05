@@ -1,4 +1,4 @@
-defmodule ExLLM.Integration.SessionStateComprehensiveTest do
+defmodule SingularityLLM.Integration.SessionStateComprehensiveTest do
   @moduledoc """
   Comprehensive integration tests for session management and state tracking.
   Tests conversation persistence, context management, and token tracking.
@@ -13,28 +13,28 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
 
     test "session persistence across multiple conversations" do
       # Create a new session
-      session = ExLLM.new_session(:openai, model: "gpt-4o-mini")
+      session = SingularityLLM.new_session(:openai, model: "gpt-4o-mini")
 
       # First conversation turn
       {:ok, {response1, session1}} =
-        ExLLM.chat_with_session(session, "My name is Alice", max_tokens: 50)
+        SingularityLLM.chat_with_session(session, "My name is Alice", max_tokens: 50)
 
       assert is_binary(response1.content)
       assert String.length(response1.content) > 0
 
       # Second turn - should remember the name
       {:ok, {response2, session2}} =
-        ExLLM.chat_with_session(session1, "What's my name?", max_tokens: 50)
+        SingularityLLM.chat_with_session(session1, "What's my name?", max_tokens: 50)
 
       assert String.contains?(String.downcase(response2.content), "alice")
 
       # Check session state
-      messages = ExLLM.get_messages(session2)
+      messages = SingularityLLM.get_messages(session2)
       # 2 user + 2 assistant messages
       assert length(messages) == 4
 
       # Check token usage tracking
-      total_tokens = ExLLM.session_token_usage(session2)
+      total_tokens = SingularityLLM.session_token_usage(session2)
       assert total_tokens > 0
 
       usage = session2.token_usage
@@ -42,17 +42,17 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
       assert usage.output_tokens > 0
 
       # Save session to JSON
-      {:ok, json} = ExLLM.save_session(session2)
+      {:ok, json} = SingularityLLM.save_session(session2)
       assert String.contains?(json, "Alice")
 
       # Load session from JSON
-      {:ok, loaded_session} = ExLLM.load_session(json)
-      loaded_messages = ExLLM.get_messages(loaded_session)
+      {:ok, loaded_session} = SingularityLLM.load_session(json)
+      loaded_messages = SingularityLLM.get_messages(loaded_session)
       assert length(loaded_messages) == length(messages)
 
       # Continue conversation with loaded session
       {:ok, {response3, _session3}} =
-        ExLLM.chat_with_session(loaded_session, "Tell me a fact about my name", max_tokens: 100)
+        SingularityLLM.chat_with_session(loaded_session, "Tell me a fact about my name", max_tokens: 100)
 
       assert is_binary(response3.content)
 
@@ -70,7 +70,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
     test "context window management with message truncation" do
       # Use a small context model for testing
       session =
-        ExLLM.new_session(:openai,
+        SingularityLLM.new_session(:openai,
           model: "gpt-4o-mini",
           # Artificially low for testing
           max_context_tokens: 1000
@@ -80,20 +80,20 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
       session_with_messages =
         Enum.reduce(1..10, session, fn i, acc_session ->
           content = "This is message number #{i}. " <> String.duplicate("word ", 50)
-          {:ok, {_, new_session}} = ExLLM.chat_with_session(acc_session, content, max_tokens: 20)
+          {:ok, {_, new_session}} = SingularityLLM.chat_with_session(acc_session, content, max_tokens: 20)
           new_session
         end)
 
       # Get messages and check truncation
-      all_messages = ExLLM.get_messages(session_with_messages)
+      all_messages = SingularityLLM.get_messages(session_with_messages)
 
       # Try to get messages with limit
-      recent_messages = ExLLM.get_session_messages(session_with_messages, 4)
+      recent_messages = SingularityLLM.get_session_messages(session_with_messages, 4)
       assert length(recent_messages) == 4
 
       # Final message should still work despite context limits
       {:ok, {final_response, _final_session}} =
-        ExLLM.chat_with_session(
+        SingularityLLM.chat_with_session(
           session_with_messages,
           "Summarize our conversation in one sentence",
           max_tokens: 50
@@ -118,31 +118,31 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
         provider2 = Enum.at(providers, 1)
 
         # Create session with first provider
-        session1 = ExLLM.new_session(provider1, model: get_model_for_provider(provider1))
+        session1 = SingularityLLM.new_session(provider1, model: get_model_for_provider(provider1))
 
         # Have a conversation
         {:ok, {_response1, session1_updated}} =
-          ExLLM.chat_with_session(
+          SingularityLLM.chat_with_session(
             session1,
             "My favorite color is blue and my favorite number is 42",
             max_tokens: 50
           )
 
         # Export messages
-        messages = ExLLM.get_messages(session1_updated)
+        messages = SingularityLLM.get_messages(session1_updated)
 
         # Create new session with second provider and import messages
-        session2 = ExLLM.new_session(provider2, model: get_model_for_provider(provider2))
+        session2 = SingularityLLM.new_session(provider2, model: get_model_for_provider(provider2))
 
         # Import conversation history
         session2_with_history =
           Enum.reduce(messages, session2, fn msg, acc ->
-            ExLLM.add_message(acc, msg.role, msg.content)
+            SingularityLLM.add_message(acc, msg.role, msg.content)
           end)
 
         # Continue conversation with new provider
         {:ok, {response2, session2_final}} =
-          ExLLM.chat_with_session(
+          SingularityLLM.chat_with_session(
             session2_with_history,
             "What's my favorite color and number?",
             max_tokens: 50
@@ -162,8 +162,8 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
         )
 
         # Compare token usage between providers
-        total_tokens1 = ExLLM.session_token_usage(session1_updated)
-        total_tokens2 = ExLLM.session_token_usage(session2_final)
+        total_tokens1 = SingularityLLM.session_token_usage(session1_updated)
+        total_tokens2 = SingularityLLM.session_token_usage(session2_final)
 
         if total_tokens1 > 0 and total_tokens2 > 0 do
           token_ratio = total_tokens2 / total_tokens1
@@ -182,7 +182,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
     @describetag timeout: 60_000
 
     test "comprehensive token and cost tracking" do
-      initial_session = ExLLM.new_session(:openai, model: "gpt-4o-mini")
+      initial_session = SingularityLLM.new_session(:openai, model: "gpt-4o-mini")
 
       # Track costs across multiple interactions
       {final_session, cost_data} =
@@ -190,7 +190,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
           prompt = "Generate exactly #{i} sentence#{if i > 1, do: "s", else: ""} about space"
 
           {:ok, {response, updated_session}} =
-            ExLLM.chat_with_session(session, prompt, max_tokens: 50 * i)
+            SingularityLLM.chat_with_session(session, prompt, max_tokens: 50 * i)
 
           usage = response.usage
           cost = response.cost
@@ -210,7 +210,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
       cost_data = Enum.reverse(cost_data)
 
       # Get cumulative session stats
-      total_tokens_count = ExLLM.session_token_usage(final_session)
+      total_tokens_count = SingularityLLM.session_token_usage(final_session)
       session_usage = final_session.token_usage
 
       # Calculate cumulative values
@@ -244,7 +244,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
     test "session memory limits and cleanup" do
       # Create session with memory limit
       session =
-        ExLLM.new_session(:openai,
+        SingularityLLM.new_session(:openai,
           model: "gpt-4o-mini",
           # Keep only last 10 messages
           max_messages: 10
@@ -254,7 +254,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
       final_session =
         Enum.reduce(1..15, session, fn i, acc ->
           {:ok, {_, new_session}} =
-            ExLLM.chat_with_session(
+            SingularityLLM.chat_with_session(
               acc,
               "Message #{i}: #{String.duplicate("test ", 10)}",
               max_tokens: 10
@@ -264,22 +264,22 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
         end)
 
       # Check message count
-      messages = ExLLM.get_messages(final_session)
+      messages = SingularityLLM.get_messages(final_session)
 
       # Should have maximum 10 messages (or close to it considering system messages)
       # Reasonable upper bound
       assert length(messages) <= 30
 
       # Get token count before clearing
-      final_total_tokens = ExLLM.session_token_usage(final_session)
+      final_total_tokens = SingularityLLM.session_token_usage(final_session)
 
       # Clear session
-      cleared_session = ExLLM.clear_session(final_session)
-      cleared_messages = ExLLM.get_messages(cleared_session)
+      cleared_session = SingularityLLM.clear_session(final_session)
+      cleared_messages = SingularityLLM.get_messages(cleared_session)
       assert Enum.empty?(cleared_messages)
 
       # Token usage should be preserved (historical usage)
-      cleared_total_tokens = ExLLM.session_token_usage(cleared_session)
+      cleared_total_tokens = SingularityLLM.session_token_usage(cleared_session)
       assert cleared_total_tokens == final_total_tokens
 
       IO.puts("\nSession Memory Management Test:")
@@ -290,40 +290,40 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
 
     test "session branching and checkpoint management" do
       # Create base session
-      base_session = ExLLM.new_session(:openai, model: "gpt-4o-mini")
+      base_session = SingularityLLM.new_session(:openai, model: "gpt-4o-mini")
 
       # Establish context
       {:ok, {_, session_v1}} =
-        ExLLM.chat_with_session(
+        SingularityLLM.chat_with_session(
           base_session,
           "I'm planning a trip to Paris in spring",
           max_tokens: 50
         )
 
       # Save checkpoint
-      {:ok, checkpoint_json} = ExLLM.save_session(session_v1)
+      {:ok, checkpoint_json} = SingularityLLM.save_session(session_v1)
 
       # Branch 1: Ask about attractions
       {:ok, {_response1, branch1_session}} =
-        ExLLM.chat_with_session(
+        SingularityLLM.chat_with_session(
           session_v1,
           "What are the top 3 attractions I should visit?",
           max_tokens: 100
         )
 
       # Branch 2: Load checkpoint and ask about food
-      {:ok, session_v1_restored} = ExLLM.load_session(checkpoint_json)
+      {:ok, session_v1_restored} = SingularityLLM.load_session(checkpoint_json)
 
       {:ok, {_response2, branch2_session}} =
-        ExLLM.chat_with_session(
+        SingularityLLM.chat_with_session(
           session_v1_restored,
           "What are the best restaurants for French cuisine?",
           max_tokens: 100
         )
 
       # Compare branches
-      branch1_messages = ExLLM.get_messages(branch1_session)
-      branch2_messages = ExLLM.get_messages(branch2_session)
+      branch1_messages = SingularityLLM.get_messages(branch1_session)
+      branch2_messages = SingularityLLM.get_messages(branch2_session)
 
       # Both should have the base context
       assert Enum.any?(branch1_messages, &String.contains?(&1.content, "Paris"))
@@ -346,7 +346,7 @@ defmodule ExLLM.Integration.SessionStateComprehensiveTest do
   defp get_configured_providers do
     [:openai, :anthropic, :gemini, :groq, :mistral]
     |> Enum.filter(fn provider ->
-      config = ExLLM.Environment.provider_config(provider)
+      config = SingularityLLM.Environment.provider_config(provider)
       config[:api_key] != nil
     end)
   end

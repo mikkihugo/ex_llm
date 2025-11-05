@@ -1,6 +1,6 @@
-# ExLLM Release Checklist
+# SingularityLLM Release Checklist
 
-This checklist ensures consistent and high-quality releases for ExLLM.
+This checklist ensures consistent and high-quality releases for SingularityLLM.
 
 ## Pre-Release Checklist
 
@@ -153,7 +153,7 @@ This checklist ensures consistent and high-quality releases for ExLLM.
   - [ ] Enter Hex credentials
 
 - [ ] **Verify publication**
-  - [ ] Check https://hex.pm/packages/ex_llm
+  - [ ] Check https://hex.pm/packages/singularity_llm
   - [ ] Documentation is generated
   - [ ] Installation instructions work
 

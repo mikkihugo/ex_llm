@@ -1,6 +1,6 @@
-# Contributing to ExLLM
+# Contributing to SingularityLLM
 
-Thank you for your interest in contributing to ExLLM! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to SingularityLLM! This document provides guidelines for contributing to the project.
 
 ## Getting Started
 
@@ -50,7 +50,7 @@ mix dialyzer
 - Use `mix format` to ensure consistent formatting
 - Add typespecs for public functions
 - Write comprehensive documentation
-- Follow the `ExLLM.function_name(provider, ...args)` pattern for new unified API functions
+- Follow the `SingularityLLM.function_name(provider, ...args)` pattern for new unified API functions
 
 ### Testing
 - Write tests for all new functionality
@@ -73,10 +73,10 @@ docs(api): update unified API examples
 
 ## Adding New Providers
 
-1. **Create provider module** in `lib/ex_llm/providers/`
-2. **Implement the ExLLM.Adapter behavior**
+1. **Create provider module** in `lib/singularity_llm/providers/`
+2. **Implement the SingularityLLM.Adapter behavior**
 3. **Add configuration** in `config/models/provider.yml`
-4. **Update capabilities registry** in `lib/ex_llm/api/capabilities.ex`
+4. **Update capabilities registry** in `lib/singularity_llm/api/capabilities.ex`
 5. **Add tests** following existing provider test patterns
 6. **Update documentation** with provider-specific details
 
@@ -110,4 +110,4 @@ When reporting issues:
 - Check existing issues before creating new ones
 - Join our community discussions for help
 
-Thank you for contributing to ExLLM! 🚀
+Thank you for contributing to SingularityLLM! 🚀

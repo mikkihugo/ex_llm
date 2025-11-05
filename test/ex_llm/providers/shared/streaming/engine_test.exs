@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Shared.Streaming.EngineTest do
+defmodule SingularityLLM.Providers.Shared.Streaming.EngineTest do
   @moduledoc """
   Tests for the new Tesla-based streaming engine.
 
@@ -8,9 +8,9 @@ defmodule ExLLM.Providers.Shared.Streaming.EngineTest do
 
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.Streaming.Compatibility
-  alias ExLLM.Providers.Shared.Streaming.Engine
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.Streaming.Compatibility
+  alias SingularityLLM.Providers.Shared.Streaming.Engine
+  alias SingularityLLM.Types.StreamChunk
 
   @moduletag :streaming_engine
 
@@ -146,15 +146,15 @@ defmodule ExLLM.Providers.Shared.Streaming.EngineTest do
   end
 end
 
-defmodule ExLLM.Providers.Shared.Streaming.CompatibilityTest do
+defmodule SingularityLLM.Providers.Shared.Streaming.CompatibilityTest do
   @moduledoc """
   Tests for backward compatibility with existing StreamingCoordinator interface.
   """
 
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.Streaming.Compatibility
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.Streaming.Compatibility
+  alias SingularityLLM.Types.StreamChunk
 
   @moduletag :streaming_compatibility
 

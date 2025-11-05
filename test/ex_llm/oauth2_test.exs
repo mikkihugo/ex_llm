@@ -1,11 +1,11 @@
-defmodule ExLLM.OAuth2Test do
+defmodule SingularityLLM.OAuth2Test do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Testing.OAuth2.Helper
-  alias ExLLM.Testing.OAuth2.TokenStorage
+  alias SingularityLLM.Testing.OAuth2.Helper
+  alias SingularityLLM.Testing.OAuth2.TokenStorage
 
   @moduledoc """
-  Tests for OAuth2 authentication infrastructure in ExLLM.
+  Tests for OAuth2 authentication infrastructure in SingularityLLM.
 
   These tests ensure that OAuth2 token management works correctly across
   providers and handles various error scenarios appropriately.

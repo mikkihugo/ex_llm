@@ -1,11 +1,11 @@
-defmodule ExLLM.Providers.OpenAIPublicAPITest do
+defmodule SingularityLLM.Providers.OpenAIPublicAPITest do
   @moduledoc """
-  OpenAI-specific integration tests using the public ExLLM API.
+  OpenAI-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :openai
-  import ExLLM.Testing.CapabilityHelpers
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :openai
+  import SingularityLLM.Testing.CapabilityHelpers
 
   # Provider-specific tests only
   describe "openai-specific features via public API" do
@@ -20,7 +20,7 @@ defmodule ExLLM.Providers.OpenAIPublicAPITest do
       ]
 
       assert {:ok, response} =
-               ExLLM.chat(:openai, messages,
+               SingularityLLM.chat(:openai, messages,
                  response_format: %{type: "json_object"},
                  max_tokens: 100
                )
@@ -54,7 +54,7 @@ defmodule ExLLM.Providers.OpenAIPublicAPITest do
         }
       ]
 
-      assert {:ok, response} = ExLLM.chat(:openai, messages, model: "gpt-4o", max_tokens: 50)
+      assert {:ok, response} = SingularityLLM.chat(:openai, messages, model: "gpt-4o", max_tokens: 50)
 
       # Verify GPT-4o can see the image (don't test specific color)
       assert String.length(response.content) > 0
@@ -92,7 +92,7 @@ defmodule ExLLM.Providers.OpenAIPublicAPITest do
       end
 
       assert :ok =
-               ExLLM.stream(:openai, messages, collector,
+               SingularityLLM.stream(:openai, messages, collector,
                  tools: tools,
                  max_tokens: 100,
                  timeout: 10_000
@@ -129,7 +129,7 @@ defmodule ExLLM.Providers.OpenAIPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      assert :ok = ExLLM.stream(:openai, messages, collector, max_tokens: 10, timeout: 10_000)
+      assert :ok = SingularityLLM.stream(:openai, messages, collector, max_tokens: 10, timeout: 10_000)
 
       chunks = collect_stream_chunks([], 1000)
 
@@ -148,7 +148,7 @@ defmodule ExLLM.Providers.OpenAIPublicAPITest do
         %{role: "user", content: "What is 2+2?"}
       ]
 
-      assert {:ok, response} = ExLLM.chat(:openai, messages, model: "o1-mini", max_tokens: 500)
+      assert {:ok, response} = SingularityLLM.chat(:openai, messages, model: "o1-mini", max_tokens: 500)
 
       # Verify we got content (don't test specific answer)
       assert String.length(response.content) > 0

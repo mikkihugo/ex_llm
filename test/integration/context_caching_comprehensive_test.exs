@@ -1,4 +1,4 @@
-defmodule ExLLM.Integration.ContextCachingComprehensiveTest do
+defmodule SingularityLLM.Integration.ContextCachingComprehensiveTest do
   @moduledoc """
   Comprehensive context caching tests for Gemini provider.
   Tests CRUD operations, performance optimization, and error handling.
@@ -7,9 +7,9 @@ defmodule ExLLM.Integration.ContextCachingComprehensiveTest do
 
   @moduletag :integration
   @moduletag :comprehensive
-  alias ExLLM.Providers.Gemini
-  alias ExLLM.Providers.Gemini.Caching.CachedContent
-  alias ExLLM.Providers.Gemini.Content.{Content, Part}
+  alias SingularityLLM.Providers.Gemini
+  alias SingularityLLM.Providers.Gemini.Caching.CachedContent
+  alias SingularityLLM.Providers.Gemini.Content.{Content, Part}
 
   # Test helper to create test content
   defp create_test_content(text \\ "This is test content for caching") do

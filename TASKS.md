@@ -1,4 +1,4 @@
-# ExLLM Tasks
+# SingularityLLM Tasks
 
 ## Recent Major Achievements ✨
 
@@ -8,7 +8,7 @@
 - 📈 **Enhanced Type System**: Added metadata support to LLMResponse and StreamChunk for timing and context data
 - 🔧 **Improved Functionality**: Better token usage tracking, cost filtering, and context statistics
 
-This represents a significant maturity milestone for the ExLLM codebase, ensuring high code quality standards and maintainability for future development.
+This represents a significant maturity milestone for the SingularityLLM codebase, ensuring high code quality standards and maintainability for future development.
 
 ## Completed
 
@@ -16,9 +16,9 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Unified adapter interface for multiple providers
 - [x] Streaming support with SSE parsing
 - [x] Model listing and management
-- [x] Standardized response format (via ExLLM.Types)
+- [x] Standardized response format (via SingularityLLM.Types)
 - [x] Configuration injection pattern
-- [x] Comprehensive error handling (via ExLLM.Error)
+- [x] Comprehensive error handling (via SingularityLLM.Error)
 - [x] Application supervisor for lifecycle management
 
 ### Provider Adapters
@@ -39,7 +39,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Multiple truncation strategies (sliding_window, smart)
   - [x] Model-specific context window sizes
   - [x] Context validation and statistics
-- [x] Session management (via ExLLM.Session)
+- [x] Session management (via SingularityLLM.Session)
   - [x] Message history
   - [x] Token usage tracking
   - [x] JSON persistence
@@ -51,9 +51,9 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] JSON extraction from markdown
 
 ### Local Model Support
-- [x] Model loading/unloading (via ExLLM.Local.ModelLoader)
-- [x] EXLA/EMLX configuration (via ExLLM.Local.EXLAConfig)
-- [x] Token counting with model tokenizers (via ExLLM.Local.TokenCounter)
+- [x] Model loading/unloading (via SingularityLLM.Local.ModelLoader)
+- [x] EXLA/EMLX configuration (via SingularityLLM.Local.EXLAConfig)
+- [x] Token counting with model tokenizers (via SingularityLLM.Local.TokenCounter)
 - [x] Hardware acceleration detection (Metal, CUDA, ROCm)
 - [x] Optimized inference settings
 - [x] Mixed precision support
@@ -66,7 +66,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] External YAML configuration system for model metadata
   - [x] Model pricing, context windows, and capabilities in config/models/*.yml
   - [x] Runtime configuration loading with ETS caching
-  - [x] ExLLM.ModelConfig module for centralized access
+  - [x] SingularityLLM.ModelConfig module for centralized access
   - [x] Separation of model data from code for easier maintenance
   - [x] Model sync script from LiteLLM
     - [x] Python script to fetch model data from LiteLLM
@@ -127,7 +127,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Structured output support with format parameter
 
 ### Enhanced Streaming Error Recovery ✅
-- [x] Core streaming recovery infrastructure (via ExLLM.StreamRecovery)
+- [x] Core streaming recovery infrastructure (via SingularityLLM.StreamRecovery)
   - [x] Save partial responses during streaming
     - [x] Store response chunks with timestamps
     - [x] Track token count of partial response
@@ -153,7 +153,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
     - [x] Recovery ID tracking for resumable streams
 
 ### Request Retry Logic with Exponential Backoff ✅
-- [x] Core retry infrastructure (via ExLLM.Retry)
+- [x] Core retry infrastructure (via SingularityLLM.Retry)
   - [x] Exponential backoff with configurable parameters
   - [x] Jitter support to prevent thundering herd
   - [x] Provider-specific retry policies
@@ -169,7 +169,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Logging of retry attempts and outcomes
 
 ### Function Calling Support ✅
-- [x] Unified function calling interface (via ExLLM.FunctionCalling)
+- [x] Unified function calling interface (via SingularityLLM.FunctionCalling)
   - [x] Provider-agnostic function definitions
   - [x] Automatic format conversion for each provider
   - [x] Function call parsing from responses
@@ -187,7 +187,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Example implementation (examples/function_calling_example.exs)
 
 ### Mock Adapter for Testing ✅
-- [x] Full mock adapter implementation (ExLLM.Adapters.Mock)
+- [x] Full mock adapter implementation (SingularityLLM.Adapters.Mock)
   - [x] Static response configuration
   - [x] Dynamic response handlers
   - [x] Error simulation
@@ -208,7 +208,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Testing guide (examples/testing_with_mock.exs)
 
 ### Model Capability Discovery ✅
-- [x] Comprehensive capability tracking (via ExLLM.ModelCapabilities)
+- [x] Comprehensive capability tracking (via SingularityLLM.ModelCapabilities)
   - [x] Feature support detection for all models
   - [x] Context window and output token limits
   - [x] Provider-specific capability details
@@ -238,7 +238,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Full test coverage (model_capabilities_test.exs)
 
 ### Response Caching with TTL ✅
-- [x] Core caching infrastructure (via ExLLM.Cache)
+- [x] Core caching infrastructure (via SingularityLLM.Cache)
   - [x] TTL-based cache expiration
   - [x] Configurable storage backends via behaviour
   - [x] ETS storage backend implementation
@@ -267,12 +267,12 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
     - [x] Strategic function extraction and pattern matching
     - [x] Improved readability and maintainability
   - [x] Resolved all cyclomatic complexity issues (6 high-complexity functions)
-    - [x] ExLLM.Instructor.do_structured_chat (complexity 34 → reduced)
-    - [x] ExLLM.Instructor.get_provider_config (complexity 19 → reduced)
-    - [x] ExLLM.Adapters.Bedrock.parse_response (complexity 15 → reduced)
-    - [x] ExLLM.Adapters.Mock.normalize_response (complexity 14 → reduced)
-    - [x] ExLLM.Adapters.Shared.ModelUtils.generate_description (complexity 13 → reduced)
-    - [x] ExLLM.Adapters.Mock.embeddings (complexity 13 → reduced)
+    - [x] SingularityLLM.Instructor.do_structured_chat (complexity 34 → reduced)
+    - [x] SingularityLLM.Instructor.get_provider_config (complexity 19 → reduced)
+    - [x] SingularityLLM.Adapters.Bedrock.parse_response (complexity 15 → reduced)
+    - [x] SingularityLLM.Adapters.Mock.normalize_response (complexity 14 → reduced)
+    - [x] SingularityLLM.Adapters.Shared.ModelUtils.generate_description (complexity 13 → reduced)
+    - [x] SingularityLLM.Adapters.Mock.embeddings (complexity 13 → reduced)
   - [x] Fixed all TODO comments in codebase (5 items)
     - [x] Enhanced Types module with metadata fields for LLMResponse and StreamChunk
     - [x] Improved context_stats function with character counting and statistics
@@ -308,7 +308,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Cost comparison across models
 
 ### Vision/Multimodal Support ✅
-- [x] Core vision infrastructure (via ExLLM.Vision)
+- [x] Core vision infrastructure (via SingularityLLM.Vision)
   - [x] Extended message types to support image content
   - [x] Image format validation and detection
   - [x] Base64 encoding/decoding utilities
@@ -383,12 +383,12 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 #### Phase 1: Core Foundation
 
 ##### [x] 1. Models API (GEMINI-API-01-MODELS.md) ✅
-- [x] Create `test/ex_llm/gemini/models_test.exs`
+- [x] Create `test/singularity_llm/gemini/models_test.exs`
   - [x] Test listing available models
   - [x] Test getting model details
   - [x] Test model capabilities and limits
   - [x] Test error handling for invalid models
-- [x] Implement `lib/ex_llm/gemini/models.ex`
+- [x] Implement `lib/singularity_llm/gemini/models.ex`
   - [x] `list_models/1` - List available models
   - [x] `get_model/2` - Get specific model details
   - [x] Model struct with all properties
@@ -397,7 +397,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Update model registry with Gemini models
 
 ##### [x] 2. Content Generation API (GEMINI-API-02-GENERATING-CONTENT.md) ✅ 
-- [x] Create `test/ex_llm/gemini/content_test.exs`
+- [x] Create `test/singularity_llm/gemini/content_test.exs`
   - [x] Test basic text generation
   - [x] Test streaming responses
   - [x] Test with system instructions
@@ -407,23 +407,23 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Test structured output (JSON mode)
   - [x] Test function calling
   - [x] Test error scenarios
-- [x] Implement `lib/ex_llm/gemini/content.ex`
+- [x] Implement `lib/singularity_llm/gemini/content.ex`
   - [x] `generate_content/3` - Non-streaming generation
   - [x] `stream_generate_content/3` - Streaming generation
   - [x] Request/response structs
   - [x] Generation config handling
   - [x] Safety settings
   - [x] Tool/function definitions
-- [x] Integration with main ExLLM adapter pattern
+- [x] Integration with main SingularityLLM adapter pattern
 - [x] Run tests and ensure they pass (validation tests pass, API tests require valid key)
 
 ##### [x] 3. Token Counting API (GEMINI-API-04-TOKENS.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/tokens_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/tokens_test.exs`
   - [x] Test counting tokens for text
   - [x] Test counting tokens for multimodal content
   - [x] Test with different models
   - [x] Test error handling
-- [x] Implement `lib/ex_llm/gemini/tokens.ex`
+- [x] Implement `lib/singularity_llm/gemini/tokens.ex`
   - [x] `count_tokens/3` - Count tokens for content
   - [x] Token count response struct
   - [x] Integration with content generation
@@ -432,14 +432,14 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 #### Phase 2: Advanced Features
 
 ##### [x] 4. Files API (GEMINI-API-05-FILES.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/files_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/files_test.exs`
   - [x] Test file upload
   - [x] Test file listing
   - [x] Test file deletion
   - [x] Test file metadata retrieval
   - [x] Test file state transitions
   - [x] Test error handling
-- [x] Implement `lib/ex_llm/gemini/files.ex`
+- [x] Implement `lib/singularity_llm/gemini/files.ex`
   - [x] `upload_file/3` - Upload media files (resumable upload)
   - [x] `list_files/1` - List uploaded files
   - [x] `get_file/2` - Get file metadata
@@ -449,14 +449,14 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass
 
 ##### [x] 5. Context Caching API (GEMINI-API-06-CACHING.md) ✅
-- [x] Create `test/ex_llm/gemini/caching_test.exs`
+- [x] Create `test/singularity_llm/gemini/caching_test.exs`
   - [x] Test creating cached content
   - [x] Test listing cached content
   - [x] Test updating cached content
   - [x] Test deleting cached content
   - [x] Test using cached content in generation
   - [x] Test TTL and expiration
-- [x] Implement `lib/ex_llm/gemini/caching.ex`
+- [x] Implement `lib/singularity_llm/gemini/caching.ex`
   - [x] `create_cached_content/2` - Create cache entry
   - [x] `list_cached_contents/1` - List cache entries
   - [x] `get_cached_content/2` - Get cache details
@@ -466,13 +466,13 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass
 
 ##### [x] 6. Embeddings API (GEMINI-API-07-EMBEDDING.md) ✅
-- [x] Create `test/ex_llm/gemini/embeddings_test.exs`
+- [x] Create `test/singularity_llm/gemini/embeddings_test.exs`
   - [x] Test text embeddings
   - [x] Test batch embeddings
   - [x] Test different embedding models
   - [x] Test content types (query vs document)
   - [x] Test error handling
-- [x] Implement `lib/ex_llm/gemini/embeddings.ex`
+- [x] Implement `lib/singularity_llm/gemini/embeddings.ex`
   - [x] `embed_content/3` - Generate embeddings
   - [x] Batch embedding support
   - [x] Task type configuration
@@ -483,13 +483,13 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 
 ##### [x] 7. Live API (GEMINI-API-03-LIVE-API.md) ✅
 - [x] Add WebSocket client library (Gun)
-- [x] Create `test/ex_llm/adapters/gemini/live_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/live_test.exs`
   - [x] Test WebSocket connection (URL building and headers)
   - [x] Test message building (setup, client content, realtime input, tool response)
   - [x] Test message parsing (server content, tool calls, transcription, go away)
   - [x] Test validation (setup config, realtime input, generation config)
   - [x] Test struct definitions (all message types)
-- [x] Implement `lib/ex_llm/gemini/live.ex`
+- [x] Implement `lib/singularity_llm/gemini/live.ex`
   - [x] WebSocket client implementation using Gun
   - [x] GenServer-based session management
   - [x] Audio/video/text streaming support
@@ -502,13 +502,13 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 #### Phase 4: Fine-tuning
 
 ##### [x] 8. Fine-tuning API (GEMINI-API-08-TUNING_TUNING.md) ✅
-- [x] Create `test/ex_llm/gemini/tuning_test.exs`
+- [x] Create `test/singularity_llm/gemini/tuning_test.exs`
   - [x] Test creating tuned models
   - [x] Test listing tuned models
   - [x] Test monitoring tuning jobs
   - [x] Test using tuned models
   - [x] Test hyperparameter configuration
-- [x] Implement `lib/ex_llm/gemini/tuning.ex`
+- [x] Implement `lib/singularity_llm/gemini/tuning.ex`
   - [x] `create_tuned_model/2` - Start tuning job
   - [x] `list_tuned_models/1` - List tuned models
   - [x] `get_tuned_model/2` - Get tuning details
@@ -519,13 +519,13 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass (unit tests pass, integration tests require valid API key)
 
 ##### [x] 9. Tuning Permissions (GEMINI-API-09-TUNING_PERMISSIONS.md) ✅
-- [x] Create `test/ex_llm/gemini/permissions_test.exs`
+- [x] Create `test/singularity_llm/gemini/permissions_test.exs`
   - [x] Test creating permissions
   - [x] Test listing permissions
   - [x] Test updating permissions
   - [x] Test deleting permissions
   - [x] Test transfer ownership
-- [x] Implement `lib/ex_llm/gemini/permissions.ex`
+- [x] Implement `lib/singularity_llm/gemini/permissions.ex`
   - [x] Permission CRUD operations
   - [x] Role management (READER, WRITER, OWNER)
   - [x] Grantee types (USER, GROUP, EVERYONE)
@@ -536,14 +536,14 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 #### Phase 5: Semantic Retrieval
 
 ##### [x] 10. Question Answering (GEMINI-API-10-SEMANTIC-RETRIEVAL_QUESTION-ANSWERING.md) ✅
-- [x] Create `test/ex_llm/gemini/qa_test.exs`
+- [x] Create `test/singularity_llm/gemini/qa_test.exs`
   - [x] Test query API with inline passages
   - [x] Test query API with semantic retriever
   - [x] Test answer generation with different styles
   - [x] Test with different answer styles (abstractive, extractive, verbose)
   - [x] Test temperature control and safety settings
   - [x] Test response parsing and error handling
-- [x] Implement `lib/ex_llm/gemini/qa.ex`
+- [x] Implement `lib/singularity_llm/gemini/qa.ex`
   - [x] `generate_answer/4` - Semantic search and QA
   - [x] Answer generation config with temperature and safety
   - [x] Grounding with inline passages and semantic retriever
@@ -552,7 +552,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass (unit tests pass, integration tests require valid API key/corpus)
 
 ##### [x] 11. Corpus Management (GEMINI-API-11-SEMANTIC-RETRIEVAL_CORPUS.md) ✅
-- [x] Create `test/ex_llm/gemini/corpus_test.exs`
+- [x] Create `test/singularity_llm/gemini/corpus_test.exs`
   - [x] Test creating corpora with auto-generated and custom names
   - [x] Test listing corpora with pagination support
   - [x] Test updating corpora (display name changes)
@@ -560,7 +560,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Test querying corpora with metadata filters
   - [x] Test input validation and error handling
   - [x] Test response parsing for all operations
-- [x] Implement `lib/ex_llm/gemini/corpus.ex`
+- [x] Implement `lib/singularity_llm/gemini/corpus.ex`
   - [x] Complete CRUD operations (create, list, get, update, delete)
   - [x] Semantic search with query_corpus function
   - [x] Metadata filter system with conditions and operators
@@ -571,7 +571,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass (unit tests pass, integration tests require OAuth2 token)
 
 ##### [x] 12. Document Management (GEMINI-API-13-SEMANTIC-RETRIEVAL_DOCUMENT.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/document_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/document_test.exs`
   - [x] Test creating documents with metadata
   - [x] Test listing documents with pagination
   - [x] Test updating documents with field masks
@@ -579,7 +579,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Test querying documents with semantic search
   - [x] Test custom metadata handling (string, numeric, string list)
   - [x] Test validation and error handling
-- [x] Implement `lib/ex_llm/gemini/document.ex`
+- [x] Implement `lib/singularity_llm/gemini/document.ex`
   - [x] Complete CRUD operations (create, list, get, update, delete)
   - [x] Semantic search with query_document function
   - [x] Custom metadata system with all value types
@@ -590,7 +590,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass (20 unit tests, 100% pass rate)
 
 ##### [x] 13. Chunk Management (GEMINI-API-12-SEMANTIC-RETRIEVAL_CHUNK.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/chunk_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/chunk_test.exs`
   - [x] Test creating chunks with data and metadata
   - [x] Test listing chunks with pagination
   - [x] Test updating chunks with field masks
@@ -598,7 +598,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
   - [x] Test batch operations (create, update, delete)
   - [x] Test validation and error handling for all operations
   - [x] Test struct definitions and parsing
-- [x] Implement `lib/ex_llm/gemini/chunk.ex`
+- [x] Implement `lib/singularity_llm/gemini/chunk.ex`
   - [x] Complete CRUD operations (create, list, get, update, delete)
   - [x] Batch operations (batch_create, batch_update, batch_delete)
   - [x] Custom metadata system with all value types
@@ -609,14 +609,14 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 - [x] Run tests and ensure they pass (22 unit tests, 100% pass rate)
 
 ##### [x] 14. Retrieval Permissions (GEMINI-API-14-SEMANTIC-RETRIEVAL_PERMISSIONS.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/retrieval_permissions_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/retrieval_permissions_test.exs`
   - [x] Test corpus permissions (create, list, get, update, delete)
   - [x] Test permission validation for corpus operations
   - [x] Test role hierarchy (READER, WRITER, OWNER)
   - [x] Test grantee types (USER, GROUP, EVERYONE)
   - [x] Test authentication methods (API key and OAuth2)
   - [x] Test struct definitions and JSON parsing
-- [x] Extend existing `lib/ex_llm/gemini/permissions.ex`
+- [x] Extend existing `lib/singularity_llm/gemini/permissions.ex`
   - [x] Corpus permissions already supported (corpora/{corpus} parent format)
   - [x] Complete CRUD operations for corpus permissions
   - [x] Input validation and error handling
@@ -626,25 +626,25 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 #### Phase 6: Integration
 
 ##### [x] 15. Complete Integration (GEMINI-API-15-ALL-METHODS.md) ✅
-- [x] Create `test/ex_llm/adapters/gemini/integration_test.exs`
+- [x] Create `test/singularity_llm/adapters/gemini/integration_test.exs`
   - [x] Test end-to-end workflows with adapter
   - [x] Test cross-feature interactions and API modules
   - [x] Test error propagation and handling
   - [x] Test performance characteristics (marked with @tag :performance)
-- [x] Enhance `lib/ex_llm/adapters/gemini.ex`
+- [x] Enhance `lib/singularity_llm/adapters/gemini.ex`
   - [x] Main adapter implementation (chat, streaming, embeddings)
-  - [x] Integration with ExLLM interfaces (unified API)
+  - [x] Integration with SingularityLLM interfaces (unified API)
   - [x] Feature detection and capabilities via ModelCapabilities
   - [x] Error handling and configuration validation
-- [x] ExLLM module already supports Gemini provider
+- [x] SingularityLLM module already supports Gemini provider
 - [x] All individual API modules tested and working
 
 ### Missing Core Implementations (Priority 0)
-- [x] Session persistence (save_to_file/load_from_file in ExLLM.Session)
-- [x] Function calling argument parsing (parse_arguments in ExLLM.FunctionCalling)
-- [x] Model info retrieval (get_model_info in ExLLM.ModelCapabilities)
+- [x] Session persistence (save_to_file/load_from_file in SingularityLLM.Session)
+- [x] Function calling argument parsing (parse_arguments in SingularityLLM.FunctionCalling)
+- [x] Model info retrieval (get_model_info in SingularityLLM.ModelCapabilities)
 - [x] Provider capability tracking system
-  - [x] Create ExLLM.ProviderCapabilities module
+  - [x] Create SingularityLLM.ProviderCapabilities module
   - [x] Track provider-level features:
     - [x] Available endpoints (chat, embeddings, images, audio, etc.)
     - [x] Authentication methods (api_key, oauth, aws_signature, etc.)
@@ -662,7 +662,7 @@ This represents a significant maturity milestone for the ExLLM codebase, ensurin
 
 ### Core Features - Low Priority Items
 - [x] Context statistics implementation
-  - [x] Implement `context_stats/1` function in ExLLM module
+  - [x] Implement `context_stats/1` function in SingularityLLM module
   - [x] Calculate token distribution across messages
   - [x] Provide truncation impact analysis
   - [x] Return statistics about context usage
@@ -906,26 +906,26 @@ The automatic test response caching system has been successfully implemented wit
 @moduletag :integration  # That's it! Caching is automatic
 
 # Check statistics
-mix ex_llm.cache.stats
+mix singularity_llm.cache.stats
 
 # Clear cache
-mix ex_llm.cache.clear
+mix singularity_llm.cache.clear
 ```
 
 ---
 
 ## Overview
 
-This document outlines the implementation plan for automatic test response caching in ExLLM. The goal is to automatically save every real API response during integration tests for replay in future test runs, reducing API costs and improving test reliability.
+This document outlines the implementation plan for automatic test response caching in SingularityLLM. The goal is to automatically save every real API response during integration tests for replay in future test runs, reducing API costs and improving test reliability.
 
 ## Current State Analysis
 
 ### Existing Caching Infrastructure
-ExLLM already has a sophisticated caching system with the following components:
+SingularityLLM already has a sophisticated caching system with the following components:
 
-1. **ExLLM.Cache** - Runtime ETS-based caching with optional disk persistence
-2. **ExLLM.ResponseCache** - Disk-based response collection for Mock adapter
-3. **ExLLM.CachingInterceptor** - Higher-level response collection for testing
+1. **SingularityLLM.Cache** - Runtime ETS-based caching with optional disk persistence
+2. **SingularityLLM.ResponseCache** - Disk-based response collection for Mock adapter
+3. **SingularityLLM.CachingInterceptor** - Higher-level response collection for testing
 4. **Mock Adapter Integration** - Ability to replay cached responses
 
 ### Current Limitations for Automatic Test Caching
@@ -940,7 +940,7 @@ ExLLM already has a sophisticated caching system with the following components:
 ### Phase 1: Foundation and Configuration (Priority: High)
 
 #### Task 1.1: Create Test Cache Configuration System
-- [ ] **File**: `lib/ex_llm/test_cache_config.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_config.ex`
 - [ ] **Purpose**: Centralized configuration for test response caching
 - [ ] **Features**:
   - Automatic detection of test environment (`Mix.env() == :test`)
@@ -949,7 +949,7 @@ ExLLM already has a sophisticated caching system with the following components:
   - Configuration hierarchy: environment variables > test config > defaults
 - [ ] **Configuration Options**:
   ```elixir
-  config :ex_llm, :test_cache,
+  config :singularity_llm, :test_cache,
     enabled: true,                    # Enable automatic test caching
     auto_detect: true,               # Auto-enable in test environment
     cache_dir: "test/cache",         # Test cache directory
@@ -975,7 +975,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 1.2: Enhance Test Environment Detection
-- [ ] **File**: `lib/ex_llm/test_cache_detector.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_detector.ex`
 - [ ] **Purpose**: Intelligent detection of test scenarios requiring caching
 - [ ] **Features**:
   - Detect integration tests by examining ExUnit tags
@@ -991,7 +991,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 1.3: Create Test Cache Storage Backend
-- [ ] **File**: `lib/ex_llm/cache/storage/test_cache.ex`
+- [ ] **File**: `lib/singularity_llm/cache/storage/test_cache.ex`
 - [ ] **Purpose**: Specialized storage backend for timestamp-based test response caching
 - [ ] **Features**:
   - Hierarchical organization by provider/test module/scenario
@@ -1023,7 +1023,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 1.4: Implement TTL and Cache Selection System
-- [ ] **File**: `lib/ex_llm/test_cache_ttl.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_ttl.ex`
 - [ ] **Purpose**: Handle cache selection and TTL logic for timestamp-based caching
 - [ ] **Features**:
   - Check cache age against configurable TTL across all timestamps
@@ -1041,7 +1041,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 1.5: Implement Timestamp Management and Cleanup System
-- [ ] **File**: `lib/ex_llm/test_cache_timestamp.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_timestamp.ex`
 - [ ] **Purpose**: Manage timestamped cache entries and cleanup policies
 - [ ] **Features**:
   - Generate consistent timestamp-based filenames
@@ -1060,7 +1060,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 1.6: Enhanced Cache Index with Timestamp Tracking
-- [ ] **File**: `lib/ex_llm/test_cache_index.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_index.ex`
 - [ ] **Purpose**: Maintain index of timestamped cache entries with metadata
 - [ ] **Index Structure**:
   ```elixir
@@ -1112,7 +1112,7 @@ ExLLM already has a sophisticated caching system with the following components:
 ### Phase 2: Automatic Response Capture (Priority: High)
 
 #### Task 2.1: Create Test Response Interceptor
-- [ ] **File**: `lib/ex_llm/test_response_interceptor.ex`
+- [ ] **File**: `lib/singularity_llm/test_response_interceptor.ex`
 - [ ] **Purpose**: Automatically intercept and cache responses during tests
 - [ ] **Features**:
   - Hook into HTTPClient request/response cycle
@@ -1120,12 +1120,12 @@ ExLLM already has a sophisticated caching system with the following components:
   - Rich metadata capture (timing, test info, provider details)
   - Streaming response reassembly and caching
 - [ ] **Integration Points**:
-  - `ExLLM.Adapters.Shared.HTTPClient`
-  - `ExLLM.Cache.with_cache/3`
+  - `SingularityLLM.Adapters.Shared.HTTPClient`
+  - `SingularityLLM.Cache.with_cache/3`
   - ExUnit test lifecycle hooks
 
 #### Task 2.2: Enhance HTTPClient with Timestamp-Based Test Caching
-- [ ] **File**: `lib/ex_llm/adapters/shared/http_client.ex`
+- [ ] **File**: `lib/singularity_llm/adapters/shared/http_client.ex`
 - [ ] **Purpose**: Add timestamp-based test caching support to HTTP client
 - [ ] **Changes**:
   - Add test cache check before making real HTTP requests
@@ -1146,7 +1146,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 2.3: Implement Response Metadata Capture
-- [ ] **File**: `lib/ex_llm/test_response_metadata.ex`
+- [ ] **File**: `lib/singularity_llm/test_response_metadata.ex`
 - [ ] **Purpose**: Capture comprehensive metadata for cached responses
 - [ ] **Metadata Fields**:
   ```elixir
@@ -1165,7 +1165,7 @@ ExLLM already has a sophisticated caching system with the following components:
     response_time_ms: 1245,
     
     # Test Context
-    test_module: "ExLLM.AnthropicIntegrationTest",
+    test_module: "SingularityLLM.AnthropicIntegrationTest",
     test_name: "basic chat completion",
     test_tags: [:integration, :anthropic],
     test_pid: "#PID<0.123.45>",
@@ -1184,7 +1184,7 @@ ExLLM already has a sophisticated caching system with the following components:
 ### Phase 3: Intelligent Cache Replay (Priority: High)
 
 #### Task 3.1: Create Test Cache Matcher
-- [ ] **File**: `lib/ex_llm/test_cache_matcher.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_matcher.ex`
 - [ ] **Purpose**: Intelligent matching of requests to cached responses
 - [ ] **Features**:
   - Exact match for identical requests
@@ -1200,7 +1200,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 3.2: Implement Cache-First Request Strategy with Timestamps
-- [ ] **File**: `lib/ex_llm/test_cache_strategy.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_strategy.ex`
 - [ ] **Purpose**: Implement cache-first strategy for test requests with timestamp selection
 - [ ] **Strategy Flow**:
   1. Check if test caching is enabled
@@ -1221,7 +1221,7 @@ ExLLM already has a sophisticated caching system with the following components:
   - Automatic cleanup based on age and count limits
 
 #### Task 3.3: Add Cache Statistics and Monitoring
-- [ ] **File**: `lib/ex_llm/test_cache_stats.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_stats.ex`
 - [ ] **Purpose**: Track cache performance and cost savings with timestamp-based metrics
 - [ ] **Features**:
   - Cache hit/miss ratios per test suite
@@ -1283,7 +1283,7 @@ ExLLM already has a sophisticated caching system with the following components:
   - Implement cache-aware test ordering
 
 #### Task 4.3: Update OAuth2 Test Configuration
-- [ ] **Files**: `test/ex_llm/adapters/gemini/*oauth2*_test.exs`
+- [ ] **Files**: `test/singularity_llm/adapters/gemini/*oauth2*_test.exs`
 - [ ] **Purpose**: Special handling for OAuth2 test caching
 - [ ] **Features**:
   - OAuth2 token anonymization in cache
@@ -1294,7 +1294,7 @@ ExLLM already has a sophisticated caching system with the following components:
 ### Phase 5: TTL Management and Timestamp Cleanup (Priority: Medium)
 
 #### Task 5.1: Implement Automatic Cache Cleanup Scheduler
-- [ ] **File**: `lib/ex_llm/test_cache_scheduler.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_scheduler.ex`
 - [ ] **Purpose**: Background process for managing cache TTL and timestamp cleanup
 - [ ] **Features**:
   - Periodic scanning for expired cache entries
@@ -1312,7 +1312,7 @@ ExLLM already has a sophisticated caching system with the following components:
   ```
 
 #### Task 5.2: Enhanced API Version Detection and Compatibility
-- [ ] **File**: `lib/ex_llm/test_cache_api_versioning.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_api_versioning.ex`
 - [ ] **Purpose**: Handle API version changes and timestamp-based fallback strategies
 - [ ] **Features**:
   - API version detection and compatibility checking
@@ -1322,7 +1322,7 @@ ExLLM already has a sophisticated caching system with the following components:
   - API evolution tracking across timestamps
 
 #### Task 5.3: Add Cache Compression and Optimization
-- [ ] **File**: `lib/ex_llm/test_cache_optimizer.ex`
+- [ ] **File**: `lib/singularity_llm/test_cache_optimizer.ex`
 - [ ] **Purpose**: Optimize cache storage and performance
 - [ ] **Features**:
   - Response compression for large payloads
@@ -1331,32 +1331,32 @@ ExLLM already has a sophisticated caching system with the following components:
   - Cache size monitoring and management
 
 #### Task 5.4: Create Enhanced Cache Management CLI
-- [x] **File**: `lib/mix/tasks/ex_llm.cache.ex`
+- [x] **File**: `lib/mix/tasks/singularity_llm.cache.ex`
 - [x] **Purpose**: Command-line tools for cache management with TTL and timestamps
 - [x] **Commands**:
   ```bash
   # Basic cache management
-  mix ex_llm.cache.clear                    # Clear all test cache
-  mix ex_llm.cache.stats                    # Show cache statistics with TTL info
-  mix ex_llm.cache.verify                   # Verify cache integrity
-  mix ex_llm.cache.warm --suite oauth2      # Warm cache for test suite
+  mix singularity_llm.cache.clear                    # Clear all test cache
+  mix singularity_llm.cache.stats                    # Show cache statistics with TTL info
+  mix singularity_llm.cache.verify                   # Verify cache integrity
+  mix singularity_llm.cache.warm --suite oauth2      # Warm cache for test suite
   
   # TTL and refresh management
-  mix ex_llm.cache.refresh --expired        # Refresh all expired cache entries
-  mix ex_llm.cache.refresh --pattern "openai/*"  # Refresh specific pattern
-  mix ex_llm.cache.set-ttl --pattern "oauth2/*" --ttl "1d"  # Set TTL for pattern
-  mix ex_llm.cache.check-expiry             # Show cache entries near expiration
+  mix singularity_llm.cache.refresh --expired        # Refresh all expired cache entries
+  mix singularity_llm.cache.refresh --pattern "openai/*"  # Refresh specific pattern
+  mix singularity_llm.cache.set-ttl --pattern "oauth2/*" --ttl "1d"  # Set TTL for pattern
+  mix singularity_llm.cache.check-expiry             # Show cache entries near expiration
   
   # Timestamp management
-  mix ex_llm.cache.timestamps --list --pattern "anthropic/*"  # List timestamps for pattern
-  mix ex_llm.cache.timestamps --cleanup     # Clean up old timestamps
-  mix ex_llm.cache.timestamps --restore "2024-01-15T10:30:45Z"  # Restore specific timestamp
-  mix ex_llm.cache.deduplicate              # Remove duplicate content across timestamps
+  mix singularity_llm.cache.timestamps --list --pattern "anthropic/*"  # List timestamps for pattern
+  mix singularity_llm.cache.timestamps --cleanup     # Clean up old timestamps
+  mix singularity_llm.cache.timestamps --restore "2024-01-15T10:30:45Z"  # Restore specific timestamp
+  mix singularity_llm.cache.deduplicate              # Remove duplicate content across timestamps
   
   # Import/Export with timestamps
-  mix ex_llm.cache.export --format json --include-timestamps  # Export with all timestamps
-  mix ex_llm.cache.import --file cache.json --preserve-timestamps  # Import preserving timestamps
-  mix ex_llm.cache.compress --older-than "7d"  # Compress old timestamps
+  mix singularity_llm.cache.export --format json --include-timestamps  # Export with all timestamps
+  mix singularity_llm.cache.import --file cache.json --preserve-timestamps  # Import preserving timestamps
+  mix singularity_llm.cache.compress --older-than "7d"  # Compress old timestamps
   ```
 
 ### Phase 6: Documentation and Testing (Priority: Medium)
@@ -1371,7 +1371,7 @@ ExLLM already has a sophisticated caching system with the following components:
   - Integration with CI/CD pipelines
 
 #### Task 6.2: Add Test Coverage for Caching System
-- [ ] **Files**: `test/ex_llm/test_cache_*_test.exs`
+- [ ] **Files**: `test/singularity_llm/test_cache_*_test.exs`
 - [ ] **Purpose**: Comprehensive testing of caching functionality
 - [ ] **Test Categories**:
   - Unit tests for cache components
@@ -1458,7 +1458,7 @@ ExLLM already has a sophisticated caching system with the following components:
 ### Development Environment
 ```elixir
 # config/test.exs
-config :ex_llm, :test_cache,
+config :singularity_llm, :test_cache,
   enabled: true,
   auto_detect: true,
   cache_dir: "test/cache",
@@ -1506,7 +1506,7 @@ export EX_LLM_TEST_CACHE_MAX_ENTRIES="10"
 export EX_LLM_TEST_CACHE_CLEANUP_OLDER_THAN="30d"
 ```
 
-This comprehensive plan builds upon ExLLM's existing caching infrastructure to provide seamless, automatic test response caching that will significantly reduce API costs and improve test reliability.
+This comprehensive plan builds upon SingularityLLM's existing caching infrastructure to provide seamless, automatic test response caching that will significantly reduce API costs and improve test reliability.
 
 ---
 

@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.LocalProvidersTest do
+defmodule SingularityLLM.Providers.LocalProvidersTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
 
   setup do
     # Set API keys for local providers (often not needed but good for testing)
@@ -18,7 +18,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
 
   describe "LMStudio pipeline plugs" do
     test "BuildRequest plug works correctly" do
-      alias ExLLM.Providers.LMStudio.BuildRequest
+      alias SingularityLLM.Providers.LMStudio.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [model: "llama-3.1-8b-instruct", temperature: 0.7]
@@ -40,7 +40,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
     end
 
     test "ParseResponse plug works correctly" do
-      alias ExLLM.Providers.LMStudio.ParseResponse
+      alias SingularityLLM.Providers.LMStudio.ParseResponse
 
       raw_response = %{
         "choices" => [
@@ -74,7 +74,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
 
   describe "Ollama pipeline plugs" do
     test "BuildRequest plug works correctly" do
-      alias ExLLM.Providers.Ollama.BuildRequest
+      alias SingularityLLM.Providers.Ollama.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [model: "llama3.2", temperature: 0.5]
@@ -96,7 +96,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
     end
 
     test "ParseResponse plug works correctly" do
-      alias ExLLM.Providers.Ollama.ParseResponse
+      alias SingularityLLM.Providers.Ollama.ParseResponse
 
       raw_response = %{
         "message" => %{"content" => "Hello there!", "role" => "assistant"},
@@ -125,7 +125,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
 
   describe "System prompt handling" do
     test "LMStudio handles system prompts" do
-      alias ExLLM.Providers.LMStudio.BuildRequest
+      alias SingularityLLM.Providers.LMStudio.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [system: "You are a helpful assistant"]
@@ -148,7 +148,7 @@ defmodule ExLLM.Providers.LocalProvidersTest do
     end
 
     test "Ollama handles system prompts" do
-      alias ExLLM.Providers.Ollama.BuildRequest
+      alias SingularityLLM.Providers.Ollama.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [system: "You are a helpful assistant"]

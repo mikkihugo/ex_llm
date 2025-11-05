@@ -1,6 +1,6 @@
-defmodule ExLLM.Types do
+defmodule SingularityLLM.Types do
   @moduledoc """
-  Shared type definitions used across ExLLM modules.
+  Shared type definitions used across SingularityLLM modules.
 
   This module contains struct definitions and types that are used by multiple
   modules, helping to avoid circular dependencies.
@@ -103,7 +103,7 @@ defmodule ExLLM.Types do
     @type t :: %__MODULE__{
             content: String.t() | nil,
             model: String.t() | nil,
-            usage: ExLLM.Types.token_usage() | nil,
+            usage: SingularityLLM.Types.token_usage() | nil,
             finish_reason: String.t() | nil,
             id: String.t() | nil,
             cost: float() | nil,
@@ -149,7 +149,7 @@ defmodule ExLLM.Types do
             name: String.t() | nil,
             description: String.t() | nil,
             context_window: non_neg_integer() | nil,
-            pricing: ExLLM.Types.pricing() | nil,
+            pricing: SingularityLLM.Types.pricing() | nil,
             capabilities: map() | nil,
             max_output_tokens: non_neg_integer() | nil
           }
@@ -164,7 +164,7 @@ defmodule ExLLM.Types do
     @type t :: %__MODULE__{
             embeddings: list(list(float())),
             model: String.t(),
-            usage: ExLLM.Types.token_usage() | nil,
+            usage: SingularityLLM.Types.token_usage() | nil,
             cost: float() | nil,
             metadata: map() | nil
           }
@@ -182,7 +182,7 @@ defmodule ExLLM.Types do
             max_inputs: non_neg_integer() | nil,
             provider: atom(),
             description: String.t() | nil,
-            pricing: ExLLM.Types.pricing() | nil
+            pricing: SingularityLLM.Types.pricing() | nil
           }
   end
 
@@ -206,11 +206,11 @@ defmodule ExLLM.Types do
     @type t :: %__MODULE__{
             id: String.t(),
             llm_backend: String.t() | nil,
-            messages: [ExLLM.Types.message()],
+            messages: [SingularityLLM.Types.message()],
             context: %{optional(atom()) => any()},
             created_at: DateTime.t(),
             updated_at: DateTime.t(),
-            token_usage: ExLLM.Types.token_usage() | nil,
+            token_usage: SingularityLLM.Types.token_usage() | nil,
             name: String.t() | nil
           }
   end

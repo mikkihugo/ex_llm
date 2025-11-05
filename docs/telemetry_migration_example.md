@@ -1,15 +1,15 @@
 # Telemetry Migration Example
 
-This document shows how to add telemetry instrumentation to existing ExLLM code.
+This document shows how to add telemetry instrumentation to existing SingularityLLM code.
 
-## Example: Instrumenting the Main ExLLM Module
+## Example: Instrumenting the Main SingularityLLM Module
 
-Here's how to add telemetry to the main `ExLLM.chat/3` function:
+Here's how to add telemetry to the main `SingularityLLM.chat/3` function:
 
 ### Before (No Telemetry)
 
 ```elixir
-defmodule ExLLM do
+defmodule SingularityLLM do
   def chat(model_or_config, messages, opts \\ []) do
     with {:ok, config} <- build_config(model_or_config, opts),
          {:ok, adapter} <- get_adapter(config.provider),
@@ -29,14 +29,14 @@ end
 ### After (With Telemetry)
 
 ```elixir
-defmodule ExLLM do
-  import ExLLM.Telemetry.Instrumentation
+defmodule SingularityLLM do
+  import SingularityLLM.Telemetry.Instrumentation
   
   def chat(model_or_config, messages, opts \\ []) do
     # Extract metadata for telemetry
     metadata = build_telemetry_metadata(model_or_config, opts)
     
-    instrument [:ex_llm, :chat, :call], metadata do
+    instrument [:singularity_llm, :chat, :call], metadata do
       with {:ok, config} <- build_config(model_or_config, opts),
            {:ok, adapter} <- get_adapter(config.provider),
            {:ok, formatted_messages} <- format_messages(messages, adapter),
@@ -65,7 +65,7 @@ defmodule ExLLM do
   
   defp instrument_session_update(session, messages, response) do
     if usage = response[:usage] do
-      ExLLM.Telemetry.Instrumentation.instrument_session_add_message(
+      SingularityLLM.Telemetry.Instrumentation.instrument_session_add_message(
         session.id,
         List.last(messages),
         usage.total_tokens
@@ -80,7 +80,7 @@ end
 ### Before
 
 ```elixir
-defmodule ExLLM.Adapters.Shared.HTTPClient do
+defmodule SingularityLLM.Adapters.Shared.HTTPClient do
   def post_json(url, json_body, headers, opts \\ []) do
     body = Jason.encode!(json_body)
     
@@ -108,8 +108,8 @@ end
 ### After
 
 ```elixir
-defmodule ExLLM.Adapters.Shared.HTTPClient do
-  import ExLLM.Telemetry.Instrumentation
+defmodule SingularityLLM.Adapters.Shared.HTTPClient do
+  import SingularityLLM.Telemetry.Instrumentation
   
   def post_json(url, json_body, headers, opts \\ []) do
     instrument_http :post, url, opts do
@@ -142,7 +142,7 @@ end
 ### Before
 
 ```elixir
-defmodule ExLLM.Adapters.OpenAI do
+defmodule SingularityLLM.Adapters.OpenAI do
   def call(model, messages, opts) do
     api_key = Keyword.get(opts, :api_key) || get_api_key()
     
@@ -162,8 +162,8 @@ end
 ### After
 
 ```elixir
-defmodule ExLLM.Adapters.OpenAI do
-  import ExLLM.Telemetry.Instrumentation
+defmodule SingularityLLM.Adapters.OpenAI do
+  import SingularityLLM.Telemetry.Instrumentation
   
   def call(model, messages, opts) do
     instrument_provider :openai, model, opts do
@@ -188,7 +188,7 @@ end
 ### Before
 
 ```elixir
-defmodule ExLLM.Cache do
+defmodule SingularityLLM.Cache do
   def get(key) do
     case :ets.lookup(@table, key) do
       [{^key, value, expiry}] ->
@@ -214,8 +214,8 @@ end
 ### After
 
 ```elixir
-defmodule ExLLM.Cache do
-  import ExLLM.Telemetry.Instrumentation
+defmodule SingularityLLM.Cache do
+  import SingularityLLM.Telemetry.Instrumentation
   
   def get(key) do
     instrument_cache_lookup key, fn ->
@@ -225,7 +225,7 @@ defmodule ExLLM.Cache do
             {:ok, value}
           else
             :ets.delete(@table, key)
-            :telemetry.execute([:ex_llm, :cache, :ttl, :expired], %{}, %{key: key})
+            :telemetry.execute([:singularity_llm, :cache, :ttl, :expired], %{}, %{key: key})
             :error
           end
         [] ->
@@ -249,7 +249,7 @@ end
 ### Before
 
 ```elixir
-defmodule ExLLM.Context do
+defmodule SingularityLLM.Context do
   def ensure_fits(messages, model_config, strategy) do
     total_tokens = calculate_tokens(messages, model_config)
     
@@ -266,11 +266,11 @@ end
 ### After
 
 ```elixir
-defmodule ExLLM.Context do
-  import ExLLM.Telemetry.Instrumentation
+defmodule SingularityLLM.Context do
+  import SingularityLLM.Telemetry.Instrumentation
   
   def ensure_fits(messages, model_config, strategy) do
-    instrument [:ex_llm, :context, :truncation], %{strategy: strategy} do
+    instrument [:singularity_llm, :context, :truncation], %{strategy: strategy} do
       total_tokens = calculate_tokens(messages, model_config)
       
       if total_tokens <= model_config.max_tokens do
@@ -278,7 +278,7 @@ defmodule ExLLM.Context do
       else
         # Emit window exceeded event
         :telemetry.execute(
-          [:ex_llm, :context, :window, :exceeded],
+          [:singularity_llm, :context, :window, :exceeded],
           %{},
           %{
             tokens: total_tokens,
@@ -313,16 +313,16 @@ Add to your application startup:
 ```elixir
 defmodule MyApp.Application do
   def start(_type, _args) do
-    # Attach ExLLM telemetry handlers
-    ExLLM.Telemetry.attach_default_handlers()
+    # Attach SingularityLLM telemetry handlers
+    SingularityLLM.Telemetry.attach_default_handlers()
     
     # Attach custom handlers
     :telemetry.attach_many(
       "myapp-llm-handler",
       [
-        [:ex_llm, :chat, :call, :stop],
-        [:ex_llm, :provider, :request, :stop],
-        [:ex_llm, :cost, :threshold, :exceeded]
+        [:singularity_llm, :chat, :call, :stop],
+        [:singularity_llm, :provider, :request, :stop],
+        [:singularity_llm, :cost, :threshold, :exceeded]
       ],
       &MyApp.Telemetry.handle_llm_event/4,
       nil
@@ -340,7 +340,7 @@ end
 defmodule MyApp.Telemetry do
   require Logger
   
-  def handle_llm_event([:ex_llm, :chat, :call, :stop], measurements, metadata, _config) do
+  def handle_llm_event([:singularity_llm, :chat, :call, :stop], measurements, metadata, _config) do
     # Log response times
     duration_ms = System.convert_time_unit(measurements.duration, :native, :millisecond)
     Logger.info("LLM chat completed in #{duration_ms}ms for model #{metadata.model}")
@@ -354,7 +354,7 @@ defmodule MyApp.Telemetry do
     end
   end
   
-  def handle_llm_event([:ex_llm, :cost, :threshold, :exceeded], measurements, metadata, _config) do
+  def handle_llm_event([:singularity_llm, :cost, :threshold, :exceeded], measurements, metadata, _config) do
     # Alert on cost overruns
     Logger.warn("LLM cost threshold exceeded! Cost: $#{measurements.cost / 100}")
     
@@ -362,7 +362,7 @@ defmodule MyApp.Telemetry do
     AlertManager.send_cost_alert(measurements.cost, metadata.threshold)
   end
   
-  def handle_llm_event([:ex_llm, :provider, :request, :stop], measurements, metadata, _config) do
+  def handle_llm_event([:singularity_llm, :provider, :request, :stop], measurements, metadata, _config) do
     # Track provider-specific metrics
     if metadata.success do
       StatsD.increment("llm.provider.success", tags: ["provider:#{metadata.provider}"])
@@ -381,10 +381,10 @@ Use the telemetry data for monitoring dashboards:
 defmodule MyApp.LLMDashboard do
   def get_metrics do
     # Get aggregated metrics
-    all_metrics = ExLLM.Telemetry.get_metrics()
+    all_metrics = SingularityLLM.Telemetry.get_metrics()
     
     # Get specific dashboard data
-    dashboard = ExLLM.Telemetry.dashboard_data(time_window: 3_600_000)  # 1 hour
+    dashboard = SingularityLLM.Telemetry.dashboard_data(time_window: 3_600_000)  # 1 hour
     
     # Format for your dashboard tool (Grafana, DataDog, etc.)
     %{

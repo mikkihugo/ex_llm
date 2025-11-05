@@ -1,13 +1,13 @@
-defmodule ExLLM.Providers.BumblebeePublicAPITest do
+defmodule SingularityLLM.Providers.BumblebeePublicAPITest do
   @moduledoc """
-  Bumblebee-specific integration tests using the public ExLLM API.
+  Bumblebee-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
 
   Note: Bumblebee tests require the optional Bumblebee dependency and
   will download models on first run.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :bumblebee
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :bumblebee
 
   @moduletag :requires_deps
   @moduletag :local_only
@@ -22,7 +22,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
         %{role: "user", content: "What is 1+1?"}
       ]
 
-      case ExLLM.chat(:bumblebee, messages, max_tokens: 10) do
+      case SingularityLLM.chat(:bumblebee, messages, max_tokens: 10) do
         {:ok, response} ->
           # Verify we got content (don't test specific answer)
           assert String.length(response.content) > 0
@@ -52,7 +52,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
       messages = [%{role: "user", content: "Hello"}]
 
       for model <- models_to_test do
-        case ExLLM.chat(:bumblebee, messages, model: model, max_tokens: 20) do
+        case SingularityLLM.chat(:bumblebee, messages, model: model, max_tokens: 20) do
           {:ok, response} ->
             assert response.metadata.provider == :bumblebee
             assert is_binary(response.content)
@@ -78,7 +78,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
       ]
 
       # Bumblebee runs on CPU by default
-      case ExLLM.chat(:bumblebee, messages, temperature: 0.1, max_tokens: 10) do
+      case SingularityLLM.chat(:bumblebee, messages, temperature: 0.1, max_tokens: 10) do
         {:ok, response} ->
           assert response.metadata.provider == :bumblebee
           # Common completions
@@ -98,7 +98,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
       # Test different temperatures
       results =
         for temp <- [0.0, 1.0] do
-          case ExLLM.chat(:bumblebee, messages, temperature: temp, max_tokens: 10) do
+          case SingularityLLM.chat(:bumblebee, messages, temperature: temp, max_tokens: 10) do
             {:ok, response} -> response.content
             _ -> nil
           end
@@ -121,7 +121,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
         %{role: "user", content: long_context <> "Summarize in one word."}
       ]
 
-      case ExLLM.chat(:bumblebee, messages, max_tokens: 10) do
+      case SingularityLLM.chat(:bumblebee, messages, max_tokens: 10) do
         {:ok, response} ->
           assert response.metadata.provider == :bumblebee
           assert is_binary(response.content)
@@ -145,7 +145,7 @@ defmodule ExLLM.Providers.BumblebeePublicAPITest do
   describe "bumblebee model management via public API" do
     @tag :model_loading
     test "lists available models" do
-      case ExLLM.list_models(:bumblebee) do
+      case SingularityLLM.list_models(:bumblebee) do
         {:ok, models} ->
           assert is_list(models)
 

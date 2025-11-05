@@ -1,8 +1,8 @@
-# ExLLM Test Tagging Guide
+# SingularityLLM Test Tagging Guide
 
 ## Overview
 
-This guide standardizes test tagging across the ExLLM test suite to improve test organization, execution efficiency, and maintainability.
+This guide standardizes test tagging across the SingularityLLM test suite to improve test organization, execution efficiency, and maintainability.
 
 ## Tag Categories
 
@@ -98,7 +98,7 @@ This guide standardizes test tagging across the ExLLM test suite to improve test
 
 ### Basic Provider Test
 ```elixir
-defmodule ExLLM.Providers.OpenAITest do
+defmodule SingularityLLM.Providers.OpenAITest do
   use ExUnit.Case
   
   @moduletag :unit
@@ -111,7 +111,7 @@ end
 
 ### Integration Test with Multiple Tags
 ```elixir
-defmodule ExLLM.API.FileManagementTest do
+defmodule SingularityLLM.API.FileManagementTest do
   use ExUnit.Case, async: false
   
   @moduletag :integration
@@ -127,8 +127,8 @@ end
 
 ### OAuth2 Test with Specialized Tags
 ```elixir
-defmodule ExLLM.Providers.Gemini.OAuth2.CorpusTest do
-  use ExLLM.Testing.OAuth2TestCase
+defmodule SingularityLLM.Providers.Gemini.OAuth2.CorpusTest do
+  use SingularityLLM.Testing.OAuth2TestCase
   
   @moduletag provider: :gemini
   @moduletag :oauth2

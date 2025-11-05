@@ -1,6 +1,6 @@
-# ExLLM Public API Reference
+# SingularityLLM Public API Reference
 
-This document provides a comprehensive overview of ExLLM's public API. The library provides three levels of API access:
+This document provides a comprehensive overview of SingularityLLM's public API. The library provides three levels of API access:
 
 1. **High-Level API** - Simple functions for common use cases
 2. **Builder API** - Fluent interface for constructing requests
@@ -12,28 +12,28 @@ This document provides a comprehensive overview of ExLLM's public API. The libra
 ```elixir
 # Simple chat completion with messages
 messages = [%{role: "user", content: "Hello, world!"}]
-{:ok, response} = ExLLM.chat(:openai, messages)
+{:ok, response} = SingularityLLM.chat(:openai, messages)
 
 # With options
-{:ok, response} = ExLLM.chat(:anthropic, messages, %{
+{:ok, response} = SingularityLLM.chat(:anthropic, messages, %{
   model: "claude-3-opus", 
   temperature: 0.7,
   max_tokens: 500
 })
 
 # Using provider/model syntax
-{:ok, response} = ExLLM.chat("openai/gpt-4", messages)
+{:ok, response} = SingularityLLM.chat("openai/gpt-4", messages)
 ```
 
 ### Streaming
 ```elixir
 # Stream responses with a callback
-ExLLM.stream(:openai, messages, %{stream: true}, fn chunk ->
+SingularityLLM.stream(:openai, messages, %{stream: true}, fn chunk ->
   IO.write(chunk.content || "")
 end)
 
 # With options
-ExLLM.stream(:anthropic, messages, %{
+SingularityLLM.stream(:anthropic, messages, %{
   model: "claude-3-5-sonnet-20241022",
   stream: true,
   temperature: 0.8
@@ -48,31 +48,31 @@ end)
 ```elixir
 # Build and execute a request
 {:ok, response} = 
-  ExLLM.build(:openai)
-  |> ExLLM.with_messages([
+  SingularityLLM.build(:openai)
+  |> SingularityLLM.with_messages([
     %{role: "system", content: "You are a helpful assistant"},
     %{role: "user", content: "Hello!"}
   ])
-  |> ExLLM.with_model("gpt-4")
-  |> ExLLM.with_temperature(0.7)
-  |> ExLLM.with_max_tokens(1000)
-  |> ExLLM.execute()
+  |> SingularityLLM.with_model("gpt-4")
+  |> SingularityLLM.with_temperature(0.7)
+  |> SingularityLLM.with_max_tokens(1000)
+  |> SingularityLLM.execute()
 
 # Streaming with builder
-ExLLM.build(:anthropic)
-|> ExLLM.with_messages(messages)
-|> ExLLM.with_stream(fn chunk ->
+SingularityLLM.build(:anthropic)
+|> SingularityLLM.with_messages(messages)
+|> SingularityLLM.with_stream(fn chunk ->
   IO.write(chunk.content || "")
 end)
-|> ExLLM.execute_stream()
+|> SingularityLLM.execute_stream()
 
 # With custom plugs
 {:ok, response} =
-  ExLLM.build(:openai)
-  |> ExLLM.with_messages(messages)
-  |> ExLLM.prepend_plug(MyApp.Plugs.RateLimiter)
-  |> ExLLM.append_plug(MyApp.Plugs.Logger)
-  |> ExLLM.execute()
+  SingularityLLM.build(:openai)
+  |> SingularityLLM.with_messages(messages)
+  |> SingularityLLM.prepend_plug(MyApp.Plugs.RateLimiter)
+  |> SingularityLLM.append_plug(MyApp.Plugs.Logger)
+  |> SingularityLLM.execute()
 ```
 
 ## Pipeline API
@@ -80,25 +80,25 @@ end)
 ### Direct Pipeline Execution
 ```elixir
 # Create a request
-request = ExLLM.Pipeline.Request.new(:openai, messages, %{
+request = SingularityLLM.Pipeline.Request.new(:openai, messages, %{
   model: "gpt-4",
   temperature: 0.7
 })
 
 # Run with default pipeline
-{:ok, response} = ExLLM.run(request)
+{:ok, response} = SingularityLLM.run(request)
 
 # Run with custom pipeline
 custom_pipeline = [
-  ExLLM.Plugs.ValidateProvider,
+  SingularityLLM.Plugs.ValidateProvider,
   MyApp.Plugs.CustomAuth,
-  ExLLM.Plugs.FetchConfig,
-  ExLLM.Plugs.BuildTeslaClient,
-  ExLLM.Plugs.ExecuteRequest,
-  ExLLM.Plugs.Providers.OpenAIParseResponse
+  SingularityLLM.Plugs.FetchConfig,
+  SingularityLLM.Plugs.BuildTeslaClient,
+  SingularityLLM.Plugs.ExecuteRequest,
+  SingularityLLM.Plugs.Providers.OpenAIParseResponse
 ]
 
-{:ok, response} = ExLLM.run(request, custom_pipeline)
+{:ok, response} = SingularityLLM.run(request, custom_pipeline)
 ```
 
 ## Session Management
@@ -108,32 +108,32 @@ Sessions provide stateful conversation management with automatic context trackin
 ### Creating and Using Sessions
 ```elixir
 # Create a new session
-{:ok, session} = ExLLM.Session.new(:anthropic, %{
+{:ok, session} = SingularityLLM.Session.new(:anthropic, %{
   model: "claude-3-sonnet",
   system: "You are a helpful assistant"
 })
 
 # Chat with session (maintains conversation history)
-{:ok, session, response} = ExLLM.Session.chat(session, "What's the weather?")
+{:ok, session, response} = SingularityLLM.Session.chat(session, "What's the weather?")
 
 # Continue the conversation
-{:ok, session, response} = ExLLM.Session.chat(session, "What about tomorrow?")
+{:ok, session, response} = SingularityLLM.Session.chat(session, "What about tomorrow?")
 
 # Get session history
 messages = session.messages
 
 # Save/load sessions
-{:ok, _} = ExLLM.Session.save(session, "/path/to/session.json")
-{:ok, session} = ExLLM.Session.load("/path/to/session.json")
+{:ok, _} = SingularityLLM.Session.save(session, "/path/to/session.json")
+{:ok, session} = SingularityLLM.Session.load("/path/to/session.json")
 ```
 
 ### Session with Streaming
 ```elixir
 # Create streaming session
-{:ok, session} = ExLLM.Session.new(:openai, %{stream: true})
+{:ok, session} = SingularityLLM.Session.new(:openai, %{stream: true})
 
 # Stream with session
-{:ok, session} = ExLLM.Session.stream(session, "Tell me a story", fn chunk ->
+{:ok, session} = SingularityLLM.Session.stream(session, "Tell me a story", fn chunk ->
   IO.write(chunk.content || "")
 end)
 ```
@@ -143,16 +143,16 @@ end)
 ### Listing and Querying Models
 ```elixir
 # List available models for a provider
-{:ok, models} = ExLLM.list_models(:openai)
+{:ok, models} = SingularityLLM.list_models(:openai)
 
 # Get detailed model information
-{:ok, info} = ExLLM.get_model_info(:anthropic, "claude-3-opus")
+{:ok, info} = SingularityLLM.get_model_info(:anthropic, "claude-3-opus")
 
 # Check model capabilities
-true = ExLLM.model_supports?(:openai, "gpt-4-vision", :vision)
+true = SingularityLLM.model_supports?(:openai, "gpt-4-vision", :vision)
 
 # Get default model
-model = ExLLM.default_model(:openai)
+model = SingularityLLM.default_model(:openai)
 ```
 
 ## Cost Tracking
@@ -160,15 +160,15 @@ model = ExLLM.default_model(:openai)
 ### Calculate and Estimate Costs
 ```elixir
 # Calculate actual cost from response
-{:ok, cost} = ExLLM.calculate_cost(:openai, "gpt-4", 
+{:ok, cost} = SingularityLLM.calculate_cost(:openai, "gpt-4", 
   %{input_tokens: 100, output_tokens: 200}
 )
 
 # Format cost for display
-"$0.0045" = ExLLM.format_cost(cost)
+"$0.0045" = SingularityLLM.format_cost(cost)
 
 # Estimate tokens before making request
-token_count = ExLLM.estimate_tokens("This is my prompt")
+token_count = SingularityLLM.estimate_tokens("This is my prompt")
 ```
 
 ## Context Management
@@ -181,14 +181,14 @@ token_count = ExLLM.estimate_tokens("This is my prompt")
 max_messages = 20
 messages = Enum.take(conversation, -max_messages)
 
-{:ok, response} = ExLLM.chat(:openai, messages, model: "gpt-4")
+{:ok, response} = SingularityLLM.chat(:openai, messages, model: "gpt-4")
 ```
 
 ### Future APIs (Planned)
 The following APIs are under development:
-- `ExLLM.prepare_messages/3` - Automatic message truncation
-- `ExLLM.validate_context/3` - Context validation  
-- `ExLLM.context_window_size/2` - Model context windows
+- `SingularityLLM.prepare_messages/3` - Automatic message truncation
+- `SingularityLLM.validate_context/3` - Context validation  
+- `SingularityLLM.context_window_size/2` - Model context windows
 
 See [FEATURE_STATUS.md](../FEATURE_STATUS.md) for current status.
 
@@ -211,20 +211,20 @@ functions = [
 ]
 
 # Chat with function calling
-{:ok, response} = ExLLM.chat(:openai, "What's the weather in NYC?",
+{:ok, response} = SingularityLLM.chat(:openai, "What's the weather in NYC?",
   functions: functions
 )
 
 # Parse and execute function calls
-{:ok, calls} = ExLLM.parse_function_calls(response)
-{:ok, result} = ExLLM.execute_function(List.first(calls), 
+{:ok, calls} = SingularityLLM.parse_function_calls(response)
+{:ok, result} = SingularityLLM.execute_function(List.first(calls), 
   fn "get_weather", %{"location" => loc} ->
     {:ok, "Sunny, 72°F in #{loc}"}
   end
 )
 
 # Format result for LLM
-formatted = ExLLM.format_function_result("get_weather", result)
+formatted = SingularityLLM.format_function_result("get_weather", result)
 ```
 
 ## Embeddings
@@ -232,16 +232,16 @@ formatted = ExLLM.format_function_result("get_weather", result)
 ### Generate Text Embeddings
 ```elixir
 # Single text embedding
-{:ok, embedding} = ExLLM.embeddings(:openai, "Hello world")
+{:ok, embedding} = SingularityLLM.embeddings(:openai, "Hello world")
 
 # Multiple texts
-{:ok, embeddings} = ExLLM.embeddings(:openai, ["Text 1", "Text 2"])
+{:ok, embeddings} = SingularityLLM.embeddings(:openai, ["Text 1", "Text 2"])
 
 # Calculate similarity
-similarity = ExLLM.cosine_similarity(embedding1, embedding2)
+similarity = SingularityLLM.cosine_similarity(embedding1, embedding2)
 
 # List embedding models
-{:ok, models} = ExLLM.list_embedding_models(:openai)
+{:ok, models} = SingularityLLM.list_embedding_models(:openai)
 ```
 
 ## Vision and Multimodal
@@ -249,18 +249,18 @@ similarity = ExLLM.cosine_similarity(embedding1, embedding2)
 ### Work with Images
 ```elixir
 # Load and validate image
-{:ok, image_data} = ExLLM.load_image("/path/to/image.jpg",
+{:ok, image_data} = SingularityLLM.load_image("/path/to/image.jpg",
   max_size: {1024, 1024},
   format: :jpeg
 )
 
 # Create vision message
-message = ExLLM.vision_message("What's in this image?", 
+message = SingularityLLM.vision_message("What's in this image?", 
   ["/path/to/image.jpg"]
 )
 
 # Check vision support
-true = ExLLM.supports_vision?(:openai, "gpt-4-vision")
+true = SingularityLLM.supports_vision?(:openai, "gpt-4-vision")
 ```
 
 ## Provider Information
@@ -268,16 +268,16 @@ true = ExLLM.supports_vision?(:openai, "gpt-4-vision")
 ### Query Provider Capabilities
 ```elixir
 # List all supported providers
-providers = ExLLM.supported_providers()
+providers = SingularityLLM.supported_providers()
 
 # Get provider capabilities
-{:ok, caps} = ExLLM.get_provider_capabilities(:anthropic)
+{:ok, caps} = SingularityLLM.get_provider_capabilities(:anthropic)
 
 # Check specific capability
-true = ExLLM.provider_supports?(:openai, :streaming)
+true = SingularityLLM.provider_supports?(:openai, :streaming)
 
 # Check if provider is configured
-true = ExLLM.configured?(:openai)
+true = SingularityLLM.configured?(:openai)
 ```
 
 ## Streaming Recovery
@@ -285,19 +285,19 @@ true = ExLLM.configured?(:openai)
 ### Handle Stream Interruptions
 ```elixir
 # Resume an interrupted stream
-{:ok, new_stream_id} = ExLLM.resume_stream(old_stream_id,
+{:ok, new_stream_id} = SingularityLLM.resume_stream(old_stream_id,
   fn chunk -> IO.write(chunk.content) end
 )
 
 # List recoverable streams
-streams = ExLLM.list_recoverable_streams()
+streams = SingularityLLM.list_recoverable_streams()
 ```
 
 ## Response Types
 
 ### LLMResponse Structure
 ```elixir
-%ExLLM.Types.LLMResponse{
+%SingularityLLM.Types.LLMResponse{
   content: "The response text",
   model: "gpt-4",
   finish_reason: "stop",
@@ -319,7 +319,7 @@ streams = ExLLM.list_recoverable_streams()
 
 ### StreamChunk Structure
 ```elixir
-%ExLLM.Types.StreamChunk{
+%SingularityLLM.Types.StreamChunk{
   content: "chunk text",  # Incremental content
   role: "assistant",
   done: false,  # true when streaming completes
@@ -332,11 +332,11 @@ streams = ExLLM.list_recoverable_streams()
 
 ## Configuration
 
-ExLLM can be configured through environment variables or application config:
+SingularityLLM can be configured through environment variables or application config:
 
 ```elixir
 # config/config.exs
-config :ex_llm,
+config :singularity_llm,
   # Provider API keys
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   anthropic_api_key: System.get_env("ANTHROPIC_API_KEY"),
@@ -357,7 +357,7 @@ config :ex_llm,
 All API functions return `{:ok, result}` or `{:error, reason}` tuples:
 
 ```elixir
-case ExLLM.chat(:openai, "Hello") do
+case SingularityLLM.chat(:openai, "Hello") do
   {:ok, response} -> 
     IO.puts(response.content)
     
@@ -377,7 +377,7 @@ end
 ### Custom Configuration Provider
 ```elixir
 # Use a custom configuration provider
-{:ok, response} = ExLLM.chat(:openai, "Hello",
+{:ok, response} = SingularityLLM.chat(:openai, "Hello",
   config_provider: MyApp.ConfigProvider
 )
 ```
@@ -385,7 +385,7 @@ end
 ### Request Options
 ```elixir
 # All available options for chat requests
-{:ok, response} = ExLLM.chat(:openai, "Hello",
+{:ok, response} = SingularityLLM.chat(:openai, "Hello",
   # Model selection
   model: "gpt-4",
   
@@ -426,11 +426,11 @@ end
 
 ## Type Specifications
 
-All return types are defined in `ExLLM.Types`:
+All return types are defined in `SingularityLLM.Types`:
 
 ```elixir
 # Main response type
-%ExLLM.Types.LLMResponse{
+%SingularityLLM.Types.LLMResponse{
   content: String.t(),
   model: String.t(), 
   usage: %{input_tokens: integer(), output_tokens: integer()},
@@ -441,14 +441,14 @@ All return types are defined in `ExLLM.Types`:
 }
 
 # Streaming chunk type
-%ExLLM.Types.StreamChunk{
+%SingularityLLM.Types.StreamChunk{
   content: String.t(),
   finish_reason: String.t() | nil,
   chunk_index: integer()
 }
 
 # Session type
-%ExLLM.Types.Session{
+%SingularityLLM.Types.Session{
   provider: atom(),
   model: String.t(),
   messages: [map()],

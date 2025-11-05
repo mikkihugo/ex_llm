@@ -1,6 +1,6 @@
 # Test Environment Setup
 
-This guide helps you configure your environment to run all ExLLM tests successfully.
+This guide helps you configure your environment to run all SingularityLLM tests successfully.
 
 ## Quick Start
 
@@ -56,13 +56,13 @@ The test cache helps avoid rate limits and speeds up tests:
 
 ```bash
 # Check cache status
-mix ex_llm.cache stats
+mix singularity_llm.cache stats
 
 # Refresh cache (runs live API tests)
 mix test.live
 
 # Clear cache
-mix ex_llm.cache clear
+mix singularity_llm.cache clear
 
 # Enable caching for all test runs
 export EX_LLM_TEST_CACHE_ENABLED=true

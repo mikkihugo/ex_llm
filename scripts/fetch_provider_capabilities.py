@@ -19,7 +19,7 @@ from typing import Dict, Any, Optional, List, Set
 class CapabilityFetcher:
     def __init__(self):
         self.config_dir = "config/models"
-        self.capabilities_file = "lib/ex_llm/provider_capabilities.ex"
+        self.capabilities_file = "lib/singularity_llm/provider_capabilities.ex"
         os.makedirs(self.config_dir, exist_ok=True)
         
         # Map of feature detection from API responses

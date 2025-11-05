@@ -337,7 +337,7 @@ defmodule OAuth2Setup do
     
     IO.puts("\n✅ Next Steps:")
     IO.puts("   1. Run the OAuth2 tests:")
-    IO.puts("      mix test test/ex_llm/adapters/gemini/permissions_oauth2_test.exs")
+    IO.puts("      mix test test/singularity_llm/adapters/gemini/permissions_oauth2_test.exs")
     IO.puts("")
     IO.puts("   2. When the token expires, refresh it:")
     IO.puts("      elixir scripts/refresh_oauth2_token.exs")

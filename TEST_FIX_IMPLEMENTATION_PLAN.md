@@ -26,9 +26,9 @@ Failure Distribution:
 
 #### Issues to Address:
 1. **Struct vs Map Mismatches**
-   - Problem: Tests expect `%ExLLM.Types.Model{}`, providers return plain maps
+   - Problem: Tests expect `%SingularityLLM.Types.Model{}`, providers return plain maps
    - Solution: Update assertions OR normalize provider responses
-   - Example: `assert %ExLLM.Types.Model{} = model` fails when model is a map
+   - Example: `assert %SingularityLLM.Types.Model{} = model` fails when model is a map
 
 2. **Finish Reason Normalization**
    - Problem: Provider-specific values ("stop" vs "end_turn" vs "stop_sequence")
@@ -42,7 +42,7 @@ Failure Distribution:
 #### Implementation Strategy:
 ```elixir
 # Create shared test helpers
-defmodule ExLLM.TestHelpers do
+defmodule SingularityLLM.TestHelpers do
   def assert_model_response(response) do
     # Handle both struct and map responses
   end
@@ -60,7 +60,7 @@ end
 #### Issues to Address:
 1. **Cost Calculation Returning nil**
    - Root Cause: Pricing data not loaded or calculation not implemented
-   - Files: `lib/ex_llm/core/cost.ex`, provider pricing configs
+   - Files: `lib/singularity_llm/core/cost.ex`, provider pricing configs
    - Solution: 
      - Ensure pricing YAML files are loaded
      - Implement calculation logic for all token types
@@ -68,7 +68,7 @@ end
 
 2. **Multimodal Token Estimation**
    - Error: `FunctionClauseError` for `%{type: "text", text: "..."}`
-   - File: `lib/ex_llm/core/cost.ex:61`
+   - File: `lib/singularity_llm/core/cost.ex:61`
    - Solution:
      ```elixir
      def estimate_tokens(%{type: "text", text: text}) when is_binary(text) do
@@ -88,7 +88,7 @@ end
 #### Issues to Address:
 1. **Stream Chunk Access Pattern**
    ```elixir
-   # Wrong - causes "ExLLM.Types.StreamChunk.fetch/2 is undefined"
+   # Wrong - causes "SingularityLLM.Types.StreamChunk.fetch/2 is undefined"
    chunk[:tool_calls]
    
    # Correct - use struct field access
@@ -192,17 +192,17 @@ START
 
 ### Phase 1 Files:
 - `test/support/shared/provider_integration_test.exs`
-- `test/ex_llm/providers/*_public_api_test.exs`
+- `test/singularity_llm/providers/*_public_api_test.exs`
 - Create: `test/support/test_helpers.ex`
 
 ### Phase 2 Files:
-- `lib/ex_llm/core/cost.ex`
+- `lib/singularity_llm/core/cost.ex`
 - `config/models/*.yml` (pricing data)
-- `lib/ex_llm/providers/shared/streaming_coordinator.ex`
+- `lib/singularity_llm/providers/shared/streaming_coordinator.ex`
 
 ### Phase 3 Files:
 - Various test files with syntax issues
-- `test/ex_llm/providers/*_test.exs`
+- `test/singularity_llm/providers/*_test.exs`
 
 ### Phase 4 Files:
 - `test/test_helper.exs` (exclusion rules)

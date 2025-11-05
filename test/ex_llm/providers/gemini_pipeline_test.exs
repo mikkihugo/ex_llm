@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.GeminiPipelineTest do
+defmodule SingularityLLM.Providers.GeminiPipelineTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
 
   setup do
     # Set API key for Gemini provider
@@ -16,7 +16,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
 
   describe "Gemini pipeline plugs" do
     test "BuildRequest plug works correctly" do
-      alias ExLLM.Providers.Gemini.BuildRequest
+      alias SingularityLLM.Providers.Gemini.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [model: "gemini-2.5-flash", temperature: 0.7]
@@ -33,7 +33,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
       assert String.contains?(result.assigns.request_url, "key=test-key-12345")
 
       body = result.assigns.request_body
-      assert %ExLLM.Providers.Gemini.Content.GenerateContentRequest{} = body
+      assert %SingularityLLM.Providers.Gemini.Content.GenerateContentRequest{} = body
       assert length(body.contents) == 1
 
       [content] = body.contents
@@ -43,7 +43,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
     end
 
     test "ParseResponse plug works correctly" do
-      alias ExLLM.Providers.Gemini.ParseResponse
+      alias SingularityLLM.Providers.Gemini.ParseResponse
 
       raw_response = %{
         "candidates" => [
@@ -82,7 +82,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
     end
 
     test "BuildRequest handles system prompts" do
-      alias ExLLM.Providers.Gemini.BuildRequest
+      alias SingularityLLM.Providers.Gemini.BuildRequest
 
       messages = [
         %{role: "system", content: "You are a helpful assistant"},
@@ -112,7 +112,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
     end
 
     test "ParseResponse handles tool calls" do
-      alias ExLLM.Providers.Gemini.ParseResponse
+      alias SingularityLLM.Providers.Gemini.ParseResponse
 
       raw_response = %{
         "candidates" => [
@@ -152,7 +152,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
     end
 
     test "ParseResponse handles blocked responses" do
-      alias ExLLM.Providers.Gemini.ParseResponse
+      alias SingularityLLM.Providers.Gemini.ParseResponse
 
       raw_response = %{
         "candidates" => [],
@@ -177,7 +177,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
 
   describe "Generation config options" do
     test "BuildRequest handles generation config parameters" do
-      alias ExLLM.Providers.Gemini.BuildRequest
+      alias SingularityLLM.Providers.Gemini.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
 
@@ -206,7 +206,7 @@ defmodule ExLLM.Providers.GeminiPipelineTest do
     end
 
     test "BuildRequest handles safety settings" do
-      alias ExLLM.Providers.Gemini.BuildRequest
+      alias SingularityLLM.Providers.Gemini.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
 

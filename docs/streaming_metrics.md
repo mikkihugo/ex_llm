@@ -1,6 +1,6 @@
 # Streaming Metrics Guide
 
-The ExLLM streaming infrastructure includes a dedicated metrics middleware (`MetricsPlug`) that provides comprehensive performance monitoring and reporting capabilities for streaming operations.
+The SingularityLLM streaming infrastructure includes a dedicated metrics middleware (`MetricsPlug`) that provides comprehensive performance monitoring and reporting capabilities for streaming operations.
 
 ## Overview
 
@@ -18,7 +18,7 @@ The `MetricsPlug` middleware separates metrics collection from core streaming lo
 
 ```elixir
 # Create a streaming client with metrics enabled
-client = ExLLM.Providers.Shared.Streaming.Engine.client(
+client = SingularityLLM.Providers.Shared.Streaming.Engine.client(
   provider: :openai,
   api_key: "sk-...",
   enable_metrics: true,
@@ -43,7 +43,7 @@ def handle_metrics(metrics) do
   
   # Send to monitoring system
   Telemetry.execute(
-    [:ex_llm, :streaming, :metrics],
+    [:singularity_llm, :streaming, :metrics],
     %{
       bytes_received: metrics.bytes_received,
       chunks_received: metrics.chunks_received,
@@ -237,9 +237,9 @@ defmodule MyApp.StreamingTelemetry do
     :telemetry.attach_many(
       "streaming-metrics",
       [
-        [:ex_llm, :streaming, :start],
-        [:ex_llm, :streaming, :complete],
-        [:ex_llm, :streaming, :error]
+        [:singularity_llm, :streaming, :start],
+        [:singularity_llm, :streaming, :complete],
+        [:singularity_llm, :streaming, :error]
       ],
       &handle_event/4,
       nil
@@ -262,9 +262,9 @@ defmodule MyApp.StreamingTelemetry do
     }
     
     event = case metrics.status do
-      :streaming -> [:ex_llm, :streaming, :progress]
-      :completed -> [:ex_llm, :streaming, :complete]
-      :error -> [:ex_llm, :streaming, :error]
+      :streaming -> [:singularity_llm, :streaming, :progress]
+      :completed -> [:singularity_llm, :streaming, :complete]
+      :error -> [:singularity_llm, :streaming, :error]
     end
     
     :telemetry.execute(event, measurements, metadata)

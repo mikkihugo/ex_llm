@@ -1,13 +1,13 @@
 defmodule Mix.Tasks.ExLlm.Validate do
   @moduledoc """
-  Validates ExLLM configuration and reports issues.
+  Validates SingularityLLM configuration and reports issues.
 
   ## Available commands:
 
-      mix ex_llm.validate                      # Run full validation
-      mix ex_llm.validate --category=providers # Validate specific category
-      mix ex_llm.validate --summary             # Show summary only
-      mix ex_llm.validate --fix                # Show fix suggestions
+      mix singularity_llm.validate                      # Run full validation
+      mix singularity_llm.validate --category=providers # Validate specific category
+      mix singularity_llm.validate --summary             # Show summary only
+      mix singularity_llm.validate --fix                # Show fix suggestions
 
   ## Categories:
 
@@ -20,16 +20,16 @@ defmodule Mix.Tasks.ExLlm.Validate do
   ## Examples:
 
       # Run full validation
-      mix ex_llm.validate
+      mix singularity_llm.validate
       
       # Validate only providers
-      mix ex_llm.validate --category=providers
+      mix singularity_llm.validate --category=providers
       
       # Show summary with fix suggestions
-      mix ex_llm.validate --summary --fix
+      mix singularity_llm.validate --summary --fix
       
       # Quiet mode (errors only)
-      mix ex_llm.validate --quiet
+      mix singularity_llm.validate --quiet
 
   ## Exit codes:
 
@@ -39,9 +39,9 @@ defmodule Mix.Tasks.ExLlm.Validate do
   """
 
   use Mix.Task
-  alias ExLLM.Infrastructure.StartupValidator
+  alias SingularityLLM.Infrastructure.StartupValidator
 
-  @shortdoc "Validate ExLLM configuration"
+  @shortdoc "Validate SingularityLLM configuration"
 
   @switches [
     category: :string,
@@ -154,7 +154,7 @@ defmodule Mix.Tasks.ExLlm.Validate do
 
   defp show_success do
     Mix.shell().info("""
-    ✓ ExLLM Configuration Validation Passed
+    ✓ SingularityLLM Configuration Validation Passed
 
     All configuration checks completed successfully.
     """)
@@ -162,7 +162,7 @@ defmodule Mix.Tasks.ExLlm.Validate do
 
   defp show_failure do
     Mix.shell().error("""
-    ✗ ExLLM Configuration Validation Failed
+    ✗ SingularityLLM Configuration Validation Failed
 
     Issues were found that require attention:
     """)
@@ -316,6 +316,6 @@ defmodule Mix.Tasks.ExLlm.Validate do
   end
 
   defp ensure_app_started do
-    {:ok, _} = Application.ensure_all_started(:ex_llm)
+    {:ok, _} = Application.ensure_all_started(:singularity_llm)
   end
 end

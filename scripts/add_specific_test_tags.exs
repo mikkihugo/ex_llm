@@ -9,10 +9,10 @@ defmodule SpecificTestTagger do
 
   # Define specific files and their missing tags
   @files_to_tag %{
-    "test/ex_llm/providers/mock_test.exs" => [":mock", "provider:mock"],
-    "test/ex_llm/embedding_test.exs" => ["capability:embeddings"],
-    "test/ex_llm/function_calling_test.exs" => ["capability:function_calling"],
-    "test/ex_llm/core/vision_test.exs" => ["capability:vision"],
+    "test/singularity_llm/providers/mock_test.exs" => [":mock", "provider:mock"],
+    "test/singularity_llm/embedding_test.exs" => ["capability:embeddings"],
+    "test/singularity_llm/function_calling_test.exs" => ["capability:function_calling"],
+    "test/singularity_llm/core/vision_test.exs" => ["capability:vision"],
     "test/integration/ex_llm_api_integration_test.exs" => [],  # Already has moduletag
     "test/integration/batch_processing_comprehensive_test.exs" => [":integration", ":comprehensive"],
     "test/integration/fine_tuning_comprehensive_test.exs" => [":integration", ":comprehensive"],
@@ -20,13 +20,13 @@ defmodule SpecificTestTagger do
     "test/integration/vector_store_comprehensive_test.exs" => [":integration", ":comprehensive"],
     "test/integration/assistants_comprehensive_test.exs" => [":integration", ":comprehensive"],
     "test/integration/context_caching_comprehensive_test.exs" => [":integration", ":comprehensive"],
-    "test/ex_llm/response_capture_test.exs" => [":unit"],
-    "test/ex_llm/pipeline/request_test.exs" => [":unit"],
-    "test/ex_llm/providers/anthropic/pipeline_plugs_test.exs" => ["provider:anthropic", ":unit"],
-    "test/ex_llm/providers/gemini/pipeline_plugs_test.exs" => ["provider:gemini", ":unit"],
-    "test/ex_llm/providers/groq/pipeline_plugs_test.exs" => ["provider:groq", ":unit"],
-    "test/ex_llm/providers/ollama/pipeline_plugs_test.exs" => ["provider:ollama", ":unit"],
-    "test/ex_llm/providers/openai/pipeline_plugs_test.exs" => ["provider:openai", ":unit"]
+    "test/singularity_llm/response_capture_test.exs" => [":unit"],
+    "test/singularity_llm/pipeline/request_test.exs" => [":unit"],
+    "test/singularity_llm/providers/anthropic/pipeline_plugs_test.exs" => ["provider:anthropic", ":unit"],
+    "test/singularity_llm/providers/gemini/pipeline_plugs_test.exs" => ["provider:gemini", ":unit"],
+    "test/singularity_llm/providers/groq/pipeline_plugs_test.exs" => ["provider:groq", ":unit"],
+    "test/singularity_llm/providers/ollama/pipeline_plugs_test.exs" => ["provider:ollama", ":unit"],
+    "test/singularity_llm/providers/openai/pipeline_plugs_test.exs" => ["provider:openai", ":unit"]
   }
 
   def run do

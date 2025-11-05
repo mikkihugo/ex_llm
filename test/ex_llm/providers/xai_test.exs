@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.XAITest do
+defmodule SingularityLLM.Providers.XAITest do
   use ExUnit.Case, async: false
-  alias ExLLM.Providers.XAI
-  alias ExLLM.Types
+  alias SingularityLLM.Providers.XAI
+  alias SingularityLLM.Types
 
   describe "XAI adapter" do
     test "configured?/1 returns false when no API key" do
@@ -12,7 +12,7 @@ defmodule ExLLM.Providers.XAITest do
         # Temporarily unset the env var
         System.delete_env("XAI_API_KEY")
 
-        {:ok, pid} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{xai: %{}})
+        {:ok, pid} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{xai: %{}})
         refute XAI.configured?(config_provider: pid)
       after
         # Restore env var if it existed
@@ -22,7 +22,7 @@ defmodule ExLLM.Providers.XAITest do
 
     test "configured?/1 returns true when API key is set" do
       config = %{xai: %{api_key: "test-key"}}
-      {:ok, pid} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+      {:ok, pid} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
       assert XAI.configured?(config_provider: pid)
     end
 
@@ -59,11 +59,11 @@ defmodule ExLLM.Providers.XAITest do
   describe "provider detection" do
     test "provider/model string works with XAI" do
       # Test with mock to avoid real API calls
-      ExLLM.Providers.Mock.start_link()
-      ExLLM.Providers.Mock.set_response(%{content: "Test response from Grok"})
+      SingularityLLM.Providers.Mock.start_link()
+      SingularityLLM.Providers.Mock.set_response(%{content: "Test response from Grok"})
 
       messages = [%{role: "user", content: "Hello"}]
-      {:ok, response} = ExLLM.chat(:mock, messages)
+      {:ok, response} = SingularityLLM.chat(:mock, messages)
 
       assert is_binary(response.content)
     end

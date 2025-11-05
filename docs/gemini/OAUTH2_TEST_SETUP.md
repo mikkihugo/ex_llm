@@ -56,14 +56,14 @@ To fully test the Permissions API, you need a tuned model:
 #### Option B: Use the API (Advanced)
 ```elixir
 # Create a tuning job via API
-{:ok, operation} = ExLLM.Gemini.Tuning.create_tuning_job(
+{:ok, operation} = SingularityLLM.Gemini.Tuning.create_tuning_job(
   "models/gemini-1.5-flash-001-tuning",
   %{
     display_name: "Test Model for Permissions",
     training_examples: [
       %{
-        text_input: "What is ExLLM?",
-        output: "ExLLM is a unified Elixir client for Large Language Models."
+        text_input: "What is SingularityLLM?",
+        output: "SingularityLLM is a unified Elixir client for Large Language Models."
       },
       # Add more examples...
     ]
@@ -78,7 +78,7 @@ To fully test the Permissions API, you need a tuned model:
 export TEST_TUNED_MODEL="tunedModels/your-actual-model-name"
 
 # Run permission tests
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs --only requires_tuned_model
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs --only requires_tuned_model
 ```
 
 ## Running OAuth2 Tests
@@ -92,19 +92,19 @@ mix test --only oauth2
 ### Run Specific OAuth2 API Tests
 ```bash
 # Corpus Management
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs:"Corpus Management API"
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs:"Corpus Management API"
 
 # Document Management
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs:"Document Management API"
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs:"Document Management API"
 
 # Chunk Management
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs:"Chunk Management API"
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs:"Chunk Management API"
 
 # Question Answering
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs:"Question Answering API"
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs:"Question Answering API"
 
 # Permissions (requires tuned model)
-mix test test/ex_llm/adapters/gemini/oauth2_apis_test.exs:"Permissions API"
+mix test test/singularity_llm/adapters/gemini/oauth2_apis_test.exs:"Permissions API"
 ```
 
 ### Token Management

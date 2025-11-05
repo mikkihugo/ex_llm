@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Shared.StreamingCoordinatorCharacterizationTest do
+defmodule SingularityLLM.Providers.Shared.StreamingCoordinatorCharacterizationTest do
   @moduledoc """
   Characterization tests for StreamingCoordinator to capture current behavior
   before fixing the critical process proliferation issue.
@@ -9,8 +9,8 @@ defmodule ExLLM.Providers.Shared.StreamingCoordinatorCharacterizationTest do
 
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.StreamingCoordinator
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.StreamingCoordinator
+  alias SingularityLLM.Types.StreamChunk
 
   @moduletag :characterization
 

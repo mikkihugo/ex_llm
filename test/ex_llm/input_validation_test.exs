@@ -1,9 +1,9 @@
-defmodule ExLLM.InputValidationTest do
+defmodule SingularityLLM.InputValidationTest do
   use ExUnit.Case, async: false
 
   @moduledoc """
   Tests input validation and boundary conditions for user-configurable parameters
-  in the ExLLM public API.
+  in the SingularityLLM public API.
 
   This ensures that users receive appropriate errors when providing invalid inputs,
   rather than obscure FunctionClauseErrors.
@@ -11,7 +11,7 @@ defmodule ExLLM.InputValidationTest do
 
   setup do
     # Reset mock provider to ensure clean state for each test
-    ExLLM.Providers.Mock.reset()
+    SingularityLLM.Providers.Mock.reset()
     :ok
   end
 
@@ -20,18 +20,18 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       # Lower bound
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_temperature(0.0)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(0.0)
       assert builder.request.options.temperature == 0.0
 
       # Upper bound
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_temperature(2.0)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(2.0)
       assert builder.request.options.temperature == 2.0
 
       # Mid-range values
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_temperature(0.7)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(0.7)
       assert builder.request.options.temperature == 0.7
 
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_temperature(1.5)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(1.5)
       assert builder.request.options.temperature == 1.5
     end
 
@@ -39,15 +39,15 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(2.1)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(2.1)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(3.0)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(3.0)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(100.0)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(100.0)
       end
     end
 
@@ -55,11 +55,11 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(-0.1)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(-0.1)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(-1.0)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(-1.0)
       end
     end
 
@@ -67,15 +67,15 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature("0.7")
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature("0.7")
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(nil)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(nil)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_temperature(:high)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_temperature(:high)
       end
     end
   end
@@ -85,18 +85,18 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       # Small values
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(1)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(1)
       assert builder.request.options.max_tokens == 1
 
       # Common values
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(100)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(100)
       assert builder.request.options.max_tokens == 100
 
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(4096)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(4096)
       assert builder.request.options.max_tokens == 4096
 
       # Large values
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(128_000)
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(128_000)
       assert builder.request.options.max_tokens == 128_000
     end
 
@@ -104,7 +104,7 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(0)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(0)
       end
     end
 
@@ -112,11 +112,11 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(-1)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(-1)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(-100)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(-100)
       end
     end
 
@@ -124,15 +124,15 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(100.5)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(100.5)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens("100")
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens("100")
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_max_tokens(nil)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_max_tokens(nil)
       end
     end
   end
@@ -141,14 +141,14 @@ defmodule ExLLM.InputValidationTest do
     test "accepts string model names" do
       messages = [%{role: "user", content: "test"}]
 
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_model("gpt-4")
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model("gpt-4")
       assert builder.request.options.model == "gpt-4"
 
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_model("gpt-3.5-turbo")
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model("gpt-3.5-turbo")
       assert builder.request.options.model == "gpt-3.5-turbo"
 
       # Should accept any string, validation happens at provider level
-      assert builder = ExLLM.build(:openai, messages) |> ExLLM.with_model("future-model-2025")
+      assert builder = SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model("future-model-2025")
       assert builder.request.options.model == "future-model-2025"
     end
 
@@ -156,15 +156,15 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_model(:gpt4)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model(:gpt4)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_model(nil)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model(nil)
       end
 
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages) |> ExLLM.with_model(123)
+        SingularityLLM.build(:openai, messages) |> SingularityLLM.with_model(123)
       end
     end
   end
@@ -172,7 +172,7 @@ defmodule ExLLM.InputValidationTest do
   describe "message validation" do
     test "accepts valid message structures" do
       # Basic user message
-      assert {:ok, _} = ExLLM.chat(:mock, [%{role: "user", content: "Hello"}])
+      assert {:ok, _} = SingularityLLM.chat(:mock, [%{role: "user", content: "Hello"}])
 
       # Multiple messages
       messages = [
@@ -182,11 +182,11 @@ defmodule ExLLM.InputValidationTest do
         %{role: "user", content: "How are you?"}
       ]
 
-      assert {:ok, _} = ExLLM.chat(:mock, messages)
+      assert {:ok, _} = SingularityLLM.chat(:mock, messages)
 
       # String keys should be normalized to atoms internally
       # but for now they cause errors - this is a known limitation
-      # assert {:ok, _} = ExLLM.chat(:mock, [%{role: "user", content: "Hello"}])
+      # assert {:ok, _} = SingularityLLM.chat(:mock, [%{role: "user", content: "Hello"}])
     end
 
     test "validates message role values" do
@@ -194,13 +194,13 @@ defmodule ExLLM.InputValidationTest do
       valid_roles = ["system", "user", "assistant", "function", "developer"]
 
       for role <- valid_roles do
-        assert {:ok, _} = ExLLM.chat(:mock, [%{role: role, content: "test"}])
+        assert {:ok, _} = SingularityLLM.chat(:mock, [%{role: role, content: "test"}])
       end
     end
 
     test "handles empty messages list" do
       # Empty messages are rejected by validation
-      assert {:error, :invalid_messages} = ExLLM.chat(:mock, [])
+      assert {:error, :invalid_messages} = SingularityLLM.chat(:mock, [])
     end
   end
 
@@ -209,9 +209,9 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       # Should accept positive integers
-      assert {:ok, _} = ExLLM.chat(:mock, messages, timeout: 1000)
-      assert {:ok, _} = ExLLM.chat(:mock, messages, timeout: 60_000)
-      assert {:ok, _} = ExLLM.chat(:mock, messages, timeout: 300_000)
+      assert {:ok, _} = SingularityLLM.chat(:mock, messages, timeout: 1000)
+      assert {:ok, _} = SingularityLLM.chat(:mock, messages, timeout: 60_000)
+      assert {:ok, _} = SingularityLLM.chat(:mock, messages, timeout: 300_000)
     end
 
     test "handles stream callback validation" do
@@ -219,13 +219,13 @@ defmodule ExLLM.InputValidationTest do
 
       # Valid callback
       callback = fn _chunk -> :ok end
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
-      # Should validate arity - ExLLM.stream expects a 1-arity function
+      # Should validate arity - SingularityLLM.stream expects a 1-arity function
       assert_raise FunctionClauseError, fn ->
         # 0-arity function
         bad_callback = fn -> :ok end
-        ExLLM.stream(:mock, messages, bad_callback)
+        SingularityLLM.stream(:mock, messages, bad_callback)
       end
     end
   end
@@ -238,7 +238,7 @@ defmodule ExLLM.InputValidationTest do
       providers = [:openai, :anthropic, :gemini, :groq, :mistral, :ollama, :mock]
 
       for provider <- providers do
-        request = ExLLM.Pipeline.Request.new(provider, messages)
+        request = SingularityLLM.Pipeline.Request.new(provider, messages)
         assert request.provider == provider
       end
     end
@@ -247,8 +247,8 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       # The pipeline validation will catch unknown providers
-      request = ExLLM.Pipeline.Request.new(:unknown_provider, messages)
-      result = ExLLM.Pipeline.run(request, [ExLLM.Plugs.ValidateProvider])
+      request = SingularityLLM.Pipeline.Request.new(:unknown_provider, messages)
+      result = SingularityLLM.Pipeline.run(request, [SingularityLLM.Plugs.ValidateProvider])
 
       assert result.state == :error
       assert hd(result.errors).error == :unsupported_provider
@@ -263,12 +263,12 @@ defmodule ExLLM.InputValidationTest do
 
       for strategy <- valid_strategies do
         builder =
-          ExLLM.build(:openai, messages)
-          |> ExLLM.with_context_strategy(strategy)
+          SingularityLLM.build(:openai, messages)
+          |> SingularityLLM.with_context_strategy(strategy)
 
-        assert {:replace, ExLLM.Plugs.ManageContext, opts} =
+        assert {:replace, SingularityLLM.Plugs.ManageContext, opts} =
                  Enum.find(builder.pipeline_mods, fn
-                   {:replace, ExLLM.Plugs.ManageContext, _} -> true
+                   {:replace, SingularityLLM.Plugs.ManageContext, _} -> true
                    _ -> false
                  end)
 
@@ -280,12 +280,12 @@ defmodule ExLLM.InputValidationTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_context_strategy(:sliding_window, max_tokens: 8000)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_context_strategy(:sliding_window, max_tokens: 8000)
 
-      assert {:replace, ExLLM.Plugs.ManageContext, opts} =
+      assert {:replace, SingularityLLM.Plugs.ManageContext, opts} =
                Enum.find(builder.pipeline_mods, fn
-                 {:replace, ExLLM.Plugs.ManageContext, _} -> true
+                 {:replace, SingularityLLM.Plugs.ManageContext, _} -> true
                  _ -> false
                end)
 
@@ -300,10 +300,10 @@ defmodule ExLLM.InputValidationTest do
 
       # Valid combination
       assert builder =
-               ExLLM.build(:openai, messages)
-               |> ExLLM.with_model("gpt-4")
-               |> ExLLM.with_temperature(0.7)
-               |> ExLLM.with_max_tokens(1000)
+               SingularityLLM.build(:openai, messages)
+               |> SingularityLLM.with_model("gpt-4")
+               |> SingularityLLM.with_temperature(0.7)
+               |> SingularityLLM.with_max_tokens(1000)
 
       assert builder.request.options.model == "gpt-4"
       assert builder.request.options.temperature == 0.7
@@ -315,11 +315,11 @@ defmodule ExLLM.InputValidationTest do
 
       # Temperature validation fails first
       assert_raise FunctionClauseError, fn ->
-        ExLLM.build(:openai, messages)
+        SingularityLLM.build(:openai, messages)
         # Invalid
-        |> ExLLM.with_temperature(3.0)
+        |> SingularityLLM.with_temperature(3.0)
         # Would be valid
-        |> ExLLM.with_max_tokens(1000)
+        |> SingularityLLM.with_max_tokens(1000)
       end
     end
   end

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.DocumentManagementTest do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.DocumentManagementTest do
   @moduledoc """
   Tests for Gemini Document Management API via OAuth2.
 
@@ -6,10 +6,10 @@ defmodule ExLLM.Providers.Gemini.OAuth2.DocumentManagementTest do
   retrieval, updating, and deletion within corpora.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.{Corpus, Document}
-  alias ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
+  alias SingularityLLM.Providers.Gemini.{Corpus, Document}
+  alias SingularityLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
 
   @moduletag :gemini_oauth2_apis
   @moduletag :document_management

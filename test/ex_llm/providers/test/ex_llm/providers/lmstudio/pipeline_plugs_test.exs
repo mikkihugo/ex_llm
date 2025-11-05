@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.LMStudio.PipelinePlugsTest do
+defmodule SingularityLLM.Providers.LMStudio.PipelinePlugsTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Providers.LMStudio.{BuildRequest, ParseResponse}
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Providers.LMStudio.{BuildRequest, ParseResponse}
 
   setup do
     # Set API key for FetchConfiguration plug. LMStudio doesn't require one,

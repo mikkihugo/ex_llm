@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.OpenAICompatiblePlugsTest do
+defmodule SingularityLLM.Providers.OpenAICompatiblePlugsTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
 
   setup do
     # Save original API keys to restore them later
@@ -40,7 +40,7 @@ defmodule ExLLM.Providers.OpenAICompatiblePlugsTest do
 
   describe "OpenAI-compatible pipeline plugs" do
     test "XAI BuildRequest plug works correctly" do
-      alias ExLLM.Providers.XAI.BuildRequest
+      alias SingularityLLM.Providers.XAI.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
       options = [model: "grok-beta", temperature: 0.8]
@@ -61,7 +61,7 @@ defmodule ExLLM.Providers.OpenAICompatiblePlugsTest do
     end
 
     test "Mistral ParseResponse plug works correctly" do
-      alias ExLLM.Providers.Mistral.ParseResponse
+      alias SingularityLLM.Providers.Mistral.ParseResponse
 
       raw_response = %{
         "choices" => [
@@ -93,7 +93,7 @@ defmodule ExLLM.Providers.OpenAICompatiblePlugsTest do
     end
 
     test "OpenRouter plugs handle different base URL" do
-      alias ExLLM.Providers.OpenRouter.BuildRequest
+      alias SingularityLLM.Providers.OpenRouter.BuildRequest
 
       messages = [%{role: "user", content: "Hello"}]
 

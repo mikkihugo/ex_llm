@@ -1,19 +1,19 @@
-# ExLLM
+# SingularityLLM
 
-[![Hex.pm](https://img.shields.io/hexpm/v/ex_llm.svg)](https://hex.pm/packages/ex_llm)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_llm/)
-[![License](https://img.shields.io/hexpm/l/ex_llm.svg)](https://github.com/azmaveth/ex_llm/blob/main/LICENSE)
-[![CI](https://github.com/azmaveth/ex_llm/actions/workflows/ci.yml/badge.svg)](https://github.com/azmaveth/ex_llm/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/singularity_llm.svg)](https://hex.pm/packages/singularity_llm)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/singularity_llm/)
+[![License](https://img.shields.io/hexpm/l/singularity_llm.svg)](https://github.com/azmaveth/singularity_llm/blob/main/LICENSE)
+[![CI](https://github.com/azmaveth/singularity_llm/actions/workflows/ci.yml/badge.svg)](https://github.com/azmaveth/singularity_llm/actions/workflows/ci.yml)
 
 **A unified Elixir client for interfacing with multiple Large Language Model (LLM) providers.**
 
-`ExLLM` provides a single, consistent API to interact with a growing list of LLM providers. It abstracts away the complexities of provider-specific request formats, authentication, and error handling, allowing you to focus on building features.
+`SingularityLLM` provides a single, consistent API to interact with a growing list of LLM providers. It abstracts away the complexities of provider-specific request formats, authentication, and error handling, allowing you to focus on building features.
 
 > 🚀 **Release Candidate**: This library is approaching its 1.0.0 stable release. The API is stabilized and ready for production use.
 
 ## Key Features
 
-- **Unified API:** Use a single `ExLLM.chat/2` interface for all supported providers, dramatically reducing boilerplate code
+- **Unified API:** Use a single `SingularityLLM.chat/2` interface for all supported providers, dramatically reducing boilerplate code
 - **Broad Provider Support:** Seamlessly switch between models from 14+ major providers
 - **Streaming Support:** Handle real-time responses for chat completions using Elixir's native streaming
 - **Standardized Error Handling:** Get predictable `{:error, reason}` tuples for common failure modes
@@ -32,7 +32,7 @@ See [FEATURE_STATUS.md](FEATURE_STATUS.md) for detailed testing results and API 
 
 ## Supported Providers
 
-ExLLM supports **14 providers** with access to hundreds of models:
+SingularityLLM supports **14 providers** with access to hundreds of models:
 
 - **Anthropic Claude** - Claude 4, 3.7, 3.5, and 3 series models
 - **OpenAI** - GPT-4.1, o1 reasoning models, GPT-4o, and GPT-3.5 series
@@ -50,12 +50,12 @@ ExLLM supports **14 providers** with access to hundreds of models:
 
 ## Installation
 
-Add `ex_llm` to your list of dependencies in `mix.exs`:
+Add `singularity_llm` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:ex_llm, "~> 1.0.0-rc1"},
+    {:singularity_llm, "~> 1.0.0-rc1"},
     
     # Optional: For local model inference via Bumblebee
     {:bumblebee, "~> 0.6.2", optional: true},
@@ -87,7 +87,7 @@ export GROQ_API_KEY="your-groq-key"
 
 ```elixir
 # Single completion
-{:ok, response} = ExLLM.chat(:anthropic, [
+{:ok, response} = SingularityLLM.chat(:anthropic, [
   %{role: "user", content: "Explain quantum computing in simple terms"}
 ])
 
@@ -95,19 +95,19 @@ IO.puts(response.content)
 # Cost automatically tracked: response.cost
 
 # Streaming response
-ExLLM.chat_stream(:openai, [
+SingularityLLM.chat_stream(:openai, [
   %{role: "user", content: "Write a short story"}
 ], fn chunk ->
   IO.write(chunk.delta)
 end)
 
 # With session management
-{:ok, session} = ExLLM.Session.new(:groq)
-{:ok, session, response} = ExLLM.Session.chat(session, "Hello!")
-{:ok, session, response} = ExLLM.Session.chat(session, "How are you?")
+{:ok, session} = SingularityLLM.Session.new(:groq)
+{:ok, session, response} = SingularityLLM.Session.chat(session, "Hello!")
+{:ok, session, response} = SingularityLLM.Session.chat(session, "How are you?")
 
 # Multimodal with vision
-{:ok, response} = ExLLM.chat(:gemini, [
+{:ok, response} = SingularityLLM.chat(:gemini, [
   %{role: "user", content: [
     %{type: "text", text: "What's in this image?"},
     %{type: "image", image: %{data: base64_image, media_type: "image/jpeg"}}
@@ -122,7 +122,7 @@ You can configure providers in your `config/config.exs`:
 ```elixir
 import Config
 
-config :ex_llm,
+config :singularity_llm,
   default_provider: :openai,
   providers: [
     openai: [api_key: System.get_env("OPENAI_API_KEY")],
@@ -152,22 +152,22 @@ mix test.live  # Runs with test response caching enabled
 
 ## Architecture
 
-ExLLM uses a clean, modular architecture that separates concerns while maintaining a unified API:
+SingularityLLM uses a clean, modular architecture that separates concerns while maintaining a unified API:
 
 ### Core Modules
 
-- **`ExLLM`** - Main entry point with unified API
-- **`ExLLM.API.Delegator`** - Central delegation engine for provider routing
-- **`ExLLM.API.Capabilities`** - Provider capability registry
-- **`ExLLM.Pipeline`** - Phoenix-style pipeline for request processing
+- **`SingularityLLM`** - Main entry point with unified API
+- **`SingularityLLM.API.Delegator`** - Central delegation engine for provider routing
+- **`SingularityLLM.API.Capabilities`** - Provider capability registry
+- **`SingularityLLM.Pipeline`** - Phoenix-style pipeline for request processing
 
 ### Specialized Modules
 
-- **`ExLLM.Embeddings`** - Vector operations and similarity calculations
-- **`ExLLM.Assistants`** - OpenAI Assistants API for stateful agents
-- **`ExLLM.KnowledgeBase`** - Document management and semantic search
-- **`ExLLM.Builder`** - Fluent interface for chat construction
-- **`ExLLM.Session`** - Conversation state management
+- **`SingularityLLM.Embeddings`** - Vector operations and similarity calculations
+- **`SingularityLLM.Assistants`** - OpenAI Assistants API for stateful agents
+- **`SingularityLLM.KnowledgeBase`** - Document management and semantic search
+- **`SingularityLLM.Builder`** - Fluent interface for chat construction
+- **`SingularityLLM.Session`** - Conversation state management
 
 ### Benefits
 
@@ -205,7 +205,7 @@ ExLLM uses a clean, modular architecture that separates concerns while maintaini
 - 📋 **[Unified API Guide](docs/UNIFIED_API_GUIDE.md)** - Complete unified API documentation
 - 🔄 **[Migration Guide](MIGRATION_GUIDE_V1.md)** - Upgrading to v1.0.0
 - ✅ **[Release Checklist](RELEASE_CHECKLIST.md)** - Automated release process
-- 📚 **[API Reference](https://hexdocs.pm/ex_llm)** - Detailed API documentation on HexDocs
+- 📚 **[API Reference](https://hexdocs.pm/singularity_llm)** - Detailed API documentation on HexDocs
 
 ## Contributing
 
@@ -218,5 +218,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - 📖 **Documentation**: [User Guide](docs/USER_GUIDE.md)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/azmaveth/ex_llm/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/azmaveth/ex_llm/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/azmaveth/singularity_llm/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/azmaveth/singularity_llm/discussions)

@@ -7,7 +7,7 @@ defmodule Mix.Tasks.ExLlm.TestMatrix do
 
   ## Usage
 
-      mix ex_llm.test_matrix [options]
+      mix singularity_llm.test_matrix [options]
 
   ## Options
 
@@ -23,23 +23,23 @@ defmodule Mix.Tasks.ExLlm.TestMatrix do
   ## Examples
 
       # Run all tests for specific providers
-      mix ex_llm.test_matrix --providers openai,anthropic,gemini
+      mix singularity_llm.test_matrix --providers openai,anthropic,gemini
 
       # Run a specific test file across providers
-      mix ex_llm.test_matrix --test test/ex_llm/chat_test.exs --providers openai,anthropic
+      mix singularity_llm.test_matrix --test test/singularity_llm/chat_test.exs --providers openai,anthropic
 
       # Test a capability across all configured providers
-      mix ex_llm.test_matrix --capability vision
+      mix singularity_llm.test_matrix --capability vision
 
       # Run tests with specific tags
-      mix ex_llm.test_matrix --only integration --providers groq,mistral
+      mix singularity_llm.test_matrix --only integration --providers groq,mistral
 
       # Run in parallel with summary
-      mix ex_llm.test_matrix --parallel --summary --providers all
+      mix singularity_llm.test_matrix --parallel --summary --providers all
   """
 
   use Mix.Task
-  alias ExLLM.Capabilities
+  alias SingularityLLM.Capabilities
 
   @shortdoc "Run tests across multiple providers"
 
@@ -87,7 +87,7 @@ defmodule Mix.Tasks.ExLlm.TestMatrix do
       nil ->
         # Default to all configured providers
         Capabilities.supported_providers()
-        |> Enum.filter(&ExLLM.configured?/1)
+        |> Enum.filter(&SingularityLLM.configured?/1)
 
       "all" ->
         # All supported providers
@@ -105,7 +105,7 @@ defmodule Mix.Tasks.ExLlm.TestMatrix do
   end
 
   defp provider_available?(provider) do
-    if ExLLM.configured?(provider) do
+    if SingularityLLM.configured?(provider) do
       true
     else
       IO.puts(

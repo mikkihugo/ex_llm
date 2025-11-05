@@ -5,7 +5,7 @@
 ### 1. Create Response Capture Module
 
 ```elixir
-defmodule ExLLM.ResponseCapture do
+defmodule SingularityLLM.ResponseCapture do
   @moduledoc """
   Captures API responses for debugging and development purposes.
   
@@ -13,9 +13,9 @@ defmodule ExLLM.ResponseCapture do
   and optionally display API responses during development.
   """
   
-  alias ExLLM.Testing.LiveApiCacheStorage
-  alias ExLLM.Testing.TestCacheConfig
-  alias ExLLM.Infrastructure.Logger
+  alias SingularityLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.Testing.TestCacheConfig
+  alias SingularityLLM.Infrastructure.Logger
   
   @capture_dir "captured_responses"
   
@@ -181,13 +181,13 @@ end
 
 ### 2. Integrate with HTTP.Core
 
-Modify `lib/ex_llm/providers/shared/http/core.ex` to add capture hooks:
+Modify `lib/singularity_llm/providers/shared/http/core.ex` to add capture hooks:
 
 ```elixir
 # In the Tesla.post callback handling:
 defp handle_response({:ok, response} = result, provider, endpoint, request_body) do
   # Capture the response if enabled
-  if ExLLM.ResponseCapture.enabled?() do
+  if SingularityLLM.ResponseCapture.enabled?() do
     Task.start(fn ->
       metadata = %{
         response_time_ms: response.opts[:response_time_ms] || 0,
@@ -195,7 +195,7 @@ defp handle_response({:ok, response} = result, provider, endpoint, request_body)
         headers: response.headers
       }
       
-      ExLLM.ResponseCapture.capture_response(
+      SingularityLLM.ResponseCapture.capture_response(
         provider,
         endpoint,
         request_body,
@@ -220,29 +220,29 @@ defmodule Mix.Tasks.ExLlm.Captures do
   
   ## Commands
   
-      mix ex_llm.captures list [--provider PROVIDER] [--today] [--limit N]
-      mix ex_llm.captures show TIMESTAMP
-      mix ex_llm.captures clear [--older-than DAYS]
-      mix ex_llm.captures stats
+      mix singularity_llm.captures list [--provider PROVIDER] [--today] [--limit N]
+      mix singularity_llm.captures show TIMESTAMP
+      mix singularity_llm.captures clear [--older-than DAYS]
+      mix singularity_llm.captures stats
   
   ## Examples
   
       # List recent captures
-      mix ex_llm.captures list --limit 10
+      mix singularity_llm.captures list --limit 10
       
       # Show specific capture
-      mix ex_llm.captures show 2024-01-15T10-30-45
+      mix singularity_llm.captures show 2024-01-15T10-30-45
       
       # Clear old captures
-      mix ex_llm.captures clear --older-than 7
+      mix singularity_llm.captures clear --older-than 7
   """
   
   use Mix.Task
-  alias ExLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.Testing.LiveApiCacheStorage
   
   @impl Mix.Task
   def run(args) do
-    Application.ensure_all_started(:ex_llm)
+    Application.ensure_all_started(:singularity_llm)
     
     case args do
       ["list" | opts] -> list_captures(opts)
@@ -318,7 +318,7 @@ Add to `config/dev.exs`:
 
 ```elixir
 # Response capture configuration for development
-config :ex_llm, :response_capture,
+config :singularity_llm, :response_capture,
   enabled: System.get_env("EX_LLM_CAPTURE_RESPONSES") == "true",
   display: System.get_env("EX_LLM_SHOW_CAPTURED") == "true",
   storage_dir: "captured_responses",
@@ -326,7 +326,7 @@ config :ex_llm, :response_capture,
   cleanup_after_days: 30
 
 # Extend test cache config for captures
-config :ex_llm, :test_cache,
+config :singularity_llm, :test_cache,
   capture_mode: %{
     enabled: System.get_env("EX_LLM_CAPTURE_RESPONSES") == "true",
     cache_dir: "captured_responses",
@@ -342,8 +342,8 @@ config :ex_llm, :test_cache,
 # In your application code:
 defmodule MyApp.LLMClient do
   def chat_with_capture(messages, opts \\ []) do
-    # Normal ExLLM call - capture happens automatically if enabled
-    result = ExLLM.chat(messages, opts)
+    # Normal SingularityLLM call - capture happens automatically if enabled
+    result = SingularityLLM.chat(messages, opts)
     
     # The response is automatically captured and displayed
     # based on environment variables
@@ -373,19 +373,19 @@ iex -S mix
 
 ```bash
 # List recent captures
-mix ex_llm.captures list
+mix singularity_llm.captures list
 
 # List captures from specific provider
-mix ex_llm.captures list --provider openai
+mix singularity_llm.captures list --provider openai
 
 # Show specific capture
-mix ex_llm.captures show 2024-01-15T10-30-45
+mix singularity_llm.captures show 2024-01-15T10-30-45
 
 # View statistics
-mix ex_llm.captures stats
+mix singularity_llm.captures stats
 
 # Clean up old captures
-mix ex_llm.captures clear --older-than 7
+mix singularity_llm.captures clear --older-than 7
 ```
 
 ### Terminal Output Example
@@ -414,7 +414,7 @@ Hello! I'm Claude, an AI assistant. How can I help you today?
 Add provider and endpoint filtering:
 
 ```elixir
-defmodule ExLLM.ResponseCapture.Filter do
+defmodule SingularityLLM.ResponseCapture.Filter do
   def should_capture?(provider, endpoint) do
     allowed_providers = parse_env_list("EX_LLM_CAPTURE_PROVIDERS")
     allowed_endpoints = parse_env_list("EX_LLM_CAPTURE_ENDPOINTS")
@@ -439,7 +439,7 @@ end
 For high-volume environments:
 
 ```elixir
-defmodule ExLLM.ResponseCapture.Sampler do
+defmodule SingularityLLM.ResponseCapture.Sampler do
   @sample_rate 0.1  # Capture 10% of responses
   
   def should_sample? do
@@ -460,7 +460,7 @@ end
 Export captures for analysis:
 
 ```elixir
-defmodule ExLLM.ResponseCapture.Export do
+defmodule SingularityLLM.ResponseCapture.Export do
   def export_to_jsonl(output_file, filters \\ %{}) do
     captures = load_filtered_captures(filters)
     
@@ -482,7 +482,7 @@ end
 Add tests for the capture functionality:
 
 ```elixir
-defmodule ExLLM.ResponseCaptureTest do
+defmodule SingularityLLM.ResponseCaptureTest do
   use ExUnit.Case
   
   setup do

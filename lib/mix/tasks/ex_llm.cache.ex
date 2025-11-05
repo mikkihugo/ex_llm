@@ -1,29 +1,29 @@
 defmodule Mix.Tasks.ExLlm.Cache do
   @moduledoc """
-  Mix tasks for managing the ExLLM test response cache.
+  Mix tasks for managing the SingularityLLM test response cache.
 
   ## Available Commands
 
-      mix ex_llm.cache.stats          # Show cache statistics
-      mix ex_llm.cache.clear          # Clear all cache
-      mix ex_llm.cache.clear --provider openai  # Clear specific provider
-      mix ex_llm.cache.cleanup        # Clean up old entries
-      mix ex_llm.cache.deduplicate    # Deduplicate content
-      mix ex_llm.cache.list           # List cache keys
-      mix ex_llm.cache.verify         # Verify cache integrity
+      mix singularity_llm.cache.stats          # Show cache statistics
+      mix singularity_llm.cache.clear          # Clear all cache
+      mix singularity_llm.cache.clear --provider openai  # Clear specific provider
+      mix singularity_llm.cache.cleanup        # Clean up old entries
+      mix singularity_llm.cache.deduplicate    # Deduplicate content
+      mix singularity_llm.cache.list           # List cache keys
+      mix singularity_llm.cache.verify         # Verify cache integrity
   """
 
   use Mix.Task
 
-  alias ExLLM.Testing.LiveApiCacheStorage
-  alias ExLLM.Testing.TestCacheHelpers
-  alias ExLLM.Testing.TestCacheStats
+  alias SingularityLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.Testing.TestCacheHelpers
+  alias SingularityLLM.Testing.TestCacheStats
 
-  @shortdoc "Manage ExLLM test response cache"
+  @shortdoc "Manage SingularityLLM test response cache"
 
   @impl Mix.Task
   def run(args) do
-    Application.ensure_all_started(:ex_llm)
+    Application.ensure_all_started(:singularity_llm)
 
     case parse_args(args) do
       {:stats, opts} -> show_stats(opts)
@@ -68,7 +68,7 @@ defmodule Mix.Tasks.ExLlm.Cache do
   end
 
   defp show_stats(opts) do
-    Mix.shell().info("ExLLM Test Cache Statistics")
+    Mix.shell().info("SingularityLLM Test Cache Statistics")
     Mix.shell().info(String.duplicate("=", 50))
 
     if provider = opts[:provider] do
@@ -120,7 +120,7 @@ defmodule Mix.Tasks.ExLlm.Cache do
 
     Mix.shell().info("Cleaning up cache entries older than #{days} days...")
 
-    if Code.ensure_loaded?(ExLLM.TestCacheHelpers) do
+    if Code.ensure_loaded?(SingularityLLM.TestCacheHelpers) do
       report = TestCacheHelpers.cleanup_old_timestamps(max_age)
 
       Mix.shell().info("✅ Cleanup complete:")
@@ -138,7 +138,7 @@ defmodule Mix.Tasks.ExLlm.Cache do
   defp deduplicate_cache(_opts) do
     Mix.shell().info("Deduplicating cache content...")
 
-    if Code.ensure_loaded?(ExLLM.TestCacheHelpers) do
+    if Code.ensure_loaded?(SingularityLLM.TestCacheHelpers) do
       report = TestCacheHelpers.deduplicate_cache_content()
 
       Mix.shell().info("✅ Deduplication complete:")
@@ -175,7 +175,7 @@ defmodule Mix.Tasks.ExLlm.Cache do
   defp verify_cache(_opts) do
     Mix.shell().info("Verifying cache integrity...")
 
-    if Code.ensure_loaded?(ExLLM.TestCacheHelpers) do
+    if Code.ensure_loaded?(SingularityLLM.TestCacheHelpers) do
       case TestCacheHelpers.verify_cache_integrity() do
         :ok ->
           Mix.shell().info("✅ Cache integrity check passed!")

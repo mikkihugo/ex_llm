@@ -1,6 +1,6 @@
-defmodule ExLLM.Core.ChatPipelineIntegrationTest do
+defmodule SingularityLLM.Core.ChatPipelineIntegrationTest do
   use ExUnit.Case
-  import ExLLM.Testing.CapabilityHelpers
+  import SingularityLLM.Testing.CapabilityHelpers
 
   @moduletag :integration
 
@@ -16,7 +16,7 @@ defmodule ExLLM.Core.ChatPipelineIntegrationTest do
 
         messages = [%{role: "user", content: "Hello"}]
 
-        case ExLLM.chat(provider, messages, max_tokens: 10) do
+        case SingularityLLM.chat(provider, messages, max_tokens: 10) do
           {:ok, response} ->
             # Verify the provider routing worked correctly
             assert response.metadata.provider == provider
@@ -40,7 +40,7 @@ defmodule ExLLM.Core.ChatPipelineIntegrationTest do
       messages = [%{role: "user", content: "Hi"}]
 
       for model <- models do
-        case ExLLM.chat(:openai, messages, model: model, max_tokens: 10) do
+        case SingularityLLM.chat(:openai, messages, model: model, max_tokens: 10) do
           {:ok, response} ->
             # Verify model selection worked
             assert response.model =~ model or String.contains?(response.model, model)
@@ -83,7 +83,7 @@ defmodule ExLLM.Core.ChatPipelineIntegrationTest do
         }
       ]
 
-      case ExLLM.chat(:anthropic, messages, model: "claude-3-5-sonnet-20241022", max_tokens: 20) do
+      case SingularityLLM.chat(:anthropic, messages, model: "claude-3-5-sonnet-20241022", max_tokens: 20) do
         {:ok, response} ->
           # Vision worked through the pipeline
           assert String.length(response.content) > 0
@@ -111,7 +111,7 @@ defmodule ExLLM.Core.ChatPipelineIntegrationTest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:openai, messages, collector, max_tokens: 20, timeout: 10_000) do
+      case SingularityLLM.stream(:openai, messages, collector, max_tokens: 20, timeout: 10_000) do
         :ok ->
           chunks = collect_stream_chunks([], 2000)
           assert length(chunks) > 0, "No streaming chunks received"
@@ -140,7 +140,7 @@ defmodule ExLLM.Core.ChatPipelineIntegrationTest do
       long_content = String.duplicate("This is a test. ", 50_000)
       messages = [%{role: "user", content: long_content}]
 
-      case ExLLM.chat(:anthropic, messages, max_tokens: 10) do
+      case SingularityLLM.chat(:anthropic, messages, max_tokens: 10) do
         {:error, {:api_error, %{status: 400}}} ->
           # Expected error for content too long
           :ok

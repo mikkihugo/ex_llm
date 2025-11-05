@@ -1,4 +1,4 @@
-# ExLLM Integration Test Implementation Tracker
+# SingularityLLM Integration Test Implementation Tracker
 
 ## Overview
 Tracking implementation of 91 missing integration tests across 6 feature areas.
@@ -168,7 +168,7 @@ Tracking implementation of 91 missing integration tests across 6 feature areas.
 - Fixture files created in `test/fixtures/`
 
 ### Blockers
-- ~~**FileManager API Issue**: The ExLLM.FileManager.upload_file function is not handling options correctly.~~ **FIXED**: Modified OpenAI provider to use Tesla.Multipart directly for file uploads and created a separate client without JSON middleware for multipart requests.
+- ~~**FileManager API Issue**: The SingularityLLM.FileManager.upload_file function is not handling options correctly.~~ **FIXED**: Modified OpenAI provider to use Tesla.Multipart directly for file uploads and created a separate client without JSON middleware for multipart requests.
 
 ### Lessons Learned
 - **Fine-Tuning API Names**: OpenAI uses `create_fine_tuning_job`, `list_fine_tuning_jobs`, `get_fine_tuning_job`, `cancel_fine_tuning_job`, and `list_fine_tuning_events` (not the shorter names)
@@ -187,13 +187,13 @@ Tracking implementation of 91 missing integration tests across 6 feature areas.
 - **Context Caching Integration**: Successfully connected Gemini caching module to main provider. Required understanding of Content/Part struct hierarchy and proper error handling patterns.
 - **Struct vs Map Requirements**: Gemini APIs require proper structs (Content, Part) rather than plain maps for type safety.
 - **OpenAI Headers Issue**: The `execute_openai_request` function was ignoring custom headers for GET/POST/DELETE requests. Fixed by passing headers to all Tesla requests, not just multipart uploads. This resolved the "OpenAI-Beta: assistants=v2" header requirement for Assistants API.
-- **EmbeddingResponse Format**: ExLLM returns structured `EmbeddingResponse` structs instead of raw OpenAI API responses. Tests needed to access `response.embeddings` instead of `response["data"]`.
+- **EmbeddingResponse Format**: SingularityLLM returns structured `EmbeddingResponse` structs instead of raw OpenAI API responses. Tests needed to access `response.embeddings` instead of `response["data"]`.
 - **OAuth2 Requirements**: Gemini Corpus operations require OAuth2 authentication, not just API keys. Tests gracefully handle this limitation and show expected errors.
 - **Vector Store Parameters**: OpenAI vector store file operations require parameter maps (e.g., `%{file_id: id}`) rather than direct string IDs.
-- **Batch Processing Architecture**: ExLLM has comprehensive batch processing infrastructure with `ExLLM.BatchProcessing` (for API batch operations) and `ExLLM.Core.Embeddings.batch_generate` (for sequential batching). The latter expects `{input, options}` tuples and returns lists of responses.
+- **Batch Processing Architecture**: SingularityLLM has comprehensive batch processing infrastructure with `SingularityLLM.BatchProcessing` (for API batch operations) and `SingularityLLM.Core.Embeddings.batch_generate` (for sequential batching). The latter expects `{input, options}` tuples and returns lists of responses.
 - **Provider Capabilities**: Different providers support different batch operations - Anthropic has message batches (msgbatch_ prefix), OpenAI has batch endpoints (batch_ prefix), but not all functions are implemented equally.
 - **Rate Limiting Graceful Handling**: Tests need try/catch blocks and tolerant assertions to handle rate limiting and model validation errors without failing unnecessarily.
-- **Parameter Format Consistency**: ExLLM.chat expects keyword lists for options, not maps. Need to convert `Map.drop(request, [:messages]) |> Map.to_list()` for proper parameter passing.
+- **Parameter Format Consistency**: SingularityLLM.chat expects keyword lists for options, not maps. Need to convert `Map.drop(request, [:messages]) |> Map.to_list()` for proper parameter passing.
 
 ## Completion Summary ✅
 
@@ -203,7 +203,7 @@ Tracking implementation of 91 missing integration tests across 6 feature areas.
 1. **100% Test Coverage**: All planned integration tests completed
 2. **Under Budget**: Total API costs ~$4.00 (well under $50 budget)
 3. **Time Efficiency**: Completed in 1 day vs 4 week target
-4. **Comprehensive Coverage**: Tests cover all major ExLLM features:
+4. **Comprehensive Coverage**: Tests cover all major SingularityLLM features:
    - File Management (9 tests)
    - Context Caching (12 tests)
    - Assistants API (17 tests total)

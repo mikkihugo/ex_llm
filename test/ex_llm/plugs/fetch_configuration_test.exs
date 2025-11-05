@@ -1,11 +1,11 @@
-defmodule ExLLM.Plugs.FetchConfigurationTest do
+defmodule SingularityLLM.Plugs.FetchConfigurationTest do
   use ExUnit.Case, async: false
 
   import ExUnit.Callbacks
 
-  alias ExLLM.Infrastructure.ConfigProvider.Static
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs.FetchConfiguration
+  alias SingularityLLM.Infrastructure.ConfigProvider.Static
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs.FetchConfiguration
 
   setup do
     # Store original environment values for API keys we might modify

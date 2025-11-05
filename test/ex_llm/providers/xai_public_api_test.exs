@@ -1,12 +1,12 @@
-defmodule ExLLM.Providers.XAIPublicAPITest do
+defmodule SingularityLLM.Providers.XAIPublicAPITest do
   @moduledoc """
-  XAI-specific integration tests using the public ExLLM API.
+  XAI-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
 
   Note: XAI (Grok) tests require a valid XAI_API_KEY.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :xai
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :xai
 
   # Provider-specific tests only
   describe "xai-specific features via public API" do
@@ -15,7 +15,7 @@ defmodule ExLLM.Providers.XAIPublicAPITest do
         %{role: "user", content: "What makes you different from other AI assistants?"}
       ]
 
-      case ExLLM.chat(:xai, messages, model: "grok-3", max_tokens: 100) do
+      case SingularityLLM.chat(:xai, messages, model: "grok-3", max_tokens: 100) do
         {:ok, response} ->
           assert response.metadata.provider == :xai
           assert is_binary(response.content)
@@ -42,7 +42,7 @@ defmodule ExLLM.Providers.XAIPublicAPITest do
       messages = [%{role: "user", content: "Hello"}]
 
       for model <- models do
-        case ExLLM.chat(:xai, messages, model: model, max_tokens: 20) do
+        case SingularityLLM.chat(:xai, messages, model: model, max_tokens: 20) do
           {:ok, response} ->
             assert response.metadata.provider == :xai
             assert response.model == model
@@ -79,7 +79,7 @@ defmodule ExLLM.Providers.XAIPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:xai, messages, model: "grok-2-vision-1212", max_tokens: 50) do
+      case SingularityLLM.chat(:xai, messages, model: "grok-2-vision-1212", max_tokens: 50) do
         {:ok, response} ->
           # Verify Grok can see the image (don't test specific color)
           assert String.length(response.content) > 0
@@ -103,7 +103,7 @@ defmodule ExLLM.Providers.XAIPublicAPITest do
       ]
 
       # XAI might support unique parameters
-      case ExLLM.chat(:xai, messages, temperature: 0.9, max_tokens: 100) do
+      case SingularityLLM.chat(:xai, messages, temperature: 0.9, max_tokens: 100) do
         {:ok, response} ->
           assert response.metadata.provider == :xai
           # Jokes should be reasonably long
@@ -119,7 +119,7 @@ defmodule ExLLM.Providers.XAIPublicAPITest do
     end
 
     test "model listing includes Grok models" do
-      case ExLLM.list_models(:xai) do
+      case SingularityLLM.list_models(:xai) do
         {:ok, models} ->
           assert is_list(models)
           assert length(models) > 0

@@ -1,6 +1,6 @@
-# ExLLM Unified API Guide
+# SingularityLLM Unified API Guide
 
-This guide provides comprehensive documentation for ExLLM's unified API, which offers a consistent interface across all supported LLM providers.
+This guide provides comprehensive documentation for SingularityLLM's unified API, which offers a consistent interface across all supported LLM providers.
 
 ## Table of Contents
 
@@ -18,12 +18,12 @@ This guide provides comprehensive documentation for ExLLM's unified API, which o
 
 ## Overview
 
-ExLLM's unified API provides a single, consistent interface for interacting with multiple LLM providers. This means you can switch between providers with minimal code changes, while still accessing provider-specific features when needed.
+SingularityLLM's unified API provides a single, consistent interface for interacting with multiple LLM providers. This means you can switch between providers with minimal code changes, while still accessing provider-specific features when needed.
 
 ### Key Benefits
 
 - **Provider Agnostic**: Write code once, use with any provider
-- **Automatic Capability Detection**: ExLLM handles provider limitations gracefully
+- **Automatic Capability Detection**: SingularityLLM handles provider limitations gracefully
 - **Consistent Error Handling**: Standardized error responses across providers
 - **Type Safety**: Comprehensive typespecs for all functions
 - **Smart Defaults**: Sensible defaults for each provider
@@ -32,7 +32,7 @@ ExLLM's unified API provides a single, consistent interface for interacting with
 
 ### Provider Selection
 
-All ExLLM functions accept a provider atom as the first argument:
+All SingularityLLM functions accept a provider atom as the first argument:
 
 ```elixir
 # Supported providers
@@ -79,7 +79,7 @@ The most common use case - generating text responses from conversations.
 
 ```elixir
 # Simple message
-{:ok, response} = ExLLM.chat(:openai, "Hello, how are you?")
+{:ok, response} = SingularityLLM.chat(:openai, "Hello, how are you?")
 IO.puts(response.content)
 
 # With message history
@@ -87,14 +87,14 @@ messages = [
   %{role: "system", content: "You are a helpful assistant."},
   %{role: "user", content: "What is the capital of France?"}
 ]
-{:ok, response} = ExLLM.chat(:anthropic, messages)
+{:ok, response} = SingularityLLM.chat(:anthropic, messages)
 ```
 
 ### Advanced Chat Options
 
 ```elixir
 # With all options
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   model: "gpt-4-turbo",
   temperature: 0.3,
   max_tokens: 2000,
@@ -114,12 +114,12 @@ IO.inspect(response.tool_calls) # Function calls
 
 ```elixir
 # Stream with callback
-ExLLM.stream(:openai, messages, fn chunk ->
+SingularityLLM.stream(:openai, messages, fn chunk ->
   IO.write(chunk.content)
 end)
 
 # Stream to enumerable
-stream = ExLLM.stream(:anthropic, messages)
+stream = SingularityLLM.stream(:anthropic, messages)
 Enum.each(stream, fn chunk ->
   # Process each chunk
   process_chunk(chunk)
@@ -148,7 +148,7 @@ tools = [
 ]
 
 # Chat with tools
-{:ok, response} = ExLLM.chat(:openai, "What's the weather in Paris?",
+{:ok, response} = SingularityLLM.chat(:openai, "What's the weather in Paris?",
   tools: tools,
   tool_choice: "auto"
 )
@@ -158,7 +158,7 @@ case response.tool_calls do
   [%{function: %{name: "get_weather", arguments: args}}] ->
     weather = get_actual_weather(args["location"])
     # Continue conversation with tool result
-    ExLLM.chat(:openai, messages ++ [tool_response(weather)])
+    SingularityLLM.chat(:openai, messages ++ [tool_response(weather)])
   _ ->
     response.content
 end
@@ -172,16 +172,16 @@ Generate and work with text embeddings for semantic search and similarity.
 
 ```elixir
 # Single text
-{:ok, response} = ExLLM.embeddings(:openai, "Hello world")
+{:ok, response} = SingularityLLM.embeddings(:openai, "Hello world")
 embedding = hd(response.embeddings)  # [0.123, -0.456, ...]
 
 # Multiple texts
 texts = ["First document", "Second document", "Third document"]
-{:ok, response} = ExLLM.embeddings(:openai, texts)
+{:ok, response} = SingularityLLM.embeddings(:openai, texts)
 embeddings = response.embeddings  # List of embedding vectors
 
 # With options
-{:ok, response} = ExLLM.embeddings(:openai, text,
+{:ok, response} = SingularityLLM.embeddings(:openai, text,
   model: "text-embedding-3-large",
   dimensions: 1536  # OpenAI supports dimension reduction
 )
@@ -197,7 +197,7 @@ items = [
   {"Document about birds", [0.5, 0.6, ...]}
 ]
 
-results = ExLLM.find_similar(query_embedding, items,
+results = SingularityLLM.find_similar(query_embedding, items,
   top_k: 5,
   threshold: 0.7,
   metric: :cosine  # :cosine, :euclidean, :dot_product
@@ -220,10 +220,10 @@ documents = [
   "Neural networks power modern AI"
 ]
 
-{:ok, index} = ExLLM.Embeddings.create_index(:openai, documents)
+{:ok, index} = SingularityLLM.Embeddings.create_index(:openai, documents)
 
 # Search the index
-{:ok, results} = ExLLM.Embeddings.search_index(index, "What is AI?",
+{:ok, results} = SingularityLLM.Embeddings.search_index(index, "What is AI?",
   top_k: 3
 )
 ```
@@ -236,7 +236,7 @@ Work with OpenAI's Assistants API for stateful, multi-turn conversations.
 
 ```elixir
 # Create assistant
-{:ok, assistant} = ExLLM.create_assistant(:openai,
+{:ok, assistant} = SingularityLLM.create_assistant(:openai,
   name: "Code Helper",
   instructions: "You are an expert programmer.",
   model: "gpt-4",
@@ -244,34 +244,34 @@ Work with OpenAI's Assistants API for stateful, multi-turn conversations.
 )
 
 # List assistants
-{:ok, list} = ExLLM.list_assistants(:openai)
+{:ok, list} = SingularityLLM.list_assistants(:openai)
 
 # Update assistant
-{:ok, updated} = ExLLM.update_assistant(:openai, assistant.id, %{
+{:ok, updated} = SingularityLLM.update_assistant(:openai, assistant.id, %{
   name: "Advanced Code Helper",
   model: "gpt-4-turbo"
 })
 
 # Delete assistant
-{:ok, _} = ExLLM.delete_assistant(:openai, assistant.id)
+{:ok, _} = SingularityLLM.delete_assistant(:openai, assistant.id)
 ```
 
 ### Conversation Threads
 
 ```elixir
 # Create thread
-{:ok, thread} = ExLLM.create_thread(:openai)
+{:ok, thread} = SingularityLLM.create_thread(:openai)
 
 # Add messages to thread
-{:ok, message} = ExLLM.create_message(:openai, thread.id,
+{:ok, message} = SingularityLLM.create_message(:openai, thread.id,
   "Can you help me write a sorting algorithm?"
 )
 
 # Run assistant on thread
-{:ok, run} = ExLLM.run_assistant(:openai, thread.id, assistant.id)
+{:ok, run} = SingularityLLM.run_assistant(:openai, thread.id, assistant.id)
 
 # Check run status (polling required)
-{:ok, status} = ExLLM.get_run(:openai, thread.id, run.id)
+{:ok, status} = SingularityLLM.get_run(:openai, thread.id, run.id)
 ```
 
 ## Knowledge Bases
@@ -282,23 +282,23 @@ Semantic search and document management (currently Gemini only).
 
 ```elixir
 # Create knowledge base
-{:ok, kb} = ExLLM.create_knowledge_base(:gemini, "product_docs",
+{:ok, kb} = SingularityLLM.create_knowledge_base(:gemini, "product_docs",
   display_name: "Product Documentation",
   description: "Company product guides and manuals"
 )
 
 # List knowledge bases
-{:ok, list} = ExLLM.list_knowledge_bases(:gemini)
+{:ok, list} = SingularityLLM.list_knowledge_bases(:gemini)
 
 # Delete knowledge base
-{:ok, _} = ExLLM.delete_knowledge_base(:gemini, "product_docs")
+{:ok, _} = SingularityLLM.delete_knowledge_base(:gemini, "product_docs")
 ```
 
 ### Document Management
 
 ```elixir
 # Add document
-{:ok, doc} = ExLLM.add_document(:gemini, "product_docs", %{
+{:ok, doc} = SingularityLLM.add_document(:gemini, "product_docs", %{
   display_name: "User Guide v2.0",
   text: "Complete user guide content...",
   metadata: %{
@@ -309,20 +309,20 @@ Semantic search and document management (currently Gemini only).
 })
 
 # List documents
-{:ok, docs} = ExLLM.list_documents(:gemini, "product_docs")
+{:ok, docs} = SingularityLLM.list_documents(:gemini, "product_docs")
 
 # Get specific document
-{:ok, doc} = ExLLM.get_document(:gemini, "product_docs", doc_id)
+{:ok, doc} = SingularityLLM.get_document(:gemini, "product_docs", doc_id)
 
 # Delete document
-{:ok, _} = ExLLM.delete_document(:gemini, "product_docs", doc_id)
+{:ok, _} = SingularityLLM.delete_document(:gemini, "product_docs", doc_id)
 ```
 
 ### Semantic Search
 
 ```elixir
 # Search knowledge base
-{:ok, results} = ExLLM.semantic_search(:gemini, "product_docs",
+{:ok, results} = SingularityLLM.semantic_search(:gemini, "product_docs",
   "How do I reset my password?",
   results_count: 5,
   metadata_filter: %{category: "user-guide"}
@@ -341,23 +341,23 @@ Upload and manage files for use with various APIs.
 
 ```elixir
 # Upload file
-{:ok, file} = ExLLM.upload_file(:openai, "data.pdf",
+{:ok, file} = SingularityLLM.upload_file(:openai, "data.pdf",
   purpose: "assistants"  # or "fine-tune"
 )
 
 # List files
-{:ok, files} = ExLLM.list_files(:openai,
+{:ok, files} = SingularityLLM.list_files(:openai,
   purpose: "assistants"
 )
 
 # Get file info
-{:ok, file} = ExLLM.get_file(:openai, file_id)
+{:ok, file} = SingularityLLM.get_file(:openai, file_id)
 
 # Download file content
-{:ok, content} = ExLLM.get_file_content(:openai, file_id)
+{:ok, content} = SingularityLLM.get_file_content(:openai, file_id)
 
 # Delete file
-{:ok, _} = ExLLM.delete_file(:openai, file_id)
+{:ok, _} = SingularityLLM.delete_file(:openai, file_id)
 ```
 
 ## Fine-Tuning
@@ -368,12 +368,12 @@ Create custom models through fine-tuning (provider-specific).
 
 ```elixir
 # 1. Upload training data
-{:ok, file} = ExLLM.upload_file(:openai, "training.jsonl",
+{:ok, file} = SingularityLLM.upload_file(:openai, "training.jsonl",
   purpose: "fine-tune"
 )
 
 # 2. Create fine-tuning job
-{:ok, job} = ExLLM.create_fine_tuning_job(:openai,
+{:ok, job} = SingularityLLM.create_fine_tuning_job(:openai,
   training_file: file.id,
   model: "gpt-3.5-turbo",
   hyperparameters: %{
@@ -383,18 +383,18 @@ Create custom models through fine-tuning (provider-specific).
 )
 
 # 3. Monitor job progress
-{:ok, status} = ExLLM.get_fine_tuning_job(:openai, job.id)
+{:ok, status} = SingularityLLM.get_fine_tuning_job(:openai, job.id)
 
 # 4. List checkpoints/events
-{:ok, events} = ExLLM.list_fine_tuning_events(:openai, job.id)
+{:ok, events} = SingularityLLM.list_fine_tuning_events(:openai, job.id)
 
 # 5. Use fine-tuned model
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   model: job.fine_tuned_model
 )
 
 # Cancel if needed
-{:ok, _} = ExLLM.cancel_fine_tuning_job(:openai, job.id)
+{:ok, _} = SingularityLLM.cancel_fine_tuning_job(:openai, job.id)
 ```
 
 ## Provider Capabilities
@@ -403,24 +403,24 @@ Check what features each provider supports:
 
 ```elixir
 # Check specific capability
-if ExLLM.supports?(:anthropic, :streaming) do
+if SingularityLLM.supports?(:anthropic, :streaming) do
   # Use streaming
 end
 
 # Get all capabilities
-capabilities = ExLLM.capabilities(:openai)
+capabilities = SingularityLLM.capabilities(:openai)
 # Returns list like [:chat, :embeddings, :streaming, :function_calling, ...]
 
 # Get models for capability
-{:ok, models} = ExLLM.models_for_capability(:gemini, :embeddings)
+{:ok, models} = SingularityLLM.models_for_capability(:gemini, :embeddings)
 ```
 
 ## Error Handling
 
-ExLLM provides consistent error handling across all providers:
+SingularityLLM provides consistent error handling across all providers:
 
 ```elixir
-case ExLLM.chat(:openai, messages) do
+case SingularityLLM.chat(:openai, messages) do
   {:ok, response} ->
     process_response(response)
     
@@ -466,7 +466,7 @@ end
 @provider :openai  # Easy to change
 
 def generate_response(prompt) do
-  ExLLM.chat(@provider, prompt)
+  SingularityLLM.chat(@provider, prompt)
 end
 
 # Or use configuration
@@ -478,7 +478,7 @@ provider = Application.get_env(:my_app, :llm_provider, :openai)
 ```elixir
 # Implement retry logic
 def chat_with_retry(provider, messages, retries \\ 3) do
-  case ExLLM.chat(provider, messages) do
+  case SingularityLLM.chat(provider, messages) do
     {:ok, response} ->
       {:ok, response}
       
@@ -496,7 +496,7 @@ end
 
 ```elixir
 # Monitor costs
-{:ok, response} = ExLLM.chat(:openai, messages)
+{:ok, response} = SingularityLLM.chat(:openai, messages)
 Logger.info("Request cost: $#{response.cost.total_cost}")
 
 # Use cheaper models for simple tasks
@@ -511,16 +511,16 @@ end
 
 ```elixir
 # Use sessions for conversation management
-session = ExLLM.Session.new_session(:anthropic)
+session = SingularityLLM.Session.new_session(:anthropic)
 
 # Automatically manages context window
-{:ok, response, session} = ExLLM.Session.chat_session(session, user_input,
+{:ok, response, session} = SingularityLLM.Session.chat_session(session, user_input,
   max_tokens: 1000,
   context_strategy: :sliding_window
 )
 
 # Save session for later
-ExLLM.Session.save_session(session, "session_#{user_id}.json")
+SingularityLLM.Session.save_session(session, "session_#{user_id}.json")
 ```
 
 ### 5. Provider Fallbacks
@@ -531,7 +531,7 @@ def chat_with_fallback(messages) do
   providers = [:openai, :anthropic, :gemini]
   
   Enum.reduce_while(providers, {:error, "All providers failed"}, fn provider, _acc ->
-    case ExLLM.chat(provider, messages) do
+    case SingularityLLM.chat(provider, messages) do
       {:ok, response} -> {:halt, {:ok, response}}
       {:error, _} -> {:cont, {:error, "All providers failed"}}
     end
@@ -545,7 +545,7 @@ end
 
 ```elixir
 # Add custom headers
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   headers: [{"X-Custom-Header", "value"}],
   middleware: [
     {Tesla.Middleware.Retry, delay: 500, max_retries: 3}
@@ -559,7 +559,7 @@ end
 # Accumulate streaming response
 {:ok, buffer} = Agent.start_link(fn -> "" end)
 
-ExLLM.stream(:openai, messages, fn chunk ->
+SingularityLLM.stream(:openai, messages, fn chunk ->
   Agent.update(buffer, &(&1 <> chunk.content))
   # Optional: Update UI with partial response
   Phoenix.PubSub.broadcast(MyApp.PubSub, "chat:#{chat_id}", {:chunk, chunk.content})
@@ -576,7 +576,7 @@ Agent.stop(buffer)
 prompts = ["Question 1", "Question 2", "Question 3"]
 
 tasks = Enum.map(prompts, fn prompt ->
-  Task.async(fn -> ExLLM.chat(:openai, prompt) end)
+  Task.async(fn -> SingularityLLM.chat(:openai, prompt) end)
 end)
 
 results = Task.await_many(tasks, 30_000)
@@ -584,13 +584,13 @@ results = Task.await_many(tasks, 30_000)
 
 ## Conclusion
 
-ExLLM's unified API provides a powerful abstraction over multiple LLM providers while maintaining flexibility and provider-specific features. By following the patterns and best practices in this guide, you can build robust, provider-agnostic applications that leverage the best of each LLM service.
+SingularityLLM's unified API provides a powerful abstraction over multiple LLM providers while maintaining flexibility and provider-specific features. By following the patterns and best practices in this guide, you can build robust, provider-agnostic applications that leverage the best of each LLM service.
 
 For more examples and detailed API documentation, see the module documentation for each component:
 
-- `ExLLM` - Main module and chat functions
-- `ExLLM.Embeddings` - Embedding operations
-- `ExLLM.Assistants` - Assistant management
-- `ExLLM.KnowledgeBase` - Semantic search
-- `ExLLM.Builder` - Fluent interface
-- `ExLLM.Session` - Conversation management
+- `SingularityLLM` - Main module and chat functions
+- `SingularityLLM.Embeddings` - Embedding operations
+- `SingularityLLM.Assistants` - Assistant management
+- `SingularityLLM.KnowledgeBase` - Semantic search
+- `SingularityLLM.Builder` - Fluent interface
+- `SingularityLLM.Session` - Conversation management

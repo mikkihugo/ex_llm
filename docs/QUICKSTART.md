@@ -1,15 +1,15 @@
-# ExLLM Quick Start Guide
+# SingularityLLM Quick Start Guide
 
-Get up and running with ExLLM in 5 minutes! This guide covers installation, basic configuration, and common usage patterns.
+Get up and running with SingularityLLM in 5 minutes! This guide covers installation, basic configuration, and common usage patterns.
 
 ## Installation
 
-Add ExLLM to your `mix.exs` dependencies:
+Add SingularityLLM to your `mix.exs` dependencies:
 
 ```elixir
 def deps do
   [
-    {:ex_llm, "~> 1.0.0-rc1"}
+    {:singularity_llm, "~> 1.0.0-rc1"}
   ]
 end
 ```
@@ -43,7 +43,7 @@ export PERPLEXITY_API_KEY="pplx-your-key"
 
 ```elixir
 # config/config.exs
-config :ex_llm,
+config :singularity_llm,
   # Default provider
   default_provider: :anthropic,
   
@@ -64,7 +64,7 @@ config :ex_llm,
 
 ```elixir
 # Start with a basic chat
-{:ok, response} = ExLLM.chat(:anthropic, [
+{:ok, response} = SingularityLLM.chat(:anthropic, [
   %{role: "user", content: "What is the capital of France?"}
 ])
 
@@ -81,15 +81,15 @@ IO.puts("Tokens used: #{response.usage.total_tokens}")
 
 ```elixir
 # Try different providers
-{:ok, response1} = ExLLM.chat(:openai, [
+{:ok, response1} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Explain quantum computing briefly"}
 ])
 
-{:ok, response2} = ExLLM.chat(:groq, [
+{:ok, response2} = SingularityLLM.chat(:groq, [
   %{role: "user", content: "Write a haiku about coding"}
 ])
 
-{:ok, response3} = ExLLM.chat(:gemini, [
+{:ok, response3} = SingularityLLM.chat(:gemini, [
   %{role: "user", content: "What's 2+2?"}
 ])
 ```
@@ -98,7 +98,7 @@ IO.puts("Tokens used: #{response.usage.total_tokens}")
 
 ```elixir
 # Stream responses in real-time
-ExLLM.stream(:openai, [
+SingularityLLM.stream(:openai, [
   %{role: "user", content: "Write a short story about a robot"}
 ], fn chunk ->
   IO.write(chunk.delta)
@@ -109,14 +109,14 @@ end)
 
 ```elixir
 # Maintain conversation context
-session = ExLLM.new_session(:anthropic)
+session = SingularityLLM.new_session(:anthropic)
 
 # First message
-{:ok, {response1, session}} = ExLLM.chat(session, "Hi, I'm learning Elixir")
+{:ok, {response1, session}} = SingularityLLM.chat(session, "Hi, I'm learning Elixir")
 IO.puts(response1.content)
 
 # Continue the conversation
-{:ok, {response2, session}} = ExLLM.chat(session, "What are GenServers?")
+{:ok, {response2, session}} = SingularityLLM.chat(session, "What are GenServers?")
 IO.puts(response2.content)
 
 # Session automatically tracks conversation history
@@ -131,7 +131,7 @@ IO.puts("Messages in session: #{length(session.messages)}")
 # Analyze images (with Gemini or OpenAI)
 image_data = File.read!("image.jpg") |> Base.encode64()
 
-{:ok, response} = ExLLM.chat(:gemini, [
+{:ok, response} = SingularityLLM.chat(:gemini, [
   %{role: "user", content: [
     %{type: "text", text: "What's in this image?"},
     %{type: "image", image: %{
@@ -166,7 +166,7 @@ tools = [
   }
 ]
 
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's the weather in Paris?"}
 ], tools: tools)
 
@@ -177,7 +177,7 @@ case response.function_calls do
     weather_data = get_weather(args["location"])
     
     # Continue conversation with function result
-    {:ok, final_response} = ExLLM.chat(:openai, [
+    {:ok, final_response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "What's the weather in Paris?"},
       response.message,
       %{role: "function", name: "get_weather", content: Jason.encode!(weather_data)}
@@ -196,9 +196,9 @@ For now, refer to the model configuration files or provider documentation:
 
 ```elixir
 # Use specific model names directly
-{:ok, response} = ExLLM.chat(:anthropic, messages, model: "claude-3-5-haiku-latest")
-{:ok, response} = ExLLM.chat(:openai, messages, model: "gpt-4o")
-{:ok, response} = ExLLM.chat(:ollama, messages, model: "llama3.2:1b")
+{:ok, response} = SingularityLLM.chat(:anthropic, messages, model: "claude-3-5-haiku-latest")
+{:ok, response} = SingularityLLM.chat(:openai, messages, model: "gpt-4o")
+{:ok, response} = SingularityLLM.chat(:ollama, messages, model: "llama3.2:1b")
 ```
 
 **Available Models**: See `config/models/` directory for complete model configurations and capabilities.
@@ -207,7 +207,7 @@ For now, refer to the model configuration files or provider documentation:
 
 ### Fast Testing with Caching
 
-ExLLM includes intelligent test caching for 25x faster integration tests:
+SingularityLLM includes intelligent test caching for 25x faster integration tests:
 
 ```bash
 # Run tests with automatic caching
@@ -218,8 +218,8 @@ mix test.anthropic
 mix test.openai --include live_api
 
 # Manage cache
-mix ex_llm.cache stats
-mix ex_llm.cache clean --older-than 7d
+mix singularity_llm.cache stats
+mix singularity_llm.cache clean --older-than 7d
 ```
 
 ### Writing Tests
@@ -234,7 +234,7 @@ defmodule MyAppTest do
   @moduletag provider: :anthropic
   
   test "chat completion works" do
-    {:ok, response} = ExLLM.chat(:anthropic, [
+    {:ok, response} = SingularityLLM.chat(:anthropic, [
       %{role: "user", content: "Say hello"}
     ])
     
@@ -258,7 +258,7 @@ ollama pull llama3.2
 
 ```elixir
 # Use local Ollama models
-{:ok, response} = ExLLM.chat(:ollama, [
+{:ok, response} = SingularityLLM.chat(:ollama, [
   %{role: "user", content: "Hello!"}
 ], model: "llama3.2")
 ```
@@ -271,7 +271,7 @@ ollama pull llama3.2
 
 ```elixir
 # Use LM Studio models
-{:ok, response} = ExLLM.chat(:lmstudio, [
+{:ok, response} = SingularityLLM.chat(:lmstudio, [
   %{role: "user", content: "Hello!"}
 ])
 ```
@@ -283,7 +283,7 @@ ollama pull llama3.2
 {:exla, "~> 0.7"}  # For CPU/GPU acceleration
 
 # Use Bumblebee models
-{:ok, response} = ExLLM.chat(:bumblebee, [
+{:ok, response} = SingularityLLM.chat(:bumblebee, [
   %{role: "user", content: "Hello!"}
 ], model: "microsoft/DialoGPT-medium")
 ```
@@ -291,7 +291,7 @@ ollama pull llama3.2
 ## Error Handling
 
 ```elixir
-case ExLLM.chat(:anthropic, messages) do
+case SingularityLLM.chat(:anthropic, messages) do
   {:ok, response} ->
     IO.puts(response.content)
     
@@ -318,7 +318,7 @@ end
 
 ```elixir
 # config/dev.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :debug,
   log_components: [:http_client, :streaming],
   test_cache: [enabled: true]
@@ -328,7 +328,7 @@ config :ex_llm,
 
 ```elixir
 # config/test.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :warn,
   test_cache: [
     enabled: true,
@@ -341,7 +341,7 @@ config :ex_llm,
 
 ```elixir
 # config/prod.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :info,
   log_redaction: true,
   cost_tracking_enabled: true
@@ -365,14 +365,14 @@ export ANTHROPIC_API_KEY="your-key"
 ```elixir
 # Check model configurations in config/models/ directory
 # Or use known working models:
-{:ok, response} = ExLLM.chat(:anthropic, messages, model: "claude-3-5-haiku-latest")
+{:ok, response} = SingularityLLM.chat(:anthropic, messages, model: "claude-3-5-haiku-latest")
 ```
 
 ### "Rate limited"
 ```elixir
 # Use different providers or implement backoff
 Process.sleep(1000)
-{:ok, response} = ExLLM.chat(:groq, messages)  # Try Groq for speed
+{:ok, response} = SingularityLLM.chat(:groq, messages)  # Try Groq for speed
 ```
 
 ### Tests running slowly
@@ -382,4 +382,4 @@ export EX_LLM_TEST_CACHE_ENABLED=true
 mix test --include live_api
 ```
 
-That's it! You're now ready to build amazing applications with ExLLM. 🚀
+That's it! You're now ready to build amazing applications with SingularityLLM. 🚀

@@ -1,6 +1,6 @@
-defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
+defmodule SingularityLLM.Integration.BatchProcessingComprehensiveTest do
   @moduledoc """
-  Comprehensive integration tests for ExLLM Batch Processing functionality.
+  Comprehensive integration tests for SingularityLLM Batch Processing functionality.
   Tests sequential/concurrent execution, rate limiting, progress tracking, and error handling.
   """
   use ExUnit.Case
@@ -31,7 +31,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
   end
 
   defp cleanup_batch(batch_id) when is_binary(batch_id) do
-    case ExLLM.BatchProcessing.cancel_batch(:openai, batch_id) do
+    case SingularityLLM.BatchProcessing.cancel_batch(:openai, batch_id) do
       {:ok, _} -> :ok
       # Already completed/cancelled or other non-critical error
       {:error, _} -> :ok
@@ -56,14 +56,14 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       requests = Enum.map(texts, fn text -> {text, []} end)
 
       # Test sequential batch embedding generation
-      case ExLLM.Core.Embeddings.batch_generate(:openai, requests) do
+      case SingularityLLM.Core.Embeddings.batch_generate(:openai, requests) do
         {:ok, responses} ->
           assert is_list(responses)
           assert length(responses) == 5
 
           # Verify each response is valid
           Enum.each(responses, fn response ->
-            assert %ExLLM.Types.EmbeddingResponse{} = response
+            assert %SingularityLLM.Types.EmbeddingResponse{} = response
             assert is_list(response.embeddings)
             # Each response has one embedding
             assert length(response.embeddings) == 1
@@ -104,7 +104,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
           if idx > 0, do: Process.sleep(100)
           options = Map.drop(request, [:messages]) |> Map.to_list()
 
-          case ExLLM.chat(:openai, request.messages, options) do
+          case SingularityLLM.chat(:openai, request.messages, options) do
             {:ok, response} -> {:ok, response}
             {:error, error} -> {:error, error}
           end
@@ -117,7 +117,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
       # Check response format for successful results
       Enum.each(successful_results, fn {:ok, response} ->
-        assert %ExLLM.Types.LLMResponse{} = response
+        assert %SingularityLLM.Types.LLMResponse{} = response
         assert is_binary(response.content)
         assert response.usage.total_tokens > 0
       end)
@@ -148,7 +148,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
           options = Map.drop(request, [:messages]) |> Map.to_list()
 
           try do
-            case ExLLM.chat(:openai, request.messages, options) do
+            case SingularityLLM.chat(:openai, request.messages, options) do
               {:ok, response} -> {:ok, response}
               {:error, error} -> {:error, error}
             end
@@ -187,7 +187,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
         texts
         |> Task.async_stream(
           fn text ->
-            ExLLM.embeddings(:openai, text)
+            SingularityLLM.embeddings(:openai, text)
           end,
           max_concurrency: 2,
           timeout: 30_000
@@ -207,7 +207,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       assert length(successful_results) >= 2
 
       Enum.each(successful_results, fn {:ok, {:ok, response}} ->
-        assert %ExLLM.Types.EmbeddingResponse{} = response
+        assert %SingularityLLM.Types.EmbeddingResponse{} = response
         assert length(response.embeddings) == 1
       end)
     end
@@ -229,7 +229,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
         |> Task.async_stream(
           fn request ->
             options = Map.drop(request, [:messages]) |> Map.to_list()
-            ExLLM.chat(:openai, request.messages, options)
+            SingularityLLM.chat(:openai, request.messages, options)
           end,
           max_concurrency: 2,
           timeout: 45_000
@@ -241,7 +241,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       assert length(successful_results) >= 2
 
       Enum.each(successful_results, fn {:ok, {:ok, response}} ->
-        assert %ExLLM.Types.LLMResponse{} = response
+        assert %SingularityLLM.Types.LLMResponse{} = response
         assert is_binary(response.content)
       end)
     end
@@ -252,7 +252,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
       # Create a test request
       request =
-        ExLLM.Pipeline.Request.new(
+        SingularityLLM.Pipeline.Request.new(
           :openai,
           [%{role: "user", content: "Test parallel execution"}],
           %{model: "gpt-4o-mini", max_tokens: 5}
@@ -260,18 +260,18 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
       # Use basic pipeline to test parallel components
       pipeline = [
-        ExLLM.Plugs.ValidateProvider,
-        ExLLM.Plugs.FetchConfig,
-        ExLLM.Plugs.BuildTeslaClient,
+        SingularityLLM.Plugs.ValidateProvider,
+        SingularityLLM.Plugs.FetchConfig,
+        SingularityLLM.Plugs.BuildTeslaClient,
         # Correct module name
-        ExLLM.Plugs.Providers.OpenAIPrepareRequest,
-        ExLLM.Plugs.ExecuteRequest,
-        ExLLM.Plugs.Providers.OpenAIParseResponse
+        SingularityLLM.Plugs.Providers.OpenAIPrepareRequest,
+        SingularityLLM.Plugs.ExecuteRequest,
+        SingularityLLM.Plugs.Providers.OpenAIParseResponse
       ]
 
-      case ExLLM.run(request, pipeline) do
+      case SingularityLLM.run(request, pipeline) do
         {:ok, response} ->
-          assert %ExLLM.Types.LLMResponse{} = response
+          assert %SingularityLLM.Types.LLMResponse{} = response
           assert is_binary(response.content)
 
         {:error, error} ->
@@ -291,7 +291,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       requests = create_test_requests(3)
       batch_name = unique_batch_name("API Batch")
 
-      case ExLLM.BatchProcessing.create_batch(:anthropic, requests,
+      case SingularityLLM.BatchProcessing.create_batch(:anthropic, requests,
              completion_window: "24h",
              metadata: %{name: batch_name}
            ) do
@@ -325,10 +325,10 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       # Create a batch first
       requests = create_test_requests(2)
 
-      case ExLLM.BatchProcessing.create_batch(:anthropic, requests, completion_window: "24h") do
+      case SingularityLLM.BatchProcessing.create_batch(:anthropic, requests, completion_window: "24h") do
         {:ok, batch} ->
           # Get batch status
-          case ExLLM.BatchProcessing.get_batch(:anthropic, batch["id"]) do
+          case SingularityLLM.BatchProcessing.get_batch(:anthropic, batch["id"]) do
             {:ok, retrieved} ->
               assert retrieved["id"] == batch["id"]
               assert retrieved["object"] == "batch"
@@ -353,10 +353,10 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       # Create a batch to cancel
       requests = create_test_requests(2)
 
-      case ExLLM.BatchProcessing.create_batch(:anthropic, requests, completion_window: "24h") do
+      case SingularityLLM.BatchProcessing.create_batch(:anthropic, requests, completion_window: "24h") do
         {:ok, batch} ->
           # Cancel the batch
-          case ExLLM.BatchProcessing.cancel_batch(:anthropic, batch["id"]) do
+          case SingularityLLM.BatchProcessing.cancel_batch(:anthropic, batch["id"]) do
             {:ok, cancelled} ->
               assert cancelled["id"] == batch["id"]
               assert cancelled["status"] in ["cancelled", "cancelling"]
@@ -391,14 +391,14 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
     test "rate limit handling with retry" do
       # Test a single request with retry infrastructure to validate it works
       request_fn = fn ->
-        ExLLM.chat(:openai, [%{role: "user", content: "Quick test"}],
+        SingularityLLM.chat(:openai, [%{role: "user", content: "Quick test"}],
           model: "gpt-4o-mini",
           max_tokens: 5
         )
       end
 
       # Execute with retry infrastructure
-      case ExLLM.Infrastructure.Retry.with_provider_circuit_breaker(:openai, request_fn) do
+      case SingularityLLM.Infrastructure.Retry.with_provider_circuit_breaker(:openai, request_fn) do
         # Success
         {:ok, _} -> assert true
         # Error is acceptable in rate-limited environments
@@ -411,7 +411,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       failing_requests =
         Enum.map(1..3, fn _i ->
           fn ->
-            ExLLM.chat(:openai, [%{role: "user", content: "Test"}],
+            SingularityLLM.chat(:openai, [%{role: "user", content: "Test"}],
               model: "gpt-nonexistent-test",
               max_tokens: 5
             )
@@ -420,7 +420,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
       results =
         Enum.map(failing_requests, fn request_fn ->
-          ExLLM.Infrastructure.Retry.with_provider_circuit_breaker(:openai, request_fn)
+          SingularityLLM.Infrastructure.Retry.with_provider_circuit_breaker(:openai, request_fn)
         end)
 
       # All should fail due to invalid model
@@ -436,11 +436,11 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
     test "bulkhead concurrency limiting" do
       # Initialize bulkhead system first
-      ExLLM.Infrastructure.CircuitBreaker.Bulkhead.init()
+      SingularityLLM.Infrastructure.CircuitBreaker.Bulkhead.init()
 
       # Test basic bulkhead functionality without complex concurrency
-      case ExLLM.Infrastructure.CircuitBreaker.Bulkhead.execute("test_bulkhead", fn ->
-             ExLLM.chat(:openai, [%{role: "user", content: "Bulkhead test"}],
+      case SingularityLLM.Infrastructure.CircuitBreaker.Bulkhead.execute("test_bulkhead", fn ->
+             SingularityLLM.chat(:openai, [%{role: "user", content: "Bulkhead test"}],
                model: "gpt-4o-mini",
                max_tokens: 5
              )
@@ -478,7 +478,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
           options = Map.drop(request, [:messages]) |> Map.to_list()
 
           try do
-            ExLLM.chat(:openai, request.messages, options)
+            SingularityLLM.chat(:openai, request.messages, options)
           rescue
             e -> {:error, e}
           end
@@ -526,7 +526,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       # Convert to batch_generate format
       requests = Enum.map(texts, fn text -> {text, []} end)
 
-      case ExLLM.Core.Embeddings.batch_generate(:openai, requests) do
+      case SingularityLLM.Core.Embeddings.batch_generate(:openai, requests) do
         {:ok, responses} ->
           end_time = :os.system_time(:millisecond)
           processing_time = end_time - start_time
@@ -571,7 +571,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       # Convert to batch_generate format
       requests = Enum.map(large_texts, fn text -> {text, []} end)
 
-      case ExLLM.Core.Embeddings.batch_generate(:openai, requests) do
+      case SingularityLLM.Core.Embeddings.batch_generate(:openai, requests) do
         {:ok, responses} ->
           # Check final memory usage
           final_memory = :erlang.memory(:total)
@@ -598,9 +598,9 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       message = [%{role: "user", content: "Hello"}]
 
       # Test that we can make a basic request successfully
-      case ExLLM.chat(:openai, message, model: "gpt-4o-mini", max_tokens: 5) do
+      case SingularityLLM.chat(:openai, message, model: "gpt-4o-mini", max_tokens: 5) do
         {:ok, response} ->
-          assert %ExLLM.Types.LLMResponse{} = response
+          assert %SingularityLLM.Types.LLMResponse{} = response
           assert is_binary(response.content)
           assert response.usage.total_tokens > 0
 
@@ -630,7 +630,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       # Process each individually to collect partial results
       results =
         Enum.map(mixed_embedding_texts, fn text ->
-          case ExLLM.embeddings(:openai, text) do
+          case SingularityLLM.embeddings(:openai, text) do
             {:ok, response} -> {:ok, response}
             {:error, error} -> {:error, error}
           end
@@ -647,7 +647,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
 
       # Verify successful embeddings
       Enum.each(successful_embeddings, fn response ->
-        assert %ExLLM.Types.EmbeddingResponse{} = response
+        assert %SingularityLLM.Types.EmbeddingResponse{} = response
         assert length(response.embeddings) == 1
       end)
 
@@ -691,7 +691,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
           options = Map.drop(request, [:messages, :id]) |> Map.to_list()
 
           try do
-            case ExLLM.chat(:openai, request.messages, options) do
+            case SingularityLLM.chat(:openai, request.messages, options) do
               {:ok, response} -> {:completed, request.id, response}
               {:error, error} -> {:failed, request.id, error}
             end
@@ -717,7 +717,7 @@ defmodule ExLLM.Integration.BatchProcessingComprehensiveTest do
       retry_results =
         Enum.map(retry_requests, fn request ->
           options = Map.drop(request, [:messages, :id]) |> Map.to_list()
-          ExLLM.chat(:openai, request.messages, options)
+          SingularityLLM.chat(:openai, request.messages, options)
         end)
 
       # Verify retry results

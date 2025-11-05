@@ -1,10 +1,10 @@
-# ExLLM Pipeline Architecture
+# SingularityLLM Pipeline Architecture
 
-> **New in v0.9.0**: ExLLM now features a Phoenix-style pipeline architecture that provides both simple and advanced APIs through a composable plug system.
+> **New in v0.9.0**: SingularityLLM now features a Phoenix-style pipeline architecture that provides both simple and advanced APIs through a composable plug system.
 
 ## Overview
 
-ExLLM's pipeline architecture is inspired by Phoenix's Plug pattern, providing a composable, extensible way to process LLM requests. The architecture consists of:
+SingularityLLM's pipeline architecture is inspired by Phoenix's Plug pattern, providing a composable, extensible way to process LLM requests. The architecture consists of:
 
 1. **Request Structure** - Similar to Plug.Conn, carries all request data through the pipeline
 2. **Plug Behavior** - Standardized interface for pipeline components
@@ -17,10 +17,10 @@ ExLLM's pipeline architecture is inspired by Phoenix's Plug pattern, providing a
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Application                         │
 ├─────────────────────────────────────────────────────────────┤
-│                    ExLLM Public API                         │
+│                    SingularityLLM Public API                         │
 │         chat/3, stream/4, run/2, builder API               │
 ├─────────────────────────────────────────────────────────────┤
-│                  ExLLM Pipeline Layer                       │
+│                  SingularityLLM Pipeline Layer                       │
 │    Plugs for validation, context, streaming, parsing       │
 ├─────────────────────────────────────────────────────────────┤
 │               Tesla Middleware Stack                        │
@@ -35,10 +35,10 @@ ExLLM's pipeline architecture is inspired by Phoenix's Plug pattern, providing a
 
 ### 1. Request Structure
 
-The `ExLLM.Pipeline.Request` struct carries all data through the pipeline:
+The `SingularityLLM.Pipeline.Request` struct carries all data through the pipeline:
 
 ```elixir
-%ExLLM.Pipeline.Request{
+%SingularityLLM.Pipeline.Request{
   # Identification
   id: "unique-request-id",
   provider: :openai,
@@ -58,7 +58,7 @@ The `ExLLM.Pipeline.Request` struct carries all data through the pipeline:
   
   # Response
   response: %Tesla.Env{},
-  result: %{},  # Parsed ExLLM format
+  result: %{},  # Parsed SingularityLLM format
   
   # Communication
   assigns: %{},  # Inter-plug communication
@@ -76,11 +76,11 @@ The `ExLLM.Pipeline.Request` struct carries all data through the pipeline:
 
 ### 2. Plug Behavior
 
-All pipeline components implement the `ExLLM.Plug` behavior:
+All pipeline components implement the `SingularityLLM.Plug` behavior:
 
 ```elixir
 defmodule MyCustomPlug do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def init(opts) do
@@ -113,16 +113,16 @@ The pipeline runner executes plugs in sequence:
 ```elixir
 # Direct pipeline execution
 pipeline = [
-  ExLLM.Plugs.ValidateProvider,
-  {ExLLM.Plugs.ManageContext, strategy: :truncate},
-  ExLLM.Plugs.ExecuteRequest
+  SingularityLLM.Plugs.ValidateProvider,
+  {SingularityLLM.Plugs.ManageContext, strategy: :truncate},
+  SingularityLLM.Plugs.ExecuteRequest
 ]
 
-request = ExLLM.Pipeline.Request.new(:openai, messages)
-result = ExLLM.Pipeline.run(request, pipeline)
+request = SingularityLLM.Pipeline.Request.new(:openai, messages)
+result = SingularityLLM.Pipeline.run(request, pipeline)
 
 # Using the high-level API
-{:ok, response} = ExLLM.run(request, pipeline)
+{:ok, response} = SingularityLLM.run(request, pipeline)
 ```
 
 ## Built-in Plugs
@@ -157,7 +157,7 @@ result = ExLLM.Pipeline.run(request, pipeline)
 
 ```elixir
 defmodule MyApp.Plugs.RateLimiter do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def init(opts) do
@@ -190,7 +190,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.StreamLogger do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{config: %{stream: true}} = request, _opts) do
@@ -252,13 +252,13 @@ The high-level API automatically selects the appropriate pipeline:
 
 ```elixir
 # Simple chat
-{:ok, response} = ExLLM.chat(:openai, messages, %{
+{:ok, response} = SingularityLLM.chat(:openai, messages, %{
   temperature: 0.7,
   model: "gpt-4"
 })
 
 # Streaming
-ExLLM.stream(:anthropic, messages, %{stream: true}, fn chunk ->
+SingularityLLM.stream(:anthropic, messages, %{stream: true}, fn chunk ->
   IO.write(chunk.content)
 end)
 ```
@@ -270,17 +270,17 @@ For advanced use cases, use the pipeline directly:
 ```elixir
 # Custom pipeline
 custom_pipeline = [
-  ExLLM.Plugs.ValidateProvider,
+  SingularityLLM.Plugs.ValidateProvider,
   MyApp.Plugs.CustomAuth,
-  ExLLM.Plugs.FetchConfig,
+  SingularityLLM.Plugs.FetchConfig,
   MyApp.Plugs.RateLimiter,
-  ExLLM.Plugs.BuildTeslaClient,
-  ExLLM.Plugs.ExecuteRequest,
+  SingularityLLM.Plugs.BuildTeslaClient,
+  SingularityLLM.Plugs.ExecuteRequest,
   MyApp.Plugs.CustomParser
 ]
 
-request = ExLLM.Pipeline.Request.new(:custom_provider, messages)
-{:ok, response} = ExLLM.run(request, custom_pipeline)
+request = SingularityLLM.Pipeline.Request.new(:custom_provider, messages)
+{:ok, response} = SingularityLLM.run(request, custom_pipeline)
 ```
 
 ### Builder API
@@ -290,23 +290,23 @@ The fluent builder API provides a convenient way to construct requests:
 ```elixir
 # Using the builder
 {:ok, response} = 
-  ExLLM.build(:openai)
-  |> ExLLM.with_messages([
+  SingularityLLM.build(:openai)
+  |> SingularityLLM.with_messages([
     %{role: "system", content: "You are a helpful assistant"},
     %{role: "user", content: "Hello!"}
   ])
-  |> ExLLM.with_model("gpt-4")
-  |> ExLLM.with_temperature(0.7)
-  |> ExLLM.with_max_tokens(1000)
-  |> ExLLM.execute()
+  |> SingularityLLM.with_model("gpt-4")
+  |> SingularityLLM.with_temperature(0.7)
+  |> SingularityLLM.with_max_tokens(1000)
+  |> SingularityLLM.execute()
 
 # With custom pipeline modifications
 {:ok, response} =
-  ExLLM.build(:anthropic)
-  |> ExLLM.with_messages(messages)
-  |> ExLLM.prepend_plug(MyApp.Plugs.CustomAuth)
-  |> ExLLM.append_plug(MyApp.Plugs.ResponseLogger)
-  |> ExLLM.execute()
+  SingularityLLM.build(:anthropic)
+  |> SingularityLLM.with_messages(messages)
+  |> SingularityLLM.prepend_plug(MyApp.Plugs.CustomAuth)
+  |> SingularityLLM.append_plug(MyApp.Plugs.ResponseLogger)
+  |> SingularityLLM.execute()
 ```
 
 ## Streaming Architecture
@@ -346,7 +346,7 @@ callback = fn chunk ->
 end
 
 # Execute streaming request
-ExLLM.stream(:openai, messages, %{
+SingularityLLM.stream(:openai, messages, %{
   model: "gpt-4",
   stream: true
 }, callback)
@@ -361,7 +361,7 @@ ExLLM.stream(:openai, messages, %{
 The pipeline provides comprehensive error handling:
 
 ```elixir
-case ExLLM.chat(:openai, messages) do
+case SingularityLLM.chat(:openai, messages) do
   {:ok, response} ->
     # Success
     IO.puts(response.content)
@@ -380,7 +380,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.ErrorHandler do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{errors: errors} = request, _opts) when errors != [] do
@@ -439,7 +439,7 @@ optimized_pipeline = [
 defmodule MyApp.Plugs.CustomPlugTest do
   use ExUnit.Case
   
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
   alias MyApp.Plugs.CustomPlug
   
   test "processes valid requests" do
@@ -468,16 +468,16 @@ defmodule MyApp.PipelineIntegrationTest do
   
   test "custom pipeline processes requests end-to-end" do
     pipeline = [
-      ExLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.ValidateProvider,
       MyApp.Plugs.CustomTransform,
-      ExLLM.Plugs.Providers.MockHandler
+      SingularityLLM.Plugs.Providers.MockHandler
     ]
     
-    request = ExLLM.Pipeline.Request.new(:mock, [
+    request = SingularityLLM.Pipeline.Request.new(:mock, [
       %{role: "user", content: "test message"}
     ])
     
-    {:ok, response} = ExLLM.run(request, pipeline)
+    {:ok, response} = SingularityLLM.run(request, pipeline)
     
     assert response.content =~ "Mocked response"
     assert response.metadata.custom_processed == true

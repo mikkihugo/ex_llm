@@ -8,15 +8,15 @@ defmodule SimpleFileTest do
   test "direct provider call" do
     # Test if we can call the provider directly
     file_path = "/tmp/test.txt"
-    File.write!(file_path, "Hello ExLLM")
+    File.write!(file_path, "Hello SingularityLLM")
 
-    {:ok, file} = ExLLM.Providers.OpenAI.upload_file(file_path, "assistants")
+    {:ok, file} = SingularityLLM.Providers.OpenAI.upload_file(file_path, "assistants")
     assert file["id"] =~ ~r/^file-/
     assert file["status"] == "processed"
 
     # Delete the uploaded file
     if file["id"] do
-      ExLLM.Providers.OpenAI.delete_file(file["id"])
+      SingularityLLM.Providers.OpenAI.delete_file(file["id"])
     end
 
     # Cleanup local file
@@ -28,13 +28,13 @@ defmodule SimpleFileTest do
     file_path = "/tmp/test2.txt"
     File.write!(file_path, "Hello FileManager")
 
-    {:ok, file} = ExLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
+    {:ok, file} = SingularityLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants")
     assert file["id"] =~ ~r/^file-/
     assert file["status"] == "processed"
 
     # Delete the uploaded file
     if file["id"] do
-      ExLLM.FileManager.delete_file(:openai, file["id"])
+      SingularityLLM.FileManager.delete_file(:openai, file["id"])
     end
 
     # Cleanup local file

@@ -1,11 +1,11 @@
-defmodule ExLLM.Core.VisionTest do
+defmodule SingularityLLM.Core.VisionTest do
   use ExUnit.Case, async: true
 
   @moduletag capability: :vision
-  alias ExLLM.Core.Vision
+  alias SingularityLLM.Core.Vision
 
   @moduledoc """
-  Tests for vision and multimodal functionality in ExLLM.
+  Tests for vision and multimodal functionality in SingularityLLM.
 
   These tests ensure that image handling works correctly across
   different providers and formats.

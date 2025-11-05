@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.PerplexityPublicAPITest do
+defmodule SingularityLLM.Providers.PerplexityPublicAPITest do
   @moduledoc """
-  Perplexity-specific integration tests using the public ExLLM API.
+  Perplexity-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :perplexity
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :perplexity
 
   # Provider-specific tests only  
   describe "perplexity-specific features via public API" do
@@ -13,7 +13,7 @@ defmodule ExLLM.Providers.PerplexityPublicAPITest do
         %{role: "user", content: "What are the latest developments in AI as of 2024?"}
       ]
 
-      case ExLLM.chat(:perplexity, messages,
+      case SingularityLLM.chat(:perplexity, messages,
              model: "llama-3.1-sonar-small-128k-online",
              max_tokens: 100
            ) do
@@ -37,7 +37,7 @@ defmodule ExLLM.Providers.PerplexityPublicAPITest do
       for {model, question, is_online} <- test_cases do
         messages = [%{role: "user", content: question}]
 
-        case ExLLM.chat(:perplexity, messages, model: model, max_tokens: 100) do
+        case SingularityLLM.chat(:perplexity, messages, model: model, max_tokens: 100) do
           {:ok, response} ->
             assert response.metadata.provider == :perplexity
             assert is_binary(response.content)
@@ -68,7 +68,7 @@ defmodule ExLLM.Providers.PerplexityPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:perplexity, messages, collector,
+      case SingularityLLM.stream(:perplexity, messages, collector,
              model: "llama-3.1-sonar-small-128k-chat",
              max_tokens: 100,
              timeout: 10_000
@@ -97,11 +97,11 @@ defmodule ExLLM.Providers.PerplexityPublicAPITest do
       messages = [
         %{
           role: "user",
-          content: "Find information about the ExLLM library for Elixir"
+          content: "Find information about the SingularityLLM library for Elixir"
         }
       ]
 
-      case ExLLM.chat(:perplexity, messages,
+      case SingularityLLM.chat(:perplexity, messages,
              model: "llama-3.1-sonar-large-128k-online",
              max_tokens: 200
            ) do
@@ -124,7 +124,7 @@ defmodule ExLLM.Providers.PerplexityPublicAPITest do
         %{role: "user", content: large_context <> "\n\nSummarize the above in one sentence."}
       ]
 
-      case ExLLM.chat(:perplexity, messages, max_tokens: 50) do
+      case SingularityLLM.chat(:perplexity, messages, max_tokens: 50) do
         {:ok, response} ->
           assert response.metadata.provider == :perplexity
           assert is_binary(response.content)

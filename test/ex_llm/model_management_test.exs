@@ -1,4 +1,4 @@
-defmodule ExLLM.ModelManagementTest do
+defmodule SingularityLLM.ModelManagementTest do
   @moduledoc """
   Tests for model discovery, management, and capabilities across providers.
 
@@ -12,7 +12,7 @@ defmodule ExLLM.ModelManagementTest do
   @moduletag :requires_service
   @moduletag :local_only
 
-  alias ExLLM.Core.Models
+  alias SingularityLLM.Core.Models
 
   describe "model listing and discovery" do
     test "lists all models across providers" do
@@ -33,7 +33,7 @@ defmodule ExLLM.ModelManagementTest do
       providers = [:openai, :anthropic, :gemini, :mock]
 
       for provider <- providers do
-        case ExLLM.list_models(provider) do
+        case SingularityLLM.list_models(provider) do
           {:ok, models} ->
             assert is_list(models)
 
@@ -55,7 +55,7 @@ defmodule ExLLM.ModelManagementTest do
     end
 
     test "handles unknown providers gracefully" do
-      result = ExLLM.list_models(:unknown_provider)
+      result = SingularityLLM.list_models(:unknown_provider)
 
       assert {:error, _reason} = result
     end
@@ -64,7 +64,7 @@ defmodule ExLLM.ModelManagementTest do
       providers = [:openai, :anthropic, :gemini, :mock]
 
       for provider <- providers do
-        default_model = ExLLM.default_model(provider)
+        default_model = SingularityLLM.default_model(provider)
 
         # Should return a string (even if "unknown")
         assert is_binary(default_model)
@@ -76,7 +76,7 @@ defmodule ExLLM.ModelManagementTest do
   describe "model information and details" do
     test "gets detailed model information" do
       # Test with a known model from OpenAI
-      case ExLLM.get_model_info(:openai, "gpt-4") do
+      case SingularityLLM.get_model_info(:openai, "gpt-4") do
         {:ok, info} ->
           assert is_map(info)
 
@@ -96,7 +96,7 @@ defmodule ExLLM.ModelManagementTest do
     end
 
     test "handles requests for non-existent models" do
-      result = ExLLM.get_model_info(:openai, "non-existent-model-12345")
+      result = SingularityLLM.get_model_info(:openai, "non-existent-model-12345")
 
       assert {:error, _reason} = result
     end
@@ -110,7 +110,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for {provider, model} <- test_cases do
-        window_size = ExLLM.context_window_size(provider, model)
+        window_size = SingularityLLM.context_window_size(provider, model)
 
         # Should return an integer or nil
         assert is_integer(window_size) or is_nil(window_size)
@@ -133,7 +133,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for {provider, model, capability} <- test_cases do
-        supports = ExLLM.model_supports?(provider, model, capability)
+        supports = SingularityLLM.model_supports?(provider, model, capability)
 
         # Should return a boolean
         assert is_boolean(supports)
@@ -144,7 +144,7 @@ defmodule ExLLM.ModelManagementTest do
       features = [:streaming, :vision, :function_calling]
 
       for feature <- features do
-        case ExLLM.find_models_with_features([feature]) do
+        case SingularityLLM.find_models_with_features([feature]) do
           {:ok, models} ->
             assert is_list(models)
 
@@ -172,7 +172,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for features <- feature_sets do
-        recommendations = ExLLM.recommend_models(features: features)
+        recommendations = SingularityLLM.recommend_models(features: features)
 
         case recommendations do
           {:ok, models} ->
@@ -193,7 +193,7 @@ defmodule ExLLM.ModelManagementTest do
       capabilities = [:streaming, :vision, :function_calling, :embeddings]
 
       for capability <- capabilities do
-        models = ExLLM.models_by_capability(capability)
+        models = SingularityLLM.models_by_capability(capability)
 
         # Should return a list (may be empty)
         assert is_list(models)
@@ -209,7 +209,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for {provider, model} <- test_cases do
-        supports_vision = ExLLM.supports_vision?(provider, model)
+        supports_vision = SingularityLLM.supports_vision?(provider, model)
 
         assert is_boolean(supports_vision)
       end
@@ -230,7 +230,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for content <- test_content do
-        estimated_tokens = ExLLM.estimate_tokens(content)
+        estimated_tokens = SingularityLLM.estimate_tokens(content)
 
         assert is_integer(estimated_tokens)
         assert estimated_tokens > 0
@@ -240,7 +240,7 @@ defmodule ExLLM.ModelManagementTest do
 
   describe "provider configuration and support" do
     test "lists supported providers" do
-      providers = ExLLM.supported_providers()
+      providers = SingularityLLM.supported_providers()
 
       assert is_list(providers)
       assert length(providers) > 0
@@ -262,7 +262,7 @@ defmodule ExLLM.ModelManagementTest do
       providers = [:openai, :anthropic, :gemini, :mock, :unknown_provider]
 
       for provider <- providers do
-        is_configured = ExLLM.configured?(provider)
+        is_configured = SingularityLLM.configured?(provider)
 
         assert is_boolean(is_configured)
       end
@@ -302,7 +302,7 @@ defmodule ExLLM.ModelManagementTest do
       ]
 
       for {provider, model} <- test_cases do
-        case ExLLM.validate_context(messages, provider: provider, model: model) do
+        case SingularityLLM.validate_context(messages, provider: provider, model: model) do
           {:ok, token_count} ->
             assert is_integer(token_count)
             assert token_count > 0
@@ -321,7 +321,7 @@ defmodule ExLLM.ModelManagementTest do
         %{role: "user", content: "Second message"}
       ]
 
-      prepared = ExLLM.prepare_messages(messages, provider: :openai, model: "gpt-4")
+      prepared = SingularityLLM.prepare_messages(messages, provider: :openai, model: "gpt-4")
 
       assert is_list(prepared)
       # Should return processed messages (may be truncated or modified)
@@ -335,7 +335,7 @@ defmodule ExLLM.ModelManagementTest do
         %{role: "user", content: "Test"}
       ]
 
-      stats = ExLLM.context_stats(messages)
+      stats = SingularityLLM.context_stats(messages)
 
       assert is_map(stats)
       # Should have statistics about the conversation
@@ -345,7 +345,7 @@ defmodule ExLLM.ModelManagementTest do
   describe "error handling and edge cases" do
     test "handles empty model lists" do
       # Test with provider that has no models
-      case ExLLM.list_models(:empty_provider) do
+      case SingularityLLM.list_models(:empty_provider) do
         {:ok, []} ->
           # Empty list is valid
           assert true
@@ -366,7 +366,7 @@ defmodule ExLLM.ModelManagementTest do
 
       for {provider, model} <- invalid_cases do
         try do
-          result = ExLLM.get_model_info(provider, model)
+          result = SingularityLLM.get_model_info(provider, model)
 
           # Should return an error
           assert {:error, _reason} = result
@@ -381,7 +381,7 @@ defmodule ExLLM.ModelManagementTest do
     test "handles network timeouts in model fetching" do
       # This would require mocking network failures
       # For now, just test that the API doesn't crash
-      case ExLLM.list_models(:openai) do
+      case SingularityLLM.list_models(:openai) do
         {:ok, _models} ->
           assert true
 
@@ -396,7 +396,7 @@ defmodule ExLLM.ModelManagementTest do
       tasks =
         for _i <- 1..5 do
           Task.async(fn ->
-            ExLLM.list_models(:mock)
+            SingularityLLM.list_models(:mock)
           end)
         end
 
@@ -414,7 +414,7 @@ defmodule ExLLM.ModelManagementTest do
 
   describe "model metadata and configuration" do
     test "validates model pricing information" do
-      case ExLLM.list_models(:openai) do
+      case SingularityLLM.list_models(:openai) do
         {:ok, models} ->
           for model <- models do
             if Map.has_key?(model, :pricing) and not is_nil(model.pricing) do
@@ -438,7 +438,7 @@ defmodule ExLLM.ModelManagementTest do
     end
 
     test "validates model capability information" do
-      case ExLLM.list_models(:openai) do
+      case SingularityLLM.list_models(:openai) do
         {:ok, models} ->
           for model <- models do
             if Map.has_key?(model, :capabilities) and not is_nil(model.capabilities) do
@@ -462,7 +462,7 @@ defmodule ExLLM.ModelManagementTest do
     end
 
     test "validates context window information" do
-      case ExLLM.list_models(:openai) do
+      case SingularityLLM.list_models(:openai) do
         {:ok, models} ->
           for model <- models do
             if Map.has_key?(model, :context_window) and not is_nil(model.context_window) do
@@ -482,12 +482,12 @@ defmodule ExLLM.ModelManagementTest do
     end
   end
 
-  describe "integration with main ExLLM API" do
+  describe "integration with main SingularityLLM API" do
     test "model management functions work through main API" do
-      # Test that all model functions are accessible through ExLLM module
+      # Test that all model functions are accessible through SingularityLLM module
 
       # List models
-      result = ExLLM.list_models(:mock)
+      result = SingularityLLM.list_models(:mock)
 
       case result do
         {:ok, _models} -> assert true
@@ -495,7 +495,7 @@ defmodule ExLLM.ModelManagementTest do
       end
 
       # Get model info
-      result = ExLLM.get_model_info(:openai, "gpt-4")
+      result = SingularityLLM.get_model_info(:openai, "gpt-4")
 
       case result do
         {:ok, _info} -> assert true
@@ -503,17 +503,17 @@ defmodule ExLLM.ModelManagementTest do
       end
 
       # Default model
-      default = ExLLM.default_model(:openai)
+      default = SingularityLLM.default_model(:openai)
       assert is_binary(default)
 
       # Model capabilities
-      supports = ExLLM.model_supports?(:openai, "gpt-4", :streaming)
+      supports = SingularityLLM.model_supports?(:openai, "gpt-4", :streaming)
       assert is_boolean(supports)
     end
 
     test "maintains consistency across model operations" do
       # Get list of models
-      case ExLLM.list_models(:mock) do
+      case SingularityLLM.list_models(:mock) do
         {:ok, models} ->
           # Pick first model and test consistency
           if length(models) > 0 do
@@ -521,7 +521,7 @@ defmodule ExLLM.ModelManagementTest do
             model_id = first_model.id
 
             # Get detailed info should work
-            case ExLLM.get_model_info(:mock, model_id) do
+            case SingularityLLM.get_model_info(:mock, model_id) do
               {:ok, detailed_info} ->
                 # Basic consistency checks
                 assert detailed_info.id == model_id

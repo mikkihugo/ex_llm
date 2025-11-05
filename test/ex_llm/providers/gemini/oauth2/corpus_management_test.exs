@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.CorpusManagementTest do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.CorpusManagementTest do
   @moduledoc """
   Tests for Gemini Corpus Management API via OAuth2.
 
@@ -6,10 +6,10 @@ defmodule ExLLM.Providers.Gemini.OAuth2.CorpusManagementTest do
   creation, retrieval, updating, querying, and deletion.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.Corpus
-  alias ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
+  alias SingularityLLM.Providers.Gemini.Corpus
+  alias SingularityLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
 
   @moduletag :gemini_oauth2_apis
   @moduletag :corpus_management

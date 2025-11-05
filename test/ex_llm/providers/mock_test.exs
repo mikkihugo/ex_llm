@@ -1,10 +1,10 @@
-defmodule ExLLM.MockTest do
+defmodule SingularityLLM.MockTest do
   use ExUnit.Case, async: false
 
   @moduletag :mock
   @moduletag provider: :mock
-  alias ExLLM.Providers.Mock
-  alias ExLLM.Types
+  alias SingularityLLM.Providers.Mock
+  alias SingularityLLM.Types
 
   setup do
     # Using TestHelpers would reset the mock, but we need direct control
@@ -28,7 +28,7 @@ defmodule ExLLM.MockTest do
 
       messages = [%{role: "user", content: "Hello"}]
 
-      assert {:ok, response} = ExLLM.chat(:mock, messages, cache: false)
+      assert {:ok, response} = SingularityLLM.chat(:mock, messages, cache: false)
       assert response.content == "Hello from mock!"
       assert response.model == "test-model"
       assert response.usage.input_tokens == 5
@@ -40,7 +40,7 @@ defmodule ExLLM.MockTest do
       options = [temperature: 0.7, max_tokens: 100]
       full_options = options ++ [cache: false]
 
-      ExLLM.chat(:mock, messages, full_options)
+      SingularityLLM.chat(:mock, messages, full_options)
 
       requests = Mock.get_requests()
       assert length(requests) == 1
@@ -67,7 +67,7 @@ defmodule ExLLM.MockTest do
 
       messages = [%{role: "user", content: "Hello world"}]
 
-      assert {:ok, response} = ExLLM.chat(:mock, messages, cache: false)
+      assert {:ok, response} = SingularityLLM.chat(:mock, messages, cache: false)
       assert response.content == "Echo: Hello world"
       assert response.model == "echo-model"
     end
@@ -80,14 +80,14 @@ defmodule ExLLM.MockTest do
       messages = [%{role: "user", content: "Hello"}]
 
       assert {:error, {:api_error, %{status: 500, body: "Internal server error"}}} =
-               ExLLM.chat(:mock, messages, retry: false, cache: false)
+               SingularityLLM.chat(:mock, messages, retry: false, cache: false)
     end
   end
 
   describe "streaming operations" do
     test "returns stream chunks" do
       # Configure application environment for mock streaming
-      Application.put_env(:ex_llm, :mock_responses, %{
+      Application.put_env(:singularity_llm, :mock_responses, %{
         stream: [
           %Types.StreamChunk{content: "Hello ", finish_reason: nil},
           %Types.StreamChunk{content: "world!", finish_reason: nil},
@@ -100,7 +100,7 @@ defmodule ExLLM.MockTest do
 
       # Use the new streaming API
       result =
-        ExLLM.stream(:mock, messages, fn chunk ->
+        SingularityLLM.stream(:mock, messages, fn chunk ->
           send(self(), {:chunk, chunk})
           chunk
         end)
@@ -119,14 +119,14 @@ defmodule ExLLM.MockTest do
       end
 
       # Clean up
-      Application.delete_env(:ex_llm, :mock_responses)
+      Application.delete_env(:singularity_llm, :mock_responses)
     end
 
     test "captures streaming requests" do
       messages = [%{role: "user", content: "Stream test"}]
 
       callback = fn chunk -> send(self(), {:chunk, chunk}) end
-      :ok = ExLLM.stream(:mock, messages, callback, temperature: 0.5)
+      :ok = SingularityLLM.stream(:mock, messages, callback, temperature: 0.5)
 
       last_request = Mock.get_last_request()
       assert last_request.type == :stream_chat
@@ -160,7 +160,7 @@ defmodule ExLLM.MockTest do
 
       messages = [%{role: "user", content: "What's the weather?"}]
 
-      assert {:ok, response} = ExLLM.chat(:mock, messages, functions: functions, cache: false)
+      assert {:ok, response} = SingularityLLM.chat(:mock, messages, functions: functions, cache: false)
       assert response.function_call != nil
       assert response.function_call.name == "get_weather"
       assert response.function_call.arguments == ~s({"location": "San Francisco"})
@@ -182,7 +182,7 @@ defmodule ExLLM.MockTest do
       })
 
       messages = [%{role: "user", content: "What time is it?"}]
-      {:ok, response} = ExLLM.chat(:mock, messages, cache: false)
+      {:ok, response} = SingularityLLM.chat(:mock, messages, cache: false)
 
       # Since mock adapter doesn't implement provider-specific parsing,
       # we'll test the response structure directly
@@ -206,14 +206,14 @@ defmodule ExLLM.MockTest do
 
       # Should get the error immediately without retries
       assert {:error, {:network_error, "Connection failed"}} =
-               ExLLM.chat(:mock, messages, cache: false)
+               SingularityLLM.chat(:mock, messages, cache: false)
     end
 
     test "respects retry disabled option" do
       messages = [%{role: "user", content: "No retry"}]
 
       assert {:error, {:network_error, "Connection failed"}} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  retry: false,
                  cache: false,
                  mock_error: {:network_error, "Connection failed"}
@@ -226,7 +226,7 @@ defmodule ExLLM.MockTest do
 
   describe "model listing" do
     test "returns mock models" do
-      assert {:ok, models} = ExLLM.list_models(:mock)
+      assert {:ok, models} = SingularityLLM.list_models(:mock)
       # Mock provider may include models from other providers in test environment
       assert length(models) >= 3
 
@@ -239,7 +239,7 @@ defmodule ExLLM.MockTest do
 
   describe "configuration" do
     test "mock adapter is always configured" do
-      assert ExLLM.configured?(:mock)
+      assert SingularityLLM.configured?(:mock)
     end
   end
 
@@ -257,7 +257,7 @@ defmodule ExLLM.MockTest do
         end
 
       assert {:ok, response} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  max_tokens: 100,
                  strategy: :sliding_window,
                  cache: false

@@ -1,10 +1,10 @@
 # Public API Testing Guide
 
-This document explains the public API testing approach for ExLLM, ensuring tests are resilient to internal implementation changes.
+This document explains the public API testing approach for SingularityLLM, ensuring tests are resilient to internal implementation changes.
 
 ## Core Principle
 
-All integration tests MUST use the public ExLLM module API, not provider-specific modules directly.
+All integration tests MUST use the public SingularityLLM module API, not provider-specific modules directly.
 
 ## API Usage Examples
 
@@ -18,10 +18,10 @@ Gemini.list_models()
 
 ### ✅ Correct - Public API
 ```elixir
-# Always use the ExLLM module
-ExLLM.chat(:anthropic, messages, max_tokens: 10)
-ExLLM.stream(:openai, messages)
-ExLLM.list_models(:gemini)
+# Always use the SingularityLLM module
+SingularityLLM.chat(:anthropic, messages, max_tokens: 10)
+SingularityLLM.stream(:openai, messages)
+SingularityLLM.list_models(:gemini)
 ```
 
 ## Test Organization
@@ -40,15 +40,15 @@ This module contains common tests that should pass for ALL providers:
 
 Usage:
 ```elixir
-defmodule ExLLM.Providers.MyProviderPublicAPITest do
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :my_provider
+defmodule SingularityLLM.Providers.MyProviderPublicAPITest do
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :my_provider
   
   # Provider-specific tests go here
 end
 ```
 
 ### 2. Provider-Specific Tests
-Location: `test/ex_llm/providers/{provider}_public_api_test.exs`
+Location: `test/singularity_llm/providers/{provider}_public_api_test.exs`
 
 Only include tests for features unique to that provider:
 - Special model capabilities
@@ -57,7 +57,7 @@ Only include tests for features unique to that provider:
 - Custom features
 
 ### 3. Unit Tests
-Location: `test/ex_llm/providers/{provider}_unit_test.exs`
+Location: `test/singularity_llm/providers/{provider}_unit_test.exs`
 
 Unit tests CAN use internal APIs since they test the adapter implementation:
 - Configuration validation
@@ -91,7 +91,7 @@ All tests must be properly tagged:
 mix test.anthropic
 
 # Run only public API tests
-mix test test/ex_llm/providers/anthropic_public_api_test.exs
+mix test test/singularity_llm/providers/anthropic_public_api_test.exs
 ```
 
 ### By Capability
@@ -123,7 +123,7 @@ When adding a new provider:
 1. Create unit tests for internal logic
 2. Create public API test file using shared module
 3. Add provider-specific tests only
-4. Ensure all tests use ExLLM module
+4. Ensure all tests use SingularityLLM module
 5. Add proper tags
 6. Verify tests pass
 7. Update this documentation
@@ -131,15 +131,15 @@ When adding a new provider:
 ## Example: Adding a New Provider
 
 ```elixir
-# test/ex_llm/providers/newprovider_public_api_test.exs
-defmodule ExLLM.Providers.NewProviderPublicAPITest do
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :newprovider
+# test/singularity_llm/providers/newprovider_public_api_test.exs
+defmodule SingularityLLM.Providers.NewProviderPublicAPITest do
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :newprovider
   
   describe "newprovider-specific features via public API" do
     test "unique feature X" do
       messages = [%{role: "user", content: "Test"}]
       
-      case ExLLM.chat(:newprovider, messages, special_param: true) do
+      case SingularityLLM.chat(:newprovider, messages, special_param: true) do
         {:ok, response} ->
           assert response.provider == :newprovider
           # Test unique behavior

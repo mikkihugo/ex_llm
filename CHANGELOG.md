@@ -58,22 +58,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🎉 **MAJOR RELEASE CANDIDATE - Architecture Transformation**
 
-This release represents a fundamental architectural transformation of ExLLM from a monolithic, duplication-heavy module to a clean, enterprise-grade delegation-based architecture.
+This release represents a fundamental architectural transformation of SingularityLLM from a monolithic, duplication-heavy module to a clean, enterprise-grade delegation-based architecture.
 
 ### Added
 - **🏗️ BREAKTHROUGH: Provider Delegation System** - Complete architectural overhaul
-  - `ExLLM.API.Delegator` - Central delegation engine with comprehensive error handling
-  - `ExLLM.API.Capabilities` - Provider capability registry for 34+ operations
-  - `ExLLM.API.Transformers` - Sophisticated argument transformation system
+  - `SingularityLLM.API.Delegator` - Central delegation engine with comprehensive error handling
+  - `SingularityLLM.API.Capabilities` - Provider capability registry for 34+ operations
+  - `SingularityLLM.API.Transformers` - Sophisticated argument transformation system
   - **91% error pattern elimination** through unified delegation
   - **73% code reduction** per function (from ~15 lines to 4 lines each)
 
 - **📦 Module Extraction Achievement** - Main module reduced from 2,601 to 1,500 lines
-  - `ExLLM.Embeddings` - Vector operations and similarity calculations (~299 lines)
-  - `ExLLM.Assistants` - Complete OpenAI Assistants API (~261 lines)
-  - `ExLLM.KnowledgeBase` - Knowledge base and document management (~249 lines)
-  - `ExLLM.Builder` - Fluent chat builder interface (~159 lines)
-  - `ExLLM.Session` - Conversation state management (~133 lines)
+  - `SingularityLLM.Embeddings` - Vector operations and similarity calculations (~299 lines)
+  - `SingularityLLM.Assistants` - Complete OpenAI Assistants API (~261 lines)
+  - `SingularityLLM.KnowledgeBase` - Knowledge base and document management (~249 lines)
+  - `SingularityLLM.Builder` - Fluent chat builder interface (~159 lines)
+  - `SingularityLLM.Session` - Conversation state management (~133 lines)
   - **42% total reduction** in main module size
   - **Zero breaking changes** - All APIs preserved through clean delegations
 
@@ -100,7 +100,7 @@ This release represents a fundamental architectural transformation of ExLLM from
 - **Test Coverage**: All delegation patterns thoroughly tested through public API
 
 ### Impact
-This release transforms ExLLM from a monolithic module with massive code duplication into a clean, scalable, delegation-based architecture that will significantly improve long-term maintainability and development velocity.
+This release transforms SingularityLLM from a monolithic module with massive code duplication into a clean, scalable, delegation-based architecture that will significantly improve long-term maintainability and development velocity.
 
 ### Fixed
 - **LM Studio Provider** - Fixed streaming endpoint configuration
@@ -209,7 +209,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
   - Smart fallback strategies for cache misses
   - Configurable cache organization (by provider, test module, or tag)
   - Environment-based cache configuration
-  - Mix task for cache management: `mix ex_llm.cache`
+  - Mix task for cache management: `mix singularity_llm.cache`
 
 ### Enhanced
 - **Test Caching Performance** - 25x speed improvement for integration tests
@@ -238,7 +238,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
   - Provider-specific: `mix test.anthropic`, `mix test.openai`, etc.
   - Tag-based: `mix test.integration`, `mix test.oauth2`, `mix test.live_api`
   - Capability-based: `mix test.streaming`, `mix test.vision`
-- **ExLLM.Case Test Module** - Custom test case with automatic requirement checking
+- **SingularityLLM.Case Test Module** - Custom test case with automatic requirement checking
   - Dynamic skipping with meaningful messages when requirements aren't met
   - API key validation per provider
   - OAuth2 token validation
@@ -251,7 +251,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 - Updated all provider integration tests with proper module-level tags
 
 ### Fixed
-- Fixed undefined variable `service` in ExLLM.Case rescue clause
+- Fixed undefined variable `service` in SingularityLLM.Case rescue clause
 - Fixed OpenRouter test compilation error with undefined function
 - Fixed OAuth2 tag inconsistency (now uses `:requires_oauth` everywhere)
 - Fixed test cache configuration for destructive operation detection
@@ -299,7 +299,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 ### Changed
 - **BREAKING:** Renamed `:local` provider atom to `:bumblebee` for clarity
   - All references to `:local` in code and documentation have been updated
-  - Update any code using `ExLLM.chat(:local, ...)` to `ExLLM.chat(:bumblebee, ...)`
+  - Update any code using `SingularityLLM.chat(:local, ...)` to `SingularityLLM.chat(:bumblebee, ...)`
 - Changed default Bumblebee model from `microsoft/phi-2` to `Qwen/Qwen3-0.6B`
 - Excluded `emlx` dependency from Hex package until it's published
 - Updated README with instructions for adding `emlx` manually for Apple Silicon support
@@ -379,13 +379,13 @@ This release transforms ExLLM from a monolithic module with massive code duplica
   - Automatic capability detection using `/api/show` endpoint
   - Real context window sizes from model metadata
   - Preserves existing configuration when merging
-  - Example: `ExLLM.Adapters.Ollama.generate_config(save: true)`
+  - Example: `SingularityLLM.Adapters.Ollama.generate_config(save: true)`
 
 ## [0.3.2] - 2025-06-06
 
 ### Added
 - **Capability Normalization** - Automatic normalization of provider-specific capability names
-  - New `ExLLM.Capabilities` module providing unified capability interface
+  - New `SingularityLLM.Capabilities` module providing unified capability interface
   - Normalizes different provider terminologies (e.g., `tool_use` → `function_calling`)
   - Works transparently with all capability query functions
   - Comprehensive mappings for common capability variations
@@ -441,7 +441,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
     - Media type detection from file extensions and magic bytes
     - Base64 encoding/decoding utilities
     - Image size validation
-- Unified `ExLLM.Logger` module replacing multiple logging approaches
+- Unified `SingularityLLM.Logger` module replacing multiple logging approaches
   - Single consistent API for all logging needs
   - Simple Logger-like interface: `Logger.info("message")`
   - Automatic context tracking with `with_context/2`
@@ -451,8 +451,8 @@ This release transforms ExLLM from a monolithic module with massive code duplica
   - Performance tracking with automatic duration measurement
 
 ### Changed
-- **BREAKING:** Replaced all `Logger` and `DebugLogger` usage with unified `ExLLM.Logger`
-  - All modules now use `alias ExLLM.Logger` instead of `require Logger`
+- **BREAKING:** Replaced all `Logger` and `DebugLogger` usage with unified `SingularityLLM.Logger`
+  - All modules now use `alias SingularityLLM.Logger` instead of `require Logger`
   - Consistent logging interface across the entire codebase
   - Simplified developer experience with one logging API
 - Enhanced `HTTPClient` with unified streaming support via `post_stream/3`
@@ -513,20 +513,20 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 
 ### Added
 - Provider Capability Discovery System
-  - New `ExLLM.ProviderCapabilities` module for tracking API-level provider capabilities
+  - New `SingularityLLM.ProviderCapabilities` module for tracking API-level provider capabilities
   - Provider feature discovery independent of specific models
   - Authentication method tracking (API key, OAuth, AWS signature, etc.)
   - Provider endpoint discovery (chat, embeddings, images, audio, etc.)
   - Provider recommendations based on required/preferred features
   - Provider comparison tools for feature analysis
-  - Integrated provider capability functions into main ExLLM module
+  - Integrated provider capability functions into main SingularityLLM module
   - Added provider capability explorer to example app demo
 - Environment variable wrapper script (`scripts/run_with_env.sh`) for Claude CLI usage
 - Groq models API support (https://api.groq.com/openai/v1/models)
 - Dynamic model loading from provider APIs
   - All adapters now fetch models dynamically from provider APIs when available
   - Automatic fallback to YAML configuration when API is unavailable
-  - Created `ExLLM.ModelLoader` module for centralized model loading with caching
+  - Created `SingularityLLM.ModelLoader` module for centralized model loading with caching
   - Anthropic adapter now uses `/v1/models` API endpoint
   - OpenAI adapter fetches from `/v1/models` and filters chat models
   - Gemini adapter uses Google's models API
@@ -547,7 +547,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 - Model configuration sync script from LiteLLM
   - Python script to sync model data from LiteLLM's database
   - Added 1048 models with pricing, context windows, and capabilities
-  - Automatic conversion from LiteLLM's JSON to ExLLM's YAML format
+  - Automatic conversion from LiteLLM's JSON to SingularityLLM's YAML format
 - Extracted ALL provider configurations from LiteLLM
   - Created YAML files for 56 unique providers (49 new providers)
   - Includes Azure, Mistral, Perplexity, Together AI, Databricks, and more
@@ -555,7 +555,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 
 ### Changed
 - **BREAKING:** Model configuration moved from hardcoded maps to external YAML files
-  - All providers now use `ExLLM.ModelConfig` for pricing and context window data
+  - All providers now use `SingularityLLM.ModelConfig` for pricing and context window data
   - Default models, pricing, and context windows loaded from YAML configuration
   - Added `yaml_elixir` dependency for YAML parsing
 - Updated Bedrock adapter with comprehensive model support:
@@ -574,7 +574,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 - All adapters now use ModelConfig for consistent default model retrieval
 
 ### Changed
-- **BREAKING:** Refactored `ExLLM.Adapters.OpenAICompatible` base adapter
+- **BREAKING:** Refactored `SingularityLLM.Adapters.OpenAICompatible` base adapter
   - Extracted common helper functions (`format_model_name/1`, `default_model_transformer/2`) as public module functions
   - Simplified adapter implementations by removing duplicate code
   - Added ModelLoader integration to base adapter for consistent dynamic model loading
@@ -602,7 +602,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 
 ### Improved
 - Code organization with shared modules to eliminate duplication:
-  - Created `ExLLM.Adapters.Shared.Validation` for API key validation
+  - Created `SingularityLLM.Adapters.Shared.Validation` for API key validation
   - All adapters now use `ModelUtils.format_model_name` for consistent formatting
   - All adapters now use `ConfigHelper.ensure_default_model` for default models
   - Test files updated to use `TestHelpers` consistently
@@ -629,27 +629,27 @@ This release transforms ExLLM from a monolithic module with massive code duplica
   - Dynamic model listing via AWS Bedrock API
 - Google Gemini adapter with Pro, Ultra, and Nano models
 - Context management functionality to automatically handle LLM context windows
-- `ExLLM.Context` module with the following features:
+- `SingularityLLM.Context` module with the following features:
   - Automatic message truncation to fit within model context windows
   - Multiple truncation strategies (sliding_window, smart)
   - Context window validation
   - Token estimation and statistics
   - Model-specific context window sizes
 - Session management functionality for conversation state tracking
-- `ExLLM.Session` module with the following features:
+- `SingularityLLM.Session` module with the following features:
   - Conversation state management
   - Message history tracking
   - Token usage tracking
   - Session persistence (save/load)
   - Export to markdown/JSON formats
 - Local model support via Bumblebee integration
-- `ExLLM.Adapters.Local` with the following features:
+- `SingularityLLM.Adapters.Local` with the following features:
   - Support for Phi-2, Llama 2, Mistral, GPT-Neo, and Flan-T5
   - Hardware acceleration (Metal, CUDA, ROCm, CPU)
   - Model lifecycle management with ModelLoader GenServer
   - Zero-cost inference (no API fees)
   - Privacy-preserving local execution
-- New public API functions in main ExLLM module:
+- New public API functions in main SingularityLLM module:
   - Context management: `prepare_messages/2`, `validate_context/2`, `context_window_size/2`, `context_stats/1`
   - Session management: `new_session/2`, `chat_with_session/2`, `save_session/2`, `load_session/1`, etc.
 - Automatic context management in `chat/3` and `stream_chat/3`
@@ -660,7 +660,7 @@ This release transforms ExLLM from a monolithic module with massive code duplica
 ### Changed
 - Updated `chat/3` and `stream_chat/3` to automatically apply context truncation
 - Enhanced documentation with context management and session examples
-- ExLLM is now a comprehensive all-in-one solution including cost tracking, context management, and session handling
+- SingularityLLM is now a comprehensive all-in-one solution including cost tracking, context management, and session handling
 
 ## [0.1.0] - 2025-05-24
 

@@ -1,14 +1,14 @@
-# Response Capture System Analysis for ExLLM
+# Response Capture System Analysis for SingularityLLM
 
 ## Executive Summary
 
-ExLLM already has a comprehensive test caching system that can be adapted for the proposed Response Capture system. The existing infrastructure provides most of the functionality needed, requiring primarily configuration changes and minor extensions rather than a complete new implementation.
+SingularityLLM already has a comprehensive test caching system that can be adapted for the proposed Response Capture system. The existing infrastructure provides most of the functionality needed, requiring primarily configuration changes and minor extensions rather than a complete new implementation.
 
 ## Existing Test Caching Infrastructure
 
 ### 1. Core Components
 
-#### A. LiveApiCacheStorage (`lib/ex_llm/testing/live_api_cache_storage.ex`)
+#### A. LiveApiCacheStorage (`lib/singularity_llm/testing/live_api_cache_storage.ex`)
 - **Purpose**: Hierarchical storage of API responses with timestamps
 - **Features**:
   - Timestamp-based file naming
@@ -18,7 +18,7 @@ ExLLM already has a comprehensive test caching system that can be adapted for th
   - Fallback strategies
   - Automatic sanitization of sensitive data
 
-#### B. TestCacheStrategy (`lib/ex_llm/testing/cache/test_cache_strategy.ex`)
+#### B. TestCacheStrategy (`lib/singularity_llm/testing/cache/test_cache_strategy.ex`)
 - **Purpose**: Strategy pattern for cache lookups and fallbacks
 - **Features**:
   - Cache key generation from request context
@@ -27,7 +27,7 @@ ExLLM already has a comprehensive test caching system that can be adapted for th
   - Streaming support with chunk replay
   - Fallback handling for failed requests
 
-#### C. TestResponseInterceptor (`lib/ex_llm/testing/interceptor.ex`)
+#### C. TestResponseInterceptor (`lib/singularity_llm/testing/interceptor.ex`)
 - **Purpose**: HTTP request/response interception
 - **Features**:
   - Automatic cache key generation
@@ -35,7 +35,7 @@ ExLLM already has a comprehensive test caching system that can be adapted for th
   - Streaming response reassembly
   - Telemetry integration
 
-#### D. HTTP Cache Middleware (`lib/ex_llm/providers/shared/http/cache.ex`)
+#### D. HTTP Cache Middleware (`lib/singularity_llm/providers/shared/http/cache.ex`)
 - **Purpose**: Tesla middleware for HTTP-level caching
 - **Features**:
   - Memory and disk backends
@@ -86,8 +86,8 @@ The system already captures:
 
 #### A. Use LiveApiCacheStorage with Different Configuration
 ```elixir
-defmodule ExLLM.ResponseCapture do
-  alias ExLLM.Testing.LiveApiCacheStorage
+defmodule SingularityLLM.ResponseCapture do
+  alias SingularityLLM.Testing.LiveApiCacheStorage
   
   def capture_response(provider, endpoint, request, response, metadata) do
     # Use different cache directory
@@ -122,7 +122,7 @@ middleware = [
 Create a new module for response display:
 
 ```elixir
-defmodule ExLLM.ResponseCapture.Display do
+defmodule SingularityLLM.ResponseCapture.Display do
   def display_response(response_data, metadata) do
     if System.get_env("EX_LLM_SHOW_CAPTURED") == "true" do
       IO.puts(format_response(response_data, metadata))
@@ -180,7 +180,7 @@ end
 Add configuration options:
 
 ```elixir
-config :ex_llm, :response_capture,
+config :singularity_llm, :response_capture,
   enabled: System.get_env("EX_LLM_CAPTURE_RESPONSES") == "true",
   display: System.get_env("EX_LLM_SHOW_CAPTURED") == "true",
   storage_dir: "captured_responses",
@@ -235,7 +235,7 @@ config :ex_llm, :response_capture,
 
 ## Conclusion
 
-ExLLM's existing test caching system provides an excellent foundation for implementing the Response Capture feature. Rather than building from scratch, we can extend and configure the existing components to meet the new requirements. This approach minimizes development effort while providing a robust, feature-rich solution.
+SingularityLLM's existing test caching system provides an excellent foundation for implementing the Response Capture feature. Rather than building from scratch, we can extend and configure the existing components to meet the new requirements. This approach minimizes development effort while providing a robust, feature-rich solution.
 
 The main work required is:
 1. Configuration changes to enable capture in development

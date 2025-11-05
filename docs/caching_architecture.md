@@ -1,8 +1,8 @@
-# ExLLM Caching Architecture
+# SingularityLLM Caching Architecture
 
 ## Overview
 
-ExLLM implements a sophisticated dual-cache architecture designed to optimize both production performance and development/testing workflows. The system uses a strategy pattern to cleanly separate these concerns while maintaining a unified interface.
+SingularityLLM implements a sophisticated dual-cache architecture designed to optimize both production performance and development/testing workflows. The system uses a strategy pattern to cleanly separate these concerns while maintaining a unified interface.
 
 ## Architecture Components
 
@@ -19,9 +19,9 @@ The production cache is designed for runtime performance optimization:
 
 **Configuration:**
 ```elixir
-config :ex_llm, :cache,
+config :singularity_llm, :cache,
   enabled: true,
-  storage: {ExLLM.Infrastructure.Cache.Storage.ETS, []},
+  storage: {SingularityLLM.Infrastructure.Cache.Storage.ETS, []},
   default_ttl: :timer.minutes(15),
   cleanup_interval: :timer.minutes(5)
 ```
@@ -43,8 +43,8 @@ The test cache is designed for integration test optimization:
 export EX_LLM_TEST_CACHE_ENABLED=true
 
 # In config/test.exs
-config :ex_llm,
-  cache_strategy: ExLLM.Cache.Strategies.Test
+config :singularity_llm,
+  cache_strategy: SingularityLLM.Cache.Strategies.Test
 ```
 
 ## Cache Strategy Pattern
@@ -53,13 +53,13 @@ The dual-cache architecture is implemented using a strategy pattern that elimina
 
 ```
 ┌─────────────────────────────────────────┐
-│         ExLLM.Infrastructure.Cache      │
+│         SingularityLLM.Infrastructure.Cache      │
 │         (Production Code Layer)         │
 └────────────────────┬───────────────────┘
                      │ uses
                      ▼
 ┌─────────────────────────────────────────┐
-│       ExLLM.Cache.Strategy (behavior)   │
+│       SingularityLLM.Cache.Strategy (behavior)   │
 └────────────────────┬───────────────────┘
                      │ implements
         ┌────────────┴────────────┐
@@ -72,12 +72,12 @@ The dual-cache architecture is implemented using a strategy pattern that elimina
 
 ### Strategy Implementations
 
-1. **ExLLM.Cache.Strategies.Production**
+1. **SingularityLLM.Cache.Strategies.Production**
    - Default strategy for all environments
    - Uses ETS-based caching via Infrastructure.Cache
    - Respects cache options (TTL, enabled flags)
 
-2. **ExLLM.Cache.Strategies.Test**
+2. **SingularityLLM.Cache.Strategies.Test**
    - Activated in test environment
    - Checks if test caching should be active
    - Defers to HTTP-level caching for :live_api tests
@@ -105,7 +105,7 @@ The dual-cache architecture is implemented using a strategy pattern that elimina
 User Request
      │
      ▼
-ExLLM.chat/stream
+SingularityLLM.chat/stream
      │
      ▼
 Pipeline Processing
@@ -128,16 +128,16 @@ Cache Plug ──────► Cache Strategy Decision
 Both cache systems emit telemetry events for monitoring:
 
 ### Production Cache Events
-- `[:ex_llm, :cache, :hit]` - Cache hit with key
-- `[:ex_llm, :cache, :miss]` - Cache miss with key
-- `[:ex_llm, :cache, :put]` - Item stored with size
-- `[:ex_llm, :cache, :evict]` - Item evicted
+- `[:singularity_llm, :cache, :hit]` - Cache hit with key
+- `[:singularity_llm, :cache, :miss]` - Cache miss with key
+- `[:singularity_llm, :cache, :put]` - Item stored with size
+- `[:singularity_llm, :cache, :evict]` - Item evicted
 
 ### Test Cache Events
-- `[:ex_llm, :test_cache, :hit]` - Test cache hit
-- `[:ex_llm, :test_cache, :miss]` - Test cache miss
-- `[:ex_llm, :test_cache, :save]` - Response saved
-- `[:ex_llm, :test_cache, :error]` - Cache error
+- `[:singularity_llm, :test_cache, :hit]` - Test cache hit
+- `[:singularity_llm, :test_cache, :miss]` - Test cache miss
+- `[:singularity_llm, :test_cache, :save]` - Response saved
+- `[:singularity_llm, :test_cache, :error]` - Cache error
 
 ## Metadata Preservation
 
@@ -151,7 +151,7 @@ Both cache systems preserve metadata through the response chain:
 ### Development Setup
 ```elixir
 # config/dev.exs
-config :ex_llm,
+config :singularity_llm,
   cache_enabled: true,
   cache_ttl: :timer.hours(1)
 ```
@@ -159,8 +159,8 @@ config :ex_llm,
 ### Test Setup
 ```elixir
 # config/test.exs
-config :ex_llm,
-  cache_strategy: ExLLM.Cache.Strategies.Test
+config :singularity_llm,
+  cache_strategy: SingularityLLM.Cache.Strategies.Test
 
 # For specific test runs
 export EX_LLM_TEST_CACHE_ENABLED=true
@@ -170,7 +170,7 @@ mix test --only live_api
 ### Production Setup
 ```elixir
 # config/prod.exs
-config :ex_llm,
+config :singularity_llm,
   cache_enabled: true,
   cache_ttl: :timer.minutes(30),
   cache_cleanup_interval: :timer.minutes(10)
@@ -181,7 +181,7 @@ config :ex_llm,
 1. **Don't mix cache systems**: Let the strategy pattern handle separation
 2. **Use appropriate TTLs**: Shorter for dynamic content, longer for stable
 3. **Monitor cache metrics**: Use telemetry to track hit rates
-4. **Clean test caches**: Use `mix ex_llm.cache clean` periodically
+4. **Clean test caches**: Use `mix singularity_llm.cache clean` periodically
 5. **Version cache keys**: Include version in keys when formats change
 
 ## Troubleshooting
@@ -190,12 +190,12 @@ config :ex_llm,
 
 1. Check strategy configuration:
    ```elixir
-   Application.get_env(:ex_llm, :cache_strategy)
+   Application.get_env(:singularity_llm, :cache_strategy)
    ```
 
 2. Verify cache is enabled:
    ```elixir
-   Application.get_env(:ex_llm, :cache_enabled)
+   Application.get_env(:singularity_llm, :cache_enabled)
    ```
 
 3. Check test cache environment:
@@ -207,10 +207,10 @@ config :ex_llm,
 
 ```bash
 # Clear test cache
-mix ex_llm.cache clear
+mix singularity_llm.cache clear
 
 # Clear production cache (in IEx)
-ExLLM.Infrastructure.Cache.clear()
+SingularityLLM.Infrastructure.Cache.clear()
 ```
 
 ## Future Enhancements

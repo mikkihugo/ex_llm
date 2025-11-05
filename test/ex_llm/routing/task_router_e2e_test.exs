@@ -1,4 +1,4 @@
-defmodule ExLLM.Routing.TaskRouterE2ETest do
+defmodule SingularityLLM.Routing.TaskRouterE2ETest do
   @moduledoc """
   End-to-end tests for task-specialized routing system.
 
@@ -18,8 +18,8 @@ defmodule ExLLM.Routing.TaskRouterE2ETest do
 
   use ExUnit.Case, async: false
 
-  alias ExLLM.Routing.TaskRouter
-  alias ExLLM.Routing.TaskMetrics
+  alias SingularityLLM.Routing.TaskRouter
+  alias SingularityLLM.Routing.TaskMetrics
 
   # ========== LONDON SCHOOL: UNIT TESTS WITH MOCKS ==========
 
@@ -390,12 +390,12 @@ defmodule ExLLM.Routing.TaskRouterE2ETest do
     test "models.dev sync respects 24-hour TTL" do
       # Verify TTL constants are set correctly
       # (This is a simple assertion - actual TTL testing would require time mocking)
-      assert ExLLM.ModelDiscovery.ModelsDevSyncer.sync_if_needed() == :ok
+      assert SingularityLLM.ModelDiscovery.ModelsDevSyncer.sync_if_needed() == :ok
     end
 
     test "OpenRouter prices respect 2-hour TTL" do
       # Verify syncer can check cache freshness
-      fresh = ExLLM.ModelDiscovery.OpenRouterPriceSyncer.cache_fresh?()
+      fresh = SingularityLLM.ModelDiscovery.OpenRouterPriceSyncer.cache_fresh?()
       assert is_boolean(fresh)
     end
   end

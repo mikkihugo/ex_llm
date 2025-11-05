@@ -1,43 +1,43 @@
 # Internal Modules Guide
 
-This document lists all internal modules in ExLLM that should NOT be used directly. These are implementation details subject to change without notice.
+This document lists all internal modules in SingularityLLM that should NOT be used directly. These are implementation details subject to change without notice.
 
 ## ⚠️ WARNING
 
-All modules listed here are internal to ExLLM. Always use the public API through the main `ExLLM` module instead.
+All modules listed here are internal to SingularityLLM. Always use the public API through the main `SingularityLLM` module instead.
 
 ## Core Internal Modules
 
 ### Infrastructure Layer
-- `ExLLM.Infrastructure.Cache.*` - Internal caching implementation
-- `ExLLM.Infrastructure.CircuitBreaker.*` - Fault tolerance internals
-- `ExLLM.Infrastructure.Config.*` - Configuration management
-- `ExLLM.Infrastructure.Logger` - Internal logging
-- `ExLLM.Infrastructure.Retry` - Retry logic implementation
-- `ExLLM.Infrastructure.Streaming.*` - Streaming implementation details
-- `ExLLM.Infrastructure.Error` - Error structure definitions
+- `SingularityLLM.Infrastructure.Cache.*` - Internal caching implementation
+- `SingularityLLM.Infrastructure.CircuitBreaker.*` - Fault tolerance internals
+- `SingularityLLM.Infrastructure.Config.*` - Configuration management
+- `SingularityLLM.Infrastructure.Logger` - Internal logging
+- `SingularityLLM.Infrastructure.Retry` - Retry logic implementation
+- `SingularityLLM.Infrastructure.Streaming.*` - Streaming implementation details
+- `SingularityLLM.Infrastructure.Error` - Error structure definitions
 
 ### Provider Shared Utilities
-- `ExLLM.Providers.Shared.ConfigHelper` - Provider config utilities
-- `ExLLM.Providers.Shared.ErrorHandler` - Error handling
-- `ExLLM.Providers.Shared.HTTPClient` - HTTP implementation
-- `ExLLM.Providers.Shared.MessageFormatter` - Message formatting
-- `ExLLM.Providers.Shared.ModelFetcher` - Model fetching logic
-- `ExLLM.Providers.Shared.ModelUtils` - Model utilities
-- `ExLLM.Providers.Shared.ResponseBuilder` - Response construction
-- `ExLLM.Providers.Shared.StreamingBehavior` - Streaming behavior
-- `ExLLM.Providers.Shared.StreamingCoordinator` - Stream coordination
-- `ExLLM.Providers.Shared.Validation` - Input validation
-- `ExLLM.Providers.Shared.VisionFormatter` - Vision formatting
+- `SingularityLLM.Providers.Shared.ConfigHelper` - Provider config utilities
+- `SingularityLLM.Providers.Shared.ErrorHandler` - Error handling
+- `SingularityLLM.Providers.Shared.HTTPClient` - HTTP implementation
+- `SingularityLLM.Providers.Shared.MessageFormatter` - Message formatting
+- `SingularityLLM.Providers.Shared.ModelFetcher` - Model fetching logic
+- `SingularityLLM.Providers.Shared.ModelUtils` - Model utilities
+- `SingularityLLM.Providers.Shared.ResponseBuilder` - Response construction
+- `SingularityLLM.Providers.Shared.StreamingBehavior` - Streaming behavior
+- `SingularityLLM.Providers.Shared.StreamingCoordinator` - Stream coordination
+- `SingularityLLM.Providers.Shared.Validation` - Input validation
+- `SingularityLLM.Providers.Shared.VisionFormatter` - Vision formatting
 
 ### Provider Internals
-- `ExLLM.Providers.Gemini.*` - Gemini-specific internals
-- `ExLLM.Providers.Bumblebee.*` - Bumblebee internals
-- `ExLLM.Providers.OpenAICompatible` - Base module for providers
+- `SingularityLLM.Providers.Gemini.*` - Gemini-specific internals
+- `SingularityLLM.Providers.Bumblebee.*` - Bumblebee internals
+- `SingularityLLM.Providers.OpenAICompatible` - Base module for providers
 
 ### Testing Infrastructure
-- `ExLLM.Testing.Cache.*` - Test caching system
-- `ExLLM.Testing.ResponseCache` - Response caching for tests
+- `SingularityLLM.Testing.Cache.*` - Test caching system
+- `SingularityLLM.Testing.ResponseCache` - Response caching for tests
 - All modules in `test/support/*` - Test helpers
 
 ## Why These Are Internal
@@ -54,20 +54,20 @@ If you're currently using any internal modules, here's how to migrate:
 ### Cache Access
 ```elixir
 # ❌ Don't use internal cache modules
-ExLLM.Infrastructure.Cache.get(key)
+SingularityLLM.Infrastructure.Cache.get(key)
 
 # ✅ Use the public API
-# Caching is handled automatically by ExLLM
-{:ok, response} = ExLLM.chat(:openai, "Hello")
+# Caching is handled automatically by SingularityLLM
+{:ok, response} = SingularityLLM.chat(:openai, "Hello")
 ```
 
 ### Error Handling
 ```elixir
 # ❌ Don't create internal error types
-ExLLM.Infrastructure.Error.api_error(500, "Error")
+SingularityLLM.Infrastructure.Error.api_error(500, "Error")
 
 # ✅ Use pattern matching on public API returns
-case ExLLM.chat(:openai, "Hello") do
+case SingularityLLM.chat(:openai, "Hello") do
   {:error, {:api_error, status, message}} -> 
     # Handle error
 end
@@ -76,37 +76,37 @@ end
 ### Configuration
 ```elixir
 # ❌ Don't access internal config modules
-ExLLM.Infrastructure.Config.ModelConfig.get_model(:openai, "gpt-4")
+SingularityLLM.Infrastructure.Config.ModelConfig.get_model(:openai, "gpt-4")
 
 # ✅ Use public configuration API
-{:ok, info} = ExLLM.get_model_info(:openai, "gpt-4")
+{:ok, info} = SingularityLLM.get_model_info(:openai, "gpt-4")
 ```
 
 ### HTTP Requests
 ```elixir
 # ❌ Don't use internal HTTP client
-ExLLM.Providers.Shared.HTTPClient.post_json(url, body, headers)
+SingularityLLM.Providers.Shared.HTTPClient.post_json(url, body, headers)
 
 # ✅ Use the public API which handles HTTP internally
-{:ok, response} = ExLLM.chat(:openai, "Hello")
+{:ok, response} = SingularityLLM.chat(:openai, "Hello")
 ```
 
 ### Provider Implementation
 ```elixir
 # ❌ Don't use provider internals directly
-ExLLM.Providers.Anthropic.chat(messages, options)
+SingularityLLM.Providers.Anthropic.chat(messages, options)
 
 # ✅ Use the unified public API
-{:ok, response} = ExLLM.chat(:anthropic, messages, options)
+{:ok, response} = SingularityLLM.chat(:anthropic, messages, options)
 ```
 
 ## For Library Contributors
 
-If you're contributing to ExLLM:
+If you're contributing to SingularityLLM:
 
 1. Keep internal modules marked with `@moduledoc false`
 2. Don't expose internal functions in the public API
-3. Add new public functionality to the main `ExLLM` module
+3. Add new public functionality to the main `SingularityLLM` module
 4. Document any new internal modules in this guide
 5. Ensure internal modules are properly namespaced
 

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
+defmodule SingularityLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
   @moduledoc """
   Validation tests for HTTP.Core streaming migration.
 
@@ -7,7 +7,7 @@ defmodule ExLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
   """
   use ExUnit.Case, async: false
 
-  alias ExLLM.Providers.Shared.{HTTP.Core, StreamingCoordinator}
+  alias SingularityLLM.Providers.Shared.{HTTP.Core, StreamingCoordinator}
 
   describe "HTTP.Core streaming basics" do
     test "can create a client and handle streaming responses" do
@@ -27,8 +27,8 @@ defmodule ExLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
       assert Code.ensure_loaded?(StreamingCoordinator)
 
       # Check that the source code uses HTTP.Core
-      source = File.read!("lib/ex_llm/providers/shared/streaming_coordinator.ex")
-      assert source =~ "alias ExLLM.Providers.Shared.HTTP.Core"
+      source = File.read!("lib/singularity_llm/providers/shared/streaming_coordinator.ex")
+      assert source =~ "alias SingularityLLM.Providers.Shared.HTTP.Core"
       assert source =~ "Core.client("
       assert source =~ "Core.stream("
     end
@@ -93,11 +93,11 @@ defmodule ExLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
   describe "ModelFetcher migration" do
     test "ModelFetcher uses HTTP.Core for API calls" do
       # Verify ModelFetcher module is loaded
-      assert Code.ensure_loaded?(ExLLM.Providers.Shared.ModelFetcher)
+      assert Code.ensure_loaded?(SingularityLLM.Providers.Shared.ModelFetcher)
 
       # Check that it aliases HTTP.Core
-      source = File.read!("lib/ex_llm/providers/shared/model_fetcher.ex")
-      assert source =~ "alias ExLLM.Providers.Shared.{ConfigHelper, HTTP.Core, ModelUtils}"
+      source = File.read!("lib/singularity_llm/providers/shared/model_fetcher.ex")
+      assert source =~ "alias SingularityLLM.Providers.Shared.{ConfigHelper, HTTP.Core, ModelUtils}"
       assert source =~ "Core.client("
     end
   end
@@ -105,10 +105,10 @@ defmodule ExLLM.Providers.Shared.HTTPCoreStreamingValidationTest do
   describe "Migration completion" do
     test "HTTPClient has been removed and HTTP.Core is used everywhere" do
       # Verify HTTPClient module no longer exists
-      refute Code.ensure_loaded?(ExLLM.Providers.Shared.HTTPClient)
+      refute Code.ensure_loaded?(SingularityLLM.Providers.Shared.HTTPClient)
 
       # Verify HTTP.Core is loaded and functioning
-      assert Code.ensure_loaded?(ExLLM.Providers.Shared.HTTP.Core)
+      assert Code.ensure_loaded?(SingularityLLM.Providers.Shared.HTTP.Core)
     end
   end
 

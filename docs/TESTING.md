@@ -1,6 +1,6 @@
 # Testing Guide
 
-ExLLM includes a comprehensive testing system with intelligent caching, semantic tagging, and 24 specialized Mix aliases for targeted test execution.
+SingularityLLM includes a comprehensive testing system with intelligent caching, semantic tagging, and 24 specialized Mix aliases for targeted test execution.
 
 ## Quick Start
 
@@ -22,15 +22,15 @@ mix test.vision
 mix test.oauth2
 
 # Manage test cache
-mix ex_llm.cache stats
-mix ex_llm.cache clean --older-than 7d
+mix singularity_llm.cache stats
+mix singularity_llm.cache clean --older-than 7d
 ```
 
 ## Test Organization
 
 ### Test Tags
 
-ExLLM uses semantic tags to organize tests by requirements, capabilities, and providers:
+SingularityLLM uses semantic tags to organize tests by requirements, capabilities, and providers:
 
 #### **Requirement Tags**
 - `:requires_api_key` - Tests needing API keys with automatic provider detection
@@ -57,7 +57,7 @@ ExLLM uses semantic tags to organize tests by requirements, capabilities, and pr
 
 ## Mix Test Aliases
 
-ExLLM provides 24 specialized test aliases for targeted execution:
+SingularityLLM provides 24 specialized test aliases for targeted execution:
 
 ### Provider-Specific Tests
 
@@ -108,7 +108,7 @@ mix test.all             # All tests including slow ones
 
 ## Test Caching System
 
-ExLLM includes an advanced caching system that provides 25x speed improvements for integration tests.
+SingularityLLM includes an advanced caching system that provides 25x speed improvements for integration tests.
 
 ### How It Works
 
@@ -121,16 +121,16 @@ ExLLM includes an advanced caching system that provides 25x speed improvements f
 
 ```bash
 # View cache statistics
-mix ex_llm.cache stats
+mix singularity_llm.cache stats
 
 # Clean old cache entries  
-mix ex_llm.cache clean --older-than 7d
+mix singularity_llm.cache clean --older-than 7d
 
 # Clear all cache
-mix ex_llm.cache clear
+mix singularity_llm.cache clear
 
 # Show cache details for a provider
-mix ex_llm.cache show anthropic
+mix singularity_llm.cache show anthropic
 ```
 
 ### Configuration
@@ -166,7 +166,7 @@ defmodule MyProviderTest do
   @moduletag provider: :anthropic
   
   # Import cache helpers
-  import ExLLM.TestCacheHelpers
+  import SingularityLLM.TestCacheHelpers
   
   setup_all do
     enable_cache_debug()
@@ -175,12 +175,12 @@ defmodule MyProviderTest do
   
   setup context do
     setup_test_cache(context)
-    on_exit(fn -> ExLLM.TestCacheDetector.clear_test_context() end)
+    on_exit(fn -> SingularityLLM.TestCacheDetector.clear_test_context() end)
     :ok
   end
   
   test "basic chat completion" do
-    {:ok, response} = ExLLM.chat(:anthropic, [
+    {:ok, response} = SingularityLLM.chat(:anthropic, [
       %{role: "user", content: "Hello!"}
     ])
     
@@ -189,11 +189,11 @@ defmodule MyProviderTest do
 end
 ```
 
-### Using ExLLM.Case for Automatic Requirements
+### Using SingularityLLM.Case for Automatic Requirements
 
 ```elixir
 defmodule MyProviderTest do
-  use ExLLM.Case, async: true
+  use SingularityLLM.Case, async: true
   
   @moduletag :requires_api_key
   @moduletag provider: :openai
@@ -202,7 +202,7 @@ defmodule MyProviderTest do
     # Automatically skips if OPENAI_API_KEY not set
     check_test_requirements!(context)
     
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "Test"}
     ])
     
@@ -215,7 +215,7 @@ end
 
 ```elixir
 defmodule GeminiOAuth2Test do
-  use ExLLM.Case, async: true
+  use SingularityLLM.Case, async: true
   
   @moduletag :requires_oauth
   @moduletag provider: :gemini
@@ -226,7 +226,7 @@ defmodule GeminiOAuth2Test do
     # OAuth token automatically provided if available
     oauth_token = get_oauth_token(context)
     
-    {:ok, response} = ExLLM.Gemini.Permissions.list_permissions(
+    {:ok, response} = SingularityLLM.Gemini.Permissions.list_permissions(
       "tunedModels/test",
       oauth_token: oauth_token
     )
@@ -336,7 +336,7 @@ elixir scripts/refresh_oauth2_token.exs
 **Cache not working:**
 ```bash
 # Check cache configuration
-mix ex_llm.cache stats
+mix singularity_llm.cache stats
 # Enable debug logging
 export EX_LLM_LOG_LEVEL=debug
 ```
@@ -358,4 +358,4 @@ export EX_LLM_LOG_COMPONENTS=http_client,cache,test_detector
 mix test --include live_api
 ```
 
-This comprehensive testing system ensures reliable, fast, and well-organized tests across all ExLLM functionality.
+This comprehensive testing system ensures reliable, fast, and well-organized tests across all SingularityLLM functionality.

@@ -1,12 +1,12 @@
-# ExLLM Architectural Redesign Plan: Phoenix-Style Pipeline Architecture
+# SingularityLLM Architectural Redesign Plan: Phoenix-Style Pipeline Architecture
 
 ## Executive Summary
 
-This document outlines a comprehensive plan to restructure ExLLM from a monolithic facade pattern to a flexible, Phoenix-style pipeline architecture. The design leverages Tesla for HTTP middleware while introducing an ExLLM-specific pipeline layer for LLM concerns. This approach provides both a simple API for basic users and a powerful, composable system for advanced users.
+This document outlines a comprehensive plan to restructure SingularityLLM from a monolithic facade pattern to a flexible, Phoenix-style pipeline architecture. The design leverages Tesla for HTTP middleware while introducing an SingularityLLM-specific pipeline layer for LLM concerns. This approach provides both a simple API for basic users and a powerful, composable system for advanced users.
 
 ## Goals
 
-1. **Simplicity**: Maintain the current simple `ExLLM.chat/2` API for 90% of use cases
+1. **Simplicity**: Maintain the current simple `SingularityLLM.chat/2` API for 90% of use cases
 2. **Flexibility**: Provide a powerful pipeline API for advanced users
 3. **Extensibility**: Allow users to inject custom plugs and middleware
 4. **Maintainability**: Clear separation of concerns between HTTP and LLM logic
@@ -20,15 +20,15 @@ This document outlines a comprehensive plan to restructure ExLLM from a monolith
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              ExLLM Public API Layer                     │
+│              SingularityLLM Public API Layer                     │
 │  ┌─────────────────────────┬─────────────────────────┐ │
 │  │    Simple API           │    Advanced API          │ │
-│  │  ExLLM.chat/2           │  ExLLM.Pipeline.run/1   │ │
+│  │  SingularityLLM.chat/2           │  SingularityLLM.Pipeline.run/1   │ │
 │  └─────────────────────────┴─────────────────────────┘ │
 └──────────────────────┬──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│           ExLLM Pipeline Layer (LLM Concerns)           │
+│           SingularityLLM Pipeline Layer (LLM Concerns)           │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ ValidateProvider → FetchConfig → ManageContext  │   │
 │  │ → BuildTeslaClient → ExecuteRequest → ParseResp │   │
@@ -52,11 +52,11 @@ This document outlines a comprehensive plan to restructure ExLLM from a monolith
 
 ### 1.1 Core Data Structures
 
-#### ExLLM.Request
+#### SingularityLLM.Request
 ```elixir
-defmodule ExLLM.Request do
+defmodule SingularityLLM.Request do
   @moduledoc """
-  The core request structure that flows through the ExLLM pipeline.
+  The core request structure that flows through the SingularityLLM pipeline.
   Similar to Plug.Conn but designed for LLM operations.
   """
   
@@ -82,7 +82,7 @@ defmodule ExLLM.Request do
     
     # Response data
     response: Tesla.Env.t() | nil,
-    result: ExLLM.Message.t() | nil,
+    result: SingularityLLM.Message.t() | nil,
     
     # Extensibility
     assigns: map(),
@@ -156,24 +156,24 @@ defmodule ExLLM.Request do
 end
 ```
 
-#### ExLLM.Plug Behaviour
+#### SingularityLLM.Plug Behaviour
 ```elixir
-defmodule ExLLM.Plug do
+defmodule SingularityLLM.Plug do
   @moduledoc """
-  The behaviour that all ExLLM pipeline plugs must implement.
+  The behaviour that all SingularityLLM pipeline plugs must implement.
   """
   
   @type opts :: keyword() | map()
   
   @callback init(opts) :: opts
-  @callback call(request :: ExLLM.Request.t(), opts) :: ExLLM.Request.t()
+  @callback call(request :: SingularityLLM.Request.t(), opts) :: SingularityLLM.Request.t()
   
   @doc """
   Provides default implementations and imports for plugs.
   """
   defmacro __using__(_opts) do
     quote do
-      @behaviour ExLLM.Plug
+      @behaviour SingularityLLM.Plug
       
       def init(opts), do: opts
       
@@ -188,14 +188,14 @@ end
 ### 1.2 Pipeline Runner
 
 ```elixir
-defmodule ExLLM.Pipeline do
+defmodule SingularityLLM.Pipeline do
   @moduledoc """
   The pipeline runner that executes a series of plugs on a request.
   """
   
-  alias ExLLM.Request
+  alias SingularityLLM.Request
   
-  @type plug :: module() | {module(), ExLLM.Plug.opts()}
+  @type plug :: module() | {module(), SingularityLLM.Plug.opts()}
   @type pipeline :: [plug()]
   
   @doc """
@@ -248,15 +248,15 @@ defmodule ExLLM.Pipeline do
 end
 ```
 
-### 1.3 Core ExLLM Plugs
+### 1.3 Core SingularityLLM Plugs
 
 #### ValidateProvider
 ```elixir
-defmodule ExLLM.Plugs.ValidateProvider do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.ValidateProvider do
+  use SingularityLLM.Plug
   
-  def call(%ExLLM.Request{provider: provider} = request, _opts) do
-    if ExLLM.Providers.supported?(provider) do
+  def call(%SingularityLLM.Request{provider: provider} = request, _opts) do
+    if SingularityLLM.Providers.supported?(provider) do
       request
     else
       request
@@ -266,7 +266,7 @@ defmodule ExLLM.Plugs.ValidateProvider do
         message: "Provider #{inspect(provider)} is not supported"
       } | &1])
       |> Map.put(:state, :error)
-      |> ExLLM.Request.halt()
+      |> SingularityLLM.Request.halt()
     end
   end
 end
@@ -274,16 +274,16 @@ end
 
 #### FetchConfig
 ```elixir
-defmodule ExLLM.Plugs.FetchConfig do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.FetchConfig do
+  use SingularityLLM.Plug
   
-  def call(%ExLLM.Request{provider: provider, options: options} = request, _opts) do
+  def call(%SingularityLLM.Request{provider: provider, options: options} = request, _opts) do
     # Merge configuration in order of precedence:
     # 1. Application config
     # 2. Provider defaults
     # 3. User options
     
-    app_config = Application.get_env(:ex_llm, provider, %{})
+    app_config = Application.get_env(:singularity_llm, provider, %{})
     provider_defaults = get_provider_defaults(provider)
     
     merged_config = 
@@ -296,7 +296,7 @@ defmodule ExLLM.Plugs.FetchConfig do
   
   defp get_provider_defaults(provider) do
     # This would call into provider modules
-    # e.g., ExLLM.Providers.OpenAI.default_config()
+    # e.g., SingularityLLM.Providers.OpenAI.default_config()
     %{
       timeout: 60_000,
       retry_attempts: 3,
@@ -308,8 +308,8 @@ end
 
 #### ManageContext
 ```elixir
-defmodule ExLLM.Plugs.ManageContext do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.ManageContext do
+  use SingularityLLM.Plug
   
   def init(opts) do
     Keyword.validate!(opts, [
@@ -319,7 +319,7 @@ defmodule ExLLM.Plugs.ManageContext do
     ])
   end
   
-  def call(%ExLLM.Request{messages: messages, config: config} = request, opts) do
+  def call(%SingularityLLM.Request{messages: messages, config: config} = request, opts) do
     max_tokens = opts[:max_tokens] || config[:max_tokens] || get_model_limit(request)
     
     managed_messages = 
@@ -330,9 +330,9 @@ defmodule ExLLM.Plugs.ManageContext do
       end
     
     %{request | messages: managed_messages}
-    |> ExLLM.Request.assign(:context_managed, true)
-    |> ExLLM.Request.assign(:original_message_count, length(messages))
-    |> ExLLM.Request.assign(:managed_message_count, length(managed_messages))
+    |> SingularityLLM.Request.assign(:context_managed, true)
+    |> SingularityLLM.Request.assign(:original_message_count, length(messages))
+    |> SingularityLLM.Request.assign(:managed_message_count, length(managed_messages))
   end
   
   defp truncate_messages(messages, max_tokens, opts) do
@@ -342,12 +342,12 @@ defmodule ExLLM.Plugs.ManageContext do
   
   defp summarize_messages(messages, max_tokens, opts) do
     # Implementation of conversation summarization
-    # This could call back into ExLLM for summary generation
+    # This could call back into SingularityLLM for summary generation
   end
   
   defp get_model_limit(request) do
     # Get the context window size for the model
-    ExLLM.Models.context_window(request.provider, request.config[:model])
+    SingularityLLM.Models.context_window(request.provider, request.config[:model])
   end
 end
 ```
@@ -356,10 +356,10 @@ end
 
 #### BuildTeslaClient Plug
 ```elixir
-defmodule ExLLM.Plugs.BuildTeslaClient do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.BuildTeslaClient do
+  use SingularityLLM.Plug
   
-  def call(%ExLLM.Request{provider: provider, config: config} = request, _opts) do
+  def call(%SingularityLLM.Request{provider: provider, config: config} = request, _opts) do
     client = build_client(provider, config)
     %{request | tesla_client: client}
   end
@@ -371,14 +371,14 @@ defmodule ExLLM.Plugs.BuildTeslaClient do
         {"authorization", "Bearer #{config[:api_key]}"},
         {"content-type", "application/json"}
       ]},
-      {ExLLM.Tesla.Middleware.CircuitBreaker, name: "openai_circuit"},
+      {SingularityLLM.Tesla.Middleware.CircuitBreaker, name: "openai_circuit"},
       {Tesla.Middleware.Retry, 
         delay: config[:retry_delay] || 1_000,
         max_retries: config[:retry_attempts] || 3,
         should_retry: &should_retry?/1
       },
       {Tesla.Middleware.Timeout, timeout: config[:timeout] || 60_000},
-      {ExLLM.Tesla.Middleware.Telemetry, metadata: %{provider: :openai}},
+      {SingularityLLM.Tesla.Middleware.Telemetry, metadata: %{provider: :openai}},
       Tesla.Middleware.JSON
     ])
   end
@@ -391,19 +391,19 @@ end
 
 #### Custom Tesla Middleware
 ```elixir
-defmodule ExLLM.Tesla.Middleware.CircuitBreaker do
+defmodule SingularityLLM.Tesla.Middleware.CircuitBreaker do
   @behaviour Tesla.Middleware
   
   def call(env, next, opts) do
     circuit_name = opts[:name] || "default"
     
-    ExLLM.Infrastructure.CircuitBreaker.call(circuit_name, fn ->
+    SingularityLLM.Infrastructure.CircuitBreaker.call(circuit_name, fn ->
       Tesla.run(env, next)
     end)
   end
 end
 
-defmodule ExLLM.Tesla.Middleware.Telemetry do
+defmodule SingularityLLM.Tesla.Middleware.Telemetry do
   @behaviour Tesla.Middleware
   
   def call(env, next, opts) do
@@ -414,7 +414,7 @@ defmodule ExLLM.Tesla.Middleware.Telemetry do
     })
     
     :telemetry.execute(
-      [:ex_llm, :http, :start],
+      [:singularity_llm, :http, :start],
       %{time: start_time},
       metadata
     )
@@ -423,7 +423,7 @@ defmodule ExLLM.Tesla.Middleware.Telemetry do
       {:ok, env} = result ->
         duration = System.monotonic_time() - start_time
         :telemetry.execute(
-          [:ex_llm, :http, :stop],
+          [:singularity_llm, :http, :stop],
           %{duration: duration},
           Map.put(metadata, :status, env.status)
         )
@@ -432,7 +432,7 @@ defmodule ExLLM.Tesla.Middleware.Telemetry do
       {:error, reason} = error ->
         duration = System.monotonic_time() - start_time
         :telemetry.execute(
-          [:ex_llm, :http, :error],
+          [:singularity_llm, :http, :error],
           %{duration: duration},
           Map.put(metadata, :error, reason)
         )
@@ -445,9 +445,9 @@ end
 ### 1.5 Backward Compatibility Layer
 
 ```elixir
-defmodule ExLLM do
+defmodule SingularityLLM do
   @moduledoc """
-  The main entry point for ExLLM. Provides both simple and advanced APIs.
+  The main entry point for SingularityLLM. Provides both simple and advanced APIs.
   """
   
   @doc """
@@ -455,13 +455,13 @@ defmodule ExLLM do
   """
   def chat(provider, messages, options \\ []) do
     # Convert to new pipeline internally
-    request = ExLLM.Request.new(provider, messages, Enum.into(options, %{}))
+    request = SingularityLLM.Request.new(provider, messages, Enum.into(options, %{}))
     
     # Get provider's default pipeline
     pipeline = get_default_pipeline(provider)
     
     # Run the pipeline
-    result = ExLLM.Pipeline.run(request, pipeline)
+    result = SingularityLLM.Pipeline.run(request, pipeline)
     
     # Convert back to old format
     case result do
@@ -476,14 +476,14 @@ defmodule ExLLM do
   
   defp get_default_pipeline(:openai) do
     [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      ExLLM.Plugs.ManageContext,
-      ExLLM.Plugs.BuildTeslaClient,
-      ExLLM.Plugs.Cache,
-      ExLLM.Plugs.ExecuteRequest,
-      ExLLM.Plugs.ParseResponse,
-      ExLLM.Plugs.TrackCost
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      SingularityLLM.Plugs.ManageContext,
+      SingularityLLM.Plugs.BuildTeslaClient,
+      SingularityLLM.Plugs.Cache,
+      SingularityLLM.Plugs.ExecuteRequest,
+      SingularityLLM.Plugs.ParseResponse,
+      SingularityLLM.Plugs.TrackCost
     ]
   end
   
@@ -499,46 +499,46 @@ end
 ### 2.1 OpenAI Adapter Refactor
 
 ```elixir
-defmodule ExLLM.Providers.OpenAI do
+defmodule SingularityLLM.Providers.OpenAI do
   @moduledoc """
   OpenAI provider implementation using the new pipeline architecture.
   """
   
-  @behaviour ExLLM.Provider
+  @behaviour SingularityLLM.Provider
   
   def default_pipeline do
     [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      {ExLLM.Plugs.ValidateMessages, format: :openai},
-      {ExLLM.Plugs.ManageContext, strategy: :truncate},
-      ExLLM.Plugs.BuildTeslaClient,
-      {ExLLM.Plugs.Cache, ttl: :timer.minutes(5)},
-      ExLLM.Plugs.OpenAI.PrepareRequest,
-      ExLLM.Plugs.ExecuteRequest,
-      ExLLM.Plugs.OpenAI.ParseResponse,
-      ExLLM.Plugs.TrackCost
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      {SingularityLLM.Plugs.ValidateMessages, format: :openai},
+      {SingularityLLM.Plugs.ManageContext, strategy: :truncate},
+      SingularityLLM.Plugs.BuildTeslaClient,
+      {SingularityLLM.Plugs.Cache, ttl: :timer.minutes(5)},
+      SingularityLLM.Plugs.OpenAI.PrepareRequest,
+      SingularityLLM.Plugs.ExecuteRequest,
+      SingularityLLM.Plugs.OpenAI.ParseResponse,
+      SingularityLLM.Plugs.TrackCost
     ]
   end
   
   def streaming_pipeline do
     [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      {ExLLM.Plugs.ValidateMessages, format: :openai},
-      {ExLLM.Plugs.ManageContext, strategy: :truncate},
-      ExLLM.Plugs.BuildTeslaClient,
-      ExLLM.Plugs.OpenAI.PrepareStreamRequest,
-      ExLLM.Plugs.ExecuteStreamRequest,
-      ExLLM.Plugs.OpenAI.ParseStreamResponse
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      {SingularityLLM.Plugs.ValidateMessages, format: :openai},
+      {SingularityLLM.Plugs.ManageContext, strategy: :truncate},
+      SingularityLLM.Plugs.BuildTeslaClient,
+      SingularityLLM.Plugs.OpenAI.PrepareStreamRequest,
+      SingularityLLM.Plugs.ExecuteStreamRequest,
+      SingularityLLM.Plugs.OpenAI.ParseStreamResponse
     ]
   end
 end
 
-defmodule ExLLM.Plugs.OpenAI.PrepareRequest do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.OpenAI.PrepareRequest do
+  use SingularityLLM.Plug
   
-  def call(%ExLLM.Request{messages: messages, config: config} = request, _opts) do
+  def call(%SingularityLLM.Request{messages: messages, config: config} = request, _opts) do
     body = %{
       model: config[:model] || "gpt-4",
       messages: format_messages(messages),
@@ -580,14 +580,14 @@ end
 ### 2.2 Streaming Support
 
 ```elixir
-defmodule ExLLM.Plugs.ExecuteStreamRequest do
-  use ExLLM.Plug
+defmodule SingularityLLM.Plugs.ExecuteStreamRequest do
+  use SingularityLLM.Plug
   
-  def call(%ExLLM.Request{} = request, opts) do
+  def call(%SingularityLLM.Request{} = request, opts) do
     consumer = opts[:consumer] || request.assigns[:stream_consumer]
     
     # Start streaming process
-    {:ok, stream_pid} = ExLLM.Streaming.Supervisor.start_stream(request, consumer)
+    {:ok, stream_pid} = SingularityLLM.Streaming.Supervisor.start_stream(request, consumer)
     
     %{request | 
       stream_pid: stream_pid,
@@ -596,7 +596,7 @@ defmodule ExLLM.Plugs.ExecuteStreamRequest do
   end
 end
 
-defmodule ExLLM.Streaming.Worker do
+defmodule SingularityLLM.Streaming.Worker do
   use GenServer
   
   def start_link(request, consumer) do
@@ -639,16 +639,16 @@ end
 ### 2.3 Advanced Pipeline API
 
 ```elixir
-defmodule ExLLM.Builder do
+defmodule SingularityLLM.Builder do
   @moduledoc """
   DSL for building custom pipelines.
   """
   
   defmacro __using__(_opts) do
     quote do
-      import ExLLM.Builder
+      import SingularityLLM.Builder
       
-      @before_compile ExLLM.Builder
+      @before_compile SingularityLLM.Builder
       Module.register_attribute(__MODULE__, :plugs, accumulate: true)
     end
   end
@@ -664,7 +664,7 @@ defmodule ExLLM.Builder do
       def __plugs__, do: @plugs |> Enum.reverse()
       
       def run(request) do
-        ExLLM.Pipeline.run(request, __plugs__())
+        SingularityLLM.Pipeline.run(request, __plugs__())
       end
     end
   end
@@ -672,21 +672,21 @@ end
 
 # Example custom pipeline
 defmodule MyApp.CustomPipeline do
-  use ExLLM.Builder
+  use SingularityLLM.Builder
   
   # Add custom authentication
   plug MyApp.Plugs.CustomAuth
   
   # Use a custom context strategy
-  plug ExLLM.Plugs.ManageContext, strategy: :summarize, max_tokens: 8000
+  plug SingularityLLM.Plugs.ManageContext, strategy: :summarize, max_tokens: 8000
   
   # Add custom logging
   plug MyApp.Plugs.RequestLogger
   
-  # Standard ExLLM plugs
-  plug ExLLM.Plugs.BuildTeslaClient
-  plug ExLLM.Plugs.ExecuteRequest
-  plug ExLLM.Plugs.ParseResponse
+  # Standard SingularityLLM plugs
+  plug SingularityLLM.Plugs.BuildTeslaClient
+  plug SingularityLLM.Plugs.ExecuteRequest
+  plug SingularityLLM.Plugs.ParseResponse
   
   # Custom post-processing
   plug MyApp.Plugs.EnrichResponse
@@ -698,14 +698,14 @@ end
 ### 3.1 Plug Testing Utilities
 
 ```elixir
-defmodule ExLLM.PlugTest do
+defmodule SingularityLLM.PlugTest do
   @moduledoc """
-  Testing utilities for ExLLM plugs.
+  Testing utilities for SingularityLLM plugs.
   """
   
   defmacro __using__(_opts) do
     quote do
-      import ExLLM.PlugTest
+      import SingularityLLM.PlugTest
       
       def build_request(attrs \\ %{}) do
         defaults = %{
@@ -715,7 +715,7 @@ defmodule ExLLM.PlugTest do
         }
         
         attrs = Map.merge(defaults, Map.new(attrs))
-        ExLLM.Request.new(attrs.provider, attrs.messages, attrs.options)
+        SingularityLLM.Request.new(attrs.provider, attrs.messages, attrs.options)
       end
     end
   end
@@ -734,11 +734,11 @@ defmodule ExLLM.PlugTest do
 end
 
 # Example plug test
-defmodule ExLLM.Plugs.ValidateProviderTest do
+defmodule SingularityLLM.Plugs.ValidateProviderTest do
   use ExUnit.Case
-  use ExLLM.PlugTest
+  use SingularityLLM.PlugTest
   
-  alias ExLLM.Plugs.ValidateProvider
+  alias SingularityLLM.Plugs.ValidateProvider
   
   test "passes through valid provider" do
     request = build_request(provider: :openai)
@@ -761,20 +761,20 @@ end
 ### 3.2 Pipeline Testing
 
 ```elixir
-defmodule ExLLM.PipelineTest do
+defmodule SingularityLLM.PipelineTest do
   use ExUnit.Case
-  use ExLLM.PlugTest
+  use SingularityLLM.PlugTest
   
   test "full pipeline execution" do
     request = build_request(provider: :openai)
     
     pipeline = [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      {ExLLM.TestPlugs.MockExecutor, response: %{content: "Hello!"}}
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      {SingularityLLM.TestPlugs.MockExecutor, response: %{content: "Hello!"}}
     ]
     
-    result = ExLLM.Pipeline.run(request, pipeline)
+    result = SingularityLLM.Pipeline.run(request, pipeline)
     
     assert result.state == :completed
     assert result.result.content == "Hello!"
@@ -784,12 +784,12 @@ defmodule ExLLM.PipelineTest do
     request = build_request(provider: :invalid)
     
     pipeline = [
-      ExLLM.Plugs.ValidateProvider,
-      ExLLM.Plugs.FetchConfig,
-      ExLLM.TestPlugs.ShouldNotReach
+      SingularityLLM.Plugs.ValidateProvider,
+      SingularityLLM.Plugs.FetchConfig,
+      SingularityLLM.TestPlugs.ShouldNotReach
     ]
     
-    result = ExLLM.Pipeline.run(request, pipeline)
+    result = SingularityLLM.Pipeline.run(request, pipeline)
     
     assert result.state == :error
     assert_halted(result)
@@ -811,18 +811,18 @@ For each provider:
 ### 4.2 Enhanced Simple API
 
 ```elixir
-defmodule ExLLM do
+defmodule SingularityLLM do
   @doc """
   Enhanced builder-style API for simple cases.
   """
   def chat(provider, messages) do
-    %ExLLM.ChatBuilder{
-      request: ExLLM.Request.new(provider, messages)
+    %SingularityLLM.ChatBuilder{
+      request: SingularityLLM.Request.new(provider, messages)
     }
   end
 end
 
-defmodule ExLLM.ChatBuilder do
+defmodule SingularityLLM.ChatBuilder do
   defstruct [:request, :pipeline_mods]
   
   def with_model(builder, model) do
@@ -834,11 +834,11 @@ defmodule ExLLM.ChatBuilder do
   end
   
   def with_cache(builder, opts) do
-    add_pipeline_mod(builder, {:replace, ExLLM.Plugs.Cache, opts})
+    add_pipeline_mod(builder, {:replace, SingularityLLM.Plugs.Cache, opts})
   end
   
   def without_cache(builder) do
-    add_pipeline_mod(builder, {:remove, ExLLM.Plugs.Cache})
+    add_pipeline_mod(builder, {:remove, SingularityLLM.Plugs.Cache})
   end
   
   def with_custom_plug(builder, plug, opts \\ []) do
@@ -847,7 +847,7 @@ defmodule ExLLM.ChatBuilder do
   
   def execute(builder) do
     pipeline = build_pipeline(builder)
-    result = ExLLM.Pipeline.run(builder.request, pipeline)
+    result = SingularityLLM.Pipeline.run(builder.request, pipeline)
     format_result(result)
   end
   
@@ -881,7 +881,7 @@ Create comprehensive documentation:
 ### 5.2 Breaking Changes (v2.0)
 
 1. Remove old options-based API
-2. Simplify ExLLM module to only essential functions
+2. Simplify SingularityLLM module to only essential functions
 3. Move provider modules to separate packages
 4. Introduce pipeline versioning
 
@@ -895,7 +895,7 @@ Create comprehensive documentation:
 
 ## Success Metrics
 
-1. **API Simplicity**: Reduce ExLLM module from 40+ to <10 functions
+1. **API Simplicity**: Reduce SingularityLLM module from 40+ to <10 functions
 2. **Performance**: <1ms pipeline overhead
 3. **Extensibility**: 20+ community plugs within 6 months
 4. **Adoption**: 80% of users stay on simple API
@@ -911,4 +911,4 @@ Create comprehensive documentation:
 
 ## Conclusion
 
-This architectural redesign transforms ExLLM from a monolithic library into a flexible, extensible platform. By leveraging proven patterns from Phoenix and Tesla, we provide both simplicity for beginners and power for advanced users, setting the foundation for ExLLM's future growth.
+This architectural redesign transforms SingularityLLM from a monolithic library into a flexible, extensible platform. By leveraging proven patterns from Phoenix and Tesla, we provide both simplicity for beginners and power for advanced users, setting the foundation for SingularityLLM's future growth.

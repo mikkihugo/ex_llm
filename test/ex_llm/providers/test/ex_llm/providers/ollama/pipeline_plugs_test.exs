@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Ollama.PipelinePlugsTest do
+defmodule SingularityLLM.Providers.Ollama.PipelinePlugsTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Providers.Ollama.{BuildRequest, ParseResponse}
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Providers.Ollama.{BuildRequest, ParseResponse}
 
   setup do
     # Set API key for FetchConfiguration plug. Ollama doesn't require one,

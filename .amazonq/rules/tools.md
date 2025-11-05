@@ -16,7 +16,7 @@ Follow this systematic approach for all code development tasks:
 - Use aider for all code creation and modification tasks
 - Follow the established plans from zen analysis
 - Implement systematically according to consensus recommendations
-- Remember to use proper file paths (ex_llm/ prefix)
+- Remember to use proper file paths (singularity_llm/ prefix)
 
 ### 3. After Code is Written
 **Use zen to review the code:**

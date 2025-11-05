@@ -1,9 +1,9 @@
-defmodule ExLLM.Plugs.Providers.OllamaParseListModelsResponseTest do
+defmodule SingularityLLM.Plugs.Providers.OllamaParseListModelsResponseTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs.Providers.OllamaParseListModelsResponse
-  alias ExLLM.Types.Model
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs.Providers.OllamaParseListModelsResponse
+  alias SingularityLLM.Types.Model
 
   describe "parse list models response" do
     test "uses model config for known models" do

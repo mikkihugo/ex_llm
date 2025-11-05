@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ExLLM TaskRouter now supports intelligent routing to the best model variants for specific task types. This answers the architectural question: **"How do we find the best model variant for a specific task type?"**
+The SingularityLLM TaskRouter now supports intelligent routing to the best model variants for specific task types. This answers the architectural question: **"How do we find the best model variant for a specific task type?"**
 
 Instead of treating all models equally, the router:
 
@@ -212,7 +212,7 @@ Returns all available providers/variants of a model.
 case TaskRouter.route_with_variants(:coding, min_context_tokens: 1_000_000) do
   {:ok, provider, model} ->
     # Use the selected model
-    ExLLM.chat(provider, messages, model: model)
+    SingularityLLM.chat(provider, messages, model: model)
 
   {:error, :no_suitable_variants} ->
     # No models meet the constraints - try looser constraints
@@ -445,7 +445,7 @@ end
 
 ### Running Tests
 ```bash
-mix test test/ex_llm/routing/task_router_variants_test.exs
+mix test test/singularity_llm/routing/task_router_variants_test.exs
 ```
 
 ## Common Patterns
@@ -501,7 +501,7 @@ def call_llm(task_type, complexity, opts \\ []) do
     complexity_level: complexity,
     prefer: :win_rate
   ] ++ opts),
-       {:ok, response} <- ExLLM.chat(provider, messages, model: model) do
+       {:ok, response} <- SingularityLLM.chat(provider, messages, model: model) do
     {:ok, response}
   end
 end
@@ -521,7 +521,7 @@ Potential improvements for future versions:
 
 ## Related Documentation
 
-- [TaskRouter](./lib/ex_llm/routing/task_router.ex) - Implementation
-- [TaskMetrics](./lib/ex_llm/routing/task_metrics.ex) - Win rate calculation
-- [Model Catalog](./lib/ex_llm/core/model_catalog.ex) - Model metadata
+- [TaskRouter](./lib/singularity_llm/routing/task_router.ex) - Implementation
+- [TaskMetrics](./lib/singularity_llm/routing/task_metrics.ex) - Win rate calculation
+- [Model Catalog](./lib/singularity_llm/core/model_catalog.ex) - Model metadata
 - [E2E Tests](./TEST_RESULTS_E2E.md) - Test results and coverage

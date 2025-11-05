@@ -1,8 +1,8 @@
-# ExLLM Streaming Enhancements
+# SingularityLLM Streaming Enhancements
 
 ## Overview
 
-This document describes the enhanced streaming infrastructure being added to ExLLM, based on proven patterns from MCP Chat. These enhancements provide better flow control, memory efficiency, and user experience when streaming LLM responses.
+This document describes the enhanced streaming infrastructure being added to SingularityLLM, based on proven patterns from MCP Chat. These enhancements provide better flow control, memory efficiency, and user experience when streaming LLM responses.
 
 ## Key Components
 
@@ -103,7 +103,7 @@ streaming_options: [
 
 ```elixir
 # Use managed streaming for better performance
-ExLLM.stream_chat(:anthropic, messages, fn chunk ->
+SingularityLLM.stream_chat(:anthropic, messages, fn chunk ->
   IO.write(chunk.content)
 end, streaming_options: [consumer_type: :managed])
 ```
@@ -112,7 +112,7 @@ end, streaming_options: [consumer_type: :managed])
 
 ```elixir
 # Configure for a slow terminal
-ExLLM.stream_chat(:groq, messages, fn chunk ->
+SingularityLLM.stream_chat(:groq, messages, fn chunk ->
   slow_terminal_write(chunk.content)
 end, streaming_options: [
   consumer_type: :managed,
@@ -125,7 +125,7 @@ end, streaming_options: [
 
 ```elixir
 # Track streaming performance
-ExLLM.stream_chat(:openai, messages, fn chunk ->
+SingularityLLM.stream_chat(:openai, messages, fn chunk ->
   process_chunk(chunk)
 end, streaming_options: [
   consumer_type: :managed,
@@ -166,7 +166,7 @@ All enhancements are opt-in. Existing code continues to work unchanged:
 
 ```elixir
 # This still works exactly as before
-ExLLM.stream_chat(:anthropic, messages, fn chunk ->
+SingularityLLM.stream_chat(:anthropic, messages, fn chunk ->
   IO.write(chunk.content)
 end)
 ```

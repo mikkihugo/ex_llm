@@ -1,6 +1,6 @@
-defmodule ExLLM.Providers.Shared.MessageFormatterNormalizationTest do
+defmodule SingularityLLM.Providers.Shared.MessageFormatterNormalizationTest do
   use ExUnit.Case, async: true
-  alias ExLLM.Providers.Shared.MessageFormatter
+  alias SingularityLLM.Providers.Shared.MessageFormatter
 
   describe "normalize_message_keys/1" do
     test "keeps atom keys unchanged" do

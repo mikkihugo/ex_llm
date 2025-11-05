@@ -1,0 +1,219 @@
+defmodule SingularityLLM.Infrastructure.ConfigProvider do
+  @moduledoc """
+  Behaviour for configuration providers.
+
+  This allows modules to receive configuration through dependency injection
+  rather than directly accessing application configuration, making them more 
+  portable and testable.
+
+  ## Example
+
+      # Using static configuration
+      config = %{
+        openai: %{api_key: "sk-..."},
+        anthropic: %{api_key: "api-..."}
+      }
+      {:ok, provider} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+      SingularityLLM.OpenAI.chat(messages, config_provider: provider)
+
+      # Using environment-based configuration
+      SingularityLLM.OpenAI.chat(messages, config_provider: SingularityLLM.Infrastructure.ConfigProvider.Env)
+  """
+
+  @doc """
+  Gets configuration value for a provider and key.
+  """
+  @callback get(provider :: atom(), key :: atom()) :: any()
+
+  @doc """
+  Gets all configuration for a provider.
+  """
+  @callback get_all(provider :: atom()) :: map()
+
+  @doc """
+  Gets configuration from a config provider instance.
+  """
+  @spec get_config(module() | pid(), atom()) :: {:ok, map()} | {:error, term()}
+  def get_config(provider_module, provider_name) when is_atom(provider_module) do
+    try do
+      config = provider_module.get_all(provider_name)
+      {:ok, config}
+    rescue
+      _ -> {:error, :provider_error}
+    end
+  end
+
+  def get_config(provider_pid, provider_name) when is_pid(provider_pid) do
+    try do
+      config = Agent.get(provider_pid, & &1)
+
+      case Map.get(config, provider_name) do
+        nil -> {:error, :not_found}
+        provider_config -> {:ok, provider_config}
+      end
+    rescue
+      _ -> {:error, :provider_error}
+    end
+  end
+
+  defmodule Static do
+    @moduledoc """
+    Static configuration provider for testing and library usage.
+
+    ## Usage
+
+        config = %{
+          openai: %{api_key: "sk-test", model: "gpt-4"},
+          anthropic: %{api_key: "api-test", model: "claude-3"}
+        }
+        {:ok, provider} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+        SingularityLLM.OpenAI.chat(messages, config_provider: provider)
+    """
+    use Agent
+
+    @behaviour SingularityLLM.Infrastructure.ConfigProvider
+
+    def start_link(config) do
+      Agent.start_link(fn -> config end)
+    end
+
+    @impl true
+    def get(provider, key) when is_atom(key) do
+      Agent.get(provider, &Map.get(&1, key))
+    end
+
+    def get(provider, [head | tail]) when is_atom(head) do
+      Agent.get(provider, fn config ->
+        get_in(config, [head | tail])
+      end)
+    end
+
+    @impl true
+    def get_all(provider_pid) do
+      Agent.get(provider_pid, & &1)
+    end
+  end
+
+  defmodule Default do
+    @moduledoc """
+    Default configuration provider that reads from environment variables.
+    This is an alias for the Env provider for backward compatibility.
+    """
+
+    @deprecated "Use SingularityLLM.Infrastructure.ConfigProvider.Env instead"
+    @behaviour SingularityLLM.Infrastructure.ConfigProvider
+
+    @impl true
+    def get(provider, key), do: SingularityLLM.Infrastructure.ConfigProvider.Env.get(provider, key)
+
+    @impl true
+    def get_all(provider), do: SingularityLLM.Infrastructure.ConfigProvider.Env.get_all(provider)
+  end
+
+  defmodule Env do
+    @moduledoc """
+    Environment-based configuration provider.
+
+    Reads configuration from environment variables using standard naming:
+    - `OPENAI_API_KEY` for OpenAI
+    - `ANTHROPIC_API_KEY` for Anthropic
+    - etc.
+    """
+
+    @behaviour SingularityLLM.Infrastructure.ConfigProvider
+
+    @impl true
+    def get(provider, key) when is_atom(provider) and is_atom(key) do
+      get_known_config(provider, key) || get_generic_config(provider, key)
+    end
+
+    defp get_known_config(provider, key) do
+      case key do
+        :api_key -> get_api_key_config(provider)
+        :base_url -> get_base_url_config(provider)
+        :model -> get_model_config(provider)
+        :streaming_timeout -> get_streaming_timeout_config(provider)
+        _ -> get_special_config(provider, key)
+      end
+    end
+
+    defp get_api_key_config(provider) do
+      case SingularityLLM.Environment.api_key_var(provider) do
+        vars when is_list(vars) -> Enum.find_value(vars, &System.get_env/1)
+        var when is_binary(var) -> System.get_env(var)
+        _ -> nil
+      end
+    end
+
+    defp get_base_url_config(provider) do
+      case provider do
+        :ollama ->
+          System.get_env("OLLAMA_BASE_URL") || System.get_env("OLLAMA_HOST") ||
+            "http://localhost:11434"
+
+        _ ->
+          case SingularityLLM.Environment.base_url_var(provider) do
+            {var, default} -> System.get_env(var, default)
+            _ -> nil
+          end
+      end
+    end
+
+    defp get_model_config(provider) do
+      case SingularityLLM.Environment.model_var(provider) do
+        {var, default} -> System.get_env(var, default)
+        _ -> nil
+      end
+    end
+
+    defp get_streaming_timeout_config(provider) do
+      case SingularityLLM.Environment.streaming_timeout_var(provider) do
+        {var, default} ->
+          case System.get_env(var) do
+            nil -> default
+            timeout_str -> String.to_integer(timeout_str)
+          end
+
+        _ ->
+          nil
+      end
+    end
+
+    defp get_special_config(provider, key) do
+      case {provider, key} do
+        {:openai, :organization} -> System.get_env("OPENAI_ORGANIZATION")
+        {:openrouter, :app_name} -> System.get_env("OPENROUTER_APP_NAME")
+        {:openrouter, :app_url} -> System.get_env("OPENROUTER_APP_URL")
+        _ -> nil
+      end
+    end
+
+    defp get_generic_config(provider, key) do
+      env_var = "#{String.upcase(to_string(provider))}_#{String.upcase(to_string(key))}"
+      System.get_env(env_var)
+    end
+
+    @impl true
+    def get_all(provider) when is_atom(provider) do
+      # Get base configuration from centralized environment
+      base_config = SingularityLLM.Environment.provider_config(provider)
+
+      # Add provider-specific extras
+      case provider do
+        :openai ->
+          Map.put(base_config, :organization, get(:openai, :organization))
+
+        :openrouter ->
+          base_config
+          |> Map.put(:app_name, get(:openrouter, :app_name))
+          |> Map.put(:app_url, get(:openrouter, :app_url))
+
+        :test_provider ->
+          Map.put(base_config, :default_model, get(:test_provider, :default_model))
+
+        _ ->
+          base_config
+      end
+    end
+  end
+end

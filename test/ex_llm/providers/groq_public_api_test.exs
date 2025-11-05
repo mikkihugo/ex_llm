@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.GroqPublicAPITest do
+defmodule SingularityLLM.Providers.GroqPublicAPITest do
   @moduledoc """
-  Groq-specific integration tests using the public ExLLM API.
+  Groq-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :groq
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :groq
 
   # Provider-specific tests only
   describe "groq-specific features via public API" do
@@ -16,7 +16,7 @@ defmodule ExLLM.Providers.GroqPublicAPITest do
       # Measure response time
       start_time = System.monotonic_time(:millisecond)
 
-      case ExLLM.chat(:groq, messages, model: "llama-3.1-8b-instant", max_tokens: 10) do
+      case SingularityLLM.chat(:groq, messages, model: "llama-3.1-8b-instant", max_tokens: 10) do
         {:ok, response} ->
           end_time = System.monotonic_time(:millisecond)
           duration = end_time - start_time
@@ -42,7 +42,7 @@ defmodule ExLLM.Providers.GroqPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:groq, messages, collector,
+      case SingularityLLM.stream(:groq, messages, collector,
              model: "llama-3.1-8b-instant",
              max_tokens: 50,
              timeout: 10_000
@@ -77,7 +77,7 @@ defmodule ExLLM.Providers.GroqPublicAPITest do
       messages = [%{role: "user", content: "Hi"}]
 
       for model <- models_to_test do
-        case ExLLM.chat(:groq, messages, model: model, max_tokens: 10) do
+        case SingularityLLM.chat(:groq, messages, model: model, max_tokens: 10) do
           {:ok, response} ->
             assert response.model == model
             assert is_binary(response.content)
@@ -100,7 +100,7 @@ defmodule ExLLM.Providers.GroqPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:groq, messages, response_format: %{type: "json_object"}, max_tokens: 100) do
+      case SingularityLLM.chat(:groq, messages, response_format: %{type: "json_object"}, max_tokens: 100) do
         {:ok, response} ->
           case Jason.decode(response.content) do
             {:ok, json} ->

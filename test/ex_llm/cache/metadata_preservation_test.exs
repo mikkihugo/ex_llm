@@ -1,11 +1,11 @@
-defmodule ExLLM.Cache.MetadataPreservationTest do
+defmodule SingularityLLM.Cache.MetadataPreservationTest do
   @moduledoc """
   Test that metadata (including :from_cache) is preserved through both cache systems.
   """
   use ExUnit.Case, async: false
 
-  alias ExLLM.Infrastructure.Cache
-  alias ExLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.Infrastructure.Cache
+  alias SingularityLLM.Testing.LiveApiCacheStorage
 
   setup do
     # Ensure production cache is started
@@ -51,7 +51,7 @@ defmodule ExLLM.Cache.MetadataPreservationTest do
     test "test cache adds :from_cache metadata to responses" do
       # Enable test cache
       System.put_env("EX_LLM_TEST_CACHE_ENABLED", "true")
-      Application.put_env(:ex_llm, :test_cache_enabled, true)
+      Application.put_env(:singularity_llm, :test_cache_enabled, true)
 
       # Create a unique cache key
       cache_key = "test_provider/test_endpoint/#{System.unique_integer()}"
@@ -79,7 +79,7 @@ defmodule ExLLM.Cache.MetadataPreservationTest do
       # Clean up
       LiveApiCacheStorage.clear(cache_key)
       System.delete_env("EX_LLM_TEST_CACHE_ENABLED")
-      Application.delete_env(:ex_llm, :test_cache_enabled)
+      Application.delete_env(:singularity_llm, :test_cache_enabled)
     end
   end
 
@@ -93,12 +93,12 @@ defmodule ExLLM.Cache.MetadataPreservationTest do
       :telemetry.attach_many(
         handler_id,
         [
-          [:ex_llm, :cache, :hit],
-          [:ex_llm, :cache, :miss],
-          [:ex_llm, :cache, :put],
-          [:ex_llm, :test_cache, :hit],
-          [:ex_llm, :test_cache, :miss],
-          [:ex_llm, :test_cache, :save]
+          [:singularity_llm, :cache, :hit],
+          [:singularity_llm, :cache, :miss],
+          [:singularity_llm, :cache, :put],
+          [:singularity_llm, :test_cache, :hit],
+          [:singularity_llm, :test_cache, :miss],
+          [:singularity_llm, :test_cache, :save]
         ],
         fn event, measurements, metadata, _config ->
           :ets.insert(events_received, {event, measurements, metadata})
@@ -124,9 +124,9 @@ defmodule ExLLM.Cache.MetadataPreservationTest do
       # Verify events were received
       events = :ets.tab2list(events_received)
 
-      assert Enum.any?(events, fn {event, _, _} -> event == [:ex_llm, :cache, :miss] end)
-      assert Enum.any?(events, fn {event, _, _} -> event == [:ex_llm, :cache, :put] end)
-      assert Enum.any?(events, fn {event, _, _} -> event == [:ex_llm, :cache, :hit] end)
+      assert Enum.any?(events, fn {event, _, _} -> event == [:singularity_llm, :cache, :miss] end)
+      assert Enum.any?(events, fn {event, _, _} -> event == [:singularity_llm, :cache, :put] end)
+      assert Enum.any?(events, fn {event, _, _} -> event == [:singularity_llm, :cache, :hit] end)
 
       # Clean up
       :telemetry.detach(handler_id)

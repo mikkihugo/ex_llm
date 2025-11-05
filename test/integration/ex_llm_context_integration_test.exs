@@ -1,4 +1,4 @@
-defmodule ExLLM.ContextIntegrationTest do
+defmodule SingularityLLM.ContextIntegrationTest do
   use ExUnit.Case
 
   @moduletag :integration
@@ -48,12 +48,12 @@ defmodule ExLLM.ContextIntegrationTest do
     test "automatically truncates messages to fit context window", %{messages: messages} do
       # For this test, we'll use a model with a small context window
       # First verify the messages are too large
-      total_tokens = ExLLM.estimate_tokens(messages)
+      total_tokens = SingularityLLM.estimate_tokens(messages)
       assert total_tokens > 1000
 
       # Use gpt-3.5-turbo with moderate max_tokens to force truncation
       prepared =
-        ExLLM.prepare_messages(messages,
+        SingularityLLM.prepare_messages(messages,
           provider: :openai,
           model: "gpt-3.5-turbo",
           # This leaves reasonable room for messages
@@ -89,7 +89,7 @@ defmodule ExLLM.ContextIntegrationTest do
 
       # Test sliding window - use a model with smaller context window
       sliding =
-        ExLLM.prepare_messages(messages,
+        SingularityLLM.prepare_messages(messages,
           provider: :openai,
           model: "gpt-3.5-turbo",
           # Leave reasonable room for messages
@@ -110,7 +110,7 @@ defmodule ExLLM.ContextIntegrationTest do
         ] ++ messages
 
       smart =
-        ExLLM.prepare_messages(messages_with_system,
+        SingularityLLM.prepare_messages(messages_with_system,
           provider: :openai,
           model: "gpt-3.5-turbo",
           # Force truncation
@@ -132,7 +132,7 @@ defmodule ExLLM.ContextIntegrationTest do
 
       # Test with Anthropic model
       assert {:ok, tokens} =
-               ExLLM.validate_context(messages,
+               SingularityLLM.validate_context(messages,
                  provider: "anthropic",
                  model: "claude-3-5-sonnet-20241022"
                )
@@ -141,7 +141,7 @@ defmodule ExLLM.ContextIntegrationTest do
 
       # Test with OpenAI model
       assert {:ok, tokens} =
-               ExLLM.validate_context(messages,
+               SingularityLLM.validate_context(messages,
                  provider: "openai",
                  model: "gpt-3.5-turbo"
                )
@@ -152,9 +152,9 @@ defmodule ExLLM.ContextIntegrationTest do
 
   describe "context_window_size/2" do
     test "returns correct sizes for known models" do
-      assert ExLLM.context_window_size(:anthropic, "claude-3-5-sonnet-20241022") == 200_000
-      assert ExLLM.context_window_size(:openai, "gpt-4o") == 128_000
-      assert ExLLM.context_window_size(:openai, "gpt-3.5-turbo") == 16_385
+      assert SingularityLLM.context_window_size(:anthropic, "claude-3-5-sonnet-20241022") == 200_000
+      assert SingularityLLM.context_window_size(:openai, "gpt-4o") == 128_000
+      assert SingularityLLM.context_window_size(:openai, "gpt-3.5-turbo") == 16_385
     end
   end
 
@@ -171,7 +171,7 @@ defmodule ExLLM.ContextIntegrationTest do
         }
       ]
 
-      stats = ExLLM.context_stats(messages)
+      stats = SingularityLLM.context_stats(messages)
 
       assert stats.message_count == 5
       assert stats.total_tokens > 0

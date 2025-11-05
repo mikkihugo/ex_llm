@@ -2,17 +2,17 @@
 
 ## Overview
 
-This guide covers OAuth2 testing in ExLLM, specifically for APIs that require OAuth2 authentication rather than API keys. Currently, this applies to Gemini's advanced APIs like Permissions, Corpus Management, and Question Answering.
+This guide covers OAuth2 testing in SingularityLLM, specifically for APIs that require OAuth2 authentication rather than API keys. Currently, this applies to Gemini's advanced APIs like Permissions, Corpus Management, and Question Answering.
 
 ## Required Pattern: OAuth2TestCase
 
-**MANDATORY**: All OAuth2 tests MUST use `ExLLM.Testing.OAuth2TestCase` to ensure consistent token handling and automatic refresh.
+**MANDATORY**: All OAuth2 tests MUST use `SingularityLLM.Testing.OAuth2TestCase` to ensure consistent token handling and automatic refresh.
 
 ### Basic Usage
 
 ```elixir
 defmodule MyApp.OAuth2Test do
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
   
   @moduletag :my_oauth2_feature
   
@@ -82,7 +82,7 @@ The refresh happens transparently during test setup.
 ### File Organization
 
 ```
-test/ex_llm/providers/gemini/
+test/singularity_llm/providers/gemini/
 ├── oauth2_apis_test.exs              # Main OAuth2 API tests
 ├── permissions_oauth2_test.exs       # Permissions API tests
 └── oauth2/
@@ -94,10 +94,10 @@ test/ex_llm/providers/gemini/
 ### Test Module Template
 
 ```elixir
-defmodule ExLLM.Providers.Gemini.MyOAuth2Test do
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+defmodule SingularityLLM.Providers.Gemini.MyOAuth2Test do
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
   
-  alias ExLLM.Providers.Gemini.MyAPI
+  alias SingularityLLM.Providers.Gemini.MyAPI
   
   @moduletag :my_oauth2_feature
   @moduletag :gemini_oauth2
@@ -143,7 +143,7 @@ end
 mix test.oauth2
 
 # Run specific OAuth2 test file
-mix test test/ex_llm/providers/gemini/oauth2_apis_test.exs
+mix test test/singularity_llm/providers/gemini/oauth2_apis_test.exs
 
 # Run with live API calls (includes OAuth2)
 mix test --include oauth2 --include live_api
@@ -248,7 +248,7 @@ end
 ```elixir
 # DO THIS - New pattern with automatic refresh
 defmodule MyOAuth2Test do
-  use ExLLM.Testing.OAuth2TestCase
+  use SingularityLLM.Testing.OAuth2TestCase
   
   test "oauth test", %{oauth_token: token} do
     # Test logic - token is automatically refreshed if needed
@@ -264,7 +264,7 @@ end
    use ExUnit.Case, async: false
    
    # To this:
-   use ExLLM.Testing.OAuth2TestCase
+   use SingularityLLM.Testing.OAuth2TestCase
    ```
 
 2. **Remove manual setup:**

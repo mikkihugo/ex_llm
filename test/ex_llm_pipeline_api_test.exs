@@ -1,14 +1,14 @@
-defmodule ExLLM.PipelineAPITest do
+defmodule SingularityLLM.PipelineAPITest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs
 
   describe "new pipeline API" do
     test "chat/3 works with mock provider" do
       # Create a mock handler plug for testing
       defmodule MockHandler do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
 
         def call(request, _opts) do
           result = %{
@@ -38,7 +38,7 @@ defmodule ExLLM.PipelineAPITest do
 
       # Build and run request directly
       request = Request.new(:mock, [%{role: "user", content: "Hello"}])
-      result = ExLLM.Pipeline.run(request, pipeline)
+      result = SingularityLLM.Pipeline.run(request, pipeline)
 
       assert result.state == :completed
       assert result.result.content == "Hello! I'm a mock response."
@@ -47,7 +47,7 @@ defmodule ExLLM.PipelineAPITest do
     test "fluent API with build/execute" do
       # Create a test pipeline that sets a result
       defmodule TestHandler do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
 
         def call(request, _opts) do
           temperature = request.options[:temperature] || 1.0
@@ -68,14 +68,14 @@ defmodule ExLLM.PipelineAPITest do
 
       # Use the request builder API directly with mock provider
       builder =
-        ExLLM.build(:mock, [%{role: "user", content: "Test"}])
-        |> ExLLM.with_model("test-model")
-        |> ExLLM.with_temperature(0.5)
-        |> ExLLM.with_plug(TestHandler)
+        SingularityLLM.build(:mock, [%{role: "user", content: "Test"}])
+        |> SingularityLLM.with_model("test-model")
+        |> SingularityLLM.with_temperature(0.5)
+        |> SingularityLLM.with_plug(TestHandler)
 
       # Execute with a minimal pipeline (skip validation for test provider)
       result =
-        ExLLM.Pipeline.run(builder.request, [
+        SingularityLLM.Pipeline.run(builder.request, [
           Plugs.FetchConfiguration,
           TestHandler
         ])
@@ -86,7 +86,7 @@ defmodule ExLLM.PipelineAPITest do
 
     test "pipeline error handling" do
       defmodule ErrorPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
 
         def call(request, _opts) do
           Request.halt_with_error(request, %{
@@ -98,7 +98,7 @@ defmodule ExLLM.PipelineAPITest do
       end
 
       request = Request.new(:test, [%{role: "user", content: "Test"}])
-      result = ExLLM.Pipeline.run(request, [ErrorPlug])
+      result = SingularityLLM.Pipeline.run(request, [ErrorPlug])
 
       assert result.state == :error
       assert result.halted == true
@@ -109,7 +109,7 @@ defmodule ExLLM.PipelineAPITest do
     test "ValidateProvider plug integration" do
       # Test with valid provider
       request = Request.new(:openai, [])
-      result = ExLLM.Pipeline.run(request, [Plugs.ValidateProvider])
+      result = SingularityLLM.Pipeline.run(request, [Plugs.ValidateProvider])
 
       assert result.state == :pending
       assert result.halted == false
@@ -117,7 +117,7 @@ defmodule ExLLM.PipelineAPITest do
 
       # Test with invalid provider
       request = Request.new(:invalid_provider, [])
-      result = ExLLM.Pipeline.run(request, [Plugs.ValidateProvider])
+      result = SingularityLLM.Pipeline.run(request, [Plugs.ValidateProvider])
 
       assert result.state == :error
       assert result.halted == true
@@ -130,7 +130,7 @@ defmodule ExLLM.PipelineAPITest do
       System.put_env("TEST_PROVIDER_DEFAULT_MODEL", "test-model")
 
       request = Request.new(:test_provider, [], %{temperature: 0.7})
-      result = ExLLM.Pipeline.run(request, [Plugs.FetchConfiguration])
+      result = SingularityLLM.Pipeline.run(request, [Plugs.FetchConfiguration])
 
       assert result.config[:api_key] == "test-key"
       assert result.config[:default_model] == "test-model"
@@ -144,7 +144,7 @@ defmodule ExLLM.PipelineAPITest do
 
   describe "provider pipelines" do
     test "get_pipeline returns pipeline for known providers" do
-      pipeline = ExLLM.Providers.get_pipeline(:openai, :chat)
+      pipeline = SingularityLLM.Providers.get_pipeline(:openai, :chat)
       assert is_list(pipeline)
       assert length(pipeline) > 0
 
@@ -161,7 +161,7 @@ defmodule ExLLM.PipelineAPITest do
     end
 
     test "supported_providers returns list" do
-      providers = ExLLM.Providers.supported_providers()
+      providers = SingularityLLM.Providers.supported_providers()
       assert is_list(providers)
       assert :openai in providers
       assert :anthropic in providers
@@ -169,8 +169,8 @@ defmodule ExLLM.PipelineAPITest do
     end
 
     test "supported? checks provider support" do
-      assert ExLLM.Providers.supported?(:openai) == true
-      assert ExLLM.Providers.supported?(:invalid) == false
+      assert SingularityLLM.Providers.supported?(:openai) == true
+      assert SingularityLLM.Providers.supported?(:invalid) == false
     end
   end
 end

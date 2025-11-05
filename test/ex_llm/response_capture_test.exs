@@ -1,9 +1,9 @@
-defmodule ExLLM.ResponseCaptureTest do
+defmodule SingularityLLM.ResponseCaptureTest do
   use ExUnit.Case, async: false
 
   @moduletag :unit
-  alias ExLLM.ResponseCapture
-  alias ExLLM.Testing.LiveApiCacheStorage
+  alias SingularityLLM.ResponseCapture
+  alias SingularityLLM.Testing.LiveApiCacheStorage
 
   setup do
     # Ensure test cache is enabled for these tests

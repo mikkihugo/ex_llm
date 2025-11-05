@@ -1,11 +1,11 @@
-defmodule ExLLM.Providers.OpenAI.PipelinePlugsTest do
+defmodule SingularityLLM.Providers.OpenAI.PipelinePlugsTest do
   use ExUnit.Case, async: false
 
   @moduletag provider: :openai
   @moduletag :unit
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Pipelines.StandardProvider
-  alias ExLLM.Providers.OpenAI.{BuildRequest, ParseResponse}
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Pipelines.StandardProvider
+  alias SingularityLLM.Providers.OpenAI.{BuildRequest, ParseResponse}
 
   setup do
     # Set API key for FetchConfiguration plug
@@ -118,7 +118,7 @@ defmodule ExLLM.Providers.OpenAI.PipelinePlugsTest do
       messages = [%{role: "user", content: "Test"}]
       request = Request.new(:openai, messages, [])
 
-      result = ExLLM.Pipeline.run(request, full_pipeline)
+      result = SingularityLLM.Pipeline.run(request, full_pipeline)
 
       refute result.halted
       assert result.state == :completed

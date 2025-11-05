@@ -1,4 +1,4 @@
-defmodule ExLLM.Routing.TaskRouterVariantsTest do
+defmodule SingularityLLM.Routing.TaskRouterVariantsTest do
   @moduledoc """
   Tests for task-type-aware model variant selection.
 
@@ -30,7 +30,7 @@ defmodule ExLLM.Routing.TaskRouterVariantsTest do
 
   use ExUnit.Case, async: false
 
-  alias ExLLM.Routing.TaskRouter
+  alias SingularityLLM.Routing.TaskRouter
 
   # ========== LONDON SCHOOL: UNIT TESTS WITH MOCKS ==========
 

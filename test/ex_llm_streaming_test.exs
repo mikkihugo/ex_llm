@@ -1,7 +1,7 @@
-defmodule ExLLM.StreamingTest do
+defmodule SingularityLLM.StreamingTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Pipeline.Request
+  alias SingularityLLM.Pipeline.Request
 
   describe "streaming functionality" do
     @tag :streaming
@@ -17,7 +17,7 @@ defmodule ExLLM.StreamingTest do
       end
 
       # Set up mock response in Application environment
-      Application.put_env(:ex_llm, :mock_responses, %{
+      Application.put_env(:singularity_llm, :mock_responses, %{
         stream: [
           %{content: "Hello", finish_reason: nil},
           %{content: ", ", finish_reason: nil},
@@ -27,10 +27,10 @@ defmodule ExLLM.StreamingTest do
       })
 
       # Clean up
-      on_exit(fn -> Application.delete_env(:ex_llm, :mock_responses) end)
+      on_exit(fn -> Application.delete_env(:singularity_llm, :mock_responses) end)
 
       # Use the high-level streaming API
-      result = ExLLM.stream(:mock, messages, callback)
+      result = SingularityLLM.stream(:mock, messages, callback)
 
       # Wait for processing to complete
       Process.sleep(100)
@@ -57,7 +57,7 @@ defmodule ExLLM.StreamingTest do
 
     @tag :streaming
     test "streaming with OpenAI-style SSE parsing" do
-      parser = &ExLLM.Plugs.Providers.OpenAIParseStreamResponse.parse_sse_chunk(&1, :openai)
+      parser = &SingularityLLM.Plugs.Providers.OpenAIParseStreamResponse.parse_sse_chunk(&1, :openai)
 
       # Test single chunk
       sse_data = """
@@ -74,7 +74,7 @@ defmodule ExLLM.StreamingTest do
 
     @tag :streaming
     test "streaming with Anthropic event parsing" do
-      parser = &ExLLM.Plugs.Providers.AnthropicParseStreamResponse.parse_anthropic_chunk/1
+      parser = &SingularityLLM.Plugs.Providers.AnthropicParseStreamResponse.parse_anthropic_chunk/1
 
       # Test content delta
       anthropic_data = """
@@ -105,7 +105,7 @@ defmodule ExLLM.StreamingTest do
       request = %{request | config: %{stream: true, stream_callback: callback}}
 
       # Run coordinator plug
-      result = ExLLM.Plugs.StreamCoordinator.call(request, [])
+      result = SingularityLLM.Plugs.StreamCoordinator.call(request, [])
 
       assert is_pid(result.stream_pid)
       assert result.assigns.streaming_enabled == true
@@ -129,7 +129,7 @@ end
 
 # Define the module outside the test module
 defmodule MockStreamingPlug do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
 
   @impl true
   def call(request, opts) do
@@ -146,7 +146,7 @@ defmodule MockStreamingPlug do
     end)
 
     request
-    |> ExLLM.Pipeline.Request.put_state(:executing)
-    |> ExLLM.Pipeline.Request.assign(:mock_streaming_started, true)
+    |> SingularityLLM.Pipeline.Request.put_state(:executing)
+    |> SingularityLLM.Pipeline.Request.assign(:mock_streaming_started, true)
   end
 end

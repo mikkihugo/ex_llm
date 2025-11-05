@@ -1,8 +1,8 @@
-# ExLLM Test Coverage Implementation Plan
+# SingularityLLM Test Coverage Implementation Plan
 
 ## Executive Summary
 
-This plan addresses critical gaps in ExLLM's test coverage for user-facing API functionality. Analysis revealed that while infrastructure testing is strong, advanced features that users directly manipulate lack comprehensive test coverage, creating production reliability risks.
+This plan addresses critical gaps in SingularityLLM's test coverage for user-facing API functionality. Analysis revealed that while infrastructure testing is strong, advanced features that users directly manipulate lack comprehensive test coverage, creating production reliability risks.
 
 ## Critical Findings
 
@@ -75,7 +75,7 @@ Enterprise Features
 **Key Components:**
 ```elixir
 # test/support/advanced_feature_helpers.ex
-defmodule ExLLM.Testing.AdvancedFeatureHelpers do
+defmodule SingularityLLM.Testing.AdvancedFeatureHelpers do
   def setup_mock_file_upload do
     # Mock file upload responses
   end
@@ -92,15 +92,15 @@ end
 
 ### 1.2 Input Validation & Builder API
 **Files to Create:**
-- `test/ex_llm/input_validation_test.exs`
-- `test/ex_llm/chat_builder_test.exs`
+- `test/singularity_llm/input_validation_test.exs`
+- `test/singularity_llm/chat_builder_test.exs`
 
 **Critical Tests:**
 ```elixir
 # Input boundary testing
 test "temperature boundary validation" do
   assert_raise FunctionClauseError, fn ->
-    ExLLM.build(:openai, messages) |> with_temperature(3.0)
+    SingularityLLM.build(:openai, messages) |> with_temperature(3.0)
   end
 end
 
@@ -129,7 +129,7 @@ test/integration/
 **Immediate Wins:**
 - Test deprecated `stream_chat/3` function
 - Expand `configured?/1` testing for unconfigured providers  
-- Test `ExLLM.run/2` with custom pipelines
+- Test `SingularityLLM.run/2` with custom pipelines
 - Add comprehensive session persistence testing
 
 ## Phase 2: High-Impact Advanced Features
@@ -141,16 +141,16 @@ test/integration/
 ```elixir
 describe "file lifecycle" do
   test "upload -> list -> get -> delete workflow" do
-    # Full lifecycle using ExLLM.* functions
-    {:ok, file} = ExLLM.upload_file(:openai, "test.pdf", opts)
-    {:ok, files} = ExLLM.list_files(:openai)
+    # Full lifecycle using SingularityLLM.* functions
+    {:ok, file} = SingularityLLM.upload_file(:openai, "test.pdf", opts)
+    {:ok, files} = SingularityLLM.list_files(:openai)
     assert file.id in Enum.map(files, & &1.id)
     
-    {:ok, retrieved} = ExLLM.get_file(:openai, file.id)
+    {:ok, retrieved} = SingularityLLM.get_file(:openai, file.id)
     assert retrieved.id == file.id
     
-    :ok = ExLLM.delete_file(:openai, file.id)
-    {:ok, updated_files} = ExLLM.list_files(:openai)
+    :ok = SingularityLLM.delete_file(:openai, file.id)
+    {:ok, updated_files} = SingularityLLM.list_files(:openai)
     refute file.id in Enum.map(updated_files, & &1.id)
   end
   
@@ -172,16 +172,16 @@ end
 describe "vision capabilities" do
   test "image loading from various sources" do
     # File paths, URLs, base64 encoding
-    {:ok, image1} = ExLLM.load_image("test/fixtures/test.jpg")
-    {:ok, image2} = ExLLM.load_image("data:image/jpeg;base64,...")
+    {:ok, image1} = SingularityLLM.load_image("test/fixtures/test.jpg")
+    {:ok, image2} = SingularityLLM.load_image("data:image/jpeg;base64,...")
     
-    message = ExLLM.vision_message("What's in this image?", [image1, image2])
+    message = SingularityLLM.vision_message("What's in this image?", [image1, image2])
     assert length(message.content) == 3  # text + 2 images
   end
   
   test "provider capability checking" do
-    assert ExLLM.supports_vision?(:openai, "gpt-4-vision-preview")
-    refute ExLLM.supports_vision?(:openai, "gpt-3.5-turbo")
+    assert SingularityLLM.supports_vision?(:openai, "gpt-4-vision-preview")
+    refute SingularityLLM.supports_vision?(:openai, "gpt-3.5-turbo")
   end
   
   test "format validation and error handling" do
@@ -197,19 +197,19 @@ end
 ```elixir
 describe "embeddings generation" do
   test "single and batch input processing" do
-    {:ok, response} = ExLLM.embeddings(:openai, "Hello world")
+    {:ok, response} = SingularityLLM.embeddings(:openai, "Hello world")
     assert is_list(response.embeddings)
     assert length(response.embeddings) == 1
     
-    {:ok, batch_response} = ExLLM.embeddings(:openai, ["Hello", "World"])
+    {:ok, batch_response} = SingularityLLM.embeddings(:openai, ["Hello", "World"])
     assert length(batch_response.embeddings) == 2
   end
   
   test "embedding index creation and search" do
     texts = ["Document 1 content", "Document 2 content"]
-    {:ok, index} = ExLLM.create_embedding_index(:openai, texts)
+    {:ok, index} = SingularityLLM.create_embedding_index(:openai, texts)
     
-    results = ExLLM.search_embeddings(index, "content query")
+    results = SingularityLLM.search_embeddings(index, "content query")
     assert is_list(results)
   end
 end
@@ -226,21 +226,21 @@ end
 ```elixir
 describe "knowledge base lifecycle" do
   test "create and manage knowledge bases" do
-    {:ok, kb} = ExLLM.create_knowledge_base(:gemini, "test-kb")
-    {:ok, kbs} = ExLLM.list_knowledge_bases(:gemini)
+    {:ok, kb} = SingularityLLM.create_knowledge_base(:gemini, "test-kb")
+    {:ok, kbs} = SingularityLLM.list_knowledge_bases(:gemini)
     assert kb.name in Enum.map(kbs, & &1.name)
   end
   
   test "document management workflow" do
-    {:ok, kb} = ExLLM.create_knowledge_base(:gemini, "docs-kb")
+    {:ok, kb} = SingularityLLM.create_knowledge_base(:gemini, "docs-kb")
     
     document = %{title: "Test Doc", content: "Test content"}
-    {:ok, doc} = ExLLM.add_document(:gemini, kb.name, document)
+    {:ok, doc} = SingularityLLM.add_document(:gemini, kb.name, document)
     
-    {:ok, docs} = ExLLM.list_documents(:gemini, kb.name)
+    {:ok, docs} = SingularityLLM.list_documents(:gemini, kb.name)
     assert doc.id in Enum.map(docs, & &1.id)
     
-    results = ExLLM.semantic_search(:gemini, kb.name, "test query")
+    results = SingularityLLM.semantic_search(:gemini, kb.name, "test query")
     assert is_list(results)
   end
 end
@@ -266,17 +266,17 @@ end
 describe "assistants workflow" do
   test "complete assistant interaction" do
     # Create assistant
-    {:ok, assistant} = ExLLM.create_assistant(:openai, 
+    {:ok, assistant} = SingularityLLM.create_assistant(:openai, 
       name: "Test Assistant",
       instructions: "You are helpful"
     )
     
     # Create thread
-    {:ok, thread} = ExLLM.create_thread(:openai)
+    {:ok, thread} = SingularityLLM.create_thread(:openai)
     
     # Add message and run
-    {:ok, _message} = ExLLM.create_message(:openai, thread.id, "Hello")
-    {:ok, run} = ExLLM.run_assistant(:openai, thread.id, assistant.id)
+    {:ok, _message} = SingularityLLM.create_message(:openai, thread.id, "Hello")
+    {:ok, run} = SingularityLLM.run_assistant(:openai, thread.id, assistant.id)
     
     # Verify execution
     assert run.status in ["queued", "in_progress", "completed"]
@@ -346,11 +346,11 @@ end
 ```elixir
 # Cost-effective testing strategy
 def with_test_caching(test_name, fun) do
-  if ExLLM.Testing.cache_available?(test_name) do
-    ExLLM.Testing.get_cached_result(test_name)
+  if SingularityLLM.Testing.cache_available?(test_name) do
+    SingularityLLM.Testing.get_cached_result(test_name)
   else
     result = fun.()
-    ExLLM.Testing.cache_result(test_name, result)
+    SingularityLLM.Testing.cache_result(test_name, result)
     result
   end
 end
@@ -410,8 +410,8 @@ end
 4. Establish API key management patterns
 
 #### Day 3-4: Quick Wins Implementation  
-1. Create `test/ex_llm/input_validation_test.exs`
-2. Create `test/ex_llm/chat_builder_test.exs`
+1. Create `test/singularity_llm/input_validation_test.exs`
+2. Create `test/singularity_llm/chat_builder_test.exs`
 3. Implement pipeline manipulation testing using `inspect_pipeline/1`
 4. Add comprehensive boundary testing for user parameters
 

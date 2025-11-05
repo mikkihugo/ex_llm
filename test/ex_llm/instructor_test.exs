@@ -1,4 +1,4 @@
-defmodule ExLLM.InstructorTest do
+defmodule SingularityLLM.InstructorTest do
   use ExUnit.Case, async: false
 
   # Test schema
@@ -23,18 +23,18 @@ defmodule ExLLM.InstructorTest do
   setup do
     # Since these are integration tests, we'll use the mock adapter
     # to test the Instructor functionality without requiring API keys
-    case ExLLM.Providers.Mock.start_link() do
+    case SingularityLLM.Providers.Mock.start_link() do
       {:ok, _pid} ->
         :ok
 
       {:error, {:already_started, _pid}} ->
         # Reset if already started
-        ExLLM.Providers.Mock.reset()
+        SingularityLLM.Providers.Mock.reset()
         :ok
     end
 
     # Set up a mock response handler that returns structured JSON
-    ExLLM.Providers.Mock.set_response_handler(fn messages, _options ->
+    SingularityLLM.Providers.Mock.set_response_handler(fn messages, _options ->
       last_message = List.last(messages)
       content = last_message.content || last_message[:content] || last_message["content"]
 
@@ -82,7 +82,7 @@ defmodule ExLLM.InstructorTest do
       ]
 
       assert {:ok, person} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  response_model: TestPerson,
                  temperature: 0.1
                )
@@ -102,7 +102,7 @@ defmodule ExLLM.InstructorTest do
 
       # With retries, it should correct the invalid age
       assert {:ok, person} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  response_model: TestPerson,
                  max_retries: 2,
                  temperature: 0.1
@@ -136,7 +136,7 @@ defmodule ExLLM.InstructorTest do
       ]
 
       assert {:ok, task} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  response_model: type_spec,
                  temperature: 0.1
                )
@@ -159,10 +159,10 @@ defmodule ExLLM.InstructorTest do
         }
       ]
 
-      assert {:ok, response} = ExLLM.chat(:mock, messages, temperature: 0)
+      assert {:ok, response} = SingularityLLM.chat(:mock, messages, temperature: 0)
 
       # Then parse it into a structure
-      assert {:ok, person} = ExLLM.Core.StructuredOutputs.parse_response(response, TestPerson)
+      assert {:ok, person} = SingularityLLM.Core.StructuredOutputs.parse_response(response, TestPerson)
 
       assert person.name == "Alice Brown"
       assert person.age == 28
@@ -173,7 +173,7 @@ defmodule ExLLM.InstructorTest do
       messages = [%{role: "user", content: "Test"}]
 
       assert {:error, :unsupported_provider_for_instructor} =
-               ExLLM.chat(:bumblebee, messages, response_model: TestPerson)
+               SingularityLLM.chat(:bumblebee, messages, response_model: TestPerson)
     end
   end
 end

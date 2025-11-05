@@ -1,18 +1,18 @@
-defmodule ExLLM.ChatBuilderTest do
+defmodule SingularityLLM.ChatBuilderTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.ChatBuilder
-  alias ExLLM.Plugs
+  alias SingularityLLM.ChatBuilder
+  alias SingularityLLM.Plugs
 
   @moduledoc """
-  Tests for the ExLLM.ChatBuilder fluent API, focusing on pipeline
+  Tests for the SingularityLLM.ChatBuilder fluent API, focusing on pipeline
   customization and manipulation capabilities.
   """
 
   describe "basic builder functionality" do
     test "creates builder with provider and messages" do
       messages = [%{role: "user", content: "Hello"}]
-      builder = ExLLM.build(:openai, messages)
+      builder = SingularityLLM.build(:openai, messages)
 
       assert %ChatBuilder{} = builder
       assert builder.request.provider == :openai
@@ -23,8 +23,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_model("gpt-4-turbo")
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_model("gpt-4-turbo")
 
       assert builder.request.options.model == "gpt-4-turbo"
     end
@@ -33,8 +33,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_temperature(0.7)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_temperature(0.7)
 
       assert builder.request.options.temperature == 0.7
     end
@@ -43,8 +43,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_max_tokens(1000)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_max_tokens(1000)
 
       assert builder.request.options.max_tokens == 1000
     end
@@ -53,10 +53,10 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_model("gpt-4")
-        |> ExLLM.with_temperature(0.5)
-        |> ExLLM.with_max_tokens(2000)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_model("gpt-4")
+        |> SingularityLLM.with_temperature(0.5)
+        |> SingularityLLM.with_max_tokens(2000)
 
       assert builder.request.options.model == "gpt-4"
       assert builder.request.options.temperature == 0.5
@@ -69,8 +69,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_cache(ttl: 3600)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_cache(ttl: 3600)
 
       assert {:replace, Plugs.Cache, [ttl: 3600]} in builder.pipeline_mods
     end
@@ -79,8 +79,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.without_cache()
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.without_cache()
 
       assert {:remove, Plugs.Cache} in builder.pipeline_mods
     end
@@ -89,8 +89,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.without_cost_tracking()
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.without_cost_tracking()
 
       assert {:remove, Plugs.TrackCost} in builder.pipeline_mods
     end
@@ -99,13 +99,13 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule TestPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_custom_plug(TestPlug, some_opt: true)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_custom_plug(TestPlug, some_opt: true)
 
       assert {:append, TestPlug, [some_opt: true]} in builder.pipeline_mods
     end
@@ -114,8 +114,8 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.with_context_strategy(:sliding_window, max_tokens: 8000)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.with_context_strategy(:sliding_window, max_tokens: 8000)
 
       expected = {:replace, Plugs.ManageContext, [strategy: :sliding_window, max_tokens: 8000]}
       assert expected in builder.pipeline_mods
@@ -127,13 +127,13 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule BeforePlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.insert_before(Plugs.ExecuteRequest, BeforePlug)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.insert_before(Plugs.ExecuteRequest, BeforePlug)
 
       expected = {:insert_before, Plugs.ExecuteRequest, BeforePlug, []}
       assert expected in builder.pipeline_mods
@@ -143,13 +143,13 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule AfterPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.insert_after(Plugs.FetchConfiguration, AfterPlug, opt: true)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.insert_after(Plugs.FetchConfiguration, AfterPlug, opt: true)
 
       expected = {:insert_after, Plugs.FetchConfiguration, AfterPlug, [opt: true]}
       assert expected in builder.pipeline_mods
@@ -159,13 +159,13 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule CustomCache do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.replace_plug(Plugs.Cache, CustomCache, ttl: 7200)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.replace_plug(Plugs.Cache, CustomCache, ttl: 7200)
 
       assert {:remove, Plugs.Cache} in builder.pipeline_mods
       assert {:append, CustomCache, [ttl: 7200]} in builder.pipeline_mods
@@ -181,8 +181,8 @@ defmodule ExLLM.ChatBuilderTest do
       ]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.with_pipeline(custom_pipeline)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.with_pipeline(custom_pipeline)
 
       assert [{:custom_pipeline, ^custom_pipeline}] = builder.pipeline_mods
     end
@@ -192,8 +192,8 @@ defmodule ExLLM.ChatBuilderTest do
     test "returns default pipeline when no modifications" do
       messages = [%{role: "user", content: "test"}]
 
-      builder = ExLLM.build(:openai, messages)
-      pipeline = ExLLM.inspect_pipeline(builder)
+      builder = SingularityLLM.build(:openai, messages)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
 
       # Should return the default OpenAI chat pipeline
       assert is_list(pipeline)
@@ -210,11 +210,11 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.without_cache()
-        |> ExLLM.without_cost_tracking()
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.without_cache()
+        |> SingularityLLM.without_cost_tracking()
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # Cache and cost tracking should be removed
@@ -236,10 +236,10 @@ defmodule ExLLM.ChatBuilderTest do
       ]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.with_pipeline(custom_pipeline)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.with_pipeline(custom_pipeline)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
 
       assert pipeline == custom_pipeline
     end
@@ -253,12 +253,12 @@ defmodule ExLLM.ChatBuilderTest do
       ]
 
       builder =
-        ExLLM.build(:anthropic, messages)
-        |> ExLLM.with_model("claude-3-opus")
-        |> ExLLM.with_temperature(0.5)
-        |> ExLLM.without_cache()
+        SingularityLLM.build(:anthropic, messages)
+        |> SingularityLLM.with_model("claude-3-opus")
+        |> SingularityLLM.with_temperature(0.5)
+        |> SingularityLLM.without_cache()
 
-      info = ExLLM.debug_info(builder)
+      info = SingularityLLM.debug_info(builder)
 
       assert info.provider == :anthropic
       assert info.message_count == 2
@@ -274,10 +274,10 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.with_pipeline([Plugs.ExecuteRequest])
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.with_pipeline([Plugs.ExecuteRequest])
 
-      info = ExLLM.debug_info(builder)
+      info = SingularityLLM.debug_info(builder)
 
       assert info.has_custom_pipeline == true
     end
@@ -288,16 +288,16 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule OrderTestPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       # Use openai provider which has ExecuteRequest in its pipeline
       builder =
-        ExLLM.build(:openai, messages)
-        |> ExLLM.ChatBuilder.insert_before(Plugs.ExecuteRequest, OrderTestPlug)
+        SingularityLLM.build(:openai, messages)
+        |> SingularityLLM.ChatBuilder.insert_before(Plugs.ExecuteRequest, OrderTestPlug)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # Find positions
@@ -313,15 +313,15 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule AfterTestPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:mock, messages)
-        |> ExLLM.ChatBuilder.insert_after(Plugs.ValidateProvider, AfterTestPlug)
+        SingularityLLM.build(:mock, messages)
+        |> SingularityLLM.ChatBuilder.insert_after(Plugs.ValidateProvider, AfterTestPlug)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # Find positions
@@ -337,22 +337,22 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule FirstCustomPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       defmodule SecondCustomPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:mock, messages)
-        |> ExLLM.without_cache()
-        |> ExLLM.with_custom_plug(FirstCustomPlug)
-        |> ExLLM.with_custom_plug(SecondCustomPlug)
+        SingularityLLM.build(:mock, messages)
+        |> SingularityLLM.without_cache()
+        |> SingularityLLM.with_custom_plug(FirstCustomPlug)
+        |> SingularityLLM.with_custom_plug(SecondCustomPlug)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # Cache should be removed
@@ -373,15 +373,15 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule OrphanPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:mock, messages)
-        |> ExLLM.ChatBuilder.insert_before(NonExistentPlug, OrphanPlug)
+        SingularityLLM.build(:mock, messages)
+        |> SingularityLLM.ChatBuilder.insert_before(NonExistentPlug, OrphanPlug)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # The plug should be added at the end if target not found
@@ -392,15 +392,15 @@ defmodule ExLLM.ChatBuilderTest do
       messages = [%{role: "user", content: "test"}]
 
       defmodule ReplacementPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
         def call(request, _opts), do: request
       end
 
       builder =
-        ExLLM.build(:mock, messages)
-        |> ExLLM.ChatBuilder.replace_plug(NonExistentPlug, ReplacementPlug)
+        SingularityLLM.build(:mock, messages)
+        |> SingularityLLM.ChatBuilder.replace_plug(NonExistentPlug, ReplacementPlug)
 
-      pipeline = ExLLM.inspect_pipeline(builder)
+      pipeline = SingularityLLM.inspect_pipeline(builder)
       plug_modules = extract_plug_modules(pipeline)
 
       # Should still add the replacement plug even if target doesn't exist

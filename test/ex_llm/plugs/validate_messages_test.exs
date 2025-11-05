@@ -1,9 +1,9 @@
-defmodule ExLLM.Plugs.ValidateMessagesTest do
+defmodule SingularityLLM.Plugs.ValidateMessagesTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs.ValidateMessages
-  alias ExLLM.Providers.Shared.MessageFormatter
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs.ValidateMessages
+  alias SingularityLLM.Providers.Shared.MessageFormatter
 
   test "call/2 with valid messages passes the request through" do
     messages = [%{role: "user", content: "Hello"}]

@@ -1,7 +1,7 @@
-defmodule ExLLM.Infrastructure.Streaming.SSEParserTest do
+defmodule SingularityLLM.Infrastructure.Streaming.SSEParserTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Infrastructure.Streaming.SSEParser
+  alias SingularityLLM.Infrastructure.Streaming.SSEParser
 
   describe "parse_chunk/2" do
     test "parses a single, simple event" do

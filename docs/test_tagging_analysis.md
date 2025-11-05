@@ -1,10 +1,10 @@
-# ExLLM Test Tagging System Analysis
+# SingularityLLM Test Tagging System Analysis
 
 ## Current Test Tagging System
 
 ### Current Tags in Use
 
-Based on analysis of the codebase, ExLLM currently uses the following tags:
+Based on analysis of the codebase, SingularityLLM currently uses the following tags:
 
 #### 1. Test Type Tags
 - **`:integration`** - Tests requiring external services or API calls
@@ -130,7 +130,7 @@ if tags[:live_api], do: tags[:live] = true
 "test.mock": ["test --only mock"],
 "test.smoke": ["test --only unit --only mock --exclude slow"],
 "test.capability": &test_capability/1,
-"test.matrix": ["test.live", "run -e ExLLM.Testing.MatrixReporter.generate()"],
+"test.matrix": ["test.live", "run -e SingularityLLM.Testing.MatrixReporter.generate()"],
 
 # Provider-specific live tests
 "test.live.openai": ["test --only live --only provider:openai"],
@@ -164,12 +164,12 @@ Maintain both tag systems during transition:
 @tag capability: :streaming
 
 # Or use a macro
-use ExLLM.Testing.Tags, capabilities: [:streaming, :chat]
+use SingularityLLM.Testing.Tags, capabilities: [:streaming, :chat]
 ```
 
 ## Summary
 
-The current ExLLM test tagging system is already quite sophisticated and covers many of the proposed concepts. The main gaps are:
+The current SingularityLLM test tagging system is already quite sophisticated and covers many of the proposed concepts. The main gaps are:
 
 1. **Capability tagging standardization** - Need consistent `capability:` prefix
 2. **Mock test identification** - Need explicit `:mock` tag

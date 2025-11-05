@@ -1,7 +1,7 @@
-defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
+defmodule SingularityLLM.Integration.KnowledgeBaseComprehensiveTest do
   @moduledoc """
-  Comprehensive integration tests for ExLLM Knowledge Base functionality.
-  Tests the complete knowledge base lifecycle through ExLLM's unified interface.
+  Comprehensive integration tests for SingularityLLM Knowledge Base functionality.
+  Tests the complete knowledge base lifecycle through SingularityLLM's unified interface.
   """
   use ExUnit.Case
 
@@ -14,7 +14,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
   end
 
   defp cleanup_knowledge_base(kb_id) when is_binary(kb_id) do
-    case ExLLM.KnowledgeBase.delete_knowledge_base(:gemini, kb_id) do
+    case SingularityLLM.KnowledgeBase.delete_knowledge_base(:gemini, kb_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -22,7 +22,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
   end
 
   defp cleanup_document(kb_id, doc_id) when is_binary(kb_id) and is_binary(doc_id) do
-    case ExLLM.KnowledgeBase.delete_document(:gemini, kb_id, doc_id) do
+    case SingularityLLM.KnowledgeBase.delete_document(:gemini, kb_id, doc_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -42,7 +42,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "A test knowledge base for integration testing"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
         {:ok, kb} ->
           assert kb["name"] != nil
           assert kb["displayName"] == name
@@ -59,7 +59,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
     end
 
     test "list knowledge bases" do
-      case ExLLM.KnowledgeBase.list_knowledge_bases(:gemini) do
+      case SingularityLLM.KnowledgeBase.list_knowledge_bases(:gemini) do
         {:ok, response} ->
           assert is_map(response)
           assert Map.has_key?(response, "corpora") or Map.has_key?(response, "data")
@@ -79,10 +79,10 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for testing retrieval"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
         {:ok, kb} ->
           # Test retrieval
-          case ExLLM.KnowledgeBase.get_knowledge_base(:gemini, kb["name"]) do
+          case SingularityLLM.KnowledgeBase.get_knowledge_base(:gemini, kb["name"]) do
             {:ok, retrieved} ->
               assert retrieved["name"] == kb["name"]
               assert retrieved["displayName"] == name
@@ -110,13 +110,13 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for testing deletion"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, params) do
         {:ok, kb} ->
           # Test deletion
-          case ExLLM.KnowledgeBase.delete_knowledge_base(:gemini, kb["name"]) do
+          case SingularityLLM.KnowledgeBase.delete_knowledge_base(:gemini, kb["name"]) do
             {:ok, _} ->
               # Verify deletion by trying to retrieve
-              case ExLLM.KnowledgeBase.get_knowledge_base(:gemini, kb["name"]) do
+              case SingularityLLM.KnowledgeBase.get_knowledge_base(:gemini, kb["name"]) do
                 {:ok, _} ->
                   flunk("Expected knowledge base to be deleted")
 
@@ -156,7 +156,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for document testing"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add document
           doc_content =
@@ -170,7 +170,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
             ]
           }
 
-          case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
+          case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
             {:ok, doc} ->
               assert doc["name"] != nil
               assert doc["displayName"] == "Test Document"
@@ -201,16 +201,16 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for document listing"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add a document
           doc_content = "Sample document for listing test."
           doc_params = %{display_name: "List Test Doc"}
 
-          case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
+          case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
             {:ok, doc} ->
               # List documents
-              case ExLLM.KnowledgeBase.list_documents(:gemini, kb["name"]) do
+              case SingularityLLM.KnowledgeBase.list_documents(:gemini, kb["name"]) do
                 {:ok, response} ->
                   assert is_map(response)
                   assert Map.has_key?(response, "documents") or Map.has_key?(response, "data")
@@ -249,7 +249,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for document retrieval"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add a document
           doc_content = "Document content for retrieval testing."
@@ -259,10 +259,10 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
             custom_metadata: [%{key: "test", string_value: "metadata"}]
           }
 
-          case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
+          case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
             {:ok, doc} ->
               # Get document details
-              case ExLLM.KnowledgeBase.get_document(:gemini, kb["name"], doc["name"]) do
+              case SingularityLLM.KnowledgeBase.get_document(:gemini, kb["name"], doc["name"]) do
                 {:ok, retrieved} ->
                   assert retrieved["name"] == doc["name"]
                   assert retrieved["displayName"] == "Retrieve Test Doc"
@@ -301,19 +301,19 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for document deletion"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add a document
           doc_content = "Document to be deleted."
           doc_params = %{display_name: "Delete Test Doc"}
 
-          case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
+          case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], doc_content, doc_params) do
             {:ok, doc} ->
               # Delete document
-              case ExLLM.KnowledgeBase.delete_document(:gemini, kb["name"], doc["name"]) do
+              case SingularityLLM.KnowledgeBase.delete_document(:gemini, kb["name"], doc["name"]) do
                 {:ok, _} ->
                   # Verify deletion by trying to retrieve
-                  case ExLLM.KnowledgeBase.get_document(:gemini, kb["name"], doc["name"]) do
+                  case SingularityLLM.KnowledgeBase.get_document(:gemini, kb["name"], doc["name"]) do
                     {:ok, _} ->
                       flunk("Expected document to be deleted")
 
@@ -364,7 +364,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for search testing"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add sample documents
           docs = [
@@ -380,7 +380,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
                 custom_metadata: [%{key: "category", string_value: "AI"}]
               }
 
-              case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], content, doc_params) do
+              case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], content, doc_params) do
                 {:ok, doc} -> doc
                 {:error, _} -> nil
               end
@@ -394,7 +394,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
             # Perform semantic search
             query = "What is artificial intelligence?"
 
-            case ExLLM.KnowledgeBase.semantic_search(:gemini, kb["name"], query) do
+            case SingularityLLM.KnowledgeBase.semantic_search(:gemini, kb["name"], query) do
               {:ok, results} ->
                 assert is_map(results)
 
@@ -429,7 +429,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "KB for filtered search testing"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, kb_params) do
         {:ok, kb} ->
           # Add documents with different categories
           docs = [
@@ -445,7 +445,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
                 custom_metadata: [%{key: "category", string_value: category}]
               }
 
-              case ExLLM.KnowledgeBase.add_document(:gemini, kb["name"], content, doc_params) do
+              case SingularityLLM.KnowledgeBase.add_document(:gemini, kb["name"], content, doc_params) do
                 {:ok, doc} -> doc
                 {:error, _} -> nil
               end
@@ -463,7 +463,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
               %{key: "category", conditions: [%{operation: "EQUAL", string_value: "programming"}]}
             ]
 
-            case ExLLM.KnowledgeBase.semantic_search(:gemini, kb["name"], query,
+            case SingularityLLM.KnowledgeBase.semantic_search(:gemini, kb["name"], query,
                    metadata_filters: metadata_filters
                  ) do
               {:ok, results} ->
@@ -503,7 +503,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
     test "knowledge base not found error" do
       fake_kb_id = "corpora/nonexistent-#{:os.system_time(:millisecond)}"
 
-      case ExLLM.KnowledgeBase.get_knowledge_base(:gemini, fake_kb_id) do
+      case SingularityLLM.KnowledgeBase.get_knowledge_base(:gemini, fake_kb_id) do
         {:ok, _} ->
           flunk("Expected knowledge base not found error")
 
@@ -520,7 +520,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
       fake_kb_id = "corpora/nonexistent-kb-#{:os.system_time(:millisecond)}"
       fake_doc_id = "documents/nonexistent-doc-#{:os.system_time(:millisecond)}"
 
-      case ExLLM.KnowledgeBase.get_document(:gemini, fake_kb_id, fake_doc_id) do
+      case SingularityLLM.KnowledgeBase.get_document(:gemini, fake_kb_id, fake_doc_id) do
         {:ok, _} ->
           flunk("Expected document not found error")
 
@@ -540,7 +540,7 @@ defmodule ExLLM.Integration.KnowledgeBaseComprehensiveTest do
         description: "Invalid KB"
       }
 
-      case ExLLM.KnowledgeBase.create_knowledge_base(:gemini, invalid_params) do
+      case SingularityLLM.KnowledgeBase.create_knowledge_base(:gemini, invalid_params) do
         {:ok, _} ->
           flunk("Expected invalid parameters error")
 

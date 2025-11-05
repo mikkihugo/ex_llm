@@ -1,8 +1,8 @@
-defmodule ExLLM.CacheTest do
+defmodule SingularityLLM.CacheTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Cache
-  alias ExLLM.Infrastructure.Cache, as: ProdCache
+  alias SingularityLLM.Cache
+  alias SingularityLLM.Infrastructure.Cache, as: ProdCache
 
   setup do
     # The Production cache strategy relies on this GenServer.

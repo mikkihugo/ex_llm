@@ -1,10 +1,10 @@
-# ExLLM Observability Guide
+# SingularityLLM Observability Guide
 
-This guide covers the observability features in ExLLM, including telemetry events, metrics collection, and distributed tracing.
+This guide covers the observability features in SingularityLLM, including telemetry events, metrics collection, and distributed tracing.
 
 ## Architecture Overview
 
-ExLLM's observability is built on three layers:
+SingularityLLM's observability is built on three layers:
 
 1. **Core Telemetry Events** - Decoupled event emission using Elixir's `:telemetry`
 2. **Metrics Collection** - Aggregation using `telemetry_metrics` 
@@ -18,7 +18,7 @@ Attach the default logger to see all events:
 
 ```elixir
 # In your application start
-ExLLM.Telemetry.attach_default_logger(:info)
+SingularityLLM.Telemetry.attach_default_logger(:info)
 ```
 
 ### Metrics with Prometheus
@@ -33,7 +33,7 @@ ExLLM.Telemetry.attach_default_logger(:info)
 ```elixir
 children = [
   {TelemetryMetricsPrometheus, 
-    metrics: ExLLM.Telemetry.Metrics.metrics(),
+    metrics: SingularityLLM.Telemetry.Metrics.metrics(),
     port: 9568}
 ]
 ```
@@ -51,15 +51,15 @@ children = [
 
 2. Use instrumented functions:
 ```elixir
-# Instead of ExLLM.chat(...)
-ExLLM.Telemetry.OpenTelemetry.chat(model: "gpt-4", messages: messages)
+# Instead of SingularityLLM.chat(...)
+SingularityLLM.Telemetry.OpenTelemetry.chat(model: "gpt-4", messages: messages)
 ```
 
 ## Telemetry Events
 
 ### Event Naming Convention
 
-All events follow the pattern: `[:ex_llm, :component, :operation, :phase]`
+All events follow the pattern: `[:singularity_llm, :component, :operation, :phase]`
 
 Where:
 - `component`: The module (e.g., `:chat`, `:provider`, `:cache`)
@@ -69,9 +69,9 @@ Where:
 ### Core Events
 
 #### Chat Operations
-- `[:ex_llm, :chat, :start]` - Chat request started
-- `[:ex_llm, :chat, :stop]` - Chat request completed
-- `[:ex_llm, :chat, :exception]` - Chat request failed
+- `[:singularity_llm, :chat, :start]` - Chat request started
+- `[:singularity_llm, :chat, :stop]` - Chat request completed
+- `[:singularity_llm, :chat, :exception]` - Chat request failed
 
 Measurements:
 - `duration` - Time in native units (use `System.convert_time_unit/3`)
@@ -85,26 +85,26 @@ Metadata:
 - `cost_cents` - Cost in cents
 
 #### Provider Operations
-- `[:ex_llm, :provider, :request, :start/stop/exception]`
-- `[:ex_llm, :provider, :auth, :refresh]`
-- `[:ex_llm, :provider, :rate_limit]`
+- `[:singularity_llm, :provider, :request, :start/stop/exception]`
+- `[:singularity_llm, :provider, :auth, :refresh]`
+- `[:singularity_llm, :provider, :rate_limit]`
 
 #### Cache Operations
-- `[:ex_llm, :cache, :hit]` - Cache hit
-- `[:ex_llm, :cache, :miss]` - Cache miss
-- `[:ex_llm, :cache, :put]` - Item cached
-- `[:ex_llm, :cache, :evicted]` - Item evicted
+- `[:singularity_llm, :cache, :hit]` - Cache hit
+- `[:singularity_llm, :cache, :miss]` - Cache miss
+- `[:singularity_llm, :cache, :put]` - Item cached
+- `[:singularity_llm, :cache, :evicted]` - Item evicted
 
 #### Cost Tracking
-- `[:ex_llm, :cost, :calculated]` - Cost calculated
-- `[:ex_llm, :cost, :threshold_exceeded]` - Cost threshold exceeded
+- `[:singularity_llm, :cost, :calculated]` - Cost calculated
+- `[:singularity_llm, :cost, :threshold_exceeded]` - Cost threshold exceeded
 
 ### Custom Event Handlers
 
 ```elixir
 :telemetry.attach(
   "my-handler",
-  [:ex_llm, :chat, :stop],
+  [:singularity_llm, :chat, :stop],
   &MyApp.handle_chat_complete/4,
   nil
 )
@@ -122,51 +122,51 @@ end
 
 ### Using telemetry_metrics
 
-ExLLM provides pre-defined metrics that work with any `telemetry_metrics` reporter:
+SingularityLLM provides pre-defined metrics that work with any `telemetry_metrics` reporter:
 
 ```elixir
 # Get all metrics
-ExLLM.Telemetry.Metrics.metrics()
+SingularityLLM.Telemetry.Metrics.metrics()
 
 # Get basic metrics for development
-ExLLM.Telemetry.Metrics.basic_metrics()
+SingularityLLM.Telemetry.Metrics.basic_metrics()
 
 # Get cost-focused metrics
-ExLLM.Telemetry.Metrics.cost_metrics()
+SingularityLLM.Telemetry.Metrics.cost_metrics()
 ```
 
 ### Available Metrics
 
 - **Request Metrics**
-  - `ex_llm.chat.requests.total` - Total chat requests
-  - `ex_llm.chat.duration.milliseconds` - Request duration
-  - `ex_llm.chat.errors.total` - Error count
+  - `singularity_llm.chat.requests.total` - Total chat requests
+  - `singularity_llm.chat.duration.milliseconds` - Request duration
+  - `singularity_llm.chat.errors.total` - Error count
 
 - **Token Metrics**
-  - `ex_llm.tokens.input.total` - Total input tokens
-  - `ex_llm.tokens.output.total` - Total output tokens
+  - `singularity_llm.tokens.input.total` - Total input tokens
+  - `singularity_llm.tokens.output.total` - Total output tokens
 
 - **Cost Metrics**
-  - `ex_llm.cost.cents.total` - Total cost
-  - `ex_llm.cost.threshold_exceeded.total` - Threshold violations
+  - `singularity_llm.cost.cents.total` - Total cost
+  - `singularity_llm.cost.threshold_exceeded.total` - Threshold violations
 
 - **Cache Metrics**
-  - `ex_llm.cache.hits.total` - Cache hits
-  - `ex_llm.cache.misses.total` - Cache misses
-  - `ex_llm.cache.size.bytes` - Cache size
+  - `singularity_llm.cache.hits.total` - Cache hits
+  - `singularity_llm.cache.misses.total` - Cache misses
+  - `singularity_llm.cache.size.bytes` - Cache size
 
 ### Reporter Examples
 
 #### Console Reporter (Development)
 ```elixir
 {Telemetry.Metrics.ConsoleReporter,
-  metrics: ExLLM.Telemetry.Metrics.basic_metrics()}
+  metrics: SingularityLLM.Telemetry.Metrics.basic_metrics()}
 ```
 
 #### StatsD Reporter
 ```elixir
 {TelemetryMetricsStatsd,
-  metrics: ExLLM.Telemetry.Metrics.metrics(),
+  metrics: SingularityLLM.Telemetry.Metrics.metrics(),
   host: "localhost",
   port: 8125}
 ```
@@ -217,9 +217,9 @@ Use the instrumented functions for best performance:
 
 ```elixir
 # These create proper OpenTelemetry spans
-ExLLM.Telemetry.OpenTelemetry.chat(model: "gpt-4", messages: messages)
-ExLLM.Telemetry.OpenTelemetry.stream_chat(model: "gpt-4", messages: messages)
-ExLLM.Telemetry.OpenTelemetry.embed(model: "text-embedding-ada-002", input: text)
+SingularityLLM.Telemetry.OpenTelemetry.chat(model: "gpt-4", messages: messages)
+SingularityLLM.Telemetry.OpenTelemetry.stream_chat(model: "gpt-4", messages: messages)
+SingularityLLM.Telemetry.OpenTelemetry.embed(model: "text-embedding-ada-002", input: text)
 ```
 
 #### Manual Instrumentation
@@ -227,11 +227,11 @@ ExLLM.Telemetry.OpenTelemetry.embed(model: "text-embedding-ada-002", input: text
 For custom operations:
 
 ```elixir
-import ExLLM.Telemetry.OpenTelemetry
+import SingularityLLM.Telemetry.OpenTelemetry
 
 with_span "custom_operation", %{custom: "attribute"} do
   # Your code here
-  result = ExLLM.chat(...)
+  result = SingularityLLM.chat(...)
   # Span automatically ended
   result
 end
@@ -247,8 +247,8 @@ otel_ctx = OpenTelemetry.Ctx.get_current()
 
 Task.async(fn ->
   # Maintain trace context in the new process
-  ExLLM.Telemetry.OpenTelemetry.with_context(otel_ctx, fn ->
-    ExLLM.chat(...)  # This will be part of the same trace
+  SingularityLLM.Telemetry.OpenTelemetry.with_context(otel_ctx, fn ->
+    SingularityLLM.chat(...)  # This will be part of the same trace
   end)
 end)
 ```
@@ -293,7 +293,7 @@ config :opentelemetry_exporter,
 
 ### Adding Telemetry to Your Code
 
-Use the `ExLLM.Telemetry.span/3` helper:
+Use the `SingularityLLM.Telemetry.span/3` helper:
 
 ```elixir
 defmodule MyApp.LLMService do
@@ -303,9 +303,9 @@ defmodule MyApp.LLMService do
       text_length: String.length(text)
     }
     
-    ExLLM.Telemetry.span [:myapp, :llm, :analyze], metadata do
+    SingularityLLM.Telemetry.span [:myapp, :llm, :analyze], metadata do
       # This automatically emits start/stop/exception events
-      ExLLM.chat(
+      SingularityLLM.chat(
         model: "gpt-4",
         messages: [%{role: "user", content: text}]
       )
@@ -320,11 +320,11 @@ end
 def get_from_cache(key) do
   case Cache.get(key) do
     {:ok, value} ->
-      ExLLM.Telemetry.emit_cache_hit(key)
+      SingularityLLM.Telemetry.emit_cache_hit(key)
       {:ok, value}
       
     :error ->
-      ExLLM.Telemetry.emit_cache_miss(key)
+      SingularityLLM.Telemetry.emit_cache_miss(key)
       :error
   end
 end
@@ -335,14 +335,14 @@ end
 ```elixir
 def track_cost(response, threshold) do
   if cost = get_in(response, [:cost, :total_cents]) do
-    ExLLM.Telemetry.emit_cost_calculated(
+    SingularityLLM.Telemetry.emit_cost_calculated(
       response.provider,
       response.model,
       cost
     )
     
     if cost > threshold do
-      ExLLM.Telemetry.emit_cost_threshold_exceeded(cost, threshold)
+      SingularityLLM.Telemetry.emit_cost_threshold_exceeded(cost, threshold)
     end
   end
 end
@@ -359,18 +359,18 @@ end
 
 1. **Enable Debug Logging**:
    ```elixir
-   ExLLM.Telemetry.attach_default_logger(:debug)
+   SingularityLLM.Telemetry.attach_default_logger(:debug)
    ```
 
 2. **List Attached Handlers**:
    ```elixir
-   :telemetry.list_handlers([:ex_llm, :chat, :stop])
+   :telemetry.list_handlers([:singularity_llm, :chat, :stop])
    ```
 
 3. **Test Events Manually**:
    ```elixir
    :telemetry.execute(
-     [:ex_llm, :chat, :stop],
+     [:singularity_llm, :chat, :stop],
      %{duration: 1000},
      %{model: "gpt-4", provider: :openai}
    )

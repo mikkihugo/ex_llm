@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.OpenRouterPublicAPITest do
+defmodule SingularityLLM.Providers.OpenRouterPublicAPITest do
   @moduledoc """
-  OpenRouter-specific integration tests using the public ExLLM API.
+  OpenRouter-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :openrouter
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :openrouter
 
   # Provider-specific tests only
   describe "openrouter-specific features via public API" do
@@ -19,7 +19,7 @@ defmodule ExLLM.Providers.OpenRouterPublicAPITest do
       messages = [%{role: "user", content: "Say hi"}]
 
       for model <- models_to_test do
-        case ExLLM.chat(:openrouter, messages, model: model, max_tokens: 10) do
+        case SingularityLLM.chat(:openrouter, messages, model: model, max_tokens: 10) do
           {:ok, response} ->
             assert response.metadata.provider == :openrouter
             assert is_binary(response.content)
@@ -37,7 +37,7 @@ defmodule ExLLM.Providers.OpenRouterPublicAPITest do
     end
 
     test "lists hundreds of available models" do
-      case ExLLM.list_models(:openrouter) do
+      case SingularityLLM.list_models(:openrouter) do
         {:ok, models} ->
           assert is_list(models)
           # OpenRouter returns a subset of available models
@@ -74,7 +74,7 @@ defmodule ExLLM.Providers.OpenRouterPublicAPITest do
       end
 
       # Try streaming with different underlying providers
-      case ExLLM.stream(:openrouter, messages, collector,
+      case SingularityLLM.stream(:openrouter, messages, collector,
              model: "openai/gpt-4.1-nano",
              max_tokens: 30,
              timeout: 10_000
@@ -105,11 +105,11 @@ defmodule ExLLM.Providers.OpenRouterPublicAPITest do
         max_tokens: 10,
         provider_options: %{
           "HTTP-Referer" => "https://example.com",
-          "X-Title" => "ExLLM Test Suite"
+          "X-Title" => "SingularityLLM Test Suite"
         }
       ]
 
-      case ExLLM.chat(:openrouter, messages, options) do
+      case SingularityLLM.chat(:openrouter, messages, options) do
         {:ok, response} ->
           assert response.metadata.provider == :openrouter
           assert is_binary(response.content)
@@ -123,7 +123,7 @@ defmodule ExLLM.Providers.OpenRouterPublicAPITest do
       messages = [%{role: "user", content: "Hello"}]
 
       # Test with a specific model to ensure consistent pricing
-      case ExLLM.chat(:openrouter, messages, model: "openai/gpt-4.1-nano", max_tokens: 10) do
+      case SingularityLLM.chat(:openrouter, messages, model: "openai/gpt-4.1-nano", max_tokens: 10) do
         {:ok, response} ->
           assert response.cost > 0
           # Should be very cheap for this request

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Gemini.OAuth2.QATest do
+defmodule SingularityLLM.Providers.Gemini.OAuth2.QATest do
   @moduledoc """
   Tests for Gemini Question Answering API via OAuth2.
 
@@ -6,10 +6,10 @@ defmodule ExLLM.Providers.Gemini.OAuth2.QATest do
   retrieval from corpora with documents and chunks.
   """
 
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
 
-  alias ExLLM.Providers.Gemini.{Chunk, Corpus, Document, QA}
-  alias ExLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
+  alias SingularityLLM.Providers.Gemini.{Chunk, Corpus, Document, QA}
+  alias SingularityLLM.Providers.Gemini.OAuth2.SharedOAuth2Test
 
   @moduletag :gemini_oauth2_apis
   @moduletag :question_answering

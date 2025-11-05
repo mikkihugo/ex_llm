@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.GeminiPublicAPITest do
+defmodule SingularityLLM.Providers.GeminiPublicAPITest do
   @moduledoc """
-  Gemini-specific integration tests using the public ExLLM API.
+  Gemini-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :gemini
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :gemini
 
   # Provider-specific tests only
   describe "gemini-specific features via public API" do
@@ -31,7 +31,7 @@ defmodule ExLLM.Providers.GeminiPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:gemini, messages, model: "gemini-1.5-flash", max_tokens: 50) do
+      case SingularityLLM.chat(:gemini, messages, model: "gemini-1.5-flash", max_tokens: 50) do
         {:ok, response} ->
           # Gemini can see the image and responds (don't test specific color)
           assert String.length(response.content) > 0
@@ -56,7 +56,7 @@ defmodule ExLLM.Providers.GeminiPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:gemini, messages,
+      case SingularityLLM.chat(:gemini, messages,
              model: "gemini-2.0-flash-exp",
              safety_settings: safety_settings,
              max_tokens: 100
@@ -80,7 +80,7 @@ defmodule ExLLM.Providers.GeminiPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:gemini, messages, collector,
+      case SingularityLLM.stream(:gemini, messages, collector,
              model: "gemini-2.0-flash-exp",
              max_tokens: 20,
              timeout: 10_000
@@ -105,7 +105,7 @@ defmodule ExLLM.Providers.GeminiPublicAPITest do
         %{role: "user", content: "How are you?"}
       ]
 
-      case ExLLM.chat(:gemini, messages, model: "gemini-2.0-flash-exp", max_tokens: 50) do
+      case SingularityLLM.chat(:gemini, messages, model: "gemini-2.0-flash-exp", max_tokens: 50) do
         {:ok, response} ->
           assert is_binary(response.content)
           assert response.metadata.provider == :gemini
@@ -119,7 +119,7 @@ defmodule ExLLM.Providers.GeminiPublicAPITest do
     test "embedding generation with Gemini" do
       texts = ["Hello world", "How are you?"]
 
-      case ExLLM.embeddings(:gemini, texts, model: "text-embedding-004") do
+      case SingularityLLM.embeddings(:gemini, texts, model: "text-embedding-004") do
         {:ok, response} ->
           assert length(response.embeddings) == 2
           assert is_list(hd(response.embeddings))

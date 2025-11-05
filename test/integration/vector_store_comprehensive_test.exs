@@ -1,6 +1,6 @@
-defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
+defmodule SingularityLLM.Integration.VectorStoreComprehensiveTest do
   @moduledoc """
-  Comprehensive integration tests for ExLLM Vector Store and Embeddings functionality.
+  Comprehensive integration tests for SingularityLLM Vector Store and Embeddings functionality.
   Tests vector store creation, document management, and embedding generation.
   """
   use ExUnit.Case
@@ -14,7 +14,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
   end
 
   defp cleanup_vector_store(store_id) when is_binary(store_id) do
-    case ExLLM.Providers.OpenAI.delete_vector_store(store_id) do
+    case SingularityLLM.Providers.OpenAI.delete_vector_store(store_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -22,7 +22,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
   end
 
   defp cleanup_file(file_id) when is_binary(file_id) do
-    case ExLLM.FileManager.delete_file(:openai, file_id) do
+    case SingularityLLM.FileManager.delete_file(:openai, file_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -45,7 +45,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
         }
       }
 
-      case ExLLM.Providers.OpenAI.create_vector_store(params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(params) do
         {:ok, store} ->
           assert store["id"] =~ ~r/^vs_/
           assert store["name"] == name
@@ -62,7 +62,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
     end
 
     test "list vector stores" do
-      case ExLLM.Providers.OpenAI.list_vector_stores() do
+      case SingularityLLM.Providers.OpenAI.list_vector_stores() do
         {:ok, response} ->
           assert is_map(response)
           assert Map.has_key?(response, "data")
@@ -80,10 +80,10 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       name = unique_name("Get Details Store")
       params = %{name: name}
 
-      case ExLLM.Providers.OpenAI.create_vector_store(params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(params) do
         {:ok, store} ->
           # Test retrieval
-          case ExLLM.Providers.OpenAI.get_vector_store(store["id"]) do
+          case SingularityLLM.Providers.OpenAI.get_vector_store(store["id"]) do
             {:ok, retrieved} ->
               assert retrieved["id"] == store["id"]
               assert retrieved["name"] == name
@@ -108,7 +108,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       name = unique_name("Update Test Store")
       params = %{name: name}
 
-      case ExLLM.Providers.OpenAI.create_vector_store(params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(params) do
         {:ok, store} ->
           # Test update
           updates = %{
@@ -119,7 +119,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
             }
           }
 
-          case ExLLM.Providers.OpenAI.update_vector_store(store["id"], updates) do
+          case SingularityLLM.Providers.OpenAI.update_vector_store(store["id"], updates) do
             {:ok, updated} ->
               assert updated["id"] == store["id"]
               assert updated["name"] == "#{name} Updated"
@@ -143,10 +143,10 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       name = unique_name("Delete Test Store")
       params = %{name: name}
 
-      case ExLLM.Providers.OpenAI.create_vector_store(params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(params) do
         {:ok, store} ->
           # Test deletion
-          case ExLLM.Providers.OpenAI.delete_vector_store(store["id"]) do
+          case SingularityLLM.Providers.OpenAI.delete_vector_store(store["id"]) do
             {:ok, result} ->
               assert result["id"] == store["id"]
               assert result["deleted"] == true
@@ -176,7 +176,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       store_name = unique_name("File Test Store")
       store_params = %{name: store_name}
 
-      case ExLLM.Providers.OpenAI.create_vector_store(store_params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(store_params) do
         {:ok, store} ->
           # Create a test file first
           file_content =
@@ -185,12 +185,12 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
           file_path = "/tmp/vector_store_test_#{:os.system_time(:millisecond)}.txt"
           File.write!(file_path, file_content)
 
-          case ExLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants") do
+          case SingularityLLM.FileManager.upload_file(:openai, file_path, purpose: "assistants") do
             {:ok, file} ->
               # Add file to vector store
               file_params = %{file_id: file["id"]}
 
-              case ExLLM.Providers.OpenAI.create_vector_store_file(store["id"], file_params) do
+              case SingularityLLM.Providers.OpenAI.create_vector_store_file(store["id"], file_params) do
                 {:ok, vs_file} ->
                   assert vs_file["id"] != nil
                   assert vs_file["object"] == "vector_store.file"
@@ -226,10 +226,10 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       store_name = unique_name("List Files Store")
       store_params = %{name: store_name}
 
-      case ExLLM.Providers.OpenAI.create_vector_store(store_params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(store_params) do
         {:ok, store} ->
           # List files (should be empty initially)
-          case ExLLM.Providers.OpenAI.list_vector_store_files(store["id"]) do
+          case SingularityLLM.Providers.OpenAI.list_vector_store_files(store["id"]) do
             {:ok, response} ->
               assert is_map(response)
               assert Map.has_key?(response, "data")
@@ -260,9 +260,9 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       text =
         "Machine learning is a subset of artificial intelligence that focuses on data-driven algorithms."
 
-      case ExLLM.embeddings(:openai, text) do
+      case SingularityLLM.embeddings(:openai, text) do
         {:ok, response} ->
-          assert %ExLLM.Types.EmbeddingResponse{} = response
+          assert %SingularityLLM.Types.EmbeddingResponse{} = response
           assert is_list(response.embeddings)
           assert length(response.embeddings) == 1
 
@@ -284,9 +284,9 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
         "Computer vision allows machines to interpret and analyze visual information."
       ]
 
-      case ExLLM.embeddings(:openai, texts) do
+      case SingularityLLM.embeddings(:openai, texts) do
         {:ok, response} ->
-          assert %ExLLM.Types.EmbeddingResponse{} = response
+          assert %SingularityLLM.Types.EmbeddingResponse{} = response
           assert is_list(response.embeddings)
           assert length(response.embeddings) == 3
 
@@ -305,7 +305,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
     test "generate embedding - Gemini" do
       text = "Gemini is Google's large language model with multimodal capabilities."
 
-      case ExLLM.embeddings(:gemini, text) do
+      case SingularityLLM.embeddings(:gemini, text) do
         {:ok, response} ->
           assert is_map(response)
           # Gemini might have different response format
@@ -326,7 +326,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
       similar_text2 = "AI systems use data to learn patterns."
       different_text = "The weather is sunny today."
 
-      case ExLLM.embeddings(:openai, [similar_text1, similar_text2, different_text]) do
+      case SingularityLLM.embeddings(:openai, [similar_text1, similar_text2, different_text]) do
         {:ok, response} ->
           embeddings = response.embeddings
           [emb1, emb2, emb3] = embeddings
@@ -334,7 +334,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
           # Try to test similarity calculation
           try do
             similar_items =
-              ExLLM.Embeddings.find_similar(
+              SingularityLLM.Embeddings.find_similar(
                 [{emb1, "text1"}, {emb2, "text2"}, {emb3, "text3"}],
                 emb1,
                 3
@@ -373,7 +373,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
     test "vector store not found error" do
       fake_store_id = "vs_nonexistent_#{:os.system_time(:millisecond)}"
 
-      case ExLLM.Providers.OpenAI.get_vector_store(fake_store_id) do
+      case SingularityLLM.Providers.OpenAI.get_vector_store(fake_store_id) do
         {:ok, _} ->
           flunk("Expected vector store not found error")
 
@@ -387,7 +387,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
 
     test "invalid embedding input error" do
       # Try to generate embedding with empty text
-      case ExLLM.embeddings(:openai, "") do
+      case SingularityLLM.embeddings(:openai, "") do
         {:ok, _} ->
           # Some providers might handle empty strings gracefully
           :ok
@@ -410,7 +410,7 @@ defmodule ExLLM.Integration.VectorStoreComprehensiveTest do
         }
       }
 
-      case ExLLM.Providers.OpenAI.create_vector_store(invalid_params) do
+      case SingularityLLM.Providers.OpenAI.create_vector_store(invalid_params) do
         {:ok, store} ->
           # If it succeeds unexpectedly, clean up
           cleanup_vector_store(store["id"])

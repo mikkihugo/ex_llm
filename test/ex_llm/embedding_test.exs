@@ -1,4 +1,4 @@
-defmodule ExLLM.EmbeddingTest do
+defmodule SingularityLLM.EmbeddingTest do
   @moduledoc """
   Tests for embedding generation functionality across providers.
 
@@ -9,7 +9,7 @@ defmodule ExLLM.EmbeddingTest do
   use ExUnit.Case, async: true
 
   @moduletag capability: :embeddings
-  alias ExLLM.Core.Embeddings
+  alias SingularityLLM.Core.Embeddings
 
   @simple_text "Hello, world!"
   @multiple_texts ["Hello", "world", "test embedding"]
@@ -20,7 +20,7 @@ defmodule ExLLM.EmbeddingTest do
       # Mock provider should return predictable embeddings
       input = @simple_text
 
-      result = ExLLM.embeddings(:mock, input)
+      result = SingularityLLM.embeddings(:mock, input)
 
       case result do
         {:ok, response} ->
@@ -52,7 +52,7 @@ defmodule ExLLM.EmbeddingTest do
     test "generates embeddings for multiple texts" do
       input = @multiple_texts
 
-      result = ExLLM.embeddings(:mock, input)
+      result = SingularityLLM.embeddings(:mock, input)
 
       case result do
         {:ok, response} ->
@@ -75,7 +75,7 @@ defmodule ExLLM.EmbeddingTest do
     end
 
     test "handles empty input gracefully" do
-      result = ExLLM.embeddings(:mock, "")
+      result = SingularityLLM.embeddings(:mock, "")
 
       case result do
         {:ok, _response} ->
@@ -89,7 +89,7 @@ defmodule ExLLM.EmbeddingTest do
     end
 
     test "handles very long input" do
-      result = ExLLM.embeddings(:mock, @long_text)
+      result = SingularityLLM.embeddings(:mock, @long_text)
 
       case result do
         {:ok, response} ->
@@ -105,7 +105,7 @@ defmodule ExLLM.EmbeddingTest do
 
   describe "embedding options and configuration" do
     test "accepts model option" do
-      result = ExLLM.embeddings(:mock, @simple_text, model: "test-embedding-model")
+      result = SingularityLLM.embeddings(:mock, @simple_text, model: "test-embedding-model")
 
       case result do
         {:ok, response} ->
@@ -119,7 +119,7 @@ defmodule ExLLM.EmbeddingTest do
     end
 
     test "accepts dimensions option for compatible models" do
-      result = ExLLM.embeddings(:mock, @simple_text, dimensions: 512)
+      result = SingularityLLM.embeddings(:mock, @simple_text, dimensions: 512)
 
       case result do
         {:ok, response} ->
@@ -133,7 +133,7 @@ defmodule ExLLM.EmbeddingTest do
     end
 
     test "handles invalid options gracefully" do
-      result = ExLLM.embeddings(:mock, @simple_text, invalid_option: "test")
+      result = SingularityLLM.embeddings(:mock, @simple_text, invalid_option: "test")
 
       case result do
         {:ok, _response} ->
@@ -189,7 +189,7 @@ defmodule ExLLM.EmbeddingTest do
     end
 
     test "handles unsupported providers gracefully" do
-      result = ExLLM.embeddings(:unsupported_provider, @simple_text)
+      result = SingularityLLM.embeddings(:unsupported_provider, @simple_text)
 
       assert {:error, _reason} = result
     end
@@ -465,7 +465,7 @@ defmodule ExLLM.EmbeddingTest do
 
       # Test nil - catch protocol error from mock provider
       try do
-        result = ExLLM.embeddings(:mock, nil)
+        result = SingularityLLM.embeddings(:mock, nil)
         assert {:error, _reason} = result
       rescue
         Protocol.UndefinedError ->
@@ -475,7 +475,7 @@ defmodule ExLLM.EmbeddingTest do
 
       # Test integer (causes enumerable protocol error in mock)
       try do
-        result = ExLLM.embeddings(:mock, 123)
+        result = SingularityLLM.embeddings(:mock, 123)
         assert {:error, _reason} = result
       rescue
         Protocol.UndefinedError ->
@@ -485,7 +485,7 @@ defmodule ExLLM.EmbeddingTest do
 
       # Test map
       try do
-        result = ExLLM.embeddings(:mock, %{invalid: "input"})
+        result = SingularityLLM.embeddings(:mock, %{invalid: "input"})
         assert {:error, _reason} = result
       rescue
         Protocol.UndefinedError ->
@@ -500,7 +500,7 @@ defmodule ExLLM.EmbeddingTest do
 
     test "handles provider configuration errors" do
       # Assuming :test_provider doesn't exist
-      result = ExLLM.embeddings(:nonexistent_provider, @simple_text)
+      result = SingularityLLM.embeddings(:nonexistent_provider, @simple_text)
 
       assert {:error, _reason} = result
     end
@@ -508,7 +508,7 @@ defmodule ExLLM.EmbeddingTest do
     test "handles network timeouts gracefully" do
       # This would require mocking network failures
       # For now, just test that the API handles timeout options
-      result = ExLLM.embeddings(:mock, @simple_text, timeout: 1)
+      result = SingularityLLM.embeddings(:mock, @simple_text, timeout: 1)
 
       case result do
         {:ok, _response} ->
@@ -523,7 +523,7 @@ defmodule ExLLM.EmbeddingTest do
 
     test "validates embedding dimensions consistency" do
       # Test that embeddings from the same model have consistent dimensions
-      case ExLLM.embeddings(:mock, [@simple_text, "Another text"]) do
+      case SingularityLLM.embeddings(:mock, [@simple_text, "Another text"]) do
         {:ok, response} ->
           if length(response.embeddings) >= 2 do
             [embedding1, embedding2 | _] = response.embeddings
@@ -538,10 +538,10 @@ defmodule ExLLM.EmbeddingTest do
     end
   end
 
-  describe "integration with main ExLLM API" do
-    test "main ExLLM.embeddings function delegates properly" do
+  describe "integration with main SingularityLLM API" do
+    test "main SingularityLLM.embeddings function delegates properly" do
       # Test the public API
-      result = ExLLM.embeddings(:mock, @simple_text)
+      result = SingularityLLM.embeddings(:mock, @simple_text)
 
       case result do
         {:ok, response} ->
@@ -556,7 +556,7 @@ defmodule ExLLM.EmbeddingTest do
 
     test "maintains consistency with provider-specific calls" do
       # Test that the unified API gives same results as provider-specific calls
-      unified_result = ExLLM.embeddings(:mock, @simple_text)
+      unified_result = SingularityLLM.embeddings(:mock, @simple_text)
 
       # For mock provider, we can't directly call provider-specific method
       # but we can verify the structure is consistent

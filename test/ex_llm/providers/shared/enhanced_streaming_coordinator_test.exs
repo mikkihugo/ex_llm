@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Shared.EnhancedStreamingCoordinatorTest do
+defmodule SingularityLLM.Providers.Shared.EnhancedStreamingCoordinatorTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.EnhancedStreamingCoordinator
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.EnhancedStreamingCoordinator
+  alias SingularityLLM.Types.StreamChunk
 
   @moduletag :integration
 

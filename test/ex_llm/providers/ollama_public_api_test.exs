@@ -1,11 +1,11 @@
-defmodule ExLLM.Providers.OllamaPublicAPITest do
+defmodule SingularityLLM.Providers.OllamaPublicAPITest do
   @moduledoc """
-  Ollama-specific integration tests using the public ExLLM API.
+  Ollama-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :ollama
-  import ExLLM.Testing.ServiceHelpers
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :ollama
+  import SingularityLLM.Testing.ServiceHelpers
 
   @moduletag :requires_service
 
@@ -20,7 +20,7 @@ defmodule ExLLM.Providers.OllamaPublicAPITest do
         %{role: "user", content: "What is 1+1? Answer in one word."}
       ]
 
-      case ExLLM.chat(:ollama, messages, model: "llama3.2:1b", max_tokens: 10) do
+      case SingularityLLM.chat(:ollama, messages, model: "llama3.2:1b", max_tokens: 10) do
         {:ok, response} ->
           # Verify we got content (don't test specific answer)
           assert String.length(response.content) > 0
@@ -38,7 +38,7 @@ defmodule ExLLM.Providers.OllamaPublicAPITest do
     end
 
     test "lists locally available models" do
-      case ExLLM.list_models(:ollama) do
+      case SingularityLLM.list_models(:ollama) do
         {:ok, models} ->
           assert is_list(models)
 
@@ -62,8 +62,8 @@ defmodule ExLLM.Providers.OllamaPublicAPITest do
     test "local embedding generation" do
       texts = ["Hello world", "Testing embeddings"]
 
-      case ExLLM.embeddings(:ollama, texts, model: "nomic-embed-text") do
-        {:ok, %ExLLM.Types.EmbeddingResponse{embeddings: embeddings}} ->
+      case SingularityLLM.embeddings(:ollama, texts, model: "nomic-embed-text") do
+        {:ok, %SingularityLLM.Types.EmbeddingResponse{embeddings: embeddings}} ->
           assert length(embeddings) == 2
           assert is_list(hd(embeddings))
           assert is_float(hd(hd(embeddings)))
@@ -86,11 +86,11 @@ defmodule ExLLM.Providers.OllamaPublicAPITest do
     test "custom Ollama endpoint configuration" do
       # Test with custom endpoint
       config = %{ollama: %{base_url: "http://localhost:11434"}}
-      {:ok, provider} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+      {:ok, provider} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
       messages = [%{role: "user", content: "Hi"}]
 
-      case ExLLM.chat(:ollama, messages, config_provider: provider, max_tokens: 10) do
+      case SingularityLLM.chat(:ollama, messages, config_provider: provider, max_tokens: 10) do
         {:ok, response} ->
           assert response.metadata.provider == :ollama
 

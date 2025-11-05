@@ -1,4 +1,4 @@
-# ExLLM Test Structure Analysis
+# SingularityLLM Test Structure Analysis
 
 ## Current Test Directory Structure
 
@@ -6,7 +6,7 @@
 ```
 test/
 ├── cache/                    # Test response cache (auto-generated)
-├── ex_llm/                  # Main module tests
+├── singularity_llm/                  # Main module tests
 │   ├── cache/               # Cache-specific tests
 │   ├── core/                # Core functionality tests
 │   ├── infrastructure/      # Infrastructure component tests
@@ -24,12 +24,12 @@ test/
 ### Key Observations
 
 1. **Mixed Organization Patterns**
-   - Some tests organized by module structure (ex_llm/*)
+   - Some tests organized by module structure (singularity_llm/*)
    - Some by test type (integration/*)
-   - No clear separation between unit and integration tests in ex_llm/
+   - No clear separation between unit and integration tests in singularity_llm/
 
 2. **Provider Tests**
-   - Located in `test/ex_llm/providers/`
+   - Located in `test/singularity_llm/providers/`
    - Each provider has:
      - Public API test (e.g., `anthropic_public_api_test.exs`)
      - Internal module tests (e.g., `anthropic/pipeline_plugs_test.exs`)
@@ -41,7 +41,7 @@ test/
    - No clear provider-specific integration structure
 
 4. **Test Tagging System (Already Implemented)**
-   - Comprehensive tagging via `ExLLM.Testing.Config`
+   - Comprehensive tagging via `SingularityLLM.Testing.Config`
    - Categories: `:unit`, `:integration`, `:external`, `:live_api`
    - Provider tags: `provider: :anthropic`, etc.
    - Capability tags: `:streaming`, `:vision`, `:oauth2`
@@ -98,7 +98,7 @@ test/
 
 ## Current Tagging Implementation
 
-ExLLM already has a sophisticated tagging system via `ExLLM.Testing.Config`:
+SingularityLLM already has a sophisticated tagging system via `SingularityLLM.Testing.Config`:
 
 ```elixir
 # Current capabilities
@@ -157,7 +157,7 @@ Keep provider tests in current location but separate pure unit tests:
 ```
 test/
 ├── unit/              # Pure unit tests only
-├── ex_llm/           # Mixed tests (current structure)
+├── singularity_llm/           # Mixed tests (current structure)
 ├── integration/      # Comprehensive integration tests
 └── support/
 ```
@@ -179,7 +179,7 @@ Add the proposed aliases that are missing:
 # In mix.exs
 "test.unit": "test --only unit",
 "test.live": "test --only live_api",
-"test.providers": "test test/ex_llm/providers",
+"test.providers": "test test/singularity_llm/providers",
 "test.quick": "test --exclude integration --exclude slow",
 "test.ci.pr": "test --exclude live_api --exclude slow",
 "test.ci.nightly": "test --include slow --include integration"

@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-This document provides a comprehensive reference for all environment variables used by ExLLM.
+This document provides a comprehensive reference for all environment variables used by SingularityLLM.
 
 ## Provider Configuration
 
@@ -195,23 +195,23 @@ elixir scripts/setup_oauth2.exs
 3. **Use provider-specific keys** when available (e.g., `BEDROCK_ACCESS_KEY_ID` instead of `AWS_ACCESS_KEY_ID`)
 4. **Set reasonable defaults** in your application config
 5. **Document required variables** in your project README
-6. **Use the centralized `ExLLM.Environment` module** for accessing environment variables in code
+6. **Use the centralized `SingularityLLM.Environment` module** for accessing environment variables in code
 
 ## Centralized Access
 
-All environment variables are documented and accessible through the `ExLLM.Environment` module:
+All environment variables are documented and accessible through the `SingularityLLM.Environment` module:
 
 ```elixir
 # Get API key for a provider
-ExLLM.Environment.api_key_var(:openai)
+SingularityLLM.Environment.api_key_var(:openai)
 # => "OPENAI_API_KEY"
 
 # Get provider configuration
-ExLLM.Environment.provider_config(:anthropic)
+SingularityLLM.Environment.provider_config(:anthropic)
 # => %{api_key: "sk-ant-...", base_url: "https://...", model: "claude-..."}
 
 # Check available providers
-ExLLM.Environment.available_providers()
+SingularityLLM.Environment.available_providers()
 # => [:openai, :anthropic, :gemini]
 ```
 

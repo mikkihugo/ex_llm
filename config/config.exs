@@ -3,10 +3,10 @@ import Config
 # Tesla Configuration
 config :tesla, disable_deprecated_builder_warning: true
 
-# ExLLM Configuration
-config :ex_llm,
+# SingularityLLM Configuration
+config :singularity_llm,
   # Caching strategy
-  cache_strategy: ExLLM.Cache.Strategies.Production,
+  cache_strategy: SingularityLLM.Cache.Strategies.Production,
   # Global cache configuration
   cache_enabled: false,
   cache_persist_disk: false,
@@ -49,7 +49,7 @@ end
 
 if Mix.env() == :dev do
   # Enhanced logging for development
-  config :ex_llm,
+  config :singularity_llm,
     log_level: :warning,
     log_components: %{
       requests: true,
@@ -87,12 +87,12 @@ if Mix.env() == :dev do
 end
 
 if Mix.env() == :test do
-  # Test configuration is now centralized in ExLLM.Testing.Config
+  # Test configuration is now centralized in SingularityLLM.Testing.Config
   # and applied in test_helper.exs for better maintainability
   # 
   # Minimal config here to avoid duplication
   config :logger, level: :error
-  config :ex_llm, startup_validation: %{enabled: false}
+  config :singularity_llm, startup_validation: %{enabled: false}
 
   # Filter out telemetry warnings in test
   config :logger,

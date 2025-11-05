@@ -1,10 +1,10 @@
 # Circuit Breaker Migration Guide
 
-This guide helps you migrate from direct retry functions to the new circuit breaker-enhanced retry system in ExLLM.
+This guide helps you migrate from direct retry functions to the new circuit breaker-enhanced retry system in SingularityLLM.
 
 ## Overview
 
-Starting with ExLLM v0.8.0, we've integrated a comprehensive circuit breaker pattern into the retry system. This provides better resilience, automatic failure detection, and improved performance under degraded conditions.
+Starting with SingularityLLM v0.8.0, we've integrated a comprehensive circuit breaker pattern into the retry system. This provides better resilience, automatic failure detection, and improved performance under degraded conditions.
 
 ## Key Benefits of Migration
 
@@ -22,7 +22,7 @@ Add circuit breaker configuration to your `config.exs`:
 
 ```elixir
 # config/config.exs
-config :ex_llm, :circuit_breaker,
+config :singularity_llm, :circuit_breaker,
   enabled: true,
   default_options: [
     failure_threshold: 5,
@@ -37,7 +37,7 @@ config :ex_llm, :circuit_breaker,
   ]
 
 # Enable metrics (optional but recommended)
-config :ex_llm, :circuit_breaker_metrics,
+config :singularity_llm, :circuit_breaker_metrics,
   enabled: true,
   backends: [:prometheus]
 ```
@@ -47,12 +47,12 @@ config :ex_llm, :circuit_breaker_metrics,
 #### Before (Direct Retry):
 ```elixir
 # Old approach - direct retry functions
-result = ExLLM.Retry.with_retry(fn ->
-  ExLLM.chat(model: "gpt-4", messages: messages)
+result = SingularityLLM.Retry.with_retry(fn ->
+  SingularityLLM.chat(model: "gpt-4", messages: messages)
 end, max_attempts: 3, initial_delay: 1000)
 
 # Custom retry configuration
-result = ExLLM.Retry.with_retry(
+result = SingularityLLM.Retry.with_retry(
   fn -> external_api_call() end,
   max_attempts: 5,
   initial_delay: 500,
@@ -64,14 +64,14 @@ result = ExLLM.Retry.with_retry(
 #### After (Circuit Breaker):
 ```elixir
 # New approach - circuit breaker automatically applied
-result = ExLLM.chat(
+result = SingularityLLM.chat(
   model: "gpt-4", 
   messages: messages,
   circuit_breaker: true  # Enabled by default if configured
 )
 
 # Custom circuit breaker configuration
-result = ExLLM.CircuitBreaker.with_circuit("external_api", fn ->
+result = SingularityLLM.CircuitBreaker.with_circuit("external_api", fn ->
   external_api_call()
 end, [
   failure_threshold: 5,
@@ -84,7 +84,7 @@ end, [
 
 #### Before:
 ```elixir
-case ExLLM.Retry.with_retry(fn -> api_call() end) do
+case SingularityLLM.Retry.with_retry(fn -> api_call() end) do
   {:ok, result} -> 
     process_result(result)
   {:error, :max_attempts_reached} -> 
@@ -96,7 +96,7 @@ end
 
 #### After:
 ```elixir
-case ExLLM.CircuitBreaker.with_circuit("api_service", fn -> api_call() end) do
+case SingularityLLM.CircuitBreaker.with_circuit("api_service", fn -> api_call() end) do
   {:ok, result} -> 
     process_result(result)
   {:error, :circuit_open} -> 
@@ -119,19 +119,19 @@ Set up monitoring for circuit breaker health:
 :telemetry.attach(
   "my-app-circuit-breaker",
   [
-    [:ex_llm, :circuit_breaker, :state_change],
-    [:ex_llm, :circuit_breaker, :call_rejected]
+    [:singularity_llm, :circuit_breaker, :state_change],
+    [:singularity_llm, :circuit_breaker, :call_rejected]
   ],
   &MyApp.Telemetry.handle_circuit_breaker_event/4,
   nil
 )
 
 # Monitor circuit health
-{:ok, health} = ExLLM.CircuitBreaker.HealthCheck.check_circuit("api_service")
+{:ok, health} = SingularityLLM.CircuitBreaker.HealthCheck.check_circuit("api_service")
 Logger.info("Circuit health: #{health.health_score}/100")
 
 # Get dashboard data
-{:ok, dashboard} = ExLLM.CircuitBreaker.Metrics.Dashboard.get_dashboard_data()
+{:ok, dashboard} = SingularityLLM.CircuitBreaker.Metrics.Dashboard.get_dashboard_data()
 ```
 
 ### Step 5: Provider-Specific Configuration
@@ -140,7 +140,7 @@ Configure circuit breakers per provider:
 
 ```elixir
 # Provider-specific settings
-config :ex_llm, :circuit_breaker,
+config :singularity_llm, :circuit_breaker,
   providers: [
     anthropic: [
       failure_threshold: 3,
@@ -171,11 +171,11 @@ defmodule MyApp.LLM do
   def chat(opts) do
     if @circuit_breaker_enabled do
       # New circuit breaker approach
-      ExLLM.chat(opts)
+      SingularityLLM.chat(opts)
     else
       # Legacy retry approach
-      ExLLM.Retry.with_retry(fn ->
-        ExLLM.chat(Keyword.put(opts, :circuit_breaker, false))
+      SingularityLLM.Retry.with_retry(fn ->
+        SingularityLLM.chat(Keyword.put(opts, :circuit_breaker, false))
       end)
     end
   end
@@ -188,19 +188,19 @@ Create named circuits for different use cases:
 
 ```elixir
 # Initialize custom circuits
-ExLLM.CircuitBreaker.init_circuit("high_priority", 
+SingularityLLM.CircuitBreaker.init_circuit("high_priority", 
   failure_threshold: 2,
   reset_timeout: 10_000
 )
 
-ExLLM.CircuitBreaker.init_circuit("batch_processing",
+SingularityLLM.CircuitBreaker.init_circuit("batch_processing",
   failure_threshold: 10,
   timeout: 60_000,
   bulkhead: [max_concurrent: 5]
 )
 
 # Use named circuits
-result = ExLLM.CircuitBreaker.with_circuit("high_priority", fn ->
+result = SingularityLLM.CircuitBreaker.with_circuit("high_priority", fn ->
   critical_api_call()
 end)
 ```
@@ -212,8 +212,8 @@ Implement fallbacks when circuits are open:
 ```elixir
 defmodule MyApp.AIService do
   def get_completion(prompt) do
-    primary_result = ExLLM.CircuitBreaker.with_circuit("openai", fn ->
-      ExLLM.chat(model: "gpt-4", messages: [%{role: "user", content: prompt}])
+    primary_result = SingularityLLM.CircuitBreaker.with_circuit("openai", fn ->
+      SingularityLLM.chat(model: "gpt-4", messages: [%{role: "user", content: prompt}])
     end)
     
     case primary_result do
@@ -221,8 +221,8 @@ defmodule MyApp.AIService do
         {:ok, response}
       {:error, :circuit_open} ->
         # Fallback to alternative provider
-        ExLLM.CircuitBreaker.with_circuit("anthropic", fn ->
-          ExLLM.chat(model: "claude-3", messages: [%{role: "user", content: prompt}])
+        SingularityLLM.CircuitBreaker.with_circuit("anthropic", fn ->
+          SingularityLLM.chat(model: "claude-3", messages: [%{role: "user", content: prompt}])
         end)
       error -> 
         error
@@ -243,22 +243,22 @@ defmodule MyApp.AIServiceTest do
   
   setup do
     # Reset circuit breakers before each test
-    ExLLM.CircuitBreaker.reset_all()
+    SingularityLLM.CircuitBreaker.reset_all()
     :ok
   end
   
   test "handles circuit open state" do
     # Force circuit to open
     circuit_name = "test_service"
-    ExLLM.CircuitBreaker.init_circuit(circuit_name, failure_threshold: 1)
+    SingularityLLM.CircuitBreaker.init_circuit(circuit_name, failure_threshold: 1)
     
     # Trigger failure to open circuit
-    ExLLM.CircuitBreaker.with_circuit(circuit_name, fn ->
+    SingularityLLM.CircuitBreaker.with_circuit(circuit_name, fn ->
       {:error, :timeout}
     end)
     
     # Verify circuit is open
-    result = ExLLM.CircuitBreaker.with_circuit(circuit_name, fn ->
+    result = SingularityLLM.CircuitBreaker.with_circuit(circuit_name, fn ->
       {:ok, "should not execute"}
     end)
     
@@ -274,14 +274,14 @@ Test circuit breaker behavior with real services:
 ```elixir
 test "circuit breaker protects against service failures" do
   # Configure aggressive circuit breaker for testing
-  ExLLM.CircuitBreaker.init_circuit("integration_test",
+  SingularityLLM.CircuitBreaker.init_circuit("integration_test",
     failure_threshold: 2,
     reset_timeout: 1_000
   )
   
   # Simulate service degradation
   results = for _ <- 1..5 do
-    ExLLM.CircuitBreaker.with_circuit("integration_test", fn ->
+    SingularityLLM.CircuitBreaker.with_circuit("integration_test", fn ->
       # This would be your actual API call
       simulate_flaky_service()
     end)
@@ -303,18 +303,18 @@ If you need to temporarily disable circuit breakers:
 
 ```elixir
 # Disable globally
-config :ex_llm, :circuit_breaker, enabled: false
+config :singularity_llm, :circuit_breaker, enabled: false
 
 # Disable per-call
-result = ExLLM.chat(
+result = SingularityLLM.chat(
   model: "gpt-4",
   messages: messages,
   circuit_breaker: false
 )
 
 # Use legacy retry directly
-result = ExLLM.Retry.with_retry(fn ->
-  ExLLM.chat(model: "gpt-4", messages: messages, circuit_breaker: false)
+result = SingularityLLM.Retry.with_retry(fn ->
+  SingularityLLM.chat(model: "gpt-4", messages: messages, circuit_breaker: false)
 end)
 ```
 

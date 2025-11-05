@@ -1,10 +1,10 @@
 # Provider Capabilities Guide
 
-This document explains how to find and update provider capabilities in ExLLM.
+This document explains how to find and update provider capabilities in SingularityLLM.
 
 ## Current Provider Capabilities
 
-Provider capabilities are defined in `lib/ex_llm/provider_capabilities.ex`. Each provider has:
+Provider capabilities are defined in `lib/singularity_llm/provider_capabilities.ex`. Each provider has:
 
 - **endpoints**: API endpoints available (e.g., `:chat`, `:embeddings`, `:images`)
 - **features**: Capabilities supported (e.g., `:streaming`, `:vision`, `:function_calling`)
@@ -44,7 +44,7 @@ Some providers offer API endpoints to discover capabilities:
 
 ```elixir
 # OpenAI - List available models
-{:ok, models} = ExLLM.list_models(:openai)
+{:ok, models} = SingularityLLM.list_models(:openai)
 
 # Check if a model supports specific features
 # Note: Programmatic capability checking is under development
@@ -120,11 +120,11 @@ To verify capabilities are correctly configured:
 
 ```elixir
 # Check if a provider supports a feature
-ExLLM.ProviderCapabilities.supports?(:openai, :image_generation)
+SingularityLLM.ProviderCapabilities.supports?(:openai, :image_generation)
 # => true
 
 # Find all providers that support embeddings
-ExLLM.ProviderCapabilities.find_providers_with_features([:embeddings])
+SingularityLLM.ProviderCapabilities.find_providers_with_features([:embeddings])
 # => [:openai, :gemini, :bedrock, :ollama]
 
 # Get full capability info  

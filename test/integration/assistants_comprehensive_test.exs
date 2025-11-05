@@ -1,7 +1,7 @@
-defmodule ExLLM.Integration.AssistantsComprehensiveTest do
+defmodule SingularityLLM.Integration.AssistantsComprehensiveTest do
   @moduledoc """
   Comprehensive integration tests for OpenAI Assistants API functionality.
-  Tests the complete assistant lifecycle through ExLLM's unified interface.
+  Tests the complete assistant lifecycle through SingularityLLM's unified interface.
   """
   use ExUnit.Case
 
@@ -14,7 +14,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
   end
 
   defp cleanup_assistant(assistant_id) when is_binary(assistant_id) do
-    case ExLLM.Providers.OpenAI.delete_assistant(assistant_id) do
+    case SingularityLLM.Providers.OpenAI.delete_assistant(assistant_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -22,7 +22,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
   end
 
   defp cleanup_thread(thread_id) when is_binary(thread_id) do
-    case ExLLM.Providers.OpenAI.delete_thread(thread_id) do
+    case SingularityLLM.Providers.OpenAI.delete_thread(thread_id) do
       {:ok, _} -> :ok
       # Already deleted or other non-critical error
       {:error, _} -> :ok
@@ -43,7 +43,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
       }
 
       # Use provider directly to ensure Beta headers are included
-      case ExLLM.Providers.OpenAI.create_assistant(params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(params) do
         {:ok, assistant} ->
           assert assistant["id"] =~ ~r/^asst_/
           assert assistant["name"] == name
@@ -61,7 +61,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
     end
 
     test "list assistants" do
-      case ExLLM.Providers.OpenAI.list_assistants() do
+      case SingularityLLM.Providers.OpenAI.list_assistants() do
         {:ok, response} ->
           assert is_map(response)
           assert Map.has_key?(response, "data")
@@ -84,10 +84,10 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(params) do
         {:ok, assistant} ->
           # Test retrieval
-          case ExLLM.Providers.OpenAI.get_assistant(assistant["id"]) do
+          case SingularityLLM.Providers.OpenAI.get_assistant(assistant["id"]) do
             {:ok, retrieved} ->
               assert retrieved["id"] == assistant["id"]
               assert retrieved["name"] == name
@@ -117,14 +117,14 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(params) do
         {:ok, assistant} ->
           # Test update
           updates = %{
             instructions: "Updated instructions for testing."
           }
 
-          case ExLLM.Providers.OpenAI.update_assistant(assistant["id"], updates) do
+          case SingularityLLM.Providers.OpenAI.update_assistant(assistant["id"], updates) do
             {:ok, updated} ->
               assert updated["id"] == assistant["id"]
               assert updated["instructions"] == updates.instructions
@@ -155,13 +155,13 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
         model: "gpt-4o-mini"
       }
 
-      case ExLLM.Providers.OpenAI.create_assistant(params) do
+      case SingularityLLM.Providers.OpenAI.create_assistant(params) do
         {:ok, assistant} ->
           # Test deletion
-          case ExLLM.Providers.OpenAI.delete_assistant(assistant["id"]) do
+          case SingularityLLM.Providers.OpenAI.delete_assistant(assistant["id"]) do
             {:ok, _} ->
               # Verify deletion by trying to retrieve
-              case ExLLM.Providers.OpenAI.get_assistant(assistant["id"]) do
+              case SingularityLLM.Providers.OpenAI.get_assistant(assistant["id"]) do
                 {:ok, _} ->
                   flunk("Expected assistant to be deleted")
 
@@ -192,7 +192,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
     @describetag timeout: 30_000
 
     test "create thread" do
-      case ExLLM.Providers.OpenAI.create_thread() do
+      case SingularityLLM.Providers.OpenAI.create_thread() do
         {:ok, thread} ->
           assert thread["id"] =~ ~r/^thread_/
           assert thread["object"] == "thread"
@@ -208,7 +208,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
     end
 
     test "add message to thread" do
-      case ExLLM.Providers.OpenAI.create_thread() do
+      case SingularityLLM.Providers.OpenAI.create_thread() do
         {:ok, thread} ->
           # Add message to thread
           content = "Hello, this is a test message for the assistant."
@@ -219,7 +219,7 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
             content: content
           }
 
-          case ExLLM.Providers.OpenAI.create_message(thread["id"], message_params) do
+          case SingularityLLM.Providers.OpenAI.create_message(thread["id"], message_params) do
             {:ok, message} ->
               assert message["id"] =~ ~r/^msg_/
               assert message["object"] == "thread.message"
@@ -249,15 +249,15 @@ defmodule ExLLM.Integration.AssistantsComprehensiveTest do
     end
 
     test "list thread messages" do
-      case ExLLM.Providers.OpenAI.create_thread() do
+      case SingularityLLM.Providers.OpenAI.create_thread() do
         {:ok, thread} ->
           # Add a message first
           message_params = %{role: "user", content: "Test message"}
 
-          case ExLLM.Providers.OpenAI.create_message(thread["id"], message_params) do
+          case SingularityLLM.Providers.OpenAI.create_message(thread["id"], message_params) do
             {:ok, _message} ->
               # List messages
-              case ExLLM.Providers.OpenAI.list_messages(thread["id"]) do
+              case SingularityLLM.Providers.OpenAI.list_messages(thread["id"]) do
                 {:ok, response} ->
                   assert is_map(response)
                   assert response["object"] == "list"

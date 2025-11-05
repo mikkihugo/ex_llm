@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This design document outlines the integration of OpenAI's Responses API (`/v1/responses`) into ex_llm, including native support for MCP (Model Context Protocol), server-side state management, and built-in tools. The integration will be **additive** (not replacing Chat Completions) to maintain backward compatibility and cross-provider support.
+This design document outlines the integration of OpenAI's Responses API (`/v1/responses`) into singularity_llm, including native support for MCP (Model Context Protocol), server-side state management, and built-in tools. The integration will be **additive** (not replacing Chat Completions) to maintain backward compatibility and cross-provider support.
 
 ## Table of Contents
 
@@ -43,7 +43,7 @@ OpenAI's Responses API (launched March 2025) is a unified interface that combine
 4. **Advanced Features** - Code interpreter, web search, image gen built-in
 5. **Codex Models** - codex-mini-latest uses `/v1/responses` endpoint
 
-### Current State in ex_llm
+### Current State in singularity_llm
 
 - ✅ Uses `/v1/chat/completions` (Chat Completions API)
 - ✅ Supports 14+ providers via OpenAI-compatible interface
@@ -79,7 +79,7 @@ OpenAI's Responses API (launched March 2025) is a unified interface that combine
 ### Dual-API Architecture
 
 ```
-ExLLM.Providers.OpenAI (existing)
+SingularityLLM.Providers.OpenAI (existing)
 ├── Chat Completions API (/v1/chat/completions)  [DEFAULT]
 │   └── Industry standard, stateless, cross-provider compatible
 │
@@ -93,7 +93,7 @@ ExLLM.Providers.OpenAI (existing)
 ### Module Structure
 
 ```
-lib/ex_llm/providers/openai/
+lib/singularity_llm/providers/openai/
 ├── openai.ex                    # Main provider (Chat Completions - existing)
 ├── responses.ex                 # NEW: Responses API implementation
 ├── responses/
@@ -139,18 +139,18 @@ models:
 
 ```elixir
 # Default: Chat Completions API (unchanged)
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Hello!"}
 ])
 
 # Opt-in: Responses API (simple input)
-{:ok, response} = ExLLM.chat(:openai,
+{:ok, response} = SingularityLLM.chat(:openai,
   "Hello!",  # String input instead of messages array
   api_version: :responses
 )
 
 # Responses API (messages-style input)
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Hello!"}
 ], api_version: :responses)
 ```
@@ -164,7 +164,7 @@ mcp_config = %{
   tools: ["search_database", "fetch_weather"]
 }
 
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   api_version: :responses,
   mcp_servers: [mcp_config]
 )
@@ -192,7 +192,7 @@ tools = [
 ]
 
 # Model will call function if needed
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's the weather in Tokyo?"}
 ],
   api_version: :responses,
@@ -211,7 +211,7 @@ end
 
 ```elixir
 # Web search
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's the latest news on AI?"}
 ],
   api_version: :responses,
@@ -219,7 +219,7 @@ end
 )
 
 # Image generation
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Generate an image of a sunset"}
 ],
   api_version: :responses,
@@ -227,7 +227,7 @@ end
 )
 
 # Code interpreter
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Plot y = x^2 for x from -10 to 10"}
 ],
   api_version: :responses,
@@ -239,7 +239,7 @@ end
 
 ```elixir
 # Start conversation (server creates conversation_id)
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "My name is Alice"}
 ],
   api_version: :responses,
@@ -249,7 +249,7 @@ end
 conversation_id = response.conversation_id
 
 # Continue conversation (server maintains history)
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's my name?"}
 ],
   api_version: :responses,
@@ -263,7 +263,7 @@ conversation_id = response.conversation_id
 #### Direct Responses API Call
 
 ```elixir
-alias ExLLM.Providers.OpenAI.Responses
+alias SingularityLLM.Providers.OpenAI.Responses
 
 # Basic call
 {:ok, response} = Responses.chat(messages, model: "gpt-5-codex")
@@ -301,7 +301,7 @@ alias ExLLM.Providers.OpenAI.Responses
 
 ```elixir
 # Stream with Responses API
-{:ok, stream} = ExLLM.stream(:openai, messages,
+{:ok, stream} = SingularityLLM.stream(:openai, messages,
   fn chunk -> IO.write(chunk.content) end,
   api_version: :responses,
   mcp_servers: [mcp_config]
@@ -324,7 +324,7 @@ MCP is an open protocol that standardizes how applications provide context to LL
 ### MCP Configuration
 
 ```elixir
-defmodule ExLLM.MCP.ServerConfig do
+defmodule SingularityLLM.MCP.ServerConfig do
   @type t :: %__MODULE__{
     url: String.t(),
     auth: auth_config(),
@@ -351,7 +351,7 @@ end
 ### MCP Client Implementation
 
 ```elixir
-defmodule ExLLM.Providers.OpenAI.Responses.MCPClient do
+defmodule SingularityLLM.Providers.OpenAI.Responses.MCPClient do
   @moduledoc """
   Client for Model Context Protocol (MCP) server integration.
 
@@ -362,7 +362,7 @@ defmodule ExLLM.Providers.OpenAI.Responses.MCPClient do
   - Error handling and retries
   """
 
-  alias ExLLM.MCP.ServerConfig
+  alias SingularityLLM.MCP.ServerConfig
 
   @doc """
   Discover available tools from MCP server.
@@ -448,7 +448,7 @@ end
 ### Server-Side State (Stateful Conversations)
 
 ```elixir
-defmodule ExLLM.Providers.OpenAI.Responses.StateManager do
+defmodule SingularityLLM.Providers.OpenAI.Responses.StateManager do
   @moduledoc """
   Manages server-side conversation state for Responses API.
 
@@ -511,24 +511,24 @@ end
 
 ```elixir
 # Turn 1: Start conversation
-{:ok, resp1} = ExLLM.chat(:openai, [
+{:ok, resp1} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "I'm planning a trip to Japan"}
 ], api_version: :responses, stateful: true)
 
 conv_id = resp1.conversation_id
 
 # Turn 2: Continue (server remembers context)
-{:ok, resp2} = ExLLM.chat(:openai, [
+{:ok, resp2} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's the best time to visit?"}
 ], api_version: :responses, conversation_id: conv_id)
 
 # Turn 3: Still in context
-{:ok, resp3} = ExLLM.chat(:openai, [
+{:ok, resp3} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Any visa requirements?"}
 ], api_version: :responses, conversation_id: conv_id)
 
 # Retrieve full history
-{:ok, history} = ExLLM.Providers.OpenAI.Responses.StateManager.get_history(conv_id)
+{:ok, history} = SingularityLLM.Providers.OpenAI.Responses.StateManager.get_history(conv_id)
 ```
 
 ---
@@ -620,7 +620,7 @@ tools = [
 ]
 
 # 2. Send request with tools
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What's the status of order #12345?"}
 ],
   api_version: :responses,
@@ -643,7 +643,7 @@ if response.metadata.tool_calls do
     end
 
     # 4. Send function result back to model
-    {:ok, final_response} = ExLLM.chat(:openai, [
+    {:ok, final_response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "What's the status of order #12345?"},
       %{role: "assistant", content: nil, tool_calls: [tool_call]},
       %{role: "tool", content: Jason.encode!(result), tool_call_id: tool_call.id}
@@ -678,7 +678,7 @@ tool_choice: "required"
 
 ```elixir
 # Model can call multiple functions in one response
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Get weather for SF and NY, and check order #12345"}
 ],
   api_version: :responses,
@@ -699,7 +699,7 @@ response.metadata.tool_calls
 
 ```elixir
 # Use BOTH built-in tools AND custom functions
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   api_version: :responses,
   tools: [
     # Built-in tools (atoms)
@@ -721,7 +721,7 @@ response.metadata.tool_calls
 ### Tool Configuration
 
 ```elixir
-defmodule ExLLM.Providers.OpenAI.Responses.Tools do
+defmodule SingularityLLM.Providers.OpenAI.Responses.Tools do
   @moduledoc """
   Built-in tools for Responses API.
   """
@@ -767,7 +767,7 @@ end
 #### Web Search
 
 ```elixir
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "What are the latest developments in quantum computing?"}
 ],
   api_version: :responses,
@@ -785,7 +785,7 @@ IO.inspect(response.sources)
 #### Image Generation
 
 ```elixir
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: "Create an image of a futuristic city"}
 ],
   api_version: :responses,
@@ -802,7 +802,7 @@ IO.inspect(response.images)
 #### Code Interpreter
 
 ```elixir
-{:ok, response} = ExLLM.chat(:openai, [
+{:ok, response} = SingularityLLM.chat(:openai, [
   %{role: "user", content: """
   Plot the function y = sin(x) + cos(x) for x from 0 to 2π.
   Show both the plot and the code used.
@@ -831,11 +831,11 @@ IO.inspect(response.code_outputs)
 
 **Goal**: Basic Responses API support without MCP/tools
 
-- [ ] Create `ExLLM.Providers.OpenAI.Responses` module
+- [ ] Create `SingularityLLM.Providers.OpenAI.Responses` module
 - [ ] Implement request builder (`responses/build_request.ex`)
 - [ ] Implement response parser (`responses/parse_response.ex`)
 - [ ] Add endpoint configuration to `openai.yml`
-- [ ] Update `ExLLM.chat/3` to support `api_version: :responses`
+- [ ] Update `SingularityLLM.chat/3` to support `api_version: :responses`
 - [ ] Add basic tests
 
 **Deliverable**: Basic Responses API calls working
@@ -931,11 +931,11 @@ IO.inspect(response.code_outputs)
 ### Unit Tests
 
 ```elixir
-# test/ex_llm/providers/openai/responses/build_request_test.exs
-defmodule ExLLM.Providers.OpenAI.Responses.BuildRequestTest do
+# test/singularity_llm/providers/openai/responses/build_request_test.exs
+defmodule SingularityLLM.Providers.OpenAI.Responses.BuildRequestTest do
   use ExUnit.Case
 
-  alias ExLLM.Providers.OpenAI.Responses.BuildRequest
+  alias SingularityLLM.Providers.OpenAI.Responses.BuildRequest
 
   test "builds basic request" do
     request = BuildRequest.build(messages, model: "gpt-5-codex")
@@ -965,15 +965,15 @@ end
 ### Integration Tests
 
 ```elixir
-# test/ex_llm/providers/openai/responses_integration_test.exs
-defmodule ExLLM.Providers.OpenAI.ResponsesIntegrationTest do
+# test/singularity_llm/providers/openai/responses_integration_test.exs
+defmodule SingularityLLM.Providers.OpenAI.ResponsesIntegrationTest do
   use ExUnit.Case
 
   @moduletag :integration
   @moduletag :requires_api_key
 
   test "basic chat with Responses API" do
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "Say hello"}
     ], api_version: :responses, model: "gpt-5-codex")
 
@@ -984,14 +984,14 @@ defmodule ExLLM.Providers.OpenAI.ResponsesIntegrationTest do
 
   test "stateful conversation" do
     # Start conversation
-    {:ok, resp1} = ExLLM.chat(:openai, [
+    {:ok, resp1} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "My favorite color is blue"}
     ], api_version: :responses, stateful: true)
 
     conv_id = resp1.conversation_id
 
     # Continue conversation
-    {:ok, resp2} = ExLLM.chat(:openai, [
+    {:ok, resp2} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "What's my favorite color?"}
     ], api_version: :responses, conversation_id: conv_id)
 
@@ -1005,7 +1005,7 @@ defmodule ExLLM.Providers.OpenAI.ResponsesIntegrationTest do
       tools: ["test_tool"]
     }
 
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "Use the test tool"}
     ], api_version: :responses, mcp_servers: [mcp_config])
 
@@ -1014,7 +1014,7 @@ defmodule ExLLM.Providers.OpenAI.ResponsesIntegrationTest do
 
   @tag :web_search
   test "web search tool" do
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "What's the weather in San Francisco?"}
     ], api_version: :responses, tools: [:web_search])
 
@@ -1036,13 +1036,13 @@ end
 
 ## Migration Guide
 
-### For Existing ex_llm Users
+### For Existing singularity_llm Users
 
 #### Option 1: Keep Using Chat Completions (No Changes)
 
 ```elixir
 # This continues to work exactly as before
-{:ok, response} = ExLLM.chat(:openai, messages)
+{:ok, response} = SingularityLLM.chat(:openai, messages)
 # Uses /v1/chat/completions
 ```
 
@@ -1050,7 +1050,7 @@ end
 
 ```elixir
 # Add api_version parameter
-{:ok, response} = ExLLM.chat(:openai, messages, api_version: :responses)
+{:ok, response} = SingularityLLM.chat(:openai, messages, api_version: :responses)
 # Uses /v1/responses
 ```
 
@@ -1065,7 +1065,7 @@ mcp_config = %{
 }
 
 # Use with Responses API
-{:ok, response} = ExLLM.chat(:openai, messages,
+{:ok, response} = SingularityLLM.chat(:openai, messages,
   api_version: :responses,
   mcp_servers: [mcp_config]
 )
@@ -1115,7 +1115,7 @@ export MCP_SERVER_TOKEN="..."
 
 ```elixir
 # config/config.exs
-config :ex_llm, :openai,
+config :singularity_llm, :openai,
   api_key: System.get_env("OPENAI_API_KEY"),
   api_version: :responses,  # :responses or :chat_completions (default)
   default_model: "gpt-5-codex",
@@ -1152,7 +1152,7 @@ config :ex_llm, :openai,
 ### Error Handling Best Practices
 
 ```elixir
-case ExLLM.chat(:openai, messages, api_version: :responses, mcp_servers: [mcp]) do
+case SingularityLLM.chat(:openai, messages, api_version: :responses, mcp_servers: [mcp]) do
   {:ok, response} ->
     # Success
 
@@ -1197,7 +1197,7 @@ end
 
 ```elixir
 # Cache MCP tool discovery results
-defmodule ExLLM.MCP.ToolCache do
+defmodule SingularityLLM.MCP.ToolCache do
   use GenServer
 
   # Cache tool definitions for 1 hour
@@ -1245,7 +1245,7 @@ mcp_config = %{
 ```elixir
 # Both APIs share OpenAI rate limits
 # Monitor usage across both endpoints
-defmodule ExLLM.RateLimiter do
+defmodule SingularityLLM.RateLimiter do
   def check_rate_limit(provider) do
     # Implement rate limit checking
   end
@@ -1261,13 +1261,13 @@ end
 ```elixir
 # Add telemetry for Responses API
 :telemetry.execute(
-  [:ex_llm, :openai, :responses, :request],
+  [:singularity_llm, :openai, :responses, :request],
   %{duration: duration, tokens: tokens},
   %{model: model, has_mcp: has_mcp?, has_tools: has_tools?}
 )
 
 :telemetry.execute(
-  [:ex_llm, :openai, :responses, :mcp_call],
+  [:singularity_llm, :openai, :responses, :mcp_call],
   %{duration: duration},
   %{server_url: url, tool: tool}
 )
@@ -1343,7 +1343,7 @@ defmodule MyApp.AIAssistant do
   Example: AI assistant with MCP server integration using Responses API.
   """
 
-  alias ExLLM.MCP.ServerConfig
+  alias SingularityLLM.MCP.ServerConfig
 
   def ask_with_database_access(question) do
     # Configure internal database MCP server
@@ -1354,7 +1354,7 @@ defmodule MyApp.AIAssistant do
     }
 
     # Ask question with database access
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "system", content: """
       You are a helpful assistant with access to our internal database.
       Use the MCP tools to search for information as needed.
@@ -1372,7 +1372,7 @@ defmodule MyApp.AIAssistant do
 
   def start_conversation do
     # Start stateful conversation
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: "Hello! I need help with my order."}
     ],
       api_version: :responses,
@@ -1384,7 +1384,7 @@ defmodule MyApp.AIAssistant do
   end
 
   def continue_conversation(conv_id, message) do
-    {:ok, response} = ExLLM.chat(:openai, [
+    {:ok, response} = SingularityLLM.chat(:openai, [
       %{role: "user", content: message}
     ],
       api_version: :responses,

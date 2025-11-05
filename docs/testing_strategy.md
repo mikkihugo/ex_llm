@@ -1,10 +1,10 @@
-# ExLLM Comprehensive Testing Strategy
+# SingularityLLM Comprehensive Testing Strategy
 
-This document describes the comprehensive testing strategy implemented for ExLLM, providing a unified framework for testing across multiple LLM providers while maintaining fast development cycles.
+This document describes the comprehensive testing strategy implemented for SingularityLLM, providing a unified framework for testing across multiple LLM providers while maintaining fast development cycles.
 
 ## Overview
 
-ExLLM's testing strategy consists of five integrated components designed to provide comprehensive test coverage while enabling fast development iterations:
+SingularityLLM's testing strategy consists of five integrated components designed to provide comprehensive test coverage while enabling fast development iterations:
 
 1. **Test Tagging System** - Semantic categorization of tests
 2. **Directory Structure** - Organized test hierarchy
@@ -14,7 +14,7 @@ ExLLM's testing strategy consists of five integrated components designed to prov
 
 ## 1. Test Tagging System
 
-All tests in ExLLM are tagged to enable selective execution based on various criteria.
+All tests in SingularityLLM are tagged to enable selective execution based on various criteria.
 
 ### Tag Categories
 
@@ -68,7 +68,7 @@ All tests in ExLLM are tagged to enable selective execution based on various cri
 ### Example Test Tagging
 
 ```elixir
-defmodule ExLLM.VisionTest do
+defmodule SingularityLLM.VisionTest do
   use ExUnit.Case, async: false
   
   @moduletag :capability:vision
@@ -88,7 +88,7 @@ end
 
 ```
 test/
-├── ex_llm/                      # Core functionality tests
+├── singularity_llm/                      # Core functionality tests
 │   ├── core/                    # Core modules (session, context, etc.)
 │   ├── providers/               # Provider-specific tests
 │   │   ├── anthropic/
@@ -112,25 +112,25 @@ The capability matrix provides a visual overview of which providers support whic
 
 ```bash
 # Display in console
-mix ex_llm.capability_matrix
+mix singularity_llm.capability_matrix
 
 # Show extended capabilities
-mix ex_llm.capability_matrix --extended
+mix singularity_llm.capability_matrix --extended
 
 # Filter by providers
-mix ex_llm.capability_matrix --providers openai,anthropic,gemini
+mix singularity_llm.capability_matrix --providers openai,anthropic,gemini
 
 # Filter by capabilities  
-mix ex_llm.capability_matrix --capabilities vision,streaming
+mix singularity_llm.capability_matrix --capabilities vision,streaming
 
 # Export to markdown
-mix ex_llm.capability_matrix --export markdown --output matrix.md
+mix singularity_llm.capability_matrix --export markdown --output matrix.md
 
 # Export to HTML
-mix ex_llm.capability_matrix --export html --output matrix.html
+mix singularity_llm.capability_matrix --export html --output matrix.html
 
 # Include test results
-mix ex_llm.capability_matrix --with-tests
+mix singularity_llm.capability_matrix --with-tests
 ```
 
 ### Matrix Legend
@@ -144,7 +144,7 @@ mix ex_llm.capability_matrix --with-tests
 
 ## 4. Selective Test Execution
 
-ExLLM provides numerous Mix aliases for running specific subsets of tests.
+SingularityLLM provides numerous Mix aliases for running specific subsets of tests.
 
 ### Core Testing Aliases
 
@@ -270,20 +270,20 @@ EX_LLM_CAPTURE_RESPONSES=true mix test
 ```bash
 # List captured responses
 mix captures.list
-mix ex_llm.captures list --provider openai --limit 10
+mix singularity_llm.captures list --provider openai --limit 10
 
 # Show specific capture
 mix captures.show <capture_id>
-mix ex_llm.captures show <capture_id> --format json
+mix singularity_llm.captures show <capture_id> --format json
 
 # View capture statistics
 mix captures.stats
-mix ex_llm.captures stats --provider anthropic
+mix singularity_llm.captures stats --provider anthropic
 
 # Clear captures
 mix captures.clear
-mix ex_llm.captures clear --older-than 7d
-mix ex_llm.captures clear --provider gemini
+mix singularity_llm.captures clear --older-than 7d
+mix singularity_llm.captures clear --provider gemini
 ```
 
 ### Capture Output Format
@@ -297,7 +297,7 @@ When display is enabled, captures show:
 
 ## Test Caching System
 
-ExLLM includes an intelligent test caching system that provides 25x faster integration tests.
+SingularityLLM includes an intelligent test caching system that provides 25x faster integration tests.
 
 ### Cache Behavior
 
@@ -321,16 +321,16 @@ MIX_RUN_LIVE=true mix test --include integration
 
 ```bash
 # View cache statistics
-mix ex_llm.cache stats
+mix singularity_llm.cache stats
 
 # Clean old cache entries
-mix ex_llm.cache clean --older-than 7d
+mix singularity_llm.cache clean --older-than 7d
 
 # Clear entire cache
-mix ex_llm.cache clear
+mix singularity_llm.cache clear
 
 # Show cache for specific provider
-mix ex_llm.cache show anthropic
+mix singularity_llm.cache show anthropic
 ```
 
 ## Best Practices
@@ -445,7 +445,7 @@ mix credo
    mix test.anthropic
    
    # By file pattern
-   mix test test/ex_llm/chat_test.exs
+   mix test test/singularity_llm/chat_test.exs
    ```
 
 ### Debug Mode
@@ -458,7 +458,7 @@ mix test
 
 ## Summary
 
-ExLLM's comprehensive testing strategy provides:
+SingularityLLM's comprehensive testing strategy provides:
 
 - **Fast Development** - Run only relevant tests during development
 - **Comprehensive Coverage** - 72% capability coverage across 12 providers

@@ -105,7 +105,7 @@ Confidence = 1 / (1 + e^(-0.01 * (samples - 50)))
 ### HTTP.Core.get Not Available (8 tests)
 **Expected in test:** OpenRouter API calls fail because HTTP.Core.get/2 isn't exposed in test module structure.
 ```
-ExLLM.Providers.Shared.HTTP.Core.get/2 undefined or private
+SingularityLLM.Providers.Shared.HTTP.Core.get/2 undefined or private
 ```
 
 ### Model Catalog Empty (10 tests)

@@ -1,6 +1,6 @@
-# ExLLM Feature Status
+# SingularityLLM Feature Status
 
-This document tracks the current status of ExLLM features based on comprehensive testing.
+This document tracks the current status of SingularityLLM features based on comprehensive testing.
 
 ## 🎯 Testing Summary
 
@@ -11,9 +11,9 @@ This document tracks the current status of ExLLM features based on comprehensive
 ## ✅ Stable Features (Production Ready)
 
 ### Core APIs
-- **`ExLLM.chat/3`** - Basic chat functionality with all providers
-- **`ExLLM.stream/4`** - Real-time response streaming with callbacks
-- **`ExLLM.Core.Session`** - Conversation persistence and state management
+- **`SingularityLLM.chat/3`** - Basic chat functionality with all providers
+- **`SingularityLLM.stream/4`** - Real-time response streaming with callbacks
+- **`SingularityLLM.Core.Session`** - Conversation persistence and state management
 
 ### Provider Support
 - **OpenAI** - GPT models with function calling
@@ -36,20 +36,20 @@ This document tracks the current status of ExLLM features based on comprehensive
 
 ### 1. Context Management
 - **Status**: API exists but function signature changed
-- **Missing**: `ExLLM.Core.Context.truncate_messages/5`
+- **Missing**: `SingularityLLM.Core.Context.truncate_messages/5`
 - **Impact**: Automatic message truncation for token limits
 - **Workaround**: Manual message management in application code
 
 ### 2. Model Capabilities API  
 - **Status**: Configuration system redesigned
-- **Missing**: `ExLLM.Infrastructure.Config.ModelConfig.get_model_config/1`
+- **Missing**: `SingularityLLM.Infrastructure.Config.ModelConfig.get_model_config/1`
 - **Impact**: Programmatic access to model metadata (context windows, pricing)
 - **Workaround**: Use YAML configuration files directly
 
 ### 3. Configuration Validation
 - **Status**: Validation system refactored
 - **Missing**: Runtime configuration validation utilities
-- **Impact**: No programmatic validation of ExLLM setup
+- **Impact**: No programmatic validation of SingularityLLM setup
 - **Workaround**: Manual configuration verification
 
 ## 📋 Detailed Test Results
@@ -88,7 +88,7 @@ This document tracks the current status of ExLLM features based on comprehensive
 ## 🎯 Recommendations
 
 ### For Users
-- **Use Core APIs**: Stick to `ExLLM.chat/3` and `ExLLM.stream/4` for reliable functionality
+- **Use Core APIs**: Stick to `SingularityLLM.chat/3` and `SingularityLLM.stream/4` for reliable functionality
 - **Manual Context Management**: Implement your own message truncation logic if needed
 - **Direct Configuration**: Read YAML files directly for model metadata access
 
@@ -100,17 +100,17 @@ This document tracks the current status of ExLLM features based on comprehensive
 ## 🚀 Migration Notes
 
 If upgrading from an older version, be aware that these APIs have changed:
-- `ExLLM.Core.Context.truncate_messages/*` - Function signature changed
-- `ExLLM.Infrastructure.Config.ModelConfig.get_model_config/*` - API redesigned
+- `SingularityLLM.Core.Context.truncate_messages/*` - Function signature changed
+- `SingularityLLM.Infrastructure.Config.ModelConfig.get_model_config/*` - API redesigned
 - Configuration validation utilities - System refactored
 
 ## ✨ Success Stories
 
-The ExLLM library successfully powers:
+The SingularityLLM library successfully powers:
 - **Real-time AI conversations** with multiple providers
 - **Production chat applications** with session persistence  
 - **Streaming interfaces** with live token delivery
 - **Multi-provider routing** for reliability and cost optimization
 - **Local AI inference** with Ollama integration
 
-**Bottom Line**: ExLLM is production-ready for all core use cases. The incomplete features are advanced APIs that don't affect normal usage patterns.
+**Bottom Line**: SingularityLLM is production-ready for all core use cases. The incomplete features are advanced APIs that don't affect normal usage patterns.

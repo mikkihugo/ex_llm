@@ -1,6 +1,6 @@
-defmodule ExLLM.Tesla.ClientCacheTest do
+defmodule SingularityLLM.Tesla.ClientCacheTest do
   use ExUnit.Case, async: false
-  alias ExLLM.Tesla.ClientCache
+  alias SingularityLLM.Tesla.ClientCache
 
   setup do
     # Clear cache before each test

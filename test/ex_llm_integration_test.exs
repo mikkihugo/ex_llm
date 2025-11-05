@@ -1,6 +1,6 @@
-defmodule ExLLM.IntegrationTest do
+defmodule SingularityLLM.IntegrationTest do
   use ExUnit.Case
-  import ExLLM.Testing.CapabilityHelpers
+  import SingularityLLM.Testing.CapabilityHelpers
 
   @moduletag :integration
 
@@ -16,7 +16,7 @@ defmodule ExLLM.IntegrationTest do
           %{role: "user", content: "Say hello in one word"}
         ]
 
-        case ExLLM.chat(provider, messages, max_tokens: 10) do
+        case SingularityLLM.chat(provider, messages, max_tokens: 10) do
           {:ok, response} ->
             assert is_map(response)
             assert Map.has_key?(response, :content)
@@ -58,7 +58,7 @@ defmodule ExLLM.IntegrationTest do
           send(self(), {:metrics, :chunk_received, byte_size(inspect(chunk))})
         end
 
-        case ExLLM.stream(provider, messages, collector, max_tokens: 20, timeout: 10_000) do
+        case SingularityLLM.stream(provider, messages, collector, max_tokens: 20, timeout: 10_000) do
           :ok ->
             chunks = collect_stream_chunks_with_metrics([], 2000)
 
@@ -137,7 +137,7 @@ defmodule ExLLM.IntegrationTest do
       for provider <- providers do
         skip_unless_configured_and_supports(provider, :list_models)
 
-        case ExLLM.list_models(provider) do
+        case SingularityLLM.list_models(provider) do
           {:ok, models} ->
             assert is_list(models)
             assert length(models) > 0, "Expected to receive at least one model from #{provider}"
@@ -169,11 +169,11 @@ defmodule ExLLM.IntegrationTest do
       config = %{anthropic: %{api_key: "invalid-key-test"}}
 
       {:ok, static_provider} =
-        ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+        SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
       messages = [%{role: "user", content: "Test"}]
 
-      result = ExLLM.chat(:anthropic, messages, config_provider: static_provider)
+      result = SingularityLLM.chat(:anthropic, messages, config_provider: static_provider)
 
       case result do
         {:error, {:api_error, %{status: status}}} when status in [401, 403] ->
@@ -204,11 +204,11 @@ defmodule ExLLM.IntegrationTest do
     test "builder pattern works with public API" do
       skip_unless_configured_and_supports(:anthropic, :chat)
 
-      case ExLLM.build(:anthropic, [%{role: "user", content: "Hello"}])
-           |> ExLLM.with_model("claude-3-haiku-20240307")
-           |> ExLLM.with_temperature(0.5)
-           |> ExLLM.with_max_tokens(20)
-           |> ExLLM.execute() do
+      case SingularityLLM.build(:anthropic, [%{role: "user", content: "Hello"}])
+           |> SingularityLLM.with_model("claude-3-haiku-20240307")
+           |> SingularityLLM.with_temperature(0.5)
+           |> SingularityLLM.with_max_tokens(20)
+           |> SingularityLLM.execute() do
         {:ok, response} ->
           assert is_map(response)
           assert String.length(response.content) > 0
@@ -233,10 +233,10 @@ defmodule ExLLM.IntegrationTest do
 
       # Get the built request
       builder =
-        ExLLM.build(:anthropic, [%{role: "user", content: "Say hi"}])
-        |> ExLLM.with_max_tokens(10)
+        SingularityLLM.build(:anthropic, [%{role: "user", content: "Say hi"}])
+        |> SingularityLLM.with_max_tokens(10)
 
-      case ExLLM.stream(
+      case SingularityLLM.stream(
              :anthropic,
              builder.request.messages,
              collector,

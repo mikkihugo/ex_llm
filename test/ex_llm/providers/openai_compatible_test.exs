@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.OpenAICompatibleTest do
+defmodule SingularityLLM.Providers.OpenAICompatibleTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Infrastructure.ConfigProvider.Static
-  alias ExLLM.Providers.OpenAICompatible
-  alias ExLLM.Testing.ConfigProviderHelper
-  alias ExLLM.Types
+  alias SingularityLLM.Infrastructure.ConfigProvider.Static
+  alias SingularityLLM.Providers.OpenAICompatible
+  alias SingularityLLM.Testing.ConfigProviderHelper
+  alias SingularityLLM.Types
 
   # This module defines a shared test suite for any provider that implements
   # the OpenAICompatible behavior. It tests the common contract for chat,
@@ -12,7 +12,7 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
 
   # A mock provider to demonstrate testing of provider-specific features.
   defmodule FakeMistral do
-    use ExLLM.Providers.OpenAICompatible,
+    use SingularityLLM.Providers.OpenAICompatible,
       provider: :fake_mistral,
       base_url: "http://localhost",
       models: ["mistral-model", "test-model"]
@@ -26,7 +26,7 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
     end
 
     # Required callbacks
-    @impl ExLLM.Provider
+    @impl SingularityLLM.Provider
     def default_model(), do: "mistral-model"
 
     # Override to avoid loading from config file and provide test models
@@ -46,7 +46,7 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
         _ ->
           # Provide test models for static/default usage
           models = [
-            %ExLLM.Types.Model{
+            %SingularityLLM.Types.Model{
               id: "mistral-model",
               name: "Mistral Model",
               description: "Test Mistral model",
@@ -58,7 +58,7 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
                 features: [:streaming, :function_calling]
               }
             },
-            %ExLLM.Types.Model{
+            %SingularityLLM.Types.Model{
               id: "test-model",
               name: "Test Model",
               description: "Test model for unit tests",
@@ -92,13 +92,13 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
 
   setup do
     # Disable Tesla.Mock for these tests since they use Bypass
-    original_mock_setting = Application.get_env(:ex_llm, :use_tesla_mock, false)
-    Application.put_env(:ex_llm, :use_tesla_mock, false)
+    original_mock_setting = Application.get_env(:singularity_llm, :use_tesla_mock, false)
+    Application.put_env(:singularity_llm, :use_tesla_mock, false)
 
     bypass = Bypass.open()
 
     on_exit(fn ->
-      Application.put_env(:ex_llm, :use_tesla_mock, original_mock_setting)
+      Application.put_env(:singularity_llm, :use_tesla_mock, original_mock_setting)
     end)
 
     # Remove /v1 from base URL since ExecuteRequest adds it
@@ -351,11 +351,11 @@ defmodule ExLLM.Providers.OpenAICompatibleTest do
 
         content_json = ~s|{"choices":[{"delta":{"content":"Hello"}}],"id":"1"}|
         {:ok, content_chunk} = provider_module.parse_stream_chunk(content_json)
-        assert %ExLLM.Types.StreamChunk{content: "Hello", finish_reason: nil} = content_chunk
+        assert %SingularityLLM.Types.StreamChunk{content: "Hello", finish_reason: nil} = content_chunk
 
         finish_json = ~s|{"choices":[{"delta":{}, "finish_reason":"stop"}],"id":"1"}|
         {:ok, finish_chunk} = provider_module.parse_stream_chunk(finish_json)
-        assert %ExLLM.Types.StreamChunk{content: "", finish_reason: "stop"} = finish_chunk
+        assert %SingularityLLM.Types.StreamChunk{content: "", finish_reason: "stop"} = finish_chunk
 
         assert {:error, :invalid_json} = provider_module.parse_stream_chunk("not json")
       end

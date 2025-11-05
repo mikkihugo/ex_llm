@@ -1,16 +1,16 @@
-defmodule ExLLM.Integration.ComprehensiveFileTest do
+defmodule SingularityLLM.Integration.ComprehensiveFileTest do
   @moduledoc """
   Comprehensive file management tests that work with the current API implementation.
   """
   use ExUnit.Case
-  alias ExLLM.FileManager
+  alias SingularityLLM.FileManager
 
   describe "OpenAI File Management - Basic Operations" do
     @describetag :integration
     @describetag timeout: 30_000
     test "upload, retrieve, and delete text file" do
       # Create test file
-      content = "Hello ExLLM File Test"
+      content = "Hello SingularityLLM File Test"
       file_path = "/tmp/comprehensive_test.txt"
       File.write!(file_path, content)
 

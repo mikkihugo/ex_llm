@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Shared.Streaming.Middleware.MetricsPlugTest do
+defmodule SingularityLLM.Providers.Shared.Streaming.Middleware.MetricsPlugTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.Streaming.Middleware.{MetricsPlug, StreamCollector}
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.Streaming.Middleware.{MetricsPlug, StreamCollector}
+  alias SingularityLLM.Types.StreamChunk
 
   describe "integration with streaming engine" do
     test "metrics are collected during actual streaming" do

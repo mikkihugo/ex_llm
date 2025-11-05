@@ -1,19 +1,19 @@
-# ExLLM Test Suite
+# SingularityLLM Test Suite
 
-This directory contains comprehensive tests for the ExLLM library, covering all providers, features, and integration scenarios. The test suite uses intelligent caching for 25x faster integration tests and is organized following the layered architecture pattern.
+This directory contains comprehensive tests for the SingularityLLM library, covering all providers, features, and integration scenarios. The test suite uses intelligent caching for 25x faster integration tests and is organized following the layered architecture pattern.
 
 ## Test Structure
 
-The test suite is organized following the ExLLM layered architecture:
+The test suite is organized following the SingularityLLM layered architecture:
 
 ### Core Library Tests
-- **Location**: `test/ex_llm/core/*_test.exs`
-- **Purpose**: Test core ExLLM functionality (sessions, contexts, costs, embeddings, etc.)
+- **Location**: `test/singularity_llm/core/*_test.exs`
+- **Purpose**: Test core SingularityLLM functionality (sessions, contexts, costs, embeddings, etc.)
 - **Run by default**: Always executed in local development
 - **Requirements**: No API keys needed
 
 ### Provider Tests
-- **Location**: `test/ex_llm/providers/`
+- **Location**: `test/singularity_llm/providers/`
 - **Structure**:
   - `*_unit_test.exs` - Unit tests without API calls
   - `*_integration_test.exs` - Integration tests with real APIs
@@ -21,12 +21,12 @@ The test suite is organized following the ExLLM layered architecture:
 - **Requirements**: Integration tests require API keys
 
 ### Infrastructure Tests
-- **Location**: `test/ex_llm/infrastructure/`
+- **Location**: `test/singularity_llm/infrastructure/`
 - **Purpose**: Test infrastructure components (circuit breakers, config, streaming, etc.)
 - **Run by default**: Always executed
 
 ### Testing Framework Tests
-- **Location**: `test/ex_llm/testing/`
+- **Location**: `test/singularity_llm/testing/`
 - **Purpose**: Test the testing infrastructure itself (caching, helpers, etc.)
 
 ### Integration Tests
@@ -36,9 +36,9 @@ The test suite is organized following the ExLLM layered architecture:
 - **Requirements**: May require API keys depending on the test
 
 ### OAuth2 Tests
-- **Location**: `test/ex_llm/providers/gemini/oauth2*/` and `test/ex_llm/providers/gemini/permissions_oauth2_test.exs`
+- **Location**: `test/singularity_llm/providers/gemini/oauth2*/` and `test/singularity_llm/providers/gemini/permissions_oauth2_test.exs`
 - **Purpose**: Test OAuth2-dependent APIs (Permissions, Corpus Management, etc.)
-- **Required Pattern**: **MUST use `ExLLM.Testing.OAuth2TestCase`**
+- **Required Pattern**: **MUST use `SingularityLLM.Testing.OAuth2TestCase`**
 - **Tagged with**: `:oauth2` and excluded by default
 - **Requirements**: OAuth2 credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, .gemini_tokens)
 - **Documentation**: See [OAuth2 Testing Guide](OAUTH2_TESTING.md) for detailed setup
@@ -113,17 +113,17 @@ mix test.oauth2         # OAuth2 authentication tests
 
 ### Test Caching (25x Speed Improvement)
 
-ExLLM includes an advanced test caching system that dramatically speeds up integration tests:
+SingularityLLM includes an advanced test caching system that dramatically speeds up integration tests:
 
 ```bash
 # Tests with automatic caching
 mix test.anthropic --include live_api
 
 # Manage test cache
-mix ex_llm.cache stats
-mix ex_llm.cache clean --older-than 7d
-mix ex_llm.cache clear
-mix ex_llm.cache show anthropic
+mix singularity_llm.cache stats
+mix singularity_llm.cache clean --older-than 7d
+mix singularity_llm.cache clear
+mix singularity_llm.cache show anthropic
 
 # Enable cache debugging
 export EX_LLM_TEST_CACHE_ENABLED=true
@@ -134,7 +134,7 @@ export EX_LLM_LOG_LEVEL=debug
 
 ### Using .env Files (Recommended)
 
-ExLLM now supports automatic loading of environment variables from `.env` files. This is the recommended approach for managing API keys:
+SingularityLLM now supports automatic loading of environment variables from `.env` files. This is the recommended approach for managing API keys:
 
 1. Copy the example file:
    ```bash
@@ -170,7 +170,7 @@ You can specify a custom .env file location:
 EX_LLM_ENV_FILE=.env.test mix test
 
 # Or in config/test.exs
-config :ex_llm, :env_file, ".env.test"
+config :singularity_llm, :env_file, ".env.test"
 ```
 
 #### OAuth2 Token Refresh
@@ -185,7 +185,7 @@ To enable automatic OAuth refresh in your tests:
 ```elixir
 setup do
   # Automatically refreshes OAuth tokens if needed
-  ExLLM.Testing.EnvHelper.setup_oauth()
+  SingularityLLM.Testing.EnvHelper.setup_oauth()
 end
 ```
 
@@ -197,7 +197,7 @@ For tests that require specific API keys:
 
 ```elixir
 setup do
-  case ExLLM.Testing.EnvHelper.ensure_api_keys(["OPENAI_API_KEY"]) do
+  case SingularityLLM.Testing.EnvHelper.ensure_api_keys(["OPENAI_API_KEY"]) do
     :ok -> 
       :ok
     {:error, missing} ->
@@ -223,7 +223,7 @@ export OPENROUTER_API_KEY="sk-or-..."
 export PERPLEXITY_API_KEY="pplx-..."
 
 # Optional metadata
-export OPENROUTER_APP_NAME="ExLLM Test"
+export OPENROUTER_APP_NAME="SingularityLLM Test"
 export OPENROUTER_APP_URL="https://example.com"
 ```
 
@@ -305,15 +305,15 @@ mix test --exclude "integration or external"
 
 ### Adding New Tests
 
-1. **Core Library Tests**: Add to `test/ex_llm/core/`
-2. **Provider Tests**: Add to `test/ex_llm/providers/provider_name/`
-3. **Infrastructure Tests**: Add to `test/ex_llm/infrastructure/`
+1. **Core Library Tests**: Add to `test/singularity_llm/core/`
+2. **Provider Tests**: Add to `test/singularity_llm/providers/provider_name/`
+3. **Infrastructure Tests**: Add to `test/singularity_llm/infrastructure/`
 4. **Integration Tests**: Add to `test/integration/`
 
 ### Test Tagging Pattern
 
 ```elixir
-defmodule ExLLM.Providers.ProviderIntegrationTest do
+defmodule SingularityLLM.Providers.ProviderIntegrationTest do
   use ExUnit.Case
   
   @moduletag :integration
@@ -329,7 +329,7 @@ end
 ### Unit Test Pattern
 
 ```elixir
-defmodule ExLLM.Providers.ProviderUnitTest do
+defmodule SingularityLLM.Providers.ProviderUnitTest do
   use ExUnit.Case, async: true
   
   @moduletag :unit
@@ -346,13 +346,13 @@ end
 ### Using Test Cache
 
 ```elixir
-defmodule ExLLM.Providers.ProviderIntegrationTest do
+defmodule SingularityLLM.Providers.ProviderIntegrationTest do
   use ExUnit.Case
-  import ExLLM.Testing.TestCacheHelpers
+  import SingularityLLM.Testing.TestCacheHelpers
   
   test "cached API call" do
     # Automatically cached based on request parameters
-    {:ok, response} = ExLLM.chat(:provider, [%{role: "user", content: "test"}])
+    {:ok, response} = SingularityLLM.chat(:provider, [%{role: "user", content: "test"}])
     assert response.content != ""
   end
 end
@@ -416,7 +416,7 @@ mix test --timeout 30000
 #### Integration Tests Skipped
 ```bash
 # Make sure to include the required tags
-mix test --include live_api test/ex_llm/providers/anthropic_integration_test.exs
+mix test --include live_api test/singularity_llm/providers/anthropic_integration_test.exs
 
 # Check for required environment variables
 echo $ANTHROPIC_API_KEY
@@ -425,7 +425,7 @@ echo $ANTHROPIC_API_KEY
 #### Cache Issues
 ```bash
 # Clear test cache if responses seem stale
-mix ex_llm.cache clear
+mix singularity_llm.cache clear
 
 # Disable cache for debugging
 export EX_LLM_TEST_CACHE_ENABLED=false
@@ -456,12 +456,12 @@ mix test
 
 ## Architecture Notes
 
-The test suite follows ExLLM's layered architecture:
+The test suite follows SingularityLLM's layered architecture:
 
-- **Core Layer**: Business logic tests (`test/ex_llm/core/`)
-- **Infrastructure Layer**: Technical concerns (`test/ex_llm/infrastructure/`)
-- **Providers Layer**: External integrations (`test/ex_llm/providers/`)
-- **Testing Layer**: Test framework itself (`test/ex_llm/testing/`)
+- **Core Layer**: Business logic tests (`test/singularity_llm/core/`)
+- **Infrastructure Layer**: Technical concerns (`test/singularity_llm/infrastructure/`)
+- **Providers Layer**: External integrations (`test/singularity_llm/providers/`)
+- **Testing Layer**: Test framework itself (`test/singularity_llm/testing/`)
 
 This organization ensures:
 - Clear separation of concerns

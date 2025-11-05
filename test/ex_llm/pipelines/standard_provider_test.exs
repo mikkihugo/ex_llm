@@ -1,24 +1,24 @@
-defmodule ExLLM.Pipelines.StandardProviderTest do
+defmodule SingularityLLM.Pipelines.StandardProviderTest do
   use ExUnit.Case, async: false
   import ExUnit.Callbacks
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Pipelines.StandardProvider
-  alias ExLLM.Plugs
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Pipelines.StandardProvider
+  alias SingularityLLM.Plugs
 
   # --- Dummy Plugs for Testing ---
   defmodule DummyBuildRequest do
-    use ExLLM.Plug
+    use SingularityLLM.Plug
     def call(req, _opts), do: Request.assign(req, :request_built, true)
   end
 
   defmodule DummyParseResponse do
-    use ExLLM.Plug
+    use SingularityLLM.Plug
     def call(req, _opts), do: Request.assign(req, :response_parsed, true)
   end
 
   defmodule DummyExecuteRequest do
-    use ExLLM.Plug
+    use SingularityLLM.Plug
     def call(req, _opts), do: Request.assign(req, :request_executed, true)
   end
 
@@ -35,7 +35,7 @@ defmodule ExLLM.Pipelines.StandardProviderTest do
 
       # The outer plug is TelemetryMiddleware
       assert [{Plugs.TelemetryMiddleware, telemetry_opts}] = pipeline
-      assert telemetry_opts[:event_name] == [:ex_llm, :provider, :execution]
+      assert telemetry_opts[:event_name] == [:singularity_llm, :provider, :execution]
 
       # The inner pipeline has the correct sequence of plugs
       inner_pipeline = telemetry_opts[:pipeline]
@@ -125,7 +125,7 @@ defmodule ExLLM.Pipelines.StandardProviderTest do
 
       # Create a request and run it
       request = Request.new(:openai, [%{role: "user", content: "hi"}], [])
-      result = ExLLM.Pipeline.run(request, full_pipeline)
+      result = SingularityLLM.Pipeline.run(request, full_pipeline)
 
       # Assert a successful run - for now, let's skip this test since there are integration issues
       # We need to fix the integration between the actual pipeline system and our plugs

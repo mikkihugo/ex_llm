@@ -1,11 +1,11 @@
-defmodule ExLLM.Integration.ContextCachingSmokeTest do
+defmodule SingularityLLM.Integration.ContextCachingSmokeTest do
   @moduledoc """
   Quick smoke test to verify context caching integration works.
   """
   use ExUnit.Case
 
-  alias ExLLM.Providers.Gemini
-  alias ExLLM.Providers.Gemini.Content.{Content, Part}
+  alias SingularityLLM.Providers.Gemini
+  alias SingularityLLM.Providers.Gemini.Content.{Content, Part}
 
   @tag :integration
   @tag timeout: 30_000

@@ -1,7 +1,7 @@
 # Legacy HTTPClient Removal Plan
 
 ## Overview
-This plan provides a systematic approach to completely remove the legacy HTTPClient compatibility layer from the ExLLM codebase, ensuring no functionality is lost while modernizing the HTTP infrastructure.
+This plan provides a systematic approach to completely remove the legacy HTTPClient compatibility layer from the SingularityLLM codebase, ensuring no functionality is lost while modernizing the HTTP infrastructure.
 
 ## Approach: Gradual Deprecation
 Selected for maximum safety and traceability, allowing rollback at any checkpoint if issues arise.
@@ -58,10 +58,10 @@ Selected for maximum safety and traceability, allowing rollback at any checkpoin
 ### Validation Script:
 ```bash
 # Check provider usage
-git grep -l "HTTP.Core" lib/ex_llm/providers/
+git grep -l "HTTP.Core" lib/singularity_llm/providers/
 
 # Verify no direct HTTPClient usage in providers
-git grep "HTTPClient" lib/ex_llm/providers/ --include="*.ex"
+git grep "HTTPClient" lib/singularity_llm/providers/ --include="*.ex"
 ```
 
 ---
@@ -114,7 +114,7 @@ mix test --failed
    - Remove if only used by HTTPClient
 
 4. **Core Module Removal**
-   - Remove `lib/ex_llm/providers/shared/http_client.ex`
+   - Remove `lib/singularity_llm/providers/shared/http_client.ex`
    - Run `mix compile --warnings-as-errors`
 
 ### Safety Gates:
@@ -172,7 +172,7 @@ git checkout -b remove-legacy-httpclient
 git grep -n "HTTPClient" | tee httpclient_references.txt
 
 # Start with least risky changes
-mix test test/ex_llm/providers/shared/streaming_migration_test.exs
+mix test test/singularity_llm/providers/shared/streaming_migration_test.exs
 ```
 
 ### Verification Commands:

@@ -39,7 +39,7 @@ The challenge was: How do we intelligently route to the best model variant for a
 
 ### Code Changes
 
-#### File: `lib/ex_llm/routing/task_router.ex`
+#### File: `lib/singularity_llm/routing/task_router.ex`
 
 **New Public Functions:**
 
@@ -91,7 +91,7 @@ The challenge was: How do we intelligently route to the best model variant for a
 
 ### Test Coverage
 
-**New Test Suite:** `test/ex_llm/routing/task_router_variants_test.exs` (34 tests, 100% pass rate)
+**New Test Suite:** `test/singularity_llm/routing/task_router_variants_test.exs` (34 tests, 100% pass rate)
 
 **Test Breakdown:**
 - Unit tests (London School): 10 tests for preferred models, variants, task matching
@@ -188,7 +188,7 @@ def call_llm(task_type, context_needed, opts) do
     required_capabilities: [:vision],
     prefer: :cost
   ]),
-       {:ok, response} <- ExLLM.chat(provider, messages, model: model) do
+       {:ok, response} <- SingularityLLM.chat(provider, messages, model: model) do
     {:ok, response}
   end
 end
@@ -220,12 +220,12 @@ end
 ## Files Modified/Created
 
 ### Created
-- `test/ex_llm/routing/task_router_variants_test.exs` (371 lines) - 34 comprehensive tests
+- `test/singularity_llm/routing/task_router_variants_test.exs` (371 lines) - 34 comprehensive tests
 - `VARIANT_ROUTING.md` (1500+ lines) - Complete documentation
 - `VARIANT_ROUTING_IMPLEMENTATION_SUMMARY.md` (this file) - Implementation overview
 
 ### Modified
-- `lib/ex_llm/routing/task_router.ex` - Added 6 new public functions, 6 new private functions
+- `lib/singularity_llm/routing/task_router.ex` - Added 6 new public functions, 6 new private functions
 - `TEST_RESULTS_E2E.md` - Updated test statistics and added variant routing results
 
 ## Performance Characteristics
@@ -260,8 +260,8 @@ end
 ## Related Documentation
 
 - **[CLAUDE.md](./CLAUDE.md)** - Project guidelines and architecture
-- **[lib/ex_llm/routing/task_router.ex](./lib/ex_llm/routing/task_router.ex)** - Implementation
-- **[test/ex_llm/routing/task_router_variants_test.exs](./test/ex_llm/routing/task_router_variants_test.exs)** - Tests
+- **[lib/singularity_llm/routing/task_router.ex](./lib/singularity_llm/routing/task_router.ex)** - Implementation
+- **[test/singularity_llm/routing/task_router_variants_test.exs](./test/singularity_llm/routing/task_router_variants_test.exs)** - Tests
 
 ## Conclusion
 

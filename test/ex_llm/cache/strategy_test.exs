@@ -1,8 +1,8 @@
-defmodule ExLLM.Cache.StrategyTest do
+defmodule SingularityLLM.Cache.StrategyTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Cache.Strategies.{Production, Test}
-  alias ExLLM.Infrastructure.Cache
+  alias SingularityLLM.Cache.Strategies.{Production, Test}
+  alias SingularityLLM.Infrastructure.Cache
 
   setup do
     # Ensure cache is started for tests
@@ -94,17 +94,17 @@ defmodule ExLLM.Cache.StrategyTest do
 
     test "cache strategy can be configured" do
       # Get the current strategy
-      current_strategy = Application.get_env(:ex_llm, :cache_strategy, Production)
+      current_strategy = Application.get_env(:singularity_llm, :cache_strategy, Production)
 
       # The strategy should be configurable (either Test or Production is valid)
-      assert current_strategy in [ExLLM.Cache.Strategies.Test, ExLLM.Cache.Strategies.Production]
+      assert current_strategy in [SingularityLLM.Cache.Strategies.Test, SingularityLLM.Cache.Strategies.Production]
 
       # Temporarily set to Test strategy
-      Application.put_env(:ex_llm, :cache_strategy, ExLLM.Cache.Strategies.Test)
-      assert Application.get_env(:ex_llm, :cache_strategy) == ExLLM.Cache.Strategies.Test
+      Application.put_env(:singularity_llm, :cache_strategy, SingularityLLM.Cache.Strategies.Test)
+      assert Application.get_env(:singularity_llm, :cache_strategy) == SingularityLLM.Cache.Strategies.Test
 
       # Restore original
-      Application.put_env(:ex_llm, :cache_strategy, current_strategy)
+      Application.put_env(:singularity_llm, :cache_strategy, current_strategy)
     end
 
     test "strategy pattern eliminates layering violation" do
@@ -112,7 +112,7 @@ defmodule ExLLM.Cache.StrategyTest do
       # This is now handled through the strategy pattern
 
       # Get the source of Infrastructure.Cache
-      {:ok, source} = File.read("lib/ex_llm/infrastructure/cache.ex")
+      {:ok, source} = File.read("lib/singularity_llm/infrastructure/cache.ex")
 
       # Should not contain direct references to test modules
       refute source =~ "TestCacheDetector"

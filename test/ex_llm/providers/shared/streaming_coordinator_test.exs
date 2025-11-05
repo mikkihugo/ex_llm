@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Shared.StreamingCoordinatorTest do
+defmodule SingularityLLM.Providers.Shared.StreamingCoordinatorTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.StreamingCoordinator
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.StreamingCoordinator
+  alias SingularityLLM.Types.StreamChunk
 
   describe "parse_sse_line/1" do
     test "parses data lines correctly" do

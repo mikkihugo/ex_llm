@@ -39,9 +39,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Feature Status
 
 ### ✅ Stable Features (Production Ready)
-- **Core Chat API**: `ExLLM.chat/3` - Basic chat functionality with all providers
-- **Streaming API**: `ExLLM.stream/4` - Real-time response streaming
-- **Session Management**: `ExLLM.Core.Session` - Conversation persistence and state
+- **Core Chat API**: `SingularityLLM.chat/3` - Basic chat functionality with all providers
+- **Streaming API**: `SingularityLLM.stream/4` - Real-time response streaming
+- **Session Management**: `SingularityLLM.Core.Session` - Conversation persistence and state
 - **Provider Support**: All major providers (OpenAI, Anthropic, Gemini, Ollama, etc.)
 - **Function Calling**: Tool use and function calling across providers
 - **Cost Tracking**: Token usage and cost calculation
@@ -51,8 +51,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Test Caching**: Advanced response caching for 25x faster integration tests
 
 ### 🚧 Incomplete Features (Under Development)
-- **Context Management**: `ExLLM.Core.Context.truncate_messages/5` - Automatic message truncation for token limits
-- **Model Capabilities API**: `ExLLM.Infrastructure.Config.ModelConfig.get_model_config/1` - Programmatic model metadata access
+- **Context Management**: `SingularityLLM.Core.Context.truncate_messages/5` - Automatic message truncation for token limits
+- **Model Capabilities API**: `SingularityLLM.Infrastructure.Config.ModelConfig.get_model_config/1` - Programmatic model metadata access
 - **Configuration Validation**: Runtime configuration validation utilities
 
 ### 📋 Testing Status
@@ -76,7 +76,7 @@ mix deps.compile
 
 ### Testing
 
-ExLLM includes a comprehensive testing system with intelligent caching and 24 specialized Mix aliases.
+SingularityLLM includes a comprehensive testing system with intelligent caching and 24 specialized Mix aliases.
 
 #### Basic Testing
 ```bash
@@ -134,10 +134,10 @@ mix test --include integration     # Uses cache if fresh, otherwise excludes tes
 MIX_RUN_LIVE=true mix test --include integration
 
 # Manage test cache
-mix ex_llm.cache stats
-mix ex_llm.cache clean --older-than 7d
-mix ex_llm.cache clear
-mix ex_llm.cache show anthropic
+mix singularity_llm.cache stats
+mix singularity_llm.cache clean --older-than 7d
+mix singularity_llm.cache clear
+mix singularity_llm.cache show anthropic
 
 # Enable cache debugging
 export EX_LLM_LOG_LEVEL=debug
@@ -174,7 +174,7 @@ mix dialyzer
 
 ### Debug Logging
 
-ExLLM includes a comprehensive debug logging system that can be configured per environment:
+SingularityLLM includes a comprehensive debug logging system that can be configured per environment:
 
 ```bash
 # Test debug logging example
@@ -244,44 +244,44 @@ The project uses two methods to keep model configurations up-to-date:
 
 ## Architecture Overview
 
-ExLLM is a unified Elixir client for Large Language Models that provides a consistent interface across multiple providers. The architecture follows these key principles:
+SingularityLLM is a unified Elixir client for Large Language Models that provides a consistent interface across multiple providers. The architecture follows these key principles:
 
 ### Core Components
 
-1. **Main Module (`lib/ex_llm.ex`)**: Entry point providing the unified API for all LLM operations. Delegates to appropriate adapters based on provider.
+1. **Main Module (`lib/singularity_llm.ex`)**: Entry point providing the unified API for all LLM operations. Delegates to appropriate adapters based on provider.
 
-2. **Adapter Pattern (`lib/ex_llm/adapter.ex`)**: Defines the behavior that all provider implementations must follow. Each provider (Anthropic, OpenAI, Gemini, etc.) implements this behavior.
+2. **Adapter Pattern (`lib/singularity_llm/adapter.ex`)**: Defines the behavior that all provider implementations must follow. Each provider (Anthropic, OpenAI, Gemini, etc.) implements this behavior.
 
-3. **Session Management (`lib/ex_llm/session.ex`)**: Manages conversation state across multiple interactions, tracking messages and token usage.
+3. **Session Management (`lib/singularity_llm/session.ex`)**: Manages conversation state across multiple interactions, tracking messages and token usage.
 
-4. **Context Management (`lib/ex_llm/context.ex`)**: Handles message truncation and validation to ensure conversations fit within model context windows using different strategies (sliding_window, smart).
+4. **Context Management (`lib/singularity_llm/context.ex`)**: Handles message truncation and validation to ensure conversations fit within model context windows using different strategies (sliding_window, smart).
 
-5. **Cost Tracking (`lib/ex_llm/cost.ex`)**: Automatically calculates and tracks API costs based on token usage and provider pricing.
+5. **Cost Tracking (`lib/singularity_llm/cost.ex`)**: Automatically calculates and tracks API costs based on token usage and provider pricing.
 
 6. **Test Caching System**: Advanced caching infrastructure for 25x faster integration tests
-   - **Cache Storage (`lib/ex_llm/cache/storage/test_cache.ex`)**: JSON-based persistent storage
-   - **Cache Detection (`lib/ex_llm/test_cache_detector.ex`)**: Smart detection of cacheable tests
-   - **Response Interception (`lib/ex_llm/test_response_interceptor.ex`)**: Transparent HTTP caching
-   - **Cache Management (`lib/mix/tasks/ex_llm.cache.ex`)**: Mix task for cache operations
+   - **Cache Storage (`lib/singularity_llm/cache/storage/test_cache.ex`)**: JSON-based persistent storage
+   - **Cache Detection (`lib/singularity_llm/test_cache_detector.ex`)**: Smart detection of cacheable tests
+   - **Response Interception (`lib/singularity_llm/test_response_interceptor.ex`)**: Transparent HTTP caching
+   - **Cache Management (`lib/mix/tasks/singularity_llm.cache.ex`)**: Mix task for cache operations
 
-7. **Instructor Integration (`lib/ex_llm/instructor.ex`)**: Optional integration for structured outputs with schema validation and retries.
+7. **Instructor Integration (`lib/singularity_llm/instructor.ex`)**: Optional integration for structured outputs with schema validation and retries.
 
 ### Provider Implementations
 
-- **Anthropic Provider (`lib/ex_llm/providers/anthropic.ex`)**: Claude API integration with streaming support
-- **OpenAI Provider (`lib/ex_llm/providers/openai.ex`)**: GPT and o1 models with function calling  
-- **Gemini Provider (`lib/ex_llm/providers/gemini.ex`)**: Complete Gemini API suite (15 APIs) with OAuth2
-- **Groq Provider (`lib/ex_llm/providers/groq.ex`)**: Ultra-fast inference with Llama and DeepSeek
-- **OpenRouter Provider (`lib/ex_llm/providers/openrouter.ex`)**: Access to 300+ models
+- **Anthropic Provider (`lib/singularity_llm/providers/anthropic.ex`)**: Claude API integration with streaming support
+- **OpenAI Provider (`lib/singularity_llm/providers/openai.ex`)**: GPT and o1 models with function calling  
+- **Gemini Provider (`lib/singularity_llm/providers/gemini.ex`)**: Complete Gemini API suite (15 APIs) with OAuth2
+- **Groq Provider (`lib/singularity_llm/providers/groq.ex`)**: Ultra-fast inference with Llama and DeepSeek
+- **OpenRouter Provider (`lib/singularity_llm/providers/openrouter.ex`)**: Access to 300+ models
 - **Local Providers**: Ollama, LM Studio, and Bumblebee for local model inference
 
 ### Configuration System
 
-The library uses a pluggable configuration provider system (`lib/ex_llm/config_provider.ex`) that allows different configuration sources (environment variables, static config, custom providers).
+The library uses a pluggable configuration provider system (`lib/singularity_llm/config_provider.ex`) that allows different configuration sources (environment variables, static config, custom providers).
 
 ### Type System
 
-All data structures are defined in `lib/ex_llm/types.ex` with comprehensive typespecs for:
+All data structures are defined in `lib/singularity_llm/types.ex` with comprehensive typespecs for:
 - `LLMResponse`: Standard response structure with content, usage, and cost data
 - `StreamChunk`: Streaming response chunks
 - `Model`: Model metadata including context windows and capabilities
@@ -289,12 +289,12 @@ All data structures are defined in `lib/ex_llm/types.ex` with comprehensive type
 
 ### Application Lifecycle
 
-The `ExLLM.Application` module starts the supervision tree, including the optional `ModelLoader` GenServer for local model management.
+The `SingularityLLM.Application` module starts the supervision tree, including the optional `ModelLoader` GenServer for local model management.
 
 ## Key Design Patterns
 
-1. **Unified Interface**: All providers expose the same API through the main `ExLLM` module
-2. **Provider Pattern**: Each provider implements the `ExLLM.Provider` behavior
+1. **Unified Interface**: All providers expose the same API through the main `SingularityLLM` module
+2. **Provider Pattern**: Each provider implements the `SingularityLLM.Provider` behavior
 3. **Tesla Middleware Architecture**: Modern HTTP client with composable middleware stack
 4. **Intelligent Test Caching**: Automatic response caching with smart cache invalidation (25x speedup)
 5. **Semantic Test Organization**: Tag-based test categorization with automatic requirement checking
@@ -307,7 +307,7 @@ The `ExLLM.Application` module starts the supervision tree, including the option
 
 **Status: Complete Migration to HTTP.Core (2025-06-26)**
 
-ExLLM has successfully migrated from a legacy HTTPClient facade to a modern Tesla middleware-based HTTP architecture:
+SingularityLLM has successfully migrated from a legacy HTTPClient facade to a modern Tesla middleware-based HTTP architecture:
 
 ### ✅ **Completed Migrations**
 - **All Core Providers**: OpenAI (55 calls), Anthropic (14 calls), OpenAI-Compatible base (affects Mistral, XAI, OpenRouter, Perplexity), Gemini modules, Ollama, Groq, LMStudio
@@ -325,7 +325,7 @@ ExLLM has successfully migrated from a legacy HTTPClient facade to a modern Tesl
 
 ### 📁 **New HTTP Module Structure**
 ```
-lib/ex_llm/providers/shared/http/
+lib/singularity_llm/providers/shared/http/
 ├── core.ex              # Main Tesla client and middleware management
 ├── authentication.ex   # Provider-specific auth headers  
 ├── error_handling.ex   # Retry logic and error mapping
@@ -341,16 +341,16 @@ lib/ex_llm/providers/shared/http/
 
 ### 📝 **Migration Notes**
 - **HTTPClient.post_stream** is now deprecated and serves as a compatibility shim
-- New code should use `ExLLM.Providers.Shared.HTTP.Core` directly
+- New code should use `SingularityLLM.Providers.Shared.HTTP.Core` directly
 - All active providers and coordinators have been migrated to the new architecture
 
 ## Test Configuration
 
 **Status: Centralized Configuration Complete (2025-06-25)**
 
-ExLLM uses a centralized test configuration system for consistent behavior across all environments:
+SingularityLLM uses a centralized test configuration system for consistent behavior across all environments:
 
-### 🎯 **Centralized Config (`ExLLM.Testing.Config`)**
+### 🎯 **Centralized Config (`SingularityLLM.Testing.Config`)**
 - **Single source of truth**: All test settings defined in one module
 - **Semantic categories**: Tests organized by tags (unit, integration, provider, etc.)
 - **Dynamic exclusions**: Smart cache-based and environment-based test selection
@@ -375,7 +375,7 @@ ExLLM uses a centralized test configuration system for consistent behavior acros
 - **Override**: `MIX_RUN_LIVE=true` forces live API calls
 
 ### 🗂️ **File Organization**
-- `lib/ex_llm/testing/config.ex` - Centralized configuration module
+- `lib/singularity_llm/testing/config.ex` - Centralized configuration module
 - `test/test_helper.exs` - Applies centralized settings
 - `test/CENTRALIZED_CONFIG.md` - Detailed documentation
 - Config files delegate to centralized module
@@ -384,9 +384,9 @@ ExLLM uses a centralized test configuration system for consistent behavior acros
 
 **Status: Centralized Environment Configuration Complete (2025-06-25)**
 
-ExLLM uses centralized environment variable management through the `ExLLM.Environment` module:
+SingularityLLM uses centralized environment variable management through the `SingularityLLM.Environment` module:
 
-### 🎯 **Centralized Module (`ExLLM.Environment`)**
+### 🎯 **Centralized Module (`SingularityLLM.Environment`)**
 - **Single source of truth**: All environment variables documented in one module
 - **Consistent naming**: Standardized variable names across all providers
 - **Type-safe access**: Helper functions for accessing provider configuration
@@ -404,9 +404,9 @@ ExLLM uses centralized environment variable management through the `ExLLM.Enviro
 - `MIX_RUN_LIVE` - Force live API calls in tests
 
 ### 🗂️ **File Organization**
-- `lib/ex_llm/environment.ex` - Centralized environment module
+- `lib/singularity_llm/environment.ex` - Centralized environment module
 - `ENVIRONMENT.md` - Complete environment variable reference
-- Provider modules use `ExLLM.Environment` for configuration
+- Provider modules use `SingularityLLM.Environment` for configuration
 
 ## Provider Testing and API Keys
 
@@ -415,12 +415,12 @@ ExLLM uses centralized environment variable management through the `ExLLM.Enviro
 
 ### OAuth2 Testing Requirements
 
-**MANDATORY**: All OAuth2 tests MUST use `ExLLM.Testing.OAuth2TestCase` for consistent token handling.
+**MANDATORY**: All OAuth2 tests MUST use `SingularityLLM.Testing.OAuth2TestCase` for consistent token handling.
 
 ```elixir
 # Required pattern for OAuth2 tests
 defmodule MyOAuth2Test do
-  use ExLLM.Testing.OAuth2TestCase, timeout: 300_000
+  use SingularityLLM.Testing.OAuth2TestCase, timeout: 300_000
   
   test "oauth2 functionality", %{oauth_token: token} do
     # Test logic with automatic token refresh
@@ -486,9 +486,9 @@ end
 4. **Reset circuit breakers** in test setup to prevent state pollution
 
 ### 📋 **Files Updated**
-- `lib/ex_llm/providers/shared/streaming_coordinator.ex` - Callback adapter pattern
-- `test/ex_llm/providers/shared/streaming_performance_test.exs` - Agent patterns
-- `test/ex_llm/providers/shared/http_core_streaming_test.exs` - Variable fixes
+- `lib/singularity_llm/providers/shared/streaming_coordinator.ex` - Callback adapter pattern
+- `test/singularity_llm/providers/shared/streaming_performance_test.exs` - Agent patterns
+- `test/singularity_llm/providers/shared/http_core_streaming_test.exs` - Variable fixes
 - `test/support/shared/provider_integration_test.exs` - Circuit breaker resets
 
 ## Memory and Development Tips

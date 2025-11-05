@@ -1,12 +1,12 @@
-defmodule ExLLM.MixProject do
+defmodule SingularityLLM.MixProject do
   use Mix.Project
 
   @version "1.0.0"
-  @description "Unified Elixir client library for Large Language Models (LLMs)"
+  @description "Unified Elixir client library for Large Language Models (LLMs) - Singularity fork"
 
   def project do
     [
-      app: :ex_llm,
+      app: :singularity_llm,
       version: @version,
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule ExLLM.MixProject do
       package: package(),
       deps: deps(),
       docs: docs(),
-      source_url: "https://github.com/azmaveth/ex_llm",
+      source_url: "https://github.com/Singularity-ng/singularity-llm",
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -45,7 +45,7 @@ defmodule ExLLM.MixProject do
           :httpoison,
           :gun,
           :yaml_elixir,
-          :ex_llm
+          :singularity_llm
         ],
         ignore_warnings: ".dialyzer_ignore.exs"
       ],
@@ -68,7 +68,7 @@ defmodule ExLLM.MixProject do
           :gun,
           :yaml_elixir
         ] ++ optional_applications(),
-      mod: {ExLLM.Application, []}
+      mod: {SingularityLLM.Application, []}
     ]
   end
 
@@ -94,12 +94,12 @@ defmodule ExLLM.MixProject do
 
   defp package do
     [
-      name: "ex_llm",
+      name: "singularity_llm",
       files: ~w(lib docs .formatter.exs mix.exs README.md LICENSE CHANGELOG.md),
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/azmaveth/ex_llm",
-        "Docs" => "https://hexdocs.pm/ex_llm"
+        "GitHub" => "https://github.com/Singularity-ng/singularity-llm",
+        "Docs" => "https://hexdocs.pm/singularity_llm"
       },
       maintainers: ["azmaveth"]
     ]
@@ -163,9 +163,9 @@ defmodule ExLLM.MixProject do
 
   defp docs do
     [
-      main: "ExLLM",
+      main: "SingularityLLM",
       source_ref: "v#{@version}",
-      source_url: "https://github.com/azmaveth/ex_llm",
+      source_url: "https://github.com/Singularity-ng/singularity-llm",
       extras: [
         "README.md",
         "docs/API_REFERENCE.md",
@@ -299,30 +299,30 @@ defmodule ExLLM.MixProject do
       # === CACHE MANAGEMENT ===
 
       "cache.clear": ["cmd rm -rf test/cache/*"],
-      "cache.status": ["run -e ExLLM.Testing.Cache.status()"],
+      "cache.status": ["run -e SingularityLLM.Testing.Cache.status()"],
 
       # === RESPONSE CAPTURE ===
 
-      "captures.list": ["ex_llm.captures list"],
-      "captures.show": ["ex_llm.captures show"],
-      "captures.clear": ["ex_llm.captures clear"],
-      "captures.stats": ["ex_llm.captures stats"],
+      "captures.list": ["singularity_llm.captures list"],
+      "captures.show": ["singularity_llm.captures show"],
+      "captures.clear": ["singularity_llm.captures clear"],
+      "captures.stats": ["singularity_llm.captures stats"],
 
       # === TEST MATRIX ===
 
       # Run tests across all configured providers
-      "test.matrix": ["ex_llm.test_matrix"],
+      "test.matrix": ["singularity_llm.test_matrix"],
 
       # Run tests across major providers
-      "test.matrix.major": ["ex_llm.test_matrix --providers openai,anthropic,gemini,groq"],
+      "test.matrix.major": ["singularity_llm.test_matrix --providers openai,anthropic,gemini,groq"],
 
       # Test specific capability across all providers
-      "test.matrix.vision": ["ex_llm.test_matrix --capability vision"],
-      "test.matrix.streaming": ["ex_llm.test_matrix --capability streaming"],
-      "test.matrix.function_calling": ["ex_llm.test_matrix --capability function_calling"],
+      "test.matrix.vision": ["singularity_llm.test_matrix --capability vision"],
+      "test.matrix.streaming": ["singularity_llm.test_matrix --capability streaming"],
+      "test.matrix.function_calling": ["singularity_llm.test_matrix --capability function_calling"],
 
       # Run integration tests across providers
-      "test.matrix.integration": ["ex_llm.test_matrix --only integration"]
+      "test.matrix.integration": ["singularity_llm.test_matrix --only integration"]
     ]
   end
 end

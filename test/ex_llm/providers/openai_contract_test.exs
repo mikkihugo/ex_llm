@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.OpenAIContractTest do
+defmodule SingularityLLM.Providers.OpenAIContractTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Providers.OpenAI
+  alias SingularityLLM.Providers.OpenAI
 
   @moduletag :integration
   @moduletag :provider_openai
@@ -16,7 +16,7 @@ defmodule ExLLM.Providers.OpenAIContractTest do
     # Create a static config provider with dummy API key
     # This avoids modifying global environment variables
     config = %{openai: %{api_key: "test-key-dummy"}}
-    {:ok, config_provider} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+    {:ok, config_provider} = SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
     {:ok, config_provider: config_provider}
   end
@@ -144,13 +144,13 @@ defmodule ExLLM.Providers.OpenAIContractTest do
 
         # Test with empty config provider
         {:ok, empty_config} =
-          ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{openai: %{}})
+          SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{openai: %{}})
 
         refute OpenAI.configured?(config_provider: empty_config)
 
         # Test with config provider that has empty API key
         {:ok, empty_key_config} =
-          ExLLM.Infrastructure.ConfigProvider.Static.start_link(%{openai: %{api_key: ""}})
+          SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(%{openai: %{api_key: ""}})
 
         refute OpenAI.configured?(config_provider: empty_key_config)
       after

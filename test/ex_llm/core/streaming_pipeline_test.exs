@@ -1,8 +1,8 @@
-defmodule ExLLM.Core.StreamingPipelineTest do
+defmodule SingularityLLM.Core.StreamingPipelineTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Core.Chat
-  alias ExLLM.Types
+  alias SingularityLLM.Core.Chat
+  alias SingularityLLM.Types
 
   setup do
     # Force Tesla.Mock for this test

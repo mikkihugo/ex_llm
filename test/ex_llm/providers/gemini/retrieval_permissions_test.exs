@@ -1,9 +1,9 @@
-defmodule ExLLM.Providers.Gemini.RetrievalPermissionsTest do
+defmodule SingularityLLM.Providers.Gemini.RetrievalPermissionsTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Providers.Gemini.Permissions
+  alias SingularityLLM.Providers.Gemini.Permissions
 
-  alias ExLLM.Providers.Gemini.Permissions.{
+  alias SingularityLLM.Providers.Gemini.Permissions.{
     ListPermissionsResponse,
     Permission
   }

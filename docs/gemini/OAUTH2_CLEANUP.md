@@ -11,7 +11,7 @@ Following the September 2024 authentication policy change where API keys became 
 - `scripts/setup_oauth2_minimal.exs` - Minimal OAuth2 setup script
 - `scripts/exchange_oauth2_code.exs` - Authorization code exchange script
 - `scripts/test_oauth2_apis.exs` - OAuth2 API testing script
-- `scripts/test_exllm_oauth2.exs` - ExLLM OAuth2 integration testing script
+- `scripts/test_exllm_oauth2.exs` - SingularityLLM OAuth2 integration testing script
 
 ### Documentation Removed
 - `GEMINI_OAUTH2_QUICKSTART.md` - Quick start guide for OAuth2 setup
@@ -30,13 +30,13 @@ Following the September 2024 authentication policy change where API keys became 
 - `scripts/refresh_oauth2_token.exs` - Token refresh script (updated with warnings)
 - `docs/gemini/OAUTH2_SETUP.md` - OAuth2 setup guide (updated with clear warnings)
 - `test/support/gemini_oauth2_test_helper.ex` - Test helper for OAuth2
-- `test/ex_llm/adapters/gemini/permissions_oauth2_test.exs` - OAuth2 permissions tests
+- `test/singularity_llm/adapters/gemini/permissions_oauth2_test.exs` - OAuth2 permissions tests
 
 ### Core Implementation (still needed for specialized APIs)
-- `lib/ex_llm/gemini/auth.ex` - OAuth2 authentication module
-- `lib/ex_llm/gemini/permissions.ex` - Permissions API (requires OAuth2)
-- `lib/ex_llm/gemini/corpus.ex` - Corpus Management API (requires OAuth2)
-- `lib/ex_llm/gemini/qa.ex` - Question Answering API (requires OAuth2)
+- `lib/singularity_llm/gemini/auth.ex` - OAuth2 authentication module
+- `lib/singularity_llm/gemini/permissions.ex` - Permissions API (requires OAuth2)
+- `lib/singularity_llm/gemini/corpus.ex` - Corpus Management API (requires OAuth2)
+- `lib/singularity_llm/gemini/qa.ex` - Question Answering API (requires OAuth2)
 
 ## Rationale
 

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.OpenAI.CoreTest do
+defmodule SingularityLLM.Providers.OpenAI.CoreTest do
   @moduledoc """
   Tests for OpenAI provider core functionality.
 
@@ -7,9 +7,9 @@ defmodule ExLLM.Providers.OpenAI.CoreTest do
 
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.OpenAI
-  alias ExLLM.Testing.ConfigProviderHelper
-  alias ExLLM.Types
+  alias SingularityLLM.Providers.OpenAI
+  alias SingularityLLM.Testing.ConfigProviderHelper
+  alias SingularityLLM.Types
 
   @moduletag :openai_core
 

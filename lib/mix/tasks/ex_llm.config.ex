@@ -4,46 +4,46 @@ defmodule Mix.Tasks.ExLlm.Config do
 
   ## Available commands:
 
-      mix ex_llm.config list                    # List all circuit configurations
-      mix ex_llm.config show CIRCUIT           # Show specific circuit configuration
-      mix ex_llm.config update CIRCUIT KEY=VALUE [KEY=VALUE ...]  # Update circuit configuration
-      mix ex_llm.config profile CIRCUIT PROFILE  # Apply configuration profile
-      mix ex_llm.config reset CIRCUIT          # Reset circuit to default configuration
-      mix ex_llm.config rollback CIRCUIT       # Rollback to previous configuration
-      mix ex_llm.config history CIRCUIT        # Show configuration history
-      mix ex_llm.config profiles               # List available profiles
-      mix ex_llm.config validate CONFIG_JSON   # Validate configuration
+      mix singularity_llm.config list                    # List all circuit configurations
+      mix singularity_llm.config show CIRCUIT           # Show specific circuit configuration
+      mix singularity_llm.config update CIRCUIT KEY=VALUE [KEY=VALUE ...]  # Update circuit configuration
+      mix singularity_llm.config profile CIRCUIT PROFILE  # Apply configuration profile
+      mix singularity_llm.config reset CIRCUIT          # Reset circuit to default configuration
+      mix singularity_llm.config rollback CIRCUIT       # Rollback to previous configuration
+      mix singularity_llm.config history CIRCUIT        # Show configuration history
+      mix singularity_llm.config profiles               # List available profiles
+      mix singularity_llm.config validate CONFIG_JSON   # Validate configuration
 
   ## Examples:
 
       # List all circuits and their configurations
-      mix ex_llm.config list
+      mix singularity_llm.config list
       
       # Show configuration for specific circuit
-      mix ex_llm.config show api_service
+      mix singularity_llm.config show api_service
       
       # Update circuit configuration
-      mix ex_llm.config update api_service failure_threshold=10 reset_timeout=60000
+      mix singularity_llm.config update api_service failure_threshold=10 reset_timeout=60000
       
       # Apply conservative profile
-      mix ex_llm.config profile api_service conservative
+      mix singularity_llm.config profile api_service conservative
       
       # Reset to defaults
-      mix ex_llm.config reset api_service
+      mix singularity_llm.config reset api_service
       
       # Show configuration history
-      mix ex_llm.config history api_service
+      mix singularity_llm.config history api_service
       
       # List available profiles
-      mix ex_llm.config profiles
+      mix singularity_llm.config profiles
       
       # Validate configuration JSON
-      mix ex_llm.config validate '{"failure_threshold": 5, "timeout": 30000}'
+      mix singularity_llm.config validate '{"failure_threshold": 5, "timeout": 30000}'
   """
 
   use Mix.Task
 
-  alias ExLLM.Infrastructure.CircuitBreaker.ConfigManager
+  alias SingularityLLM.Infrastructure.CircuitBreaker.ConfigManager
 
   @shortdoc "Manage circuit breaker configurations"
 
@@ -273,14 +273,14 @@ defmodule Mix.Tasks.ExLlm.Config do
 
   def run([command | _]) do
     Mix.shell().error("Unknown command: #{command}")
-    Mix.shell().info("Run 'mix ex_llm.config help' for usage information.")
+    Mix.shell().info("Run 'mix singularity_llm.config help' for usage information.")
     exit({:shutdown, 1})
   end
 
   ## Private Helpers
 
   defp ensure_app_started do
-    {:ok, _} = Application.ensure_all_started(:ex_llm)
+    {:ok, _} = Application.ensure_all_started(:singularity_llm)
   end
 
   defp parse_config_pairs(pairs) do

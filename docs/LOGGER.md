@@ -1,6 +1,6 @@
-# ExLLM Logger User Guide
+# SingularityLLM Logger User Guide
 
-The ExLLM Logger provides a unified logging system with features specifically designed for debugging and monitoring LLM interactions.
+The SingularityLLM Logger provides a unified logging system with features specifically designed for debugging and monitoring LLM interactions.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ The ExLLM Logger provides a unified logging system with features specifically de
 
 ```elixir
 # Add the logger alias in your module
-alias ExLLM.Logger
+alias SingularityLLM.Logger
 
 # Simple logging - just like Elixir's Logger!
 Logger.info("Processing request")
@@ -26,10 +26,10 @@ Logger.debug("Response received", tokens: 150)
 
 ## Configuration
 
-Configure ExLLM logging in your `config/config.exs` or `config/runtime.exs`:
+Configure SingularityLLM logging in your `config/config.exs` or `config/runtime.exs`:
 
 ```elixir
-config :ex_llm,
+config :singularity_llm,
   # Overall log level: :debug, :info, :warn, :error, :none
   log_level: :info,
   
@@ -54,7 +54,7 @@ config :ex_llm,
 
 ```elixir
 # config/dev.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :debug,
   log_components: %{
     requests: true,
@@ -70,7 +70,7 @@ config :ex_llm,
   }
 
 # config/prod.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :info,
   log_components: %{
     requests: false,  # Reduce noise in production
@@ -91,7 +91,7 @@ config :ex_llm,
 The logger provides the same simple API as Elixir's Logger:
 
 ```elixir
-alias ExLLM.Logger
+alias SingularityLLM.Logger
 
 # Log levels
 Logger.debug("Detailed debugging info")
@@ -107,7 +107,7 @@ Logger.info("Request completed",
 )
 
 # Metadata is automatically included in log output
-# 10:23:45.123 [info] Request completed [provider=openai duration_ms=250 tokens=1500 ex_llm=true]
+# 10:23:45.123 [info] Request completed [provider=openai duration_ms=250 tokens=1500 singularity_llm=true]
 ```
 
 ## Context Tracking
@@ -142,7 +142,7 @@ Logger.clear_context()
 
 ```elixir
 defmodule MyApp.LLMService do
-  alias ExLLM.Logger
+  alias SingularityLLM.Logger
   
   def process_request(user_id, messages) do
     # Set process context
@@ -152,7 +152,7 @@ defmodule MyApp.LLMService do
     Logger.with_context(provider: :openai, operation: :chat) do
       Logger.info("Starting chat request")
       
-      case ExLLM.chat(:openai, messages) do
+      case SingularityLLM.chat(:openai, messages) do
         {:ok, response} ->
           Logger.info("Chat completed", 
             tokens: response.usage.total_tokens,
@@ -171,7 +171,7 @@ end
 
 ## Structured Logging
 
-ExLLM provides specialized logging functions for common LLM operations:
+SingularityLLM provides specialized logging functions for common LLM operations:
 
 ### API Requests and Responses
 
@@ -326,16 +326,16 @@ Logger.log_retry(:openai, 2, 3, "rate_limit", 1000)
 
 ## Filtering Logs
 
-You can filter ExLLM logs using the metadata tag:
+You can filter SingularityLLM logs using the metadata tag:
 
 ```elixir
 # In your Logger backend configuration
 config :logger, :console,
-  metadata_filter: [ex_llm: false]  # Exclude ExLLM logs
+  metadata_filter: [singularity_llm: false]  # Exclude SingularityLLM logs
 
-# Or include only ExLLM logs
+# Or include only SingularityLLM logs
 config :logger, :console,
-  metadata_filter: [ex_llm: true]   # Only ExLLM logs
+  metadata_filter: [singularity_llm: true]   # Only SingularityLLM logs
 ```
 
 ## Examples
@@ -344,7 +344,7 @@ config :logger, :console,
 
 ```elixir
 defmodule MyApp.AI do
-  alias ExLLM.Logger
+  alias SingularityLLM.Logger
   
   def generate_summary(text, user_id) do
     # Set up context
@@ -361,7 +361,7 @@ defmodule MyApp.AI do
       ]
       
       # The actual API call (logging handled internally)
-      case ExLLM.chat(:openai, messages) do
+      case SingularityLLM.chat(:openai, messages) do
         {:ok, response} ->
           Logger.info("Summary generated",
             tokens: response.usage.total_tokens,
@@ -382,7 +382,7 @@ end
 
 ```elixir
 defmodule MyCustomAdapter do
-  alias ExLLM.Logger
+  alias SingularityLLM.Logger
   
   def make_request(messages, options) do
     Logger.with_context(provider: :custom, operation: :chat) do
@@ -422,7 +422,7 @@ end
 
 1. Disable noisy components (streaming, requests/responses)
 2. Increase log level to :warn or :error
-3. Use metadata filters to exclude ExLLM logs
+3. Use metadata filters to exclude SingularityLLM logs
 
 ### Missing Context
 
@@ -432,11 +432,11 @@ end
 
 ## Summary
 
-The ExLLM Logger provides:
+The SingularityLLM Logger provides:
 - **Simple API** - Works like Elixir's Logger
 - **Automatic Context** - Track requests across operations
 - **Security** - Built-in redaction for sensitive data
 - **Structure** - Consistent logging for LLM operations
 - **Control** - Fine-grained configuration options
 
-Use it everywhere in your ExLLM applications for better debugging and monitoring!
+Use it everywhere in your SingularityLLM applications for better debugging and monitoring!

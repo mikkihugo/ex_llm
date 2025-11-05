@@ -1,11 +1,11 @@
-defmodule ExLLM.Plugs.TelemetryMiddlewareTest do
+defmodule SingularityLLM.Plugs.TelemetryMiddlewareTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs.TelemetryMiddleware
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs.TelemetryMiddleware
 
   defmodule TestPlug do
-    use ExLLM.Plug
+    use SingularityLLM.Plug
 
     def call(request, _opts) do
       Request.assign(request, :plug_executed, true)
@@ -13,7 +13,7 @@ defmodule ExLLM.Plugs.TelemetryMiddlewareTest do
   end
 
   defmodule ErrorPlug do
-    use ExLLM.Plug
+    use SingularityLLM.Plug
 
     def call(_request, _opts) do
       raise "boom"
@@ -22,7 +22,7 @@ defmodule ExLLM.Plugs.TelemetryMiddlewareTest do
 
   setup do
     # Setup a telemetry handler to capture events
-    event_name = [:ex_llm, :test, :execution]
+    event_name = [:singularity_llm, :test, :execution]
 
     :telemetry.attach_many(
       "test-handler-#{inspect(self())}",
@@ -31,7 +31,7 @@ defmodule ExLLM.Plugs.TelemetryMiddlewareTest do
         event_name ++ [:stop],
         event_name ++ [:exception]
       ],
-      &ExLLM.Plugs.TelemetryMiddlewareTest.handle_event/4,
+      &SingularityLLM.Plugs.TelemetryMiddlewareTest.handle_event/4,
       self()
     )
 

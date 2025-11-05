@@ -9,9 +9,9 @@
 - **Comprehensive**: Covers major providers, open-source models, and regional variants
 - **Public API**: https://models.dev/api.json (no auth required)
 
-## ExLLM Integration
+## SingularityLLM Integration
 
-ExLLM includes direct integration with models.dev to keep your model catalogs synchronized with the authoritative source.
+SingularityLLM includes direct integration with models.dev to keep your model catalogs synchronized with the authoritative source.
 
 ### Data Flow
 
@@ -42,8 +42,8 @@ config/models/*.yml (updated)
 ### Sync All Models
 
 ```bash
-cd packages/ex_llm
-mix ex_llm.models_dev.sync
+cd packages/singularity_llm
+mix singularity_llm.models_dev.sync
 ```
 
 This:
@@ -56,7 +56,7 @@ This:
 ### In Elixir Code
 
 ```elixir
-alias ExLLM.ModelDiscovery.ModelsDevSyncer
+alias SingularityLLM.ModelDiscovery.ModelsDevSyncer
 
 # Fetch all models
 {:ok, models} = ModelsDevSyncer.fetch_all()
@@ -129,7 +129,7 @@ Cache is automatically refreshed when older than 60 minutes, or manually:
 ```bash
 # Clear cache and force fresh fetch
 rm ~/.cache/models_dev.json
-mix ex_llm.models_dev.sync
+mix singularity_llm.models_dev.sync
 ```
 
 ## Provider Coverage
@@ -185,7 +185,7 @@ Result: Fresh model data + your learned scores
 
 ```bash
 # When you want to update models
-mix ex_llm.models_dev.sync
+mix singularity_llm.models_dev.sync
 git add config/models/*.yml
 git commit -m "chore: sync models from models.dev"
 ```
@@ -285,7 +285,7 @@ curl https://models.dev/api.json | head -c 100
 
 ```bash
 git pull origin main
-mix ex_llm.models_dev.sync
+mix singularity_llm.models_dev.sync
 ```
 
 ## See Also

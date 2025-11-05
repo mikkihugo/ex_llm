@@ -1,11 +1,11 @@
-defmodule ExLLM.Providers.Gemini.PermissionsOAuth2Test do
+defmodule SingularityLLM.Providers.Gemini.PermissionsOAuth2Test do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Providers.Gemini.Permissions
-  alias ExLLM.Testing.GeminiOAuth2Helper
+  alias SingularityLLM.Providers.Gemini.Permissions
+  alias SingularityLLM.Testing.GeminiOAuth2Helper
 
   # Import test cache helpers
-  import ExLLM.Testing.TestCacheHelpers
+  import SingularityLLM.Testing.TestCacheHelpers
 
   # Tag module for OAuth2 tests
   @moduletag :integration
@@ -20,11 +20,11 @@ defmodule ExLLM.Providers.Gemini.PermissionsOAuth2Test do
 
     # Clear context on test exit
     on_exit(fn ->
-      ExLLM.Testing.TestCacheDetector.clear_test_context()
+      SingularityLLM.Testing.TestCacheDetector.clear_test_context()
     end)
 
     # Refresh OAuth tokens and get the token
-    context = ExLLM.Testing.EnvHelper.setup_oauth(context)
+    context = SingularityLLM.Testing.EnvHelper.setup_oauth(context)
 
     # Double-check we have a token (should be set by setup_oauth if available)
     if Map.has_key?(context, :oauth_token) do

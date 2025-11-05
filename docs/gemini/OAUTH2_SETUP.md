@@ -133,14 +133,14 @@ grant_type=authorization_code
 }
 ```
 
-## Step 4: Using Tokens with ExLLM
+## Step 4: Using Tokens with SingularityLLM
 
 ### Service Account (Recommended for Server Apps)
 
 ```elixir
 # 1. Create a service account in Google Cloud Console
 # 2. Download the JSON key file
-# 3. Use with ExLLM:
+# 3. Use with SingularityLLM:
 
 defmodule MyApp.GeminiAuth do
   def get_oauth_token do
@@ -151,7 +151,7 @@ defmodule MyApp.GeminiAuth do
 end
 
 # Use with Permissions API
-{:ok, permissions} = ExLLM.Gemini.Permissions.list_permissions(
+{:ok, permissions} = SingularityLLM.Gemini.Permissions.list_permissions(
   "tunedModels/my-model",
   oauth_token: MyApp.GeminiAuth.get_oauth_token()
 )
@@ -296,7 +296,7 @@ For testing, you can:
 
 ```elixir
 # In test config
-config :ex_llm, :oauth2_token, "test-token-123"
+config :singularity_llm, :oauth2_token, "test-token-123"
 
 # In test
 setup do

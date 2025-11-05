@@ -1,8 +1,8 @@
-defmodule ExLLM.StreamingCallbackTest do
+defmodule SingularityLLM.StreamingCallbackTest do
   use ExUnit.Case, async: true
 
   @moduledoc """
-  Tests for streaming callback functionality in ExLLM.
+  Tests for streaming callback functionality in SingularityLLM.
 
   These tests ensure that streaming works correctly with various
   callback patterns and error scenarios.
@@ -10,7 +10,7 @@ defmodule ExLLM.StreamingCallbackTest do
 
   setup do
     # Reset mock provider to ensure clean state for each test
-    ExLLM.Providers.Mock.reset()
+    SingularityLLM.Providers.Mock.reset()
     :ok
   end
 
@@ -25,7 +25,7 @@ defmodule ExLLM.StreamingCallbackTest do
         Agent.update(collector, fn chunks -> [chunk | chunks] end)
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       # Get collected chunks
       chunks = Agent.get(collector, fn chunks -> Enum.reverse(chunks) end)
@@ -51,7 +51,7 @@ defmodule ExLLM.StreamingCallbackTest do
           :ok
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       final_content = Agent.get(accumulator, & &1)
       Agent.stop(accumulator)
@@ -70,7 +70,7 @@ defmodule ExLLM.StreamingCallbackTest do
         end
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       final_chunk = Agent.get(final_chunk_agent, & &1)
       Agent.stop(final_chunk_agent)
@@ -99,7 +99,7 @@ defmodule ExLLM.StreamingCallbackTest do
           :ok
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       final_state = Agent.get(state, & &1)
       Agent.stop(state)
@@ -121,7 +121,7 @@ defmodule ExLLM.StreamingCallbackTest do
         end)
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       # Wait for async tasks to complete
       Process.sleep(100)
@@ -152,7 +152,7 @@ defmodule ExLLM.StreamingCallbackTest do
         StreamCollector.add_chunk(collector_pid, chunk)
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       # Give GenServer time to process
       Process.sleep(50)
@@ -182,7 +182,7 @@ defmodule ExLLM.StreamingCallbackTest do
 
       # The stream should continue even if callback raises
       # This behavior depends on the streaming coordinator implementation
-      result = ExLLM.stream(:mock, messages, callback)
+      result = SingularityLLM.stream(:mock, messages, callback)
 
       error_count_val = Agent.get(error_count, & &1)
       Agent.stop(error_count)
@@ -199,12 +199,12 @@ defmodule ExLLM.StreamingCallbackTest do
 
       # Zero-arity function should fail
       assert_raise FunctionClauseError, fn ->
-        ExLLM.stream(:mock, messages, fn -> :ok end)
+        SingularityLLM.stream(:mock, messages, fn -> :ok end)
       end
 
       # Two-arity function should fail
       assert_raise FunctionClauseError, fn ->
-        ExLLM.stream(:mock, messages, fn _chunk, _acc -> :ok end)
+        SingularityLLM.stream(:mock, messages, fn _chunk, _acc -> :ok end)
       end
     end
   end
@@ -221,7 +221,7 @@ defmodule ExLLM.StreamingCallbackTest do
 
       # Stream with options
       assert :ok =
-               ExLLM.stream(:mock, messages, callback,
+               SingularityLLM.stream(:mock, messages, callback,
                  model: "mock-model",
                  temperature: 0.5
                )
@@ -238,7 +238,7 @@ defmodule ExLLM.StreamingCallbackTest do
       callback = fn _chunk -> :ok end
 
       # Mock provider should handle this gracefully
-      result = ExLLM.stream(:mock, messages, callback, timeout: 100)
+      result = SingularityLLM.stream(:mock, messages, callback, timeout: 100)
 
       assert result == :ok
     end
@@ -263,7 +263,7 @@ defmodule ExLLM.StreamingCallbackTest do
           :ok
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       stats = Agent.get(counter, & &1)
       Agent.stop(counter)
@@ -297,7 +297,7 @@ defmodule ExLLM.StreamingCallbackTest do
           :ok
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       events = Agent.get(progress, &Enum.reverse/1)
       Agent.stop(progress)
@@ -334,7 +334,7 @@ defmodule ExLLM.StreamingCallbackTest do
           :ok
       end
 
-      assert :ok = ExLLM.stream(:mock, messages, callback)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback)
 
       final_ui = Agent.get(ui_state, & &1)
       Agent.stop(ui_state)

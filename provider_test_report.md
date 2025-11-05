@@ -1,4 +1,4 @@
-# ExLLM Provider Test Report
+# SingularityLLM Provider Test Report
 
 ## Summary
 

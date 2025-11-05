@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.MistralPublicAPITest do
+defmodule SingularityLLM.Providers.MistralPublicAPITest do
   @moduledoc """
-  Mistral-specific integration tests using the public ExLLM API.
+  Mistral-specific integration tests using the public SingularityLLM API.
   Common tests are handled by the shared module.
   """
 
-  use ExLLM.Shared.ProviderIntegrationTest, provider: :mistral
+  use SingularityLLM.Shared.ProviderIntegrationTest, provider: :mistral
 
   # Provider-specific tests only
   describe "mistral-specific features via public API" do
@@ -18,7 +18,7 @@ defmodule ExLLM.Providers.MistralPublicAPITest do
       messages = [%{role: "user", content: "Bonjour!"}]
 
       for model <- models_to_test do
-        case ExLLM.chat(:mistral, messages, model: model, max_tokens: 20) do
+        case SingularityLLM.chat(:mistral, messages, model: model, max_tokens: 20) do
           {:ok, response} ->
             assert response.metadata.provider == :mistral
             assert is_binary(response.content)
@@ -46,7 +46,7 @@ defmodule ExLLM.Providers.MistralPublicAPITest do
         send(self(), {:chunk, chunk})
       end
 
-      case ExLLM.stream(:mistral, messages, collector, max_tokens: 50, timeout: 10_000) do
+      case SingularityLLM.stream(:mistral, messages, collector, max_tokens: 50, timeout: 10_000) do
         :ok ->
           chunks = collect_stream_chunks([], 1000)
 
@@ -75,7 +75,7 @@ defmodule ExLLM.Providers.MistralPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:mistral, messages,
+      case SingularityLLM.chat(:mistral, messages,
              response_format: %{type: "json_object"},
              max_tokens: 100
            ) do
@@ -119,7 +119,7 @@ defmodule ExLLM.Providers.MistralPublicAPITest do
         }
       ]
 
-      case ExLLM.chat(:mistral, messages, tools: tools, max_tokens: 100) do
+      case SingularityLLM.chat(:mistral, messages, tools: tools, max_tokens: 100) do
         {:ok, response} ->
           # Check if function was called
           if response.tool_calls && length(response.tool_calls) > 0 do
@@ -144,8 +144,8 @@ defmodule ExLLM.Providers.MistralPublicAPITest do
     test "Mistral embeddings" do
       texts = ["Bonjour le monde", "Comment allez-vous?"]
 
-      case ExLLM.embeddings(:mistral, texts, model: "mistral-embed") do
-        {:ok, %ExLLM.Types.EmbeddingResponse{embeddings: embeddings}} ->
+      case SingularityLLM.embeddings(:mistral, texts, model: "mistral-embed") do
+        {:ok, %SingularityLLM.Types.EmbeddingResponse{embeddings: embeddings}} ->
           assert length(embeddings) == 2
           assert is_list(hd(embeddings))
           assert is_float(hd(hd(embeddings)))

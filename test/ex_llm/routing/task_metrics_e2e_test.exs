@@ -1,4 +1,4 @@
-defmodule ExLLM.Routing.TaskMetricsE2ETest do
+defmodule SingularityLLM.Routing.TaskMetricsE2ETest do
   @moduledoc """
   End-to-end tests for task metrics calculation and aggregation.
 
@@ -11,9 +11,9 @@ defmodule ExLLM.Routing.TaskMetricsE2ETest do
   """
 
   use ExUnit.Case, async: false
-  doctest ExLLM.Routing.TaskMetrics
+  doctest SingularityLLM.Routing.TaskMetrics
 
-  alias ExLLM.Routing.TaskMetrics
+  alias SingularityLLM.Routing.TaskMetrics
 
   # ========== WIN RATE CALCULATION ==========
 

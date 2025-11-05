@@ -1,8 +1,8 @@
-defmodule ExLLM.Providers.Shared.StreamingEngineTest do
+defmodule SingularityLLM.Providers.Shared.StreamingEngineTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.Shared.StreamingEngine
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Providers.Shared.StreamingEngine
+  alias SingularityLLM.Types.StreamChunk
 
   describe "streaming mode detection" do
     test "detects basic streaming mode for simple options" do

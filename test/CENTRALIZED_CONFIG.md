@@ -1,10 +1,10 @@
 # Centralized Test Configuration
 
-ExLLM uses a centralized test configuration system to ensure consistent behavior across all test environments. This documentation explains the structure and benefits of the centralized approach.
+SingularityLLM uses a centralized test configuration system to ensure consistent behavior across all test environments. This documentation explains the structure and benefits of the centralized approach.
 
 ## Overview
 
-Test configuration is centralized in `ExLLM.Testing.Config` module, which provides:
+Test configuration is centralized in `SingularityLLM.Testing.Config` module, which provides:
 
 - **Single source of truth** for all test-related settings
 - **Consistent behavior** across different test environments
@@ -65,7 +65,7 @@ Settings are applied in this order (later overrides earlier):
 
 1. **config/config.exs** - Base application config
 2. **config/test.exs** - Test environment config  
-3. **ExLLM.Testing.Config** - Centralized test config
+3. **SingularityLLM.Testing.Config** - Centralized test config
 4. **test_helper.exs** - Runtime application of centralized config
 5. **Environment variables** - Runtime overrides
 
@@ -75,7 +75,7 @@ Settings are applied in this order (later overrides earlier):
 
 ```elixir
 defmodule MyTest do
-  use ExLLM.Testing.Case, async: true
+  use SingularityLLM.Testing.Case, async: true
   
   @tag :requires_api_key
   @tag provider: :openai
@@ -92,7 +92,7 @@ end
 "test.ci": ["test --exclude wip --exclude flaky --exclude quota_sensitive --exclude very_slow"]
 ```
 
-The aliases use the exclusion strategies from `ExLLM.Testing.Config`.
+The aliases use the exclusion strategies from `SingularityLLM.Testing.Config`.
 
 ### Environment Variables
 
@@ -141,7 +141,7 @@ Before centralization:
 - Hard to maintain and extend
 
 After centralization:
-- ✅ Single source of truth in `ExLLM.Testing.Config`
+- ✅ Single source of truth in `SingularityLLM.Testing.Config`
 - ✅ Mix aliases automatically use centralized exclusions
 - ✅ Consistent behavior across all environments  
 - ✅ Easy to add new test categories and strategies
@@ -150,7 +150,7 @@ After centralization:
 ## File Structure
 
 ```
-lib/ex_llm/testing/
+lib/singularity_llm/testing/
 ├── config.ex                  # Centralized configuration
 └── ...
 

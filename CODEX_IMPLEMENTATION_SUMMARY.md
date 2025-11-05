@@ -2,11 +2,11 @@
 
 ## Overview
 
-Successfully implemented a complete Codex HTTP API client for ExLLM using the reverse-engineered WHAM protocol from the OpenAI Codex repository.
+Successfully implemented a complete Codex HTTP API client for SingularityLLM using the reverse-engineered WHAM protocol from the OpenAI Codex repository.
 
 ## What Was Built
 
-### 1. **TaskClient Module** (`lib/ex_llm/providers/codex/task_client.ex`)
+### 1. **TaskClient Module** (`lib/singularity_llm/providers/codex/task_client.ex`)
 
 Complete implementation of the WHAM (ChatGPT backend) task management API:
 
@@ -37,7 +37,7 @@ TaskClient.get_usage()                    # Check rate limits
 - `GET /wham/tasks/list` - List tasks
 - `GET /wham/usage` - Check rate limits
 
-### 2. **ResponseExtractor Module** (`lib/ex_llm/providers/codex/response_extractor.ex`)
+### 2. **ResponseExtractor Module** (`lib/singularity_llm/providers/codex/response_extractor.ex`)
 
 Transforms raw WHAM responses into structured data:
 
@@ -55,10 +55,10 @@ ResponseExtractor.extract_message(items)      # Get message
 ResponseExtractor.extract_diff(items)         # Get diff
 ResponseExtractor.extract_pr_info(items)      # Get PR data
 ResponseExtractor.extract_file_snapshots(items) # Get files
-ResponseExtractor.to_llm_response(extracted)  # Convert to ExLLM format
+ResponseExtractor.to_llm_response(extracted)  # Convert to SingularityLLM format
 ```
 
-### 3. **Enhanced Codex Provider** (`lib/ex_llm/providers/codex.ex`)
+### 3. **Enhanced Codex Provider** (`lib/singularity_llm/providers/codex.ex`)
 
 Added task API methods to the main provider module:
 
@@ -74,7 +74,7 @@ Codex.list_tasks(opts)                # List tasks
 Codex.get_usage()                     # Check rate limits
 ```
 
-### 4. **TokenManager Integration** (`lib/ex_llm/application.ex`)
+### 4. **TokenManager Integration** (`lib/singularity_llm/application.ex`)
 
 Added TokenManager to supervision tree with:
 - Auto-loading credentials from `~/.codex/auth.json`
@@ -139,7 +139,7 @@ Discovered from `codex-rs/cloud-tasks-client/src/http.rs`:
 ### Quick Start
 
 ```elixir
-alias ExLLM.Providers.Codex
+alias SingularityLLM.Providers.Codex
 
 # Create a task
 {:ok, task_id} = Codex.create_task(
@@ -212,10 +212,10 @@ IO.puts("Primary window: #{usage["primary_window"]["used_percent"]}% used")
 
 ## Integration Points
 
-1. **ExLLM Provider Behavior** - Implements `ExLLM.Provider` behavior
+1. **SingularityLLM Provider Behavior** - Implements `SingularityLLM.Provider` behavior
 2. **Tesla HTTP Client** - Uses `HTTP.Core` for requests
 3. **Token Management** - TokenManager GenServer with auto-refresh
-4. **Application Supervision** - Integrated into ExLLM.Application
+4. **Application Supervision** - Integrated into SingularityLLM.Application
 
 ## Cost
 
@@ -231,18 +231,18 @@ IO.puts("Primary window: #{usage["primary_window"]["used_percent"]}% used")
 ## Files Created/Modified
 
 **Created:**
-- `packages/ex_llm/lib/ex_llm/providers/codex/task_client.ex` (400+ lines)
-- `packages/ex_llm/lib/ex_llm/providers/codex/response_extractor.ex` (300+ lines)
-- `packages/ex_llm/lib/ex_llm/providers/codex/USAGE_GUIDE.md`
+- `packages/singularity_llm/lib/singularity_llm/providers/codex/task_client.ex` (400+ lines)
+- `packages/singularity_llm/lib/singularity_llm/providers/codex/response_extractor.ex` (300+ lines)
+- `packages/singularity_llm/lib/singularity_llm/providers/codex/USAGE_GUIDE.md`
 - `nexus/lib/nexus/providers/codex/TASK_CREATION_PAYLOAD.md` (from previous session)
 
 **Modified:**
-- `packages/ex_llm/lib/ex_llm/providers/codex.ex` - Added task API methods
-- `packages/ex_llm/lib/ex_llm/application.ex` - Added TokenManager supervision
+- `packages/singularity_llm/lib/singularity_llm/providers/codex.ex` - Added task API methods
+- `packages/singularity_llm/lib/singularity_llm/application.ex` - Added TokenManager supervision
 
 ## Commit Hash
 
-`d3dcc1f4` - "Add comprehensive Codex HTTP API (WHAM) implementation to ExLLM"
+`d3dcc1f4` - "Add comprehensive Codex HTTP API (WHAM) implementation to SingularityLLM"
 
 ## Summary
 

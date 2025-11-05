@@ -1,6 +1,6 @@
-# ExLLM Documentation
+# SingularityLLM Documentation
 
-This directory contains additional documentation for the ExLLM library.
+This directory contains additional documentation for the SingularityLLM library.
 
 ## Getting Started
 
@@ -19,7 +19,7 @@ This directory contains additional documentation for the ExLLM library.
 
 ## Specialized Guides
 
-- **[LOGGER.md](LOGGER.md)** - Comprehensive guide to ExLLM's unified logging system
+- **[LOGGER.md](LOGGER.md)** - Comprehensive guide to SingularityLLM's unified logging system
   - Configuration options
   - Security features (API key redaction)
   - Performance tracking

@@ -1,6 +1,6 @@
-# ExLLM Plug Development Guide
+# SingularityLLM Plug Development Guide
 
-This guide covers how to create custom plugs for the ExLLM pipeline architecture. If you're familiar with Phoenix plugs, ExLLM plugs follow similar patterns but are designed specifically for LLM operations.
+This guide covers how to create custom plugs for the SingularityLLM pipeline architecture. If you're familiar with Phoenix plugs, SingularityLLM plugs follow similar patterns but are designed specifically for LLM operations.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ This guide covers how to create custom plugs for the ExLLM pipeline architecture
 
 ## Overview
 
-ExLLM plugs are modules that implement the `ExLLM.Plug` behavior. They transform an `ExLLM.Pipeline.Request` struct as it flows through the pipeline. Each plug can:
+SingularityLLM plugs are modules that implement the `SingularityLLM.Plug` behavior. They transform an `SingularityLLM.Pipeline.Request` struct as it flows through the pipeline. Each plug can:
 
 - Modify request data (messages, configuration, etc.)
 - Add metadata and assigns for inter-plug communication
@@ -25,7 +25,7 @@ ExLLM plugs are modules that implement the `ExLLM.Plug` behavior. They transform
 
 ## Basic Plug Structure
 
-Every ExLLM plug must implement two functions:
+Every SingularityLLM plug must implement two functions:
 
 ```elixir
 defmodule MyApp.Plugs.CustomPlug do
@@ -33,7 +33,7 @@ defmodule MyApp.Plugs.CustomPlug do
   Description of what your plug does.
   """
   
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def init(opts) do
@@ -43,7 +43,7 @@ defmodule MyApp.Plugs.CustomPlug do
   end
   
   @impl true
-  def call(%ExLLM.Pipeline.Request{} = request, opts) do
+  def call(%SingularityLLM.Pipeline.Request{} = request, opts) do
     # Transform the request
     # This runs for each request at runtime
     request
@@ -53,10 +53,10 @@ end
 
 ## Request Lifecycle
 
-The `ExLLM.Pipeline.Request` struct flows through the pipeline:
+The `SingularityLLM.Pipeline.Request` struct flows through the pipeline:
 
 ```elixir
-%ExLLM.Pipeline.Request{
+%SingularityLLM.Pipeline.Request{
   # Core data
   id: "unique-request-id",
   provider: :openai,
@@ -96,7 +96,7 @@ defmodule MyApp.Plugs.RequestLogger do
   Logs request information for debugging and monitoring.
   """
   
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   require Logger
   
   @impl true
@@ -118,7 +118,7 @@ defmodule MyApp.Plugs.RequestLogger do
     log_data = build_log_data(request, include, exclude)
     
     # Log the request
-    Logger.log(level, "ExLLM Request", log_data)
+    Logger.log(level, "SingularityLLM Request", log_data)
     
     # Add logging metadata
     request
@@ -146,33 +146,33 @@ end
 ```elixir
 # In a pipeline
 pipeline = [
-  ExLLM.Plugs.ValidateProvider,
+  SingularityLLM.Plugs.ValidateProvider,
   {MyApp.Plugs.RequestLogger, level: :debug, include: [:provider, :model]},
-  ExLLM.Plugs.FetchConfig,
+  SingularityLLM.Plugs.FetchConfig,
   # ... other plugs
 ]
 
 # Or in provider pipeline definitions
 defp custom_chat_pipeline do
   [
-    ExLLM.Plugs.ValidateProvider,
-    ExLLM.Plugs.FetchConfig,
+    SingularityLLM.Plugs.ValidateProvider,
+    SingularityLLM.Plugs.FetchConfig,
     MyApp.Plugs.RequestLogger,
-    ExLLM.Plugs.BuildTeslaClient,
-    ExLLM.Plugs.ExecuteRequest,
-    ExLLM.Plugs.ParseResponse
+    SingularityLLM.Plugs.BuildTeslaClient,
+    SingularityLLM.Plugs.ExecuteRequest,
+    SingularityLLM.Plugs.ParseResponse
   ]
 end
 ```
 
 ## Testing Plugs
 
-ExLLM provides comprehensive testing utilities:
+SingularityLLM provides comprehensive testing utilities:
 
 ```elixir
 defmodule MyApp.Plugs.RequestLoggerTest do
   use ExUnit.Case, async: true
-  use ExLLM.PlugTest
+  use SingularityLLM.PlugTest
   
   import ExUnit.CaptureLog
   alias MyApp.Plugs.RequestLogger
@@ -187,7 +187,7 @@ defmodule MyApp.Plugs.RequestLoggerTest do
       run_plug(request, RequestLogger, level: :info)
     end)
     
-    assert log_output =~ "ExLLM Request"
+    assert log_output =~ "SingularityLLM Request"
     assert log_output =~ "openai"
     assert log_output =~ "gpt-4"
   end
@@ -222,7 +222,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.SetDefaults do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{} = request, opts) do
@@ -243,7 +243,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.ConditionalAuth do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{} = request, opts) do
@@ -272,7 +272,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.ErrorRecovery do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{state: :error} = request, opts) do
@@ -305,7 +305,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.CustomCache do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def init(opts) do
@@ -454,7 +454,7 @@ Create plugs that only run for certain providers:
 
 ```elixir
 defmodule MyApp.Plugs.OpenAISpecific do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{provider: :openai} = request, opts) do
@@ -475,7 +475,7 @@ Handle streaming responses:
 
 ```elixir
 defmodule MyApp.Plugs.StreamHandler do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{options: %{stream: true}} = request, opts) do
@@ -520,9 +520,9 @@ end
 defp custom_chat_pipeline do
   MyApp.Pipelines.Common.auth_pipeline() ++
   [
-    ExLLM.Plugs.BuildTeslaClient,
-    ExLLM.Plugs.ExecuteRequest,
-    ExLLM.Plugs.ParseResponse
+    SingularityLLM.Plugs.BuildTeslaClient,
+    SingularityLLM.Plugs.ExecuteRequest,
+    SingularityLLM.Plugs.ParseResponse
   ] ++
   MyApp.Pipelines.Common.post_processing_pipeline()
 end
@@ -532,7 +532,7 @@ end
 
 ```elixir
 defmodule MyApp.Plugs.ExternalService do
-  use ExLLM.Plug
+  use SingularityLLM.Plug
   
   @impl true
   def call(%Request{} = request, opts) do
@@ -553,4 +553,4 @@ defmodule MyApp.Plugs.ExternalService do
 end
 ```
 
-This guide should get you started with creating powerful, reusable plugs for the ExLLM pipeline architecture. Remember to test your plugs thoroughly and follow Elixir conventions for the best developer experience.
+This guide should get you started with creating powerful, reusable plugs for the SingularityLLM pipeline architecture. Remember to test your plugs thoroughly and follow Elixir conventions for the best developer experience.

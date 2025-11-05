@@ -13,7 +13,7 @@ This guide will walk you through obtaining real OAuth2 credentials for testing t
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click on the project dropdown at the top
 3. Click "New Project"
-4. Enter a project name (e.g., "ExLLM Testing")
+4. Enter a project name (e.g., "SingularityLLM Testing")
 5. Click "Create"
 
 ## Step 2: Enable the Gemini API
@@ -29,7 +29,7 @@ This guide will walk you through obtaining real OAuth2 credentials for testing t
 3. If prompted, configure the OAuth consent screen first:
    - Choose "External" user type (for testing)
    - Fill in required fields:
-     - App name: "ExLLM OAuth Test"
+     - App name: "SingularityLLM OAuth Test"
      - User support email: your email
      - Developer contact: your email
    - Add scopes:
@@ -43,7 +43,7 @@ This guide will walk you through obtaining real OAuth2 credentials for testing t
 
 4. Now create the OAuth client ID:
    - Application type: "Desktop app" (easiest for CLI testing)
-   - Name: "ExLLM CLI"
+   - Name: "SingularityLLM CLI"
    - Click "Create"
 
 5. Download the credentials JSON file
@@ -65,7 +65,7 @@ echo 'export GOOGLE_CLIENT_SECRET="your-client-secret"' >> ~/.bashrc
 ## Step 5: Run the OAuth2 Setup Script
 
 ```bash
-# From the ex_llm directory
+# From the singularity_llm directory
 elixir scripts/setup_oauth2.exs
 ```
 
@@ -80,14 +80,14 @@ The script will:
 
 ```bash
 # Run the OAuth2 permission tests
-mix test test/ex_llm/adapters/gemini/permissions_oauth2_test.exs
+mix test test/singularity_llm/adapters/gemini/permissions_oauth2_test.exs
 
 # Or test manually in IEx:
 iex -S mix
 
 # In IEx:
 {:ok, tokens} = File.read!(".gemini_tokens") |> Jason.decode!()
-{:ok, result} = ExLLM.Gemini.Permissions.list_permissions(
+{:ok, result} = SingularityLLM.Gemini.Permissions.list_permissions(
   "tunedModels/test-model",
   oauth_token: tokens["access_token"]
 )

@@ -92,7 +92,7 @@ defmodule ExchangeCode do
         IO.puts("   #{String.slice(response["refresh_token"], 0..30)}...")
         
         IO.puts("\n✅ You can now run the OAuth2 tests:")
-        IO.puts("   mix test test/ex_llm/adapters/gemini/permissions_oauth2_test.exs")
+        IO.puts("   mix test test/singularity_llm/adapters/gemini/permissions_oauth2_test.exs")
         
       {:error, reason} ->
         IO.puts("\n❌ Failed to save tokens: #{reason}")

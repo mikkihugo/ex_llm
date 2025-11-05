@@ -1,7 +1,7 @@
-defmodule ExLLM.Infrastructure.OllamaModelRegistryTest do
+defmodule SingularityLLM.Infrastructure.OllamaModelRegistryTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Infrastructure.OllamaModelRegistry
+  alias SingularityLLM.Infrastructure.OllamaModelRegistry
 
   @moduletag :requires_service
   @moduletag provider: :ollama

@@ -1,4 +1,4 @@
-defmodule ExLLM.Providers.Shared.StreamingPerformanceTest do
+defmodule SingularityLLM.Providers.Shared.StreamingPerformanceTest do
   @moduledoc """
   Performance benchmarking tests for streaming migration.
 
@@ -15,13 +15,13 @@ defmodule ExLLM.Providers.Shared.StreamingPerformanceTest do
   @moduletag :performance
   @moduletag timeout: :infinity
 
-  alias ExLLM.Providers.Shared.{
+  alias SingularityLLM.Providers.Shared.{
     EnhancedStreamingCoordinator,
     HTTP.Core,
     StreamingCoordinator
   }
 
-  alias ExLLM.Types.StreamChunk
+  alias SingularityLLM.Types.StreamChunk
 
   @chunk_count 100
   # characters per chunk
@@ -148,7 +148,7 @@ defmodule ExLLM.Providers.Shared.StreamingPerformanceTest do
     {:ok, chunk_agent} = Agent.start_link(fn -> [] end)
 
     callback = fn
-      chunk when is_struct(chunk, ExLLM.Types.StreamChunk) ->
+      chunk when is_struct(chunk, SingularityLLM.Types.StreamChunk) ->
         if chunk.content do
           Agent.update(chunk_agent, fn chunks -> [chunk.content | chunks] end)
         end

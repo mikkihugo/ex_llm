@@ -1,4 +1,4 @@
-defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
+defmodule SingularityLLM.BumblebeeTopLevelIntegrationTest do
   use ExUnit.Case, async: false
 
   @moduletag :integration
@@ -6,23 +6,23 @@ defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
 
   describe "bumblebee adapter integration" do
     test "bumblebee adapter is registered" do
-      providers = ExLLM.supported_providers()
+      providers = SingularityLLM.supported_providers()
       assert :bumblebee in providers
     end
 
     test "default model is available" do
-      assert ExLLM.default_model(:bumblebee) == "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+      assert SingularityLLM.default_model(:bumblebee) == "HuggingFaceTB/SmolLM2-1.7B-Instruct"
     end
 
     test "configured? returns false without ModelLoader" do
       # Bumblebee is installed but ModelLoader isn't running, should return false
       # Note: configured? checks if ModelLoader is running, not just if Bumblebee is installed
-      assert ExLLM.configured?(:bumblebee) == false
+      assert SingularityLLM.configured?(:bumblebee) == false
     end
 
     test "list_models returns static models without ModelLoader" do
       # Bumblebee now returns static model list even without ModelLoader
-      assert {:ok, models} = ExLLM.list_models(:bumblebee)
+      assert {:ok, models} = SingularityLLM.list_models(:bumblebee)
       assert is_list(models)
       assert length(models) > 0
       # Verify model structure
@@ -36,7 +36,7 @@ defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
 
       # ModelLoader is not started in test environment
       # Bumblebee adapter should handle this gracefully
-      result = ExLLM.chat(:bumblebee, messages)
+      result = SingularityLLM.chat(:bumblebee, messages)
 
       assert match?({:error, _}, result),
              "Expected error without ModelLoader, got: #{inspect(result)}"
@@ -54,7 +54,7 @@ defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
       messages = [%{role: "user", content: "Hello"}]
 
       # Streaming should also handle missing ModelLoader gracefully
-      result = ExLLM.stream(:bumblebee, messages, fn _chunk -> :ok end)
+      result = SingularityLLM.stream(:bumblebee, messages, fn _chunk -> :ok end)
 
       case result do
         {:error, error_data} ->
@@ -84,7 +84,7 @@ defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
       ]
 
       prepared =
-        ExLLM.prepare_messages(messages,
+        SingularityLLM.prepare_messages(messages,
           provider: "bumblebee",
           model: "HuggingFaceTB/SmolLM2-1.7B-Instruct",
           max_tokens: 1000
@@ -95,8 +95,8 @@ defmodule ExLLM.BumblebeeTopLevelIntegrationTest do
     end
 
     test "context_window_size returns correct size for bumblebee models" do
-      assert ExLLM.context_window_size(:bumblebee, "HuggingFaceTB/SmolLM2-1.7B-Instruct") == 2048
-      assert ExLLM.context_window_size(:bumblebee, "mistralai/Mistral-7B-v0.1") == 8192
+      assert SingularityLLM.context_window_size(:bumblebee, "HuggingFaceTB/SmolLM2-1.7B-Instruct") == 2048
+      assert SingularityLLM.context_window_size(:bumblebee, "mistralai/Mistral-7B-v0.1") == 8192
     end
   end
 end

@@ -1,18 +1,18 @@
-defmodule ExLLM.SessionManagementTest do
+defmodule SingularityLLM.SessionManagementTest do
   use ExUnit.Case, async: false
 
-  alias ExLLM.Core.Session
-  alias ExLLM.Types
+  alias SingularityLLM.Core.Session
+  alias SingularityLLM.Types
 
   @moduledoc """
-  Tests for session management functionality in ExLLM.
+  Tests for session management functionality in SingularityLLM.
 
   Sessions allow maintaining conversation state across multiple
   interactions with automatic context management.
   """
 
   setup do
-    ExLLM.Providers.Mock.reset()
+    SingularityLLM.Providers.Mock.reset()
     :ok
   end
 
@@ -183,7 +183,7 @@ defmodule ExLLM.SessionManagementTest do
       session = Session.add_message(session, "user", "What's 2+2?")
 
       # Send to LLM using session messages
-      {:ok, response} = ExLLM.chat(:mock, session.messages)
+      {:ok, response} = SingularityLLM.chat(:mock, session.messages)
 
       # Add response to session (handle nil content)
       content = response.content || "Mock response"
@@ -301,7 +301,7 @@ defmodule ExLLM.SessionManagementTest do
       }
       """
 
-      {:ok, session} = ExLLM.Core.Session.from_json(json_string)
+      {:ok, session} = SingularityLLM.Core.Session.from_json(json_string)
 
       assert session.id == "test_id"
       # Assert atom conversion

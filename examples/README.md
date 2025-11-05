@@ -1,6 +1,6 @@
-# ExLLM Example Application
+# SingularityLLM Example Application
 
-The comprehensive example application (`example_app.exs`) demonstrates all features of the ExLLM library in an interactive CLI format.
+The comprehensive example application (`example_app.exs`) demonstrates all features of the SingularityLLM library in an interactive CLI format.
 
 ## Quick Start
 

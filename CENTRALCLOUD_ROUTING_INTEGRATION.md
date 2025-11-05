@@ -2,7 +2,7 @@
 
 ## Overview
 
-ExLLM's ModelRouter automatically publishes all routing decisions to PostgreSQL pgmq queue `model_routing_decisions`. CentralCloud consumes these events to build cross-instance intelligence about which models work best for different task complexity levels.
+SingularityLLM's ModelRouter automatically publishes all routing decisions to PostgreSQL pgmq queue `model_routing_decisions`. CentralCloud consumes these events to build cross-instance intelligence about which models work best for different task complexity levels.
 
 ## Architecture
 
@@ -369,7 +369,7 @@ ModelRouter automatically publishes all routing decisions. No additional configu
 
 ```elixir
 # In your Singularity config
-config :ex_llm, pgmq_enabled: true
+config :singularity_llm, pgmq_enabled: true
 
 # Set instance ID for tracking
 System.put_env("INSTANCE_ID", "singularity-#{node()}")
@@ -426,7 +426,7 @@ defmodule Singularity.ModelRouter.ScoreUpdater do
     Logger.info("Applying learned score: #{model} (#{complexity}) = #{new_score}")
 
     # Update local ModelCatalog cache
-    ExLLM.Core.ModelCatalog.update_complexity_score(model, complexity, new_score)
+    SingularityLLM.Core.ModelCatalog.update_complexity_score(model, complexity, new_score)
   end
 
   defp schedule_poll do

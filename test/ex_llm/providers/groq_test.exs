@@ -1,7 +1,7 @@
-defmodule ExLLM.Providers.GroqTest do
+defmodule SingularityLLM.Providers.GroqTest do
   use ExUnit.Case, async: false
-  alias ExLLM.Providers.Groq
-  alias ExLLM.Testing.ConfigProviderHelper
+  alias SingularityLLM.Providers.Groq
+  alias SingularityLLM.Testing.ConfigProviderHelper
 
   describe "Groq adapter" do
     test "configured?/1 returns false when no API key" do

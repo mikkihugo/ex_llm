@@ -30,101 +30,101 @@ HTTPClient
     ├── docs/LOGGER.md
     ├── docs/telemetry_migration_example.md
     ├── guides/internal_modules.md
-    ├── lib/ex_llm/infrastructure/circuit_breaker/bulkhead.ex
-    ├── lib/ex_llm/plugs/execute_stream_request.ex
-    ├── lib/ex_llm/providers/anthropic.ex
-    ├── lib/ex_llm/providers/gemini/base.ex
-    ├── lib/ex_llm/providers/gemini/chunk.ex
-    ├── lib/ex_llm/providers/gemini/content.ex
-    ├── lib/ex_llm/providers/gemini/corpus.ex
-    ├── lib/ex_llm/providers/gemini/document.ex
-    ├── lib/ex_llm/providers/gemini/qa.ex
-    ├── lib/ex_llm/providers/openai.ex
-    ├── lib/ex_llm/providers/openai_compatible.ex
-    ├── lib/ex_llm/providers/shared/http_client.ex
-    ├── lib/ex_llm/testing/interceptor.ex
-    ├── test/ex_llm/core/streaming_pipeline_test.exs
-    ├── test/ex_llm/providers/shared/http_client_test.exs
-    ├── test/ex_llm/providers/shared/http_core_streaming_test.exs
-    ├── test/ex_llm/providers/shared/streaming_migration_test.exs
-    └── test/ex_llm/providers/shared/streaming_performance_test.exs
+    ├── lib/singularity_llm/infrastructure/circuit_breaker/bulkhead.ex
+    ├── lib/singularity_llm/plugs/execute_stream_request.ex
+    ├── lib/singularity_llm/providers/anthropic.ex
+    ├── lib/singularity_llm/providers/gemini/base.ex
+    ├── lib/singularity_llm/providers/gemini/chunk.ex
+    ├── lib/singularity_llm/providers/gemini/content.ex
+    ├── lib/singularity_llm/providers/gemini/corpus.ex
+    ├── lib/singularity_llm/providers/gemini/document.ex
+    ├── lib/singularity_llm/providers/gemini/qa.ex
+    ├── lib/singularity_llm/providers/openai.ex
+    ├── lib/singularity_llm/providers/openai_compatible.ex
+    ├── lib/singularity_llm/providers/shared/http_client.ex
+    ├── lib/singularity_llm/testing/interceptor.ex
+    ├── test/singularity_llm/core/streaming_pipeline_test.exs
+    ├── test/singularity_llm/providers/shared/http_client_test.exs
+    ├── test/singularity_llm/providers/shared/http_core_streaming_test.exs
+    ├── test/singularity_llm/providers/shared/streaming_migration_test.exs
+    └── test/singularity_llm/providers/shared/streaming_performance_test.exs
 
 ```
 
 ## Production Code (`lib/`)
-### `lib/ex_llm/infrastructure/circuit_breaker/bulkhead.ex`
+### `lib/singularity_llm/infrastructure/circuit_breaker/bulkhead.ex`
 
   - **Line 35** (Text Match): `HTTPClient.get("/api/data")`
 
-### `lib/ex_llm/plugs/execute_stream_request.ex`
+### `lib/singularity_llm/plugs/execute_stream_request.ex`
 
   - **Line 7** (Text Match): `from HTTPClient to use the modern HTTP.Core streaming infrastructure.`
 
-### `lib/ex_llm/providers/anthropic.ex`
+### `lib/singularity_llm/providers/anthropic.ex`
 
   - **Line 858** (Text Match): `# HTTP client helper functions to migrate from HTTPClient to Core`
 
-### `lib/ex_llm/providers/gemini/base.ex`
+### `lib/singularity_llm/providers/gemini/base.ex`
 
   - **Line 42** (Text Match): `# Use shared HTTPClient for caching support`
   - **Line 74** (Text Match): `# Use shared HTTPClient for caching support`
 
-### `lib/ex_llm/providers/gemini/chunk.ex`
+### `lib/singularity_llm/providers/gemini/chunk.ex`
 
   - **Line 887** (Text Match): `# Handle different response formats from HTTPClient`
   - **Line 894** (Text Match): `# Wrapped HTTP response format (from cache or HTTPClient)`
   - **Line 959** (Text Match): `# Handle different response formats from HTTPClient`
   - **Line 966** (Text Match): `# Wrapped HTTP response format (from cache or HTTPClient)`
 
-### `lib/ex_llm/providers/gemini/content.ex`
+### `lib/singularity_llm/providers/gemini/content.ex`
 
   - **Line 605** (Text Match): `# Use HTTPClient directly for streaming`
 
-### `lib/ex_llm/providers/gemini/corpus.ex`
+### `lib/singularity_llm/providers/gemini/corpus.ex`
 
   - **Line 588** (Text Match): `# Handle different response formats from HTTPClient`
   - **Line 595** (Text Match): `# Wrapped HTTP response format (from cache or HTTPClient)`
 
-### `lib/ex_llm/providers/gemini/document.ex`
+### `lib/singularity_llm/providers/gemini/document.ex`
 
   - **Line 717** (Text Match): `# Handle different response formats from HTTPClient`
   - **Line 724** (Text Match): `# Wrapped HTTP response format (from cache or HTTPClient)`
 
-### `lib/ex_llm/providers/gemini/qa.ex`
+### `lib/singularity_llm/providers/gemini/qa.ex`
 
   - **Line 249** (Text Match): `# Handle different response formats from HTTPClient`
   - **Line 256** (Text Match): `# Wrapped HTTP response format (from cache or HTTPClient)`
 
-### `lib/ex_llm/providers/openai.ex`
+### `lib/singularity_llm/providers/openai.ex`
 
   - **Line 141** (Text Match): `# Create a stream using HTTPClient's streaming capabilities`
   - **Line 3537** (Text Match): `# HTTP client helper functions to migrate from HTTPClient to Core`
 
-### `lib/ex_llm/providers/openai_compatible.ex`
+### `lib/singularity_llm/providers/openai_compatible.ex`
 
   - **Line 105** (Text Match): `# Store provider name for HTTPClient`
 
-### `lib/ex_llm/providers/shared/http_client.ex`
+### `lib/singularity_llm/providers/shared/http_client.ex`
 
-  - **Line 1** (Text Match): `defmodule ExLLM.Providers.Shared.HTTPClient do`
+  - **Line 1** (Text Match): `defmodule SingularityLLM.Providers.Shared.HTTPClient do`
   - **Line 122** (Text Match): `HTTPClient.post_stream(url, body,`
   - **Line 249** (Text Match): `Logger.debug("HTTPClient.post error: #{inspect(error)}")`
 
-### `lib/ex_llm/testing/interceptor.ex`
+### `lib/singularity_llm/testing/interceptor.ex`
 
   - **Line 5** (Text Match): `This module hooks into the HTTPClient request/response cycle to provide`
   - **Line 355** (Text Match): `# Use string key for HTTPClient replay compatibility`
 
 ## Test Code (`test/`)
-### `test/ex_llm/core/streaming_pipeline_test.exs`
+### `test/singularity_llm/core/streaming_pipeline_test.exs`
 
   - **Line 12** (Text Match): `# Mock the HTTPClient to return controlled chunks`
   - **Line 36** (Text Match): `# Mock the HTTPClient to return Anthropic-style chunks`
 
-### `test/ex_llm/providers/shared/http_client_test.exs`
+### `test/singularity_llm/providers/shared/http_client_test.exs`
 
-  - **Line 1** (Text Match): `defmodule ExLLM.Providers.Shared.HTTPClientTest do`
-  - **Line 5** (Text Match): `alias ExLLM.Providers.Shared.HTTPClient`
+  - **Line 1** (Text Match): `defmodule SingularityLLM.Providers.Shared.HTTPClientTest do`
+  - **Line 5** (Text Match): `alias SingularityLLM.Providers.Shared.HTTPClient`
   - **Line 64** (Text Match): `{:ok, response} = HTTPClient.post(url, body, headers: headers)`
   - **Line 87** (Text Match): `{:ok, response} = HTTPClient.get(url, headers)`
   - **Line 132** (Text Match): `{:ok, _response} = HTTPClient.post_stream(url, body, headers: headers, into: collector)`
@@ -138,15 +138,15 @@ HTTPClient
   - **Line 282** (Text Match): `{:ok, response} = HTTPClient.post(url, body, headers: headers, retry: true, max_retries: 2)`
   - **Line 317** (Text Match): `HTTPClient.post_multipart(url, multipart,`
 
-### `test/ex_llm/providers/shared/http_core_streaming_test.exs`
+### `test/singularity_llm/providers/shared/http_core_streaming_test.exs`
 
   - **Line 6** (Text Match): `compatibility and behavior with the legacy HTTPClient.post_stream.`
-  - **Line 10** (Text Match): `alias ExLLM.Providers.Shared.{HTTP.Core, HTTPClient, StreamingCoordinator}`
+  - **Line 10** (Text Match): `alias SingularityLLM.Providers.Shared.{HTTP.Core, HTTPClient, StreamingCoordinator}`
   - **Line 197** (Text Match): `describe "HTTPClient.post_stream compatibility" do`
   - **Line 198** (Text Match): `test "HTTPClient.post_stream still works as compatibility layer", %{`
   - **Line 251** (Text Match): `assert {:ok, _} = HTTPClient.post_stream(url, body, opts)`
 
-### `test/ex_llm/providers/shared/streaming_migration_test.exs`
+### `test/singularity_llm/providers/shared/streaming_migration_test.exs`
 
   - **Line 3** (Text Match): `Test suite to verify that the streaming migration from HTTPClient to HTTP.Core`
   - **Line 17** (Text Match): `HTTPClient,`
@@ -155,7 +155,7 @@ HTTPClient
   - **Line 299** (Text Match): `{:ok, _} = HTTPClient.post_stream(url, body, opts)`
   - **Line 365** (Text Match): `case HTTPClient.post_stream(url, body, opts) do`
 
-### `test/ex_llm/providers/shared/streaming_performance_test.exs`
+### `test/singularity_llm/providers/shared/streaming_performance_test.exs`
 
   - **Line 6** (Text Match): `1. Legacy HTTPClient.post_stream`
   - **Line 102** (Text Match): `IO.puts("Legacy HTTPClient: #{legacy_mem} KB")`
@@ -173,7 +173,7 @@ _None found._
 
 ### `CLAUDE.md`
 
-  - **Line 279** (Text Match): `ExLLM has successfully migrated from a legacy HTTPClient facade to a modern Tesla middleware-based HTTP architecture:`
+  - **Line 279** (Text Match): `SingularityLLM has successfully migrated from a legacy HTTPClient facade to a modern Tesla middleware-based HTTP architecture:`
   - **Line 307** (Text Match): `- **HTTP.Core Adoption**: All streaming components now use HTTP.Core.stream directly instead of HTTPClient.stream_request`
   - **Line 309** (Text Match): `- **Zero Legacy Dependencies**: No remaining references to HTTPClient.stream_request in the codebase`
   - **Line 312** (Text Match): `- **HTTPClient.post_stream** is now deprecated and serves as a compatibility shim`
@@ -182,14 +182,14 @@ _None found._
 ### `HTTPCLIENT_REMOVAL_PLAN.md`
 
   - **Line 1** (Text Match): `# Legacy HTTPClient Removal Plan`
-  - **Line 4** (Text Match): `This plan provides a systematic approach to completely remove the legacy HTTPClient compatibility layer from the ExLLM codebase, ensuring no functionality is lost while modernizing the HTTP infrastructure.`
+  - **Line 4** (Text Match): `This plan provides a systematic approach to completely remove the legacy HTTPClient compatibility layer from the SingularityLLM codebase, ensuring no functionality is lost while modernizing the HTTP infrastructure.`
   - **Line 13** (Text Match): `**Objective:** Map all HTTPClient dependencies and usage patterns`
   - **Line 18** (Text Match): `git grep -n "HTTPClient" > httpclient_references.txt`
   - **Line 28** (Text Match): `- Search for aliases: `alias.*HTTPClient``
   - **Line 30** (Text Match): `- Module attributes referencing HTTPClient`
   - **Line 34** (Text Match): `HTTPClient`
   - **Line 63** (Text Match): `# Verify no direct HTTPClient usage in providers`
-  - **Line 64** (Text Match): `git grep "HTTPClient" lib/ex_llm/providers/ --include="*.ex"`
+  - **Line 64** (Text Match): `git grep "HTTPClient" lib/singularity_llm/providers/ --include="*.ex"`
   - **Line 76** (Text Match): `- Remove HTTPClient vs HTTP.Core comparison tests`
   - **Line 84** (Text Match): `- Update to remove HTTPClient references`
   - **Line 114** (Text Match): `- Remove if only used by HTTPClient`
@@ -208,13 +208,13 @@ _None found._
 
   - **Line 709** (Text Match): `- [ ] Add provider-specific headers to HTTPClient`
   - **Line 1118** (Text Match): `- Hook into HTTPClient request/response cycle`
-  - **Line 1123** (Text Match): `- `ExLLM.Adapters.Shared.HTTPClient``
+  - **Line 1123** (Text Match): `- `SingularityLLM.Adapters.Shared.HTTPClient``
   - **Line 1127** (Text Match): `#### Task 2.2: Enhance HTTPClient with Timestamp-Based Test Caching`
 
 ### `docs/ARCHITECTURE.md`
 
-  - **Line 113** (Text Match): `ExLLM.Providers.Shared.HTTPClient           # HTTP communication`
-  - **Line 172** (Text Match): `alias ExLLM.Providers.Shared.{HTTPClient, MessageFormatter}`
+  - **Line 113** (Text Match): `SingularityLLM.Providers.Shared.HTTPClient           # HTTP communication`
+  - **Line 172** (Text Match): `alias SingularityLLM.Providers.Shared.{HTTPClient, MessageFormatter}`
 
 ### `docs/LOGGER.md`
 
@@ -222,15 +222,15 @@ _None found._
 
 ### `docs/telemetry_migration_example.md`
 
-  - **Line 83** (Text Match): `defmodule ExLLM.Adapters.Shared.HTTPClient do`
-  - **Line 111** (Text Match): `defmodule ExLLM.Adapters.Shared.HTTPClient do`
+  - **Line 83** (Text Match): `defmodule SingularityLLM.Adapters.Shared.HTTPClient do`
+  - **Line 111** (Text Match): `defmodule SingularityLLM.Adapters.Shared.HTTPClient do`
   - **Line 152** (Text Match): `case HTTPClient.post_json(@api_url, request_body, headers) do`
   - **Line 175** (Text Match): `case HTTPClient.post_json(@api_url, request_body, headers) do`
 
 ### `guides/internal_modules.md`
 
-  - **Line 23** (Text Match): `- `ExLLM.Providers.Shared.HTTPClient` - HTTP implementation`
-  - **Line 88** (Text Match): `ExLLM.Providers.Shared.HTTPClient.post_json(url, body, headers)`
+  - **Line 23** (Text Match): `- `SingularityLLM.Providers.Shared.HTTPClient` - HTTP implementation`
+  - **Line 88** (Text Match): `SingularityLLM.Providers.Shared.HTTPClient.post_json(url, body, headers)`
 
 ## Other Files
 _None found._

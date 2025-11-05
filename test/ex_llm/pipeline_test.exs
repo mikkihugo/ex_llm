@@ -1,9 +1,9 @@
-defmodule ExLLM.PipelineTest do
+defmodule SingularityLLM.PipelineTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Pipeline
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Plugs.{FetchConfig, ManageContext, ValidateProvider}
+  alias SingularityLLM.Pipeline
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Plugs.{FetchConfig, ManageContext, ValidateProvider}
 
   describe "Pipeline.run/2" do
     test "executes plugs in sequence" do
@@ -51,7 +51,7 @@ defmodule ExLLM.PipelineTest do
 
     test "handles plug errors gracefully" do
       defmodule ErrorPlug do
-        use ExLLM.Plug
+        use SingularityLLM.Plug
 
         def call(_request, _opts) do
           raise "Boom!"

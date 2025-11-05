@@ -1,4 +1,4 @@
-defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
+defmodule SingularityLLM.Integration.MultiProviderComprehensiveTest do
   @moduledoc """
   Comprehensive integration tests comparing functionality across multiple providers.
   Tests provider parity, failover capabilities, and cross-provider consistency.
@@ -12,7 +12,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
     providers = [:openai, :anthropic, :gemini, :groq, :mistral]
 
     Enum.filter(providers, fn provider ->
-      config = ExLLM.Environment.provider_config(provider)
+      config = SingularityLLM.Environment.provider_config(provider)
       config[:api_key] != nil
     end)
   end
@@ -69,7 +69,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
             model = get_test_model(provider)
 
             try do
-              case ExLLM.chat(provider, messages, model: model, max_tokens: 10) do
+              case SingularityLLM.chat(provider, messages, model: model, max_tokens: 10) do
                 {:ok, response} ->
                   {provider, {:ok, response}}
 
@@ -128,7 +128,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
           Enum.map(providers, fn provider ->
             model = get_test_model(provider)
 
-            case ExLLM.chat(provider, messages,
+            case SingularityLLM.chat(provider, messages,
                    model: model,
                    max_tokens: 50,
                    response_format: %{type: "json_object"}
@@ -185,7 +185,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
 
             result =
               try do
-                case ExLLM.chat(provider, messages, model: model, max_tokens: 5) do
+                case SingularityLLM.chat(provider, messages, model: model, max_tokens: 5) do
                   {:ok, _response} -> :ok
                   {:error, _error} -> :error
                 end
@@ -247,7 +247,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
             # Gemini expects a list of strings for embeddings
             input = if provider == :gemini, do: [test_text], else: test_text
 
-            case ExLLM.embeddings(provider, input, model: model) do
+            case SingularityLLM.embeddings(provider, input, model: model) do
               {:ok, response} ->
                 embedding = List.first(response.embeddings)
                 {provider, {:ok, embedding}}
@@ -281,7 +281,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
 
         # Calculate self-similarity (should be 1.0)
         Enum.each(successful_embeddings, fn {provider, {:ok, embedding}} ->
-          similarity = ExLLM.Embeddings.cosine_similarity(embedding, embedding)
+          similarity = SingularityLLM.Embeddings.cosine_similarity(embedding, embedding)
           assert_in_delta similarity, 1.0, 0.001, "#{provider} self-similarity should be 1.0"
         end)
       end
@@ -316,15 +316,15 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
                 do: [elem(dissimilar_texts, 1)],
                 else: elem(dissimilar_texts, 1)
 
-            with {:ok, resp1} <- ExLLM.embeddings(provider, input1, model: model),
-                 {:ok, resp2} <- ExLLM.embeddings(provider, input2, model: model),
-                 {:ok, resp3} <- ExLLM.embeddings(provider, input3, model: model) do
+            with {:ok, resp1} <- SingularityLLM.embeddings(provider, input1, model: model),
+                 {:ok, resp2} <- SingularityLLM.embeddings(provider, input2, model: model),
+                 {:ok, resp3} <- SingularityLLM.embeddings(provider, input3, model: model) do
               emb1 = List.first(resp1.embeddings)
               emb2 = List.first(resp2.embeddings)
               emb3 = List.first(resp3.embeddings)
 
-              similar_score = ExLLM.Embeddings.cosine_similarity(emb1, emb2)
-              dissimilar_score = ExLLM.Embeddings.cosine_similarity(emb1, emb3)
+              similar_score = SingularityLLM.Embeddings.cosine_similarity(emb1, emb2)
+              dissimilar_score = SingularityLLM.Embeddings.cosine_similarity(emb1, emb3)
 
               {provider, {:ok, {similar_score, dissimilar_score}}}
             else
@@ -375,7 +375,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
         # Simulate primary failure by using invalid model
         primary_result =
           try do
-            ExLLM.chat(primary, messages, model: "invalid-model-xyz")
+            SingularityLLM.chat(primary, messages, model: "invalid-model-xyz")
           rescue
             e -> {:error, e}
           end
@@ -386,7 +386,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
 
             # Try backup provider
             backup_result =
-              ExLLM.chat(backup, messages, model: get_test_model(backup), max_tokens: 10)
+              SingularityLLM.chat(backup, messages, model: get_test_model(backup), max_tokens: 10)
 
             case backup_result do
               {:ok, response} ->
@@ -424,7 +424,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
 
             result =
               try do
-                ExLLM.chat(
+                SingularityLLM.chat(
                   provider,
                   [%{role: "user", content: "Test #{i}"}],
                   model: invalid_model
@@ -458,7 +458,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
         # Check chat capability (all should support)
         chat_result =
           try do
-            ExLLM.chat(
+            SingularityLLM.chat(
               provider,
               [%{role: "user", content: "Hi"}],
               model: get_test_model(provider),
@@ -487,7 +487,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
           input = if provider == :gemini, do: ["test"], else: "test"
 
           embedding_result =
-            ExLLM.embeddings(provider, input, model: get_embedding_model(provider))
+            SingularityLLM.embeddings(provider, input, model: get_embedding_model(provider))
 
           assert match?({:ok, _}, embedding_result), "#{provider} should support embeddings"
         end
@@ -524,7 +524,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
 
             result =
               try do
-                case ExLLM.chat(provider, messages, model: model, max_tokens: 50) do
+                case SingularityLLM.chat(provider, messages, model: model, max_tokens: 50) do
                   {:ok, response} ->
                     {:ok, response}
 
@@ -698,7 +698,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
         }
       ]
 
-      case ExLLM.chat(provider, messages,
+      case SingularityLLM.chat(provider, messages,
              model: get_test_model(provider),
              tools: tools,
              max_tokens: 100
@@ -719,7 +719,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
         %{role: "user", content: "Return a JSON object with name and age fields"}
       ]
 
-      case ExLLM.chat(provider, messages,
+      case SingularityLLM.chat(provider, messages,
              model: get_test_model(provider),
              response_format: %{type: "json_object"},
              max_tokens: 50
@@ -770,7 +770,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
       start_time = :os.system_time(:millisecond)
 
       result =
-        ExLLM.chat(provider, messages,
+        SingularityLLM.chat(provider, messages,
           model: get_test_model(provider),
           max_tokens: 5
         )
@@ -813,7 +813,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
         topic_provider = List.first(providers)
 
         topic_result =
-          ExLLM.chat(
+          SingularityLLM.chat(
             topic_provider,
             [
               %{
@@ -844,7 +844,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
             embed_provider = List.first(embedding_providers)
             input = if embed_provider == :gemini, do: [topic], else: topic
 
-            case ExLLM.embeddings(embed_provider, input,
+            case SingularityLLM.embeddings(embed_provider, input,
                    model: get_embedding_model(embed_provider)
                  ) do
               {:ok, response} ->
@@ -874,7 +874,7 @@ defmodule ExLLM.Integration.MultiProviderComprehensiveTest do
             prompt = "Write one sentence about #{topic}"
 
             result =
-              ExLLM.chat(
+              SingularityLLM.chat(
                 provider,
                 [%{role: "user", content: prompt}],
                 model: get_test_model(provider),

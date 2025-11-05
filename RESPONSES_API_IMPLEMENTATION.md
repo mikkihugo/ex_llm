@@ -1,6 +1,6 @@
 # Responses API Implementation Guide
 
-Practical implementation guide with code examples, test plans, and development workflow for adding Responses API support to ex_llm.
+Practical implementation guide with code examples, test plans, and development workflow for adding Responses API support to singularity_llm.
 
 ## Quick Start Implementation
 
@@ -8,15 +8,15 @@ Practical implementation guide with code examples, test plans, and development w
 
 ```bash
 # Create directory structure
-mkdir -p lib/ex_llm/providers/openai/responses
-mkdir -p test/ex_llm/providers/openai/responses
+mkdir -p lib/singularity_llm/providers/openai/responses
+mkdir -p test/singularity_llm/providers/openai/responses
 ```
 
 ### Step 2: Basic Responses Module
 
 ```elixir
-# lib/ex_llm/providers/openai/responses.ex
-defmodule ExLLM.Providers.OpenAI.Responses do
+# lib/singularity_llm/providers/openai/responses.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses do
   @moduledoc """
   OpenAI Responses API client (/v1/responses).
 
@@ -46,9 +46,9 @@ defmodule ExLLM.Providers.OpenAI.Responses do
       )
   """
 
-  @behaviour ExLLM.Provider
+  @behaviour SingularityLLM.Provider
 
-  alias ExLLM.Providers.OpenAI.Responses.{
+  alias SingularityLLM.Providers.OpenAI.Responses.{
     BuildRequest,
     ParseResponse,
     StateManager,
@@ -56,8 +56,8 @@ defmodule ExLLM.Providers.OpenAI.Responses do
     Tools
   }
 
-  alias ExLLM.Providers.Shared.{ConfigHelper, ErrorHandler, HTTP.Core}
-  alias ExLLM.Types
+  alias SingularityLLM.Providers.Shared.{ConfigHelper, ErrorHandler, HTTP.Core}
+  alias SingularityLLM.Types
 
   @base_url "https://api.openai.com/v1"
   @default_model "gpt-5-codex"
@@ -80,7 +80,7 @@ defmodule ExLLM.Providers.OpenAI.Responses do
     * `{:ok, response}` - Success with LLMResponse
     * `{:error, reason}` - Error
   """
-  @impl ExLLM.Provider
+  @impl SingularityLLM.Provider
   def chat(messages, options \\ []) do
     with :ok <- validate_messages(messages),
          {:ok, config} <- get_config(options),
@@ -91,7 +91,7 @@ defmodule ExLLM.Providers.OpenAI.Responses do
     end
   end
 
-  @impl ExLLM.Provider
+  @impl SingularityLLM.Provider
   def stream_chat(messages, options \\ []) do
     with :ok <- validate_messages(messages),
          {:ok, config} <- get_config(options),
@@ -101,22 +101,22 @@ defmodule ExLLM.Providers.OpenAI.Responses do
     end
   end
 
-  @impl ExLLM.Provider
+  @impl SingularityLLM.Provider
   def embeddings(_inputs, _options), do: {:error, :not_supported}
 
-  @impl ExLLM.Provider
+  @impl SingularityLLM.Provider
   def list_models(options \\ []) do
     # Delegate to existing OpenAI.list_models
-    ExLLM.Providers.OpenAI.list_models(options)
+    SingularityLLM.Providers.OpenAI.list_models(options)
   end
 
-  @impl ExLLM.Provider
+  @impl SingularityLLM.Provider
   def default_model, do: @default_model
 
   # Private functions
 
   defp validate_messages(messages) do
-    ExLLM.Providers.Shared.MessageFormatter.validate_messages(messages)
+    SingularityLLM.Providers.Shared.MessageFormatter.validate_messages(messages)
   end
 
   defp get_config(options) do
@@ -156,13 +156,13 @@ end
 ### Step 3: Request Builder
 
 ```elixir
-# lib/ex_llm/providers/openai/responses/build_request.ex
-defmodule ExLLM.Providers.OpenAI.Responses.BuildRequest do
+# lib/singularity_llm/providers/openai/responses/build_request.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses.BuildRequest do
   @moduledoc """
   Builds HTTP requests for Responses API.
   """
 
-  alias ExLLM.Providers.OpenAI.Responses.{MCPClient, Tools}
+  alias SingularityLLM.Providers.OpenAI.Responses.{MCPClient, Tools}
 
   @doc """
   Build chat request for Responses API.
@@ -262,13 +262,13 @@ end
 ### Step 4: Response Parser
 
 ```elixir
-# lib/ex_llm/providers/openai/responses/parse_response.ex
-defmodule ExLLM.Providers.OpenAI.Responses.ParseResponse do
+# lib/singularity_llm/providers/openai/responses/parse_response.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses.ParseResponse do
   @moduledoc """
   Parses responses from Responses API.
   """
 
-  alias ExLLM.Types.LLMResponse
+  alias SingularityLLM.Types.LLMResponse
 
   @doc """
   Parse Responses API response into LLMResponse struct.
@@ -320,7 +320,7 @@ defmodule ExLLM.Providers.OpenAI.Responses.ParseResponse do
     usage = body["usage"]
 
     if usage do
-      ExLLM.Core.Cost.calculate_cost(
+      SingularityLLM.Core.Cost.calculate_cost(
         model,
         usage["prompt_tokens"] || 0,
         usage["completion_tokens"] || 0
@@ -353,13 +353,13 @@ end
 ### Step 5: MCP Client
 
 ```elixir
-# lib/ex_llm/providers/openai/responses/mcp_client.ex
-defmodule ExLLM.Providers.OpenAI.Responses.MCPClient do
+# lib/singularity_llm/providers/openai/responses/mcp_client.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses.MCPClient do
   @moduledoc """
   Client for Model Context Protocol (MCP) server integration.
   """
 
-  alias ExLLM.Providers.Shared.HTTP.Core
+  alias SingularityLLM.Providers.Shared.HTTP.Core
 
   @doc """
   Format MCP server configurations for Responses API request.
@@ -440,8 +440,8 @@ end
 ### Step 6: Tools Module
 
 ```elixir
-# lib/ex_llm/providers/openai/responses/tools.ex
-defmodule ExLLM.Providers.OpenAI.Responses.Tools do
+# lib/singularity_llm/providers/openai/responses/tools.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses.Tools do
   @moduledoc """
   Built-in tools for Responses API.
   """
@@ -517,13 +517,13 @@ end
 ### Step 7: State Manager
 
 ```elixir
-# lib/ex_llm/providers/openai/responses/state_manager.ex
-defmodule ExLLM.Providers.OpenAI.Responses.StateManager do
+# lib/singularity_llm/providers/openai/responses/state_manager.ex
+defmodule SingularityLLM.Providers.OpenAI.Responses.StateManager do
   @moduledoc """
   Manages server-side conversation state for Responses API.
   """
 
-  alias ExLLM.Providers.Shared.HTTP.Core
+  alias SingularityLLM.Providers.Shared.HTTP.Core
 
   @doc """
   Start a new stateful conversation.
@@ -632,11 +632,11 @@ end
 ### Unit Tests
 
 ```elixir
-# test/ex_llm/providers/openai/responses/build_request_test.exs
-defmodule ExLLM.Providers.OpenAI.Responses.BuildRequestTest do
+# test/singularity_llm/providers/openai/responses/build_request_test.exs
+defmodule SingularityLLM.Providers.OpenAI.Responses.BuildRequestTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.OpenAI.Responses.BuildRequest
+  alias SingularityLLM.Providers.OpenAI.Responses.BuildRequest
 
   @messages [%{role: "user", content: "Hello"}]
   @config %{base_url: "https://api.openai.com/v1", api_key: "sk-test"}
@@ -706,12 +706,12 @@ end
 ```
 
 ```elixir
-# test/ex_llm/providers/openai/responses/parse_response_test.exs
-defmodule ExLLM.Providers.OpenAI.Responses.ParseResponseTest do
+# test/singularity_llm/providers/openai/responses/parse_response_test.exs
+defmodule SingularityLLM.Providers.OpenAI.Responses.ParseResponseTest do
   use ExUnit.Case, async: true
 
-  alias ExLLM.Providers.OpenAI.Responses.ParseResponse
-  alias ExLLM.Types.LLMResponse
+  alias SingularityLLM.Providers.OpenAI.Responses.ParseResponse
+  alias SingularityLLM.Types.LLMResponse
 
   describe "parse/2" do
     test "parses successful response" do
@@ -778,15 +778,15 @@ end
 ### Integration Tests
 
 ```elixir
-# test/ex_llm/providers/openai/responses_integration_test.exs
-defmodule ExLLM.Providers.OpenAI.ResponsesIntegrationTest do
+# test/singularity_llm/providers/openai/responses_integration_test.exs
+defmodule SingularityLLM.Providers.OpenAI.ResponsesIntegrationTest do
   use ExUnit.Case
 
   @moduletag :integration
   @moduletag :requires_api_key
   @moduletag timeout: 30_000
 
-  alias ExLLM.Providers.OpenAI.Responses
+  alias SingularityLLM.Providers.OpenAI.Responses
 
   setup do
     api_key = System.get_env("OPENAI_API_KEY")
@@ -882,7 +882,7 @@ end
 
 ```bash
 # Clone repo
-cd packages/ex_llm
+cd packages/singularity_llm
 
 # Install dependencies
 mix deps.get
@@ -894,7 +894,7 @@ export OPENAI_API_KEY="sk-..."
 mix test
 
 # Run only Responses API tests
-mix test test/ex_llm/providers/openai/responses
+mix test test/singularity_llm/providers/openai/responses
 ```
 
 ### 2. Run Integration Tests
@@ -904,7 +904,7 @@ mix test test/ex_llm/providers/openai/responses
 mix test --only integration
 
 # Run specific Responses API integration tests
-mix test test/ex_llm/providers/openai/responses_integration_test.exs --only integration
+mix test test/singularity_llm/providers/openai/responses_integration_test.exs --only integration
 
 # Run with specific tags
 mix test --only web_search
@@ -918,7 +918,7 @@ mix test --only code_interpreter
 iex -S mix
 
 # Test basic call
-iex> alias ExLLM.Providers.OpenAI.Responses
+iex> alias SingularityLLM.Providers.OpenAI.Responses
 iex> messages = [%{role: "user", content: "Hello!"}]
 iex> {:ok, resp} = Responses.chat(messages, model: "gpt-5-codex")
 iex> IO.puts(resp.content)
@@ -941,7 +941,7 @@ iex> IO.inspect(resp.metadata.sources)
 ```elixir
 # test/bench/responses_api_benchmark.exs
 defmodule ResponsesAPIBenchmark do
-  alias ExLLM.Providers.OpenAI.Responses
+  alias SingularityLLM.Providers.OpenAI.Responses
 
   def run_benchmarks do
     api_key = System.get_env("OPENAI_API_KEY")
@@ -949,7 +949,7 @@ defmodule ResponsesAPIBenchmark do
 
     Benchee.run(%{
       "Chat Completions API" => fn ->
-        ExLLM.chat(:openai, messages, api_key: api_key)
+        SingularityLLM.chat(:openai, messages, api_key: api_key)
       end,
       "Responses API" => fn ->
         Responses.chat(messages, model: "gpt-5-codex", api_key: api_key)
@@ -976,7 +976,7 @@ mix run test/bench/responses_api_benchmark.exs
 
 ```elixir
 # config/dev.exs
-config :ex_llm,
+config :singularity_llm,
   log_level: :debug,
   log_requests: true,
   log_responses: true

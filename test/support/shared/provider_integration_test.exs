@@ -1,6 +1,6 @@
-defmodule ExLLM.Shared.ProviderIntegrationTest do
+defmodule SingularityLLM.Shared.ProviderIntegrationTest do
   @moduledoc """
-  Shared integration tests that run against all providers using the public ExLLM API.
+  Shared integration tests that run against all providers using the public SingularityLLM API.
   This ensures consistent behavior across providers and tests the public interface.
   """
 
@@ -9,9 +9,9 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
 
     quote do
       use ExUnit.Case
-      import ExLLM.Testing.TestCacheHelpers
-      import ExLLM.Testing.CapabilityHelpers
-      import ExLLM.Testing.TestHelpers
+      import SingularityLLM.Testing.TestCacheHelpers
+      import SingularityLLM.Testing.CapabilityHelpers
+      import SingularityLLM.Testing.TestHelpers
 
       @provider unquote(provider)
       @moduletag :integration
@@ -36,7 +36,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
         ]
 
         Enum.each(providers, fn provider ->
-          ExLLM.Infrastructure.CircuitBreaker.reset("#{provider}_circuit")
+          SingularityLLM.Infrastructure.CircuitBreaker.reset("#{provider}_circuit")
         end)
 
         enable_cache_debug()
@@ -47,10 +47,10 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
         setup_test_cache(context)
 
         # Reset circuit breaker for this provider before each test
-        ExLLM.Infrastructure.CircuitBreaker.reset("#{@provider}_circuit")
+        SingularityLLM.Infrastructure.CircuitBreaker.reset("#{@provider}_circuit")
 
         on_exit(fn ->
-          ExLLM.Testing.TestCacheDetector.clear_test_context()
+          SingularityLLM.Testing.TestCacheDetector.clear_test_context()
         end)
 
         :ok
@@ -64,7 +64,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
             %{role: "user", content: "Say hello in one word"}
           ]
 
-          result = ExLLM.chat(@provider, messages, max_tokens: 10)
+          result = SingularityLLM.chat(@provider, messages, max_tokens: 10)
 
           response =
             case result do
@@ -119,7 +119,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
             %{role: "user", content: "Hello there!"}
           ]
 
-          result = ExLLM.chat(@provider, messages, max_tokens: 50)
+          result = SingularityLLM.chat(@provider, messages, max_tokens: 50)
 
           response =
             case result do
@@ -165,7 +165,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
             send(self(), {:chunk, chunk})
           end
 
-          result = ExLLM.stream(@provider, messages, collector, max_tokens: 50, timeout: 10_000)
+          result = SingularityLLM.stream(@provider, messages, collector, max_tokens: 50, timeout: 10_000)
 
           response =
             case result do
@@ -189,7 +189,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
                 # Verify we received actual content (don't test specific content)
                 assert String.length(full_content) > 0, "No content received in streaming chunks"
 
-              {:error, %ExLLM.Pipeline.Request{errors: errors}} ->
+              {:error, %SingularityLLM.Pipeline.Request{errors: errors}} ->
                 # Check if it's a streaming not supported error or ModelLoader issue
                 cond do
                   Enum.any?(
@@ -239,7 +239,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
         test "fetches available models" do
           skip_unless_configured_and_supports(@provider, :list_models)
 
-          case ExLLM.list_models(@provider) do
+          case SingularityLLM.list_models(@provider) do
             {:ok, models} ->
               assert is_list(models)
               assert length(models) > 0, "Expected to receive at least one model"
@@ -276,11 +276,11 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
               config = %{@provider => %{api_key: "invalid-key-test"}}
 
               {:ok, static_provider} =
-                ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+                SingularityLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
               messages = [%{role: "user", content: "Test"}]
 
-              result = ExLLM.chat(@provider, messages, config_provider: static_provider)
+              result = SingularityLLM.chat(@provider, messages, config_provider: static_provider)
 
               response =
                 case result do
@@ -326,7 +326,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
           long_content = String.duplicate("This is a test. ", 50_000)
           messages = [%{role: "user", content: long_content}]
 
-          result = ExLLM.chat(@provider, messages, max_tokens: 10)
+          result = SingularityLLM.chat(@provider, messages, max_tokens: 10)
 
           response =
             case result do
@@ -376,7 +376,7 @@ defmodule ExLLM.Shared.ProviderIntegrationTest do
             %{role: "user", content: "Say hello"}
           ]
 
-          result = ExLLM.chat(@provider, messages, max_tokens: 10)
+          result = SingularityLLM.chat(@provider, messages, max_tokens: 10)
 
           response =
             case result do

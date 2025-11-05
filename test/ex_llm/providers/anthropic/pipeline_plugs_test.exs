@@ -1,10 +1,10 @@
-defmodule ExLLM.Providers.Anthropic.PipelinePlugsTest do
+defmodule SingularityLLM.Providers.Anthropic.PipelinePlugsTest do
   use ExUnit.Case, async: false
 
   @moduletag provider: :anthropic
   @moduletag :unit
-  alias ExLLM.Pipeline.Request
-  alias ExLLM.Providers.Anthropic.{BuildRequest, ParseResponse}
+  alias SingularityLLM.Pipeline.Request
+  alias SingularityLLM.Providers.Anthropic.{BuildRequest, ParseResponse}
 
   setup do
     # Set API key for FetchConfiguration plug

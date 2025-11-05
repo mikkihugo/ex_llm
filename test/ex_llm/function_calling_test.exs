@@ -1,9 +1,9 @@
-defmodule ExLLM.FunctionCallingTest do
+defmodule SingularityLLM.FunctionCallingTest do
   use ExUnit.Case, async: false
 
   @moduletag capability: :function_calling
   @moduledoc """
-  Tests for function calling functionality in ExLLM.
+  Tests for function calling functionality in SingularityLLM.
 
   Function calling (also known as tool use) allows LLMs to indicate
   when they want to call specific functions with structured arguments.
@@ -11,7 +11,7 @@ defmodule ExLLM.FunctionCallingTest do
 
   setup do
     # Reset mock provider to ensure clean state for each test
-    ExLLM.Providers.Mock.reset()
+    SingularityLLM.Providers.Mock.reset()
     :ok
   end
 
@@ -43,7 +43,7 @@ defmodule ExLLM.FunctionCallingTest do
 
       # Provider should accept functions in options
       assert {:ok, response} =
-               ExLLM.chat(:mock, messages,
+               SingularityLLM.chat(:mock, messages,
                  functions: functions,
                  # Let model decide when to call
                  function_call: "auto"
@@ -82,7 +82,7 @@ defmodule ExLLM.FunctionCallingTest do
         }
       ]
 
-      assert {:ok, _response} = ExLLM.chat(:mock, messages, functions: functions)
+      assert {:ok, _response} = SingularityLLM.chat(:mock, messages, functions: functions)
     end
 
     test "validates function schema structure" do
@@ -95,7 +95,7 @@ defmodule ExLLM.FunctionCallingTest do
       }
 
       # This might return an error or ignore the invalid function
-      result = ExLLM.chat(:mock, messages, functions: [invalid_function])
+      result = SingularityLLM.chat(:mock, messages, functions: [invalid_function])
 
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
@@ -120,7 +120,7 @@ defmodule ExLLM.FunctionCallingTest do
 
       # Configure mock to return a function call
       :ok =
-        ExLLM.Providers.Mock.set_response(%{
+        SingularityLLM.Providers.Mock.set_response(%{
           content: nil,
           function_call: %{
             name: "get_weather",
@@ -128,14 +128,14 @@ defmodule ExLLM.FunctionCallingTest do
           }
         })
 
-      {:ok, response} = ExLLM.chat(:mock, messages, functions: functions)
+      {:ok, response} = SingularityLLM.chat(:mock, messages, functions: functions)
 
       assert response.function_call
       assert response.function_call.name == "get_weather"
       assert response.function_call.arguments =~ "Tokyo"
 
       # Clean up
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
     end
 
     test "handles parallel function calls (tool_calls)" do
@@ -156,7 +156,7 @@ defmodule ExLLM.FunctionCallingTest do
 
       # Configure mock for multiple tool calls
       :ok =
-        ExLLM.Providers.Mock.set_response(%{
+        SingularityLLM.Providers.Mock.set_response(%{
           content: nil,
           tool_calls: [
             %{
@@ -178,7 +178,7 @@ defmodule ExLLM.FunctionCallingTest do
           ]
         })
 
-      {:ok, response} = ExLLM.chat(:mock, messages, functions: functions)
+      {:ok, response} = SingularityLLM.chat(:mock, messages, functions: functions)
 
       # Mock provider may not support tool_calls in current configuration
       if response.tool_calls do
@@ -190,17 +190,17 @@ defmodule ExLLM.FunctionCallingTest do
         assert is_binary(response.content) or is_nil(response.content)
       end
 
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
     end
 
     test "parses function arguments as JSON" do
       # Ensure clean mock state
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
 
       messages = [%{role: "user", content: "Calculate 15% tip on $45.50"}]
 
       :ok =
-        ExLLM.Providers.Mock.set_response(%{
+        SingularityLLM.Providers.Mock.set_response(%{
           content: nil,
           function_call: %{
             name: "calculate_tip",
@@ -208,7 +208,7 @@ defmodule ExLLM.FunctionCallingTest do
           }
         })
 
-      {:ok, response} = ExLLM.chat(:mock, messages)
+      {:ok, response} = SingularityLLM.chat(:mock, messages)
 
       # Ensure function call exists
       assert response.function_call != nil, "Expected function_call to be present in response"
@@ -222,7 +222,7 @@ defmodule ExLLM.FunctionCallingTest do
       assert args["amount"] == 45.50
       assert args["percentage"] == 15
 
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
     end
   end
 
@@ -256,7 +256,7 @@ defmodule ExLLM.FunctionCallingTest do
 
       # Force the model to call get_time function
       _result =
-        ExLLM.chat(:mock, messages,
+        SingularityLLM.chat(:mock, messages,
           functions: functions,
           function_call: %{name: "get_time"}
         )
@@ -277,7 +277,7 @@ defmodule ExLLM.FunctionCallingTest do
 
       # Even with functions defined, 'none' prevents their use
       {:ok, response} =
-        ExLLM.chat(:mock, messages,
+        SingularityLLM.chat(:mock, messages,
           functions: functions,
           function_call: "none"
         )
@@ -371,9 +371,9 @@ defmodule ExLLM.FunctionCallingTest do
         %{finish_reason: "function_call"}
       ]
 
-      :ok = ExLLM.Providers.Mock.set_stream_chunks(mock_stream)
+      :ok = SingularityLLM.Providers.Mock.set_stream_chunks(mock_stream)
 
-      assert :ok = ExLLM.stream(:mock, messages, callback, functions: functions)
+      assert :ok = SingularityLLM.stream(:mock, messages, callback, functions: functions)
 
       collected = Agent.get(chunks, &Enum.reverse/1)
       Agent.stop(chunks)
@@ -381,7 +381,7 @@ defmodule ExLLM.FunctionCallingTest do
       # Should accumulate function call arguments across chunks
       assert length(collected) > 0
 
-      :ok = ExLLM.Providers.Mock.reset()
+      :ok = SingularityLLM.Providers.Mock.reset()
     end
   end
 end
