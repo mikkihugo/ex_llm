@@ -9,6 +9,7 @@ defmodule ExLLM.Application do
     case Application.ensure_all_started(:telemetry) do
       {:ok, _apps} ->
         :ok
+
       {:error, _} ->
         # Telemetry might not be available, continue anyway
         :ok

@@ -178,8 +178,7 @@ defmodule ExLLM.Infrastructure.Streaming.FlowController do
 
     batcher =
       if config.batch_config do
-        {:ok, batcher_pid} =
-          ChunkBatcher.start_link(config.batch_config)
+        {:ok, batcher_pid} = ChunkBatcher.start_link(config.batch_config)
 
         batcher_pid
       else

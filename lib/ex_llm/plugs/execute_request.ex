@@ -53,8 +53,7 @@ defmodule ExLLM.Plugs.ExecuteRequest do
   end
 
   def call(%Request{} = request, opts) do
-    endpoint =
-      opts[:endpoint] || request.assigns[:http_path] || get_provider_endpoint(request)
+    endpoint = opts[:endpoint] || request.assigns[:http_path] || get_provider_endpoint(request)
 
     method = opts[:method] || request.assigns[:http_method] || :post
 

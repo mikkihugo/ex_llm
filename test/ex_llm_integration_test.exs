@@ -168,8 +168,7 @@ defmodule ExLLM.IntegrationTest do
       # Test with a provider that uses API keys
       config = %{anthropic: %{api_key: "invalid-key-test"}}
 
-      {:ok, static_provider} =
-        ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
+      {:ok, static_provider} = ExLLM.Infrastructure.ConfigProvider.Static.start_link(config)
 
       messages = [%{role: "user", content: "Test"}]
 
