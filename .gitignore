@@ -167,3 +167,5 @@ rust/quality/src/nif.rs.backup
 # Large generated bundles
 singularity-docs-packed.txt
 singularity-full-packed.txt
+.mix_git_hooks
+.mix_git_hooks
