@@ -1,2 +1,0 @@
-2025-10-27 23:46:58.357 CET [40148] FATAL:  could not access file "timescaledb": No such file or directory
-2025-10-27 23:46:58.357 CET [40148] LOG:  database system is shut down

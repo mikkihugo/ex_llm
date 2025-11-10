@@ -1,7 +1,0 @@
-{
-  "patterns": [
-    {"regex": "cassandra"},
-    {"regex": "datastax"},
-    {"regex": "cassandradb"}
-  ]
-}

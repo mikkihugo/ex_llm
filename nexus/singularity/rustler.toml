@@ -1,3 +1,0 @@
-[source_code_parser]
-crate = "source-code-parser"
-path = "native/source-code-parser"

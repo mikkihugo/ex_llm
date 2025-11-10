@@ -1,5 +1,0 @@
-{
-  "patterns": [
-    {"regex": "\\.sqlite3?"}
-  ]
-}

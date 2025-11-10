@@ -1,7 +1,0 @@
-{
-  "patterns": [
-    {"regex": "cockroach"},
-    {"regex": "crdb"},
-    {"regex": "cockroachdb"}
-  ]
-}

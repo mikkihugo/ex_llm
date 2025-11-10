@@ -1,6 +1,0 @@
-{
-  "patterns": [
-    {"regex": "\\bmongo_client\\b"},
-    {"regex": "\\bmongodb\\s*://"}
-  ]
-}

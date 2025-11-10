@@ -1,7 +1,0 @@
-{
-  "patterns": [
-    {"regex": "timescaledb"},
-    {"regex": "time_bucket"},
-    {"regex": "create_hypertable"}
-  ]
-}

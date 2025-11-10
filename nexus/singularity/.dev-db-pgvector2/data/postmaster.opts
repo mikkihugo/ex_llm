@@ -1,1 +1,0 @@
-/nix/store/fmwdn3g2yp10m3g5fmhggm0aby5iasis-postgresql-17.6/bin/postgres "-D" "/Users/mhugo/code/singularity-incubation/nexus/singularity/.dev-db-pgvector2/data"

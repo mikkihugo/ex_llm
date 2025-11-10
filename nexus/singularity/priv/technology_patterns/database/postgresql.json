@@ -1,6 +1,0 @@
-{
-  "patterns": [
-    {"regex": "\\bpgvector\\b"},
-    {"regex": "postgresql\\."}
-  ]
-}
